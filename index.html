@@ -905,15 +905,15 @@
       });
     });
 
-   // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (Версия API v2)
-      fetch('https://api.counterapi.dev/v2/gup69/portal_visits/up', { cache: 'reload' })
+  // 4. СОБСТВЕННЫЙ СЧЕТЧИК НА GOOGLE APPS SCRIPT
+      // Вставьте вашу длинную ссылку от Google вместо слова ВАША_ССЫЛКА_ЗДЕСЬ
+      const googleURL = 'https://script.google.com/macros/s/AKfycbwbQ33el9hAKPdGnnmtYRJUnMg09Akwme8AKUBc0b1edg_2gK6ZLWYWThWol_yJFd7X/exec';
+      
+      fetch(googleURL)
         .then(response => response.json())
         .then(data => { 
-            const count = data.count || data.value;
-            if (count) {
-                document.getElementById('visits-count').innerText = count;
-            } else {
-                document.getElementById('visits-count').innerText = "1";
+            if (data.count) {
+                document.getElementById('visits-count').innerText = data.count;
             }
         })
         .catch(error => { 
