@@ -804,7 +804,26 @@
       </div>
     </div>
 
-  </div>
+    <!-- НАЧАЛО СЧЕТЧИКА ПОСЕЩЕНИЙ -->
+    <div style="text-align: center; margin-top: 40px; padding-bottom: 20px; color: #64748B; font-weight: 500; font-size: 1.1rem; width: 100%;">
+      <span data-ru="Просмотров портала:" data-kk="Порталды қарау саны:" data-en="Portal views:">Просмотров портала:</span>
+      <span id="visits-count" style="color: #4F46E5; font-weight: 800; font-size: 1.2rem; margin-left: 8px;">...</span>
+    </div>
+
+    <script>
+      // Скрипт обращается к бесплатному текстовому API, который не блокируется антивирусами
+      fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index')
+        .then(response => response.json())
+        .then(data => { 
+            document.getElementById('visits-count').innerText = data.count; 
+        })
+        .catch(error => { 
+            document.getElementById('visits-count').innerText = "—"; 
+        });
+    </script>
+    <!-- КОНЕЦ СЧЕТЧИКА ПОСЕЩЕНИЙ -->
+
+  </div> <!-- Конец .container -->
 
   <script>
     // 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
