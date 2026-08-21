@@ -906,10 +906,11 @@
     });
 
     // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ
-    fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index')
+    fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index/up')
       .then(response => response.json())
       .then(data => { 
-          document.getElementById('visits-count').innerText = data.count; 
+          // Надежная проверка: берем count, если нет - value, если совсем пусто - ставим 1
+          document.getElementById('visits-count').innerText = data.count || data.value || "1"; 
       })
       .catch(error => { 
           document.getElementById('visits-count').innerText = "—"; 
