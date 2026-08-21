@@ -905,12 +905,15 @@
       });
     });
 
-    // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ
-    fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index/up')
+   // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (ОБНОВЛЕННЫЙ)
+    fetch('https://api.counterapi.dev/v1/gup69/physicslab/up')
       .then(response => response.json())
       .then(data => { 
-          // Надежная проверка: берем count, если нет - value, если совсем пусто - ставим 1
-          document.getElementById('visits-count').innerText = data.count || data.value || "1"; 
+          if (data.count) {
+              document.getElementById('visits-count').innerText = data.count;
+          } else {
+              document.getElementById('visits-count').innerText = "1";
+          }
       })
       .catch(error => { 
           document.getElementById('visits-count').innerText = "—"; 
