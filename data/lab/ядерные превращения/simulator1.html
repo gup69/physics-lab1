@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Ядерных Превращений</title>
+
+    <style>
+        /* (CSS код без изменений) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #004a99;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+            padding: 0.5rem;
+        }
+        .nav-button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #777;
+        }
+        .nav-button.active {
+            background-color: #007bff;
+        }
+        main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .content-section {
+            display: none; 
+            animation: fadeIn 0.5s;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .task-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #canvas-container {
+            position: relative; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            background-color: #fafafa;
+            min-height: 300px;
+            overflow: hidden; 
+        }
+        .formula-overlay {
+            position: absolute;
+            top: 20px; 
+            left: 0;
+            right: 0;
+            z-index: 10; 
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none; 
+        }
+        .formula-overlay.active {
+            display: block;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .control-button {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .control-button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .simulation-nav {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .sim-button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            margin: 5px; 
+            border-radius: 5px;
+        }
+        .sim-button:hover {
+            background-color: #e0e0e0;
+        }
+        .sim-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        /* Стили для Теста */
+        #user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #user-info div {
+            margin-bottom: 10px;
+        }
+        #user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+        #start-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-quiz:hover {
+            background-color: #0056b3;
+        }
+        .question-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-left: 5px solid #007bff;
+            background: #fdfdfd;
+        }
+        .question-block p {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 0;
+        }
+        .question-block label {
+            display: block;
+            margin: 5px 0 5px 20px;
+            cursor: pointer;
+        }
+        #submit-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; 
+            margin-top: 20px;
+        }
+        
+        
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .modal-content h3 {
+            color: #004a99;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+        }
+        .modal-content #result-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        .modal-content .close-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        #save-results-button {
+            background-color: #28a745;
+            margin-right: 10px;
+        }
+
+        
+        .task-generator {
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        #task-equation {
+            font-size: 2rem; 
+            font-family: 'Times New Roman', Times, serif;
+            margin: 20px 0;
+            padding: 25px;
+            min-height: 50px;
+            line-height: 1.5;
+        }
+        #task-inputs-nucleus {
+            margin-bottom: 20px;
+        }
+        #task-inputs-nucleus span {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        #task-inputs-nucleus input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin: 0 10px;
+            -moz-appearance: textfield;
+        }
+        #task-inputs-nucleus input::-webkit-outer-spin-button,
+        #task-inputs-nucleus input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Стили для выбора частиц */
+        #task-inputs-particle {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #task-inputs-particle input[type="radio"] {
+            display: none; 
+        }
+        #task-inputs-particle label {
+            padding: 10px 20px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-family: 'Times New Roman', Times, serif;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        #task-inputs-particle input[type="radio"]:checked + label {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        #task-inputs-particle label:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .task-controls {
+            margin-top: 15px;
+        }
+        #task-feedback {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 1.5rem;
+            margin-top: 15px;
+        }
+        #task-feedback.correct {
+            color: #28a745;
+        }
+        #task-feedback.incorrect {
+            color: #dc3545;
+        }
+        #check-task-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #new-task-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        
+        .hidden {
+            display: none;
+        }
+        
+        
+        #task-user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #task-user-info div {
+            margin-bottom: 10px;
+        }
+        #task-user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #task-user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+    </style>
+
+</head>
+<body>
+
+    <header>
+        <h1>Виртуальное ПО: Ядерные превращения</h1>
+    </header>
+    <nav>
+        <button class="nav-button active" data-target="theory">Теория</button>
+        <button class="nav-button" data-target="model">Виртуальная модель</button>
+        <button class="nav-button" data-target="questions">Контрольные вопросы</button>
+        <button class="nav-button" data-target="task">Задача</button>
+    </nav>
+    <main>
+        
+        <section id="theory" class="content-section active">
+            <h2>Теория: Радиоактивные распады</h2>
+            <p>Радиоактивность — это спонтанное превращение одних атомных ядер в другие, сопровождающееся испусканием различных частиц и излучений.</p>
+            
+            <hr>
+            <h3>Ключевые понятия и свойства излучений</h3>
+            
+            <h4>Проникающая способность</h4>
+            <p>Различные виды излучения по-разному взаимодействуют с веществом, что определяет их проникающую способность. Это одна из важнейших характеристик радиации, влияющая на способы защиты.</p>
+            
+
+[Image of penetrating power of alpha, beta, and gamma radiation]
+
+            <ul>
+                <li><strong>Альфа-частицы (α):</strong> Это тяжелые, положительно заряженные частицы (ядра гелия). Они быстро теряют энергию при столкновении с атомами вещества и имеют <strong>наименьшую</strong> проникающую способность. Альфа-излучение полностью задерживается листом бумаги или даже внешним слоем кожи.</li>
+                <li><strong>Бета-частицы (β⁻, β⁺):</strong> Это легкие заряженные частицы (электроны или позитроны). Их проникающая способность <strong>средняя</strong>. Они свободно проходят сквозь бумагу, но эффективно задерживаются тонким слоем металла (например, несколькими миллиметрами алюминия) или толстым слоем пластика.</li>
+                <li><strong>Гамма-кванты (γ):</strong> Это высокоэнергетические фотоны (электромагнитное излучение), не имеющие массы и заряда. Они обладают <strong>наибольшей</strong> проникающей способностью и могут проходить через толстые слои плотных материалов. Для защиты от них требуются значительные слои свинца или бетона.</li>
+            </ul>
+
+            <h4>Источник электрона при электронном захвате</h4>
+            <p>При электронном захвате (который часто называют K-захватом) ядро не испускает частицу, а наоборот, <strong>захватывает один из электронов своего же атома</strong>. Чаще всего это электрон, находящийся на <strong>K-оболочке</strong> — самом близком к ядру энергетическом уровне. Реже захватываются электроны с более дальних L- или M-оболочек.</p>
+            <p>K-оболочка является предпочтительной, так как ее электроны имеют наибольшую вероятность "оказаться" внутри объема ядра. После захвата протон в ядре превращается в нейтрон, а освободившееся место на электронной оболочке немедленно заполняется электронами с более высоких уровней. Этот переход сопровождается испусканием характерного рентгеновского излучения.</p>
+
+            <h4>Нейтрино (ν) и антинейтрино (ν̄)</h4>
+            <p>Нейтрино и его античастица, антинейтрино, — это фундаментальные частицы с очень маленькой, но ненулевой массой и без электрического заряда. Они участвуют только в слабом ядерном взаимодействии (и гравитации), из-за чего <strong>чрезвычайно слабо</strong> взаимодействуют с веществом. Они могут пролетать сквозь целую планету, почти не сталкиваясь ни с одним атомом, за что их прозвали "частицами-призраками".</p>
+            <p>Они "рождаются" в процессах бета-распада и необходимы для выполнения законов сохранения энергии и импульса. Без них расчеты показывали, что часть энергии при распаде просто исчезала. Нейтрино и антинейтрино "уносят" эту недостающую энергию:</p>
+            <ul>
+                <li>При <strong>β⁻-распаде</strong> (нейтрон превращается в протон и электрон) испускается <strong>антинейтрино (ν̄ₑ)</strong>.</li>
+                <li>При <strong>β⁺-распаде</strong> (протон превращается в нейтрон и позитрон) испускается <strong>нейтрино (νₑ)</strong>.</li>
+                <li>При <strong>электронном захвате</strong> (протон захватывает электрон и становится нейтроном) также испускается <strong>нейтрино (νₑ)</strong>.</li>
+            </ul>
+            
+            <hr>
+            <h3>1. Альфа-распад (α-распад)</h3>
+            <p><strong>Правило смещения: Элемент превращается в новый элемент, который расположен на 2 клетки <ins>ближе к началу</ins> таблицы Менделеева.</strong></p>
+            <div class="formula"><sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He</div>
+            <hr>
+            <h3>2. Бета-распад (β⁻-распад)</h3>
+            <p><strong>Правило смещения: Элемент превращается в новый элемент, который расположен на 1 клетку <ins>дальше к концу</ins> таблицы Менделеева.</strong></p>
+            <div class="formula"><sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e + ν̄ₑ</div>
+            <hr>
+            <h3>3. Позитронный распад (β⁺-распад)</h3>
+            <p><strong>Правило смещения: Элемент превращается в новый элемент, который расположен на 1 клетку <ins>ближе к началу</ins> таблицы Менделеева.</strong></p>
+            <div class="formula"><sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e + νₑ</div>
+            <hr>
+            <h3>4. Электронный захват (K-захват)</h3>
+            <p><strong>Правило смещения: Элемент превращается в новый элемент, который расположен на 1 клетку <ins>ближе к началу</ins> таблицы Менделеева.</strong></p>
+            <div class="formula"><sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar + νₑ</div>
+            <hr>
+            <h3>5. Гамма-распад (γ-распад)</h3>
+            <p><strong>Правило смещения: Превращения элемента не происходит. Элемент <ins>остается на том же месте</ins> в таблице Менделеева.</strong></p>
+            <div class="formula"><sup>60</sup><sub>27</sub>Co &rarr; <sup>60</sup><sub>27</sub>Co + γ</div>
+        </section>
+
+        <section id="model" class="content-section">
+            <h2>Виртуальная модель ядерных превращений</h2>
+            
+            <p>Выберите тип распада для симуляции. На холсте будет показана анимация выбранного ядерного превращения.</p>
+            
+            <div class="simulation-nav">
+                <button class="sim-button" data-sim="alpha">α-распад (U-238)</button>
+                <button class="sim-button" data-sim="beta">β⁻-распад (C-14)</button>
+                <button class="sim-button" data-sim="gamma">γ-распад (Co-60*)</button>
+                <button class="sim-button" data-sim="positron">β⁺-распад (Na-22)</button>
+                <button class="sim-button" data-sim="capture">Эл. захват (K-40)</button>
+            </div>
+            <div id="canvas-container">
+                <div id="alpha-formula" class="formula-overlay">
+                    <sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He
+                </div>
+                <div id="beta-formula" class="formula-overlay">
+                    <sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e
+                </div>
+                <div id="positron-formula" class="formula-overlay">
+                    <sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e
+                </div>
+                <div id="capture-formula" class="formula-overlay">
+                    <sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar
+                </div>
+                <div id="gamma-formula" class="formula-overlay">
+                    <sup>60</sup><sub>27</sub>Co* &rarr; <sup>60</sup><sub>27</sub>Co + &gamma;
+                </div>
+            </div>
+            <div class="controls">
+                <button id="start-button" class="control-button">Старт</button>
+                <button id="reset-button" class="control-button">Перезапустить</button>
+            </div>
+        </section>
+        
+        <section id="questions" class="content-section">
+            <h2>Контрольные вопросы</h2>
+            <div id="user-info">
+                <p>Введите ваши данные, чтобы начать тест (10 случайных вопросов).</p>
+                <div>
+                    <label for="student-name">ФИО:</label>
+                    <input type="text" id="student-name" placeholder="Например, Иванов Иван Иванович">
+                </div>
+                <div>
+                    <label for="student-group">Группа:</label>
+                    <input type="text" id="student-group" placeholder="Например, ФЗ-21">
+                </div>
+                <button id="start-quiz">Начать тест</button>
+            </div>
+            <div id="quiz-container"></div>
+            <button id="submit-quiz">Проверить ответы</button>
+            
+            <div id="results-modal" class="modal">
+                <div class="modal-content">
+                    <h3>Результаты теста</h3>
+                    <p><strong>Студент:</strong> <span id="result-name"></span></p>
+                    <p><strong>Группа:</strong> <span id="result-group"></span></p>
+                    <p>Ваш результат:</p>
+                    <div id="result-score">0%</div>
+                    <button id="save-results-button" class="close-button">Сохранить в файл</button>
+                    <button id="close-modal-btn" class="close-button">Закрыть</button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="task" class="content-section">
+            <h2>Задача: Завершите уравнение</h2>
+            
+            <div id="task-user-info">
+                <p>Введите ваши данные, чтобы начать сессию решения задач.</p>
+                <div>
+                    <label for="task-student-name">ФИО:</label>
+                    <input type="text" id="task-student-name" placeholder="Например, Иванов Иван Иванович">
+                </div>
+                <div>
+                    <label for="task-student-group">Группа:</label>
+                    <input type="text" id="task-student-group" placeholder="Например, ФЗ-21">
+                </div>
+                <button id="start-task-session" class="control-button" style="background-color: #007bff; color: white;">Начать</button>
+            </div>
+
+            <div id="task-container-main" class="task-generator hidden">
+                <p>Определите недостающий элемент (<sup>?</sup><sub>??</sub>X) или частицу (?).</p>
+                
+                <div id="task-equation" class="formula">
+                    ...
+                </div>
+                
+                <div id="task-inputs-nucleus">
+                    <span>A = </span>
+                    <input type="number" id="task-ans-a" placeholder="?">
+                    <span>Z = </span>
+                    <input type="number" id="task-ans-z" placeholder="??">
+                </div>
+                
+                <div id="task-inputs-particle" class="hidden">
+                    <input type="radio" name="task-particle" id="part-alpha" value="alpha">
+                    <label for="part-alpha">α (<sup>4</sup><sub>2</sub>He)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-m" value="beta-">
+                    <label for="part-beta-m">β⁻ (<sup>0</sup><sub>-1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-p" value="beta+">
+                    <label for="part-beta-p">β⁺ (<sup>0</sup><sub>+1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-capture" value="capture">
+                    <label for="part-capture">e⁻ (захват)</label>
+                </div>
+                
+                <div class="task-controls">
+                    <button id="new-task-btn" class="control-button">Новая задача</button>
+                    <button id="check-task-btn" class="control-button">Проверить ответ</button>
+                    <button id="save-task-btn" class="control-button" style="background-color: #28a745; color: white;">Завершить и сохранить</button>
+                </div>
+                
+                <div id="task-feedback"></div>
+            </div>
+        </section>
+    </main>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        let isSimulationInitialized = false;
+        let isTaskInitialized = false;
+
+        const navButtons = document.querySelectorAll('.nav-button');
+        const contentSections = document.querySelectorAll('.content-section');
+        
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const targetId = button.dataset.target;
+                
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                const targetSection = document.getElementById(targetId);
+                targetSection.classList.add('active');
+
+                // Инициализация Симуляции при первом клике
+                if (targetId === 'model' && !isSimulationInitialized) {
+                    document.querySelector('.sim-button[data-sim="alpha"]').click();
+                    isSimulationInitialized = true;
+                }
+                
+                // Инициализация Задачи (теперь по кнопке)
+                // (Флаг isTaskInitialized оставлен для будущих нужд, если понадобится)
+            });
+        });
+
+        
+        
+        const startButton = document.getElementById('start-button');
+        const resetButton = document.getElementById('reset-button');
+        const simButtons = document.querySelectorAll('.sim-button');
+        const formulaOverlays = document.querySelectorAll('.formula-overlay');
+        let myp5; // Переменная для хранения экземпляра p5
+
+        
+        class Particle {
+            constructor(x, y, size, label, color) { this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.size = size; this.label = label; this.color = color; }
+            move() { this.x += this.vx; this.y += this.vy; }
+            draw(p) { p.fill(this.color); p.stroke(0); p.strokeWeight(2); p.ellipse(this.x, this.y, this.size, this.size); p.fill(0); p.noStroke(); p.textSize(this.size > 50 ? 18 : 14); p.textAlign(p.CENTER, p.CENTER); p.text(this.label, this.x, this.y); }
+        }
+        
+        
+        class GammaRay { 
+            constructor(x, y, angle) { this.x = x; this.y = y; this.angle = angle; this.vx = 4 * Math.cos(angle); this.vy = 4 * Math.sin(angle); this.length = 0; this.amplitude = 10; this.frequency = 0.5; }
+            move() { this.length += 4; }
+            draw(p) { p.noFill(); p.stroke(255, 200, 0); p.strokeWeight(2); p.beginShape(); for (let i = 0; i < this.length; i++) { let offset = this.amplitude * Math.sin(i * this.frequency); let x = this.x + (i * Math.cos(this.angle)) + (offset * -Math.sin(this.angle)); let y = this.y + (i * Math.sin(this.angle)) + (offset * Math.cos(this.angle)); p.vertex(x, y); } p.endShape(); let endX = this.x + (this.length * Math.cos(this.angle)); let endY = this.y + (this.length * Math.sin(this.angle)); p.fill(0); p.noStroke(); p.textSize(16); p.text("γ", endX, endY); }
+        }
+        
+        
+        let createAlphaSketch = (p) => { 
+            let uranium, thorium, alphaParticle; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': uranium.draw(p); break; 
+                    case 'decaying': thorium.move(); alphaParticle.move(); thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); if (p.dist(p.width / 2, p.height / 2, alphaParticle.x, alphaParticle.y) > stopDistance) { decayState = 'after'; thorium.vx = 0; thorium.vy = 0; alphaParticle.vx = 0; alphaParticle.vy = 0; } break; 
+                    case 'after': thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; uranium = new Particle(startX, startY, 120, "U-238", p.color(0, 0, 255)); thorium = new Particle(startX, startY, 90, "Th-234", p.color(0, 100, 200)); alphaParticle = new Particle(startX, startY, 30, "α", p.color(255, 0, 0)); let alphaSpeed = 3, thoriumSpeed = 3; let angle_alpha = -p.PI / 4, angle_thorium = angle_alpha + p.PI; alphaParticle.vx = alphaSpeed * p.cos(angle_alpha); alphaParticle.vy = alphaSpeed * p.sin(angle_alpha); thorium.vx = thoriumSpeed * p.sin(angle_thorium); thorium.vy = thoriumSpeed * p.sin(angle_thorium); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Скетч 2: Бета-распад (C-14) ---
+        let createBetaSketch = (p) => { 
+            let carbon, nitrogen, electron; let decayState; let stopDistance = 180;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': carbon.draw(p); break; 
+                    case 'decaying': electron.move(); nitrogen.move(); electron.draw(p); nitrogen.draw(p); carbon.draw(p); if (p.dist(p.width / 2, p.height / 2, electron.x, electron.y) > stopDistance) { decayState = 'after'; electron.vx = 0; electron.vy = 0; nitrogen.vx = 0; nitrogen.vy = 0; } break; 
+                    case 'after': electron.draw(p); nitrogen.draw(p); carbon.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; carbon = new Particle(startX, startY, 100, "C-14", p.color(100, 100, 100)); nitrogen = new Particle(startX, startY, 100, "N-14", p.color(0, 150, 0)); electron = new Particle(startX, startY, 20, "e⁻", p.color(255, 255, 0)); let electronSpeed = 3; let recoilSpeed = 2.3; let angle_electron = -p.PI / 4; let angle_recoil = angle_electron + p.PI; electron.vx = electronSpeed * p.cos(angle_electron); electron.vy = electronSpeed * p.sin(angle_electron); nitrogen.vx = recoilSpeed * p.sin(angle_recoil); nitrogen.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createGammaSketch = (p) => { 
+            let cobaltStar, cobalt, gamma; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': let x = cobaltStar.x + p.random(-1, 1); let y = cobaltStar.y + p.random(-1, 1); p.fill(cobaltStar.color); p.stroke(0); p.strokeWeight(2); p.ellipse(x, y, cobaltStar.size, cobaltStar.size); p.fill(0); p.noStroke(); p.textSize(18); p.textAlign(p.CENTER, p.CENTER); p.text(cobaltStar.label, cobaltStar.x, cobaltStar.y); break; case 'decaying': gamma.move(); gamma.draw(p); cobalt.draw(p); if (gamma.length > stopDistance) { decayState = 'after'; } break; case 'after': gamma.draw(p); cobalt.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; cobaltStar = new Particle(startX, startY, 110, "Co-60*", p.color(200, 0, 200)); cobalt = new Particle(startX, startY, 110, "Co-60", p.color(150, 0, 150)); gamma = new GammaRay(startX, startY, -p.PI / 4); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createPositronSketch = (p) => {
+            let sodium, neon, positron; let decayState; let stopDistance = 110;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': sodium.draw(p); break; 
+                    case 'decaying': positron.move(); neon.move(); positron.draw(p); neon.draw(p); sodium.draw(p); if (p.dist(p.width / 2, p.height / 2, positron.x, positron.y) > stopDistance) { decayState = 'after'; positron.vx = 0; positron.vy = 0; neon.vx = 0; neon.vy = 0; } break; 
+                    case 'after': positron.draw(p); neon.draw(p); sodium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; sodium = new Particle(startX, startY, 100, "Na-22", p.color(200, 100, 0)); neon = new Particle(startX, startY, 100, "Ne-22", p.color(255, 150, 0)); positron = new Particle(startX, startY, 20, "e⁺", p.color(0, 200, 200)); let positronSpeed = 3; let recoilSpeed = 3; let angle_positron = -p.PI / 4; let angle_recoil = angle_positron + p.PI; positron.vx = positronSpeed * p.cos(angle_positron); positron.vy = positronSpeed * p.sin(angle_positron); neon.vx = recoilSpeed * p.sin(angle_recoil); neon.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createCaptureSketch = (p) => {
+            let potassium, argon, electron; let decayState; let stopDistance = 150;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': potassium.draw(p); electron.x = p.width / 2 + p.cos(p.frameCount * 0.05) * (stopDistance / 2); electron.y = p.height / 2 + p.sin(p.frameCount * 0.05) * (stopDistance / 2); electron.draw(p); break; case 'decaying': electron.move(); potassium.draw(p); electron.draw(p); if (p.dist(potassium.x, potassium.y, electron.x, electron.y) < potassium.size / 2) { decayState = 'after'; } break; case 'after': argon.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; potassium = new Particle(startX, startY, 110, "K-40", p.color(0, 150, 150)); argon = new Particle(startX, startY, 110, "Ar-40", p.color(100, 50, 150)); let electronStartX = startX + stopDistance; let electronStartY = startY; electron = new Particle(electronStartX, electronStartY, 20, "e⁻", p.color(255, 255, 0)); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { let angle = p.atan2(potassium.y - electron.y, potassium.x - electron.x); let speed = 4; electron.vx = speed * p.cos(angle); electron.vy = speed * p.sin(angle); decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        simButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                simButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                if (myp5) { myp5.remove(); } // Удаляем старый скетч
+                formulaOverlays.forEach(overlay => overlay.classList.remove('active'));
+                const simType = button.dataset.sim;
+                let targetFormulaId;
+                
+                
+                if (simType === 'alpha') { myp5 = new p5(createAlphaSketch); targetFormulaId = 'alpha-formula'; } 
+                else if (simType === 'beta') { myp5 = new p5(createBetaSketch); targetFormulaId = 'beta-formula'; } 
+                else if (simType === 'gamma') { myp5 = new p5(createGammaSketch); targetFormulaId = 'gamma-formula'; } 
+                else if (simType === 'positron') { myp5 = new p5(createPositronSketch); targetFormulaId = 'positron-formula'; } 
+                else if (simType === 'capture') { myp5 = new p5(createCaptureSketch); targetFormulaId = 'capture-formula'; }
+                
+                if(targetFormulaId) { document.getElementById(targetFormulaId).classList.add('active'); }
+                setTimeout(() => { resetButton.click(); }, 100); // Сбрасываем симуляцию
+            });
+        });
+        
+        
+        startButton.addEventListener('click', () => { if (myp5) myp5.startDecay(); });
+        resetButton.addEventListener('click', () => { if (myp5) myp5.resetSimulation(); });
+        
+
+        
+               const questionBank = [
+            
+            { question: "Что такое альфа-частица?", answers: [{ text: "Ядро атома гелия (2 протона, 2 нейтрона)", correct: true }, { text: "Быстрый электрон", correct: false }, { text: "Фотон высокой энергии", correct: false }, { text: "Позитрон", correct: false }] },
+            { question: "Как изменяется заряд ядра при альфа-распаде?", answers: [{ text: "Уменьшается на 2", correct: true }, { text: "Увеличивается на 1", correct: false }, { text: "Не изменяется", correct: false }, { text: "Уменьшается на 1", correct: false }] },
+            { question: "Как изменяется массовое число (A) при альфа-распаде?", answers: [{ text: "Уменьшается на 4", correct: true }, { text: "Уменьшается на 2", correct: false }, { text: "Не изменяется", correct: false }, { text: "Увеличивается на 1", correct: false }] },
+            { question: "Какой элемент образуется при альфа-распаде Урана-238 (<sub>92</sub>U)?", answers: [{ text: "Торий-234 (<sub>90</sub>Th)", correct: true }, { text: "Протактиний-238 (<sub>91</sub>Pa)", correct: false }, { text: "Радий-234 (<sub>88</sub>Ra)", correct: false }, { text: "Уран-234 (<sub>92</sub>U)", correct: false }] },
+            { question: "Каков заряд альфа-частицы?", answers: [{ text: "+2e", correct: true }, { text: "-1e", correct: false }, { text: "0", correct: false }, { text: "+1e", correct: false }] },
+            { question: "Какое излучение обладает наименьшей проникающей способностью и задерживается листом бумаги?", answers: [{ text: "Альфа-излучение", correct: true }, { text: "Бета-излучение", correct: false }, { text: "Гамма-излучение", correct: false }, { text: "Нейтронное излучение", correct: false }] },
+            { question: "В какой элемент превратится Полоний-210 (<sub>84</sub>Po) после альфа-распада?", answers: [{ text: "Свинец-206 (<sub>82</sub>Pb)", correct: true }, { text: "Висмут-210 (<sub>83</sub>Bi)", correct: false }, { text: "Радон-214 (<sub>86</sub>Rn)", correct: false }, { text: "Астат-210 (<sub>85</sub>At)", correct: false }] },
+            { question: "Сколько протонов в ядре Тория-234 (<sub>90</sub>Th)?", answers: [{ text: "90", correct: true }, { text: "234", correct: false }, { text: "144", correct: false }, { text: "92", correct: false }] },
+            { question: "Сколько нейтронов в ядре <sup>4</sup><sub>2</sub>He?", answers: [{ text: "2", correct: true }, { text: "4", correct: false }, { text: "0", correct: false }, { text: "1", correct: false }] },
+            { question: "Правило смещения для альфа-распада гласит, что элемент смещается...", answers: [{ text: "На 2 клетки к началу таблицы Менделеева", correct: true }, { text: "На 1 клетку к концу таблицы Менделеева", correct: false }, { text: "На 4 клетки к началу таблицы Менделеева", correct: false }, { text: "Не смещается", correct: false }] },
+            
+            
+            { question: "Что такое бета-минус (β⁻) частица?", answers: [{ text: "Электрон", correct: true }, { text: "Протон", correct: false }, { text: "Позитрон", correct: false }, { text: "Нейтрон", correct: false }] },
+            { question: "Что происходит с нейтроном при β⁻-распаде?", answers: [{ text: "Превращается в протон", correct: true }, { text: "Превращается в позитрон", correct: false }, { text: "Покидает ядро", correct: false }, { text: "Захватывает электрон", correct: false }] },
+            { question: "Как изменяется заряд ядра (Z) при β⁻-распаде?", answers: [{ text: "Увеличивается на 1", correct: true }, { text: "Уменьшается на 1", correct: false }, { text: "Не изменяется", correct: false }, { text: "Уменьшается на 2", correct: false }] },
+            { question: "Как изменяется массовое число (A) при β⁻-распаде?", answers: [{ text: "Не изменяется", correct: true }, { text: "Уменьшается на 1", correct: false }, { text: "Увеличивается на 1", correct: false }, { text: "Уменьшается на 4", correct: false }] },
+            { question: "Какая частица испускается вместе с электроном при β⁻-распаде?", answers: [{ text: "Антинейтрино", correct: true }, { text: "Нейтрино", correct: false }, { text: "Протон", correct: false }, { text: "Гамма-квант", correct: false }] },
+            { question: "Правило смещения для β⁻-распада гласит, что элемент смещается...", answers: [{ text: "На 1 клетку к концу таблицы Менделеева", correct: true }, { text: "На 1 клетку к началу таблицы Менделеева", correct: false }, { text: "На 2 клетки к началу таблицы Менделеева", correct: false }, { text: "Не смещается", correct: false }] },
+            { question: "В какой элемент превратится Торий-234 (<sub>90</sub>Th) после β⁻-распада?", answers: [{ text: "Протактиний-234 (<sub>91</sub>Pa)", correct: true }, { text: "Радий-234 (<sub>88</sub>Ra)", correct: false }, { text: "Уран-234 (<sub>92</sub>U)", correct: false }, { text: "Актиний-234 (<sub>89</sub>Ac)", correct: false }] },
+            { question: "Какой элемент образуется при β⁻-распаде Углерода-14 (<sub>6</sub>C)?", answers: [{ text: "Азот-14 (<sub>7</sub>N)", correct: true }, { text: "Бор-14 (<sub>5</sub>B)", correct: false }, { text: "Углерод-13 (<sub>6</sub>C)", correct: false }, { text: "Кислород-15 (<sub>8</sub>O)", correct: false }] },
+            { question: "Каков заряд β⁻-частицы?", answers: [{ text: "-1e", correct: true }, { text: "+1e", correct: false }, { text: "0", correct: false }, { text: "+2e", correct: false }] },
+            { question: "Какое излучение задерживается алюминиевой пластиной, но проходит через бумагу?", answers: [{ text: "Бета-излучение", correct: true }, { text: "Альфа-излучение", correct: false }, { text: "Гамма-излучение", correct: false }, { text: "Все ответы верны", correct: false }] },
+
+            
+            { question: "Что такое позитрон (β⁺)?", answers: [{ text: "Античастица электрона", correct: true }, { text: "Положительно заряженный протон", correct: false }, { text: "Ядро гелия", correct: false }, { text: "Нейтральная частица", correct: false }] },
+            { question: "Что происходит с протоном при β⁺-распаде?", answers: [{ text: "Превращается в нейтрон", correct: true }, { text: "Превращается в электрон", correct: false }, { text: "Покидает ядро", correct: false }, { text: "Захватывает нейтрон", correct: false }] },
+            { question: "Как изменяется заряд ядра (Z) при β⁺-распаде?", answers: [{ text: "Уменьшается на 1", correct: true }, { text: "Увеличивается на 1", correct: false }, { text: "Не изменяется", correct: false }, { text: "Уменьшается на 2", correct: false }] },
+            { question: "Какая частица испускается вместе с позитроном при β⁺-распаде?", answers: [{ text: "Нейтрино", correct: true }, { text: "Антинейтрино", correct: false }, { text: "Электрон", correct: false }, { text: "Гамма-квант", correct: false }] },
+            { question: "В какой элемент превратится Натрий-22 (<sub>11</sub>Na) после β⁺-распада?", answers: [{ text: "Неон-22 (<sub>10</sub>Ne)", correct: true }, { text: "Магний-22 (<sub>12</sub>Mg)", correct: false }, { text: "Фтор-22 (<sub>9</sub>F)", correct: false }, { text: "Натрий-21 (<sub>11</sub>Na)", correct: false }] },
+
+           
+            { question: "Что происходит при электронном захвате?", answers: [{ text: "Протон захватывает электрон и становится нейтроном", correct: true }, { text: "Нейтрон захватывает электрон и становится протоном", correct: false }, { text: "Ядро испускает электрон", correct: false }, { text: "Ядро захватывает протон", correct: false }] },
+            { question: "Откуда ядро захватывает электрон?", answers: [{ text: "С одной из внутренних электронных оболочек атома", correct: true }, { text: "Из другого атома", correct: false }, { text: "Из плазмы", correct: false }, { text: "Из вакуума", correct: false }] },
+            { question: "Как изменяется заряд ядра (Z) при электронном захвате?", answers: [{ text: "Уменьшается на 1", correct: true }, { text: "Увеличивается на 1", correct: false }, { text: "Не изменяется", correct: false }, { text: "Уменьшается на 2", correct: false }] },
+            { question: "Какой процесс имеет тот же конечный результат для A и Z, что и электронный захват?", answers: [{ text: "Позитронный распад", correct: true }, { text: "Альфа-распад", correct: false }, { text: "Бета-минус распад", correct: false }, { text: "Гамма-распад", correct: false }] },
+            { question: "В какой элемент превратится Калий-40 (<sub>19</sub>K) после электронного захвата?", answers: [{ text: "Аргон-40 (<sub>18</sub>Ar)", correct: true }, { text: "Кальций-40 (<sub>20</sub>Ca)", correct: false }, { text: "Хлор-40 (<sub>17</sub>Cl)", correct: false }, { text: "Калий-39 (<sub>19</sub>K)", correct: false }] },
+
+            
+            { question: "Что такое гамма-квант (γ)?", answers: [{ text: "Фотон очень высокой энергии", correct: true }, { text: "Частица с зарядом +1", correct: false }, { text: "Частица с массой 4", correct: false }, { text: "Электрон из ядра", correct: false }] },
+            { question: "Что происходит с массовым числом (A) и зарядом (Z) ядра при гамма-распаде?", answers: [{ text: "A не меняется, Z не меняется", correct: true }, { text: "A уменьшается на 4, Z уменьшается на 2", correct: false }, { text: "A не меняется, Z увеличивается на 1", correct: false }, { text: "A не меняется, Z уменьшается на 1", correct: false }] },
+            { question: "Почему происходит гамма-распад?", answers: [{ text: "Ядро находится в возбужденном состоянии и сбрасывает избыток энергии", correct: true }, { text: "Ядро слишком тяжелое", correct: false }, { text: "В ядре слишком много нейтронов", correct: false }, { text: "В ядре слишком много протонов", correct: false }] },
+            { question: "Какое излучение обладает самой высокой проникающей способностью?", answers: [{ text: "Гамма-излучение", correct: true }, { text: "Альфа-излучение", correct: false }, { text: "Бета-излучение", correct: false }, { text: "Видимый свет", correct: false }] },
+            { question: "Что означает обозначение Co-60*?", answers: [{ text: "Возбужденное ядро Кобальта-60", correct: true }, { text: "Ион Кобальта-60", correct: false }, { text: "Изотоп Кобальта-59", correct: false }, { text: "Очень редкий изотоп Кобальта", correct: false }] },
+
+            
+            { question: "Что такое радиоактивность?", answers: [{ text: "Спонтанное превращение нестабильных ядер в другие ядра", correct: true }, { text: "Процесс деления тяжелых ядер под действием нейтронов", correct: false }, { text: "Процесс слияния легких ядер", correct: false }, { text: "Химическая реакция с выделением энергии", correct: false }] },
+            { question: "Какой тип распада НЕ приводит к изменению химического элемента?", answers: [{ text: "Гамма-распад", correct: true }, { text: "Альфа-распад", correct: false }, { text: "Бета-распад", correct: false }, { text: "Электронный захват", correct: false }] },
+            { question: "Какой тип распада приводит к увеличению числа протонов в ядре?", answers: [{ text: "Бета-минус (β⁻) распад", correct: true }, { text: "Альфа-распад", correct: false }, { text: "Позитронный (β⁺) распад", correct: false }, { text: "Электронный захват", correct: false }] },
+            { question: "Какие ДВА типа распада приводят к уменьшению числа протонов в ядре?", answers: [{ text: "Позитронный распад и Электронный захват", correct: true }, { text: "Альфа-распад и Бета-минус распад", correct: false }, { text: "Гамма-распад и Альфа-распад", correct: false }, { text: "Бета-минус распад и Гамма-распад", correct: false }] },
+            { question: "Что такое нуклон?", answers: [{ text: "Общее название для протона и нейтрона", correct: true }, { text: "Только протон", correct: false }, { text: "Только нейтрон", correct: false }, { text: "Частица, вращающаяся вокруг ядра", correct: false }] },
+            { question: "Что означает 'Z' в обозначении <sup>A</sup><sub>Z</sub>X?", answers: [{ text: "Зарядовое число (число протонов)", correct: true }, { text: "Массовое число (число нуклонов)", correct: false }, { text: "Число нейтронов", correct: false }, { text: "Химический символ", correct: false }] },
+            { question: "Что означает 'A' в обозначении <sup>A</sup><sub>Z</sub>X?", answers: [{ text: "Массовое число (число нуклонов)", correct: true }, { text: "Зарядовое число (число протонов)", correct: false }, { text: "Число нейтронов", correct: false }, { text: "Число электронов", correct: false }] },
+            { question: "Как найти число нейтронов (N) в ядре?", answers: [{ text: "N = A - Z", correct: true }, { text: "N = A + Z", correct: false }, { text: "N = Z", correct: false }, { text: "N = A", correct: false }] },
+            { question: "Сколько нейтронов в ядре Урана-238 (<sup>238</sup><sub>92</sub>U)?", answers: [{ text: "146", correct: true }, { text: "92", correct: false }, { text: "238", correct: false }, { text: "330", correct: false }] },
+            { question: "Ядро <sup>210</sup><sub>83</sub>Bi испытало β⁻-распад. Что получилось?", answers: [{ text: "<sup>210</sup><sub>84</sub>Po", correct: true }, { text: "<sup>206</sup><sub>81</sub>Tl", correct: false }, { text: "<sup>210</sup><sub>82</sub>Pb", correct: false }, { text: "<sup>211</sup><sub>83</sub>Bi", correct: false }] },
+            { question: "Ядро <sup>226</sup><sub>88</sub>Ra испытало α-распад. Что получилось?", answers: [{ text: "<sup>222</sup><sub>86</sub>Rn", correct: true }, { text: "<sup>222</sup><sub>87</sub>Fr", correct: false }, { text: "<sup>226</sup><sub>89</sub>Ac", correct: false }, { text: "<sup>222</sup><sub>84</sub>Po", correct: false }] },
+            { question: "Ядро <sup>13</sup><sub>7</sub>N испытало β⁺-распад. Что получилось?", answers: [{ text: "<sup>13</sup><sub>6</sub>C", correct: true }, { text: "<sup>13</sup><sub>8</sub>O", correct: false }, { text: "<sup>12</sup><sub>6</sub>C", correct: false }, { text: "<sup>14</sup><sub>7</sub>N", correct: false }] },
+            { question: "Ядро <sup>7</sup><sub>4</sub>Be испытало электронный захват. Что получилось?", answers: [{ text: "<sup>7</sup><sub>3</sub>Li", correct: true }, { text: "<sup>7</sup><sub>5</sub>B", correct: false }, { text: "<sup>8</sup><sub>4</sub>Be", correct: false }, { text: "<sup>6</sup><sub>3</sub>Li", correct: false }] },
+            { question: "Что такое 'правило смещения'?", answers: [{ text: "Правило, описывающее, на сколько клеток смещается элемент в таблице Менделеева", correct: true }, { text: "Правило расчета энергии распада", correct: false }, { text: "Правило расчета периода полураспада", correct: false }, { text: "Правило построения ядра", correct: false }] },
+            { question: "Что такое 'нейтрино' и 'антинейтрино'?", answers: [{ text: "Очень легкие (или безмассовые) нейтральные частицы", correct: true }, { text: "Положительные и отрицательные электроны", correct: false }, { text: "Компоненты альфа-частицы", correct: false }, { text: "Синонимы нейтрона", correct: false }] }
+        ];
+
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function downloadFile(filename, text) {
+            const element = document.createElement('a');
+            const bom = "\uFEFF"; 
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(bom + text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        
+        const userInfoDiv = document.getElementById('user-info');
+        const startQuizBtn = document.getElementById('start-quiz');
+        const quizContainer = document.getElementById('quiz-container');
+        const submitQuizBtn = document.getElementById('submit-quiz');
+        const resultsModal = document.getElementById('results-modal');
+        const resultName = document.getElementById('result-name');
+        const resultGroup = document.getElementById('result-group');
+        const resultScore = document.getElementById('result-score');
+        const saveResultsBtn = document.getElementById('save-results-button');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        
+        let studentName = "";
+        let studentGroup = "";
+
+        
+        startQuizBtn.addEventListener('click', () => {
+            studentName = document.getElementById('student-name').value;
+            studentGroup = document.getElementById('student-group').value;
+            if (studentName.trim() === "" || studentGroup.trim() === "") {
+                alert("Пожалуйста, заполните ФИО и Группу.");
+                return;
+            }
+            userInfoDiv.style.display = 'none';
+            loadTest();
+        });
+
+        function loadTest() {
+            const questionsToShow = shuffleArray([...questionBank]).slice(0, 10);
+            let quizHTML = "";
+            questionsToShow.forEach((q, index) => {
+                const shuffledAnswers = shuffleArray([...q.answers]);
+                let answersHTML = "";
+                shuffledAnswers.forEach(answer => {
+                    answersHTML += `<label><input type="radio" name="question${index}" value="${answer.correct}"> ${answer.text}</label>`;
+                });
+                quizHTML += `<div class="question-block"><p>${index + 1}. ${q.question}</p>${answersHTML}</div>`;
+            });
+            quizContainer.innerHTML = quizHTML;
+            submitQuizBtn.style.display = 'block';
+        }
+
+        submitQuizBtn.addEventListener('click', () => {
+            let correctAnswers = 0;
+            const totalQuestions = 10;
+            for (let i = 0; i < totalQuestions; i++) {
+                const selectedAnswer = document.querySelector(`input[name="question${i}"]:checked`);
+                if (selectedAnswer && selectedAnswer.value === 'true') {
+                    correctAnswers++;
+                }
+            }
+            const score = (correctAnswers / totalQuestions) * 100;
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('ru-RU'); 
+            const newResultEntry = `
+--------------------------------
+Дата: ${dateTimeString}
+Студент: ${studentName}
+Группа: ${studentGroup}
+Результат: ${score.toFixed(0)}%
+--------------------------------
+`;
+            let allResults = localStorage.getItem('quizResults') || "=== История результатов тестирования ===";
+            allResults += newResultEntry;
+            localStorage.setItem('quizResults', allResults);
+
+            resultName.textContent = studentName;
+            resultGroup.textContent = studentGroup;
+            resultScore.textContent = `${score.toFixed(0)}%`;
+            resultsModal.style.display = 'block';
+        });
+        
+        saveResultsBtn.addEventListener('click', () => {
+            const resultsToSave = localStorage.getItem('quizResults');
+            if (resultsToSave) {
+                downloadFile('quiz_results.txt', resultsToSave);
+            } else {
+                alert('Нет результатов для сохранения.');
+            }
+        });
+        
+        closeModalBtn.addEventListener('click', () => {
+            resultsModal.style.display = 'none'; 
+            quizContainer.innerHTML = ''; 
+            submitQuizBtn.style.display = 'none'; 
+            userInfoDiv.style.display = 'block'; 
+        });
+
+        
+        const taskUserInfo = document.getElementById('task-user-info');
+        const taskStudentName = document.getElementById('task-student-name');
+        const taskStudentGroup = document.getElementById('task-student-group');
+        const startTaskSessionBtn = document.getElementById('start-task-session');
+        const taskContainerMain = document.getElementById('task-container-main');
+        
+        const taskEquation = document.getElementById('task-equation');
+        const taskInputsNucleus = document.getElementById('task-inputs-nucleus');
+        const taskInputsParticle = document.getElementById('task-inputs-particle');
+        const taskAnsA = document.getElementById('task-ans-a');
+        const taskAnsZ = document.getElementById('task-ans-z');
+        
+        const newTaskBtn = document.getElementById('new-task-btn');
+        const checkTaskBtn = document.getElementById('check-task-btn');
+        const saveTaskBtn = document.getElementById('save-task-btn');
+        
+        const taskFeedback = document.getElementById('task-feedback');
+        
+        // --- Переменные для хранения ответа и статистики ---
+        let currentTaskType = 'findProduct'; 
+        let currentTaskSolution = { A: 0, Z: 0 };
+        let currentParticleSolution = ''; 
+        
+        let currentTaskStudentName = "";
+        let currentTaskStudentGroup = "";
+        let correctTaskCount = 0;
+        let incorrectTaskCount = 0;
+        
+        
+        const taskTemplates = [
+            { type: 'alpha',   parent: {A: 238, Z: 92, X: 'U'},  particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 226, Z: 88, X: 'Ra'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 210, Z: 84, X: 'Po'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 232, Z: 90, X: 'Th'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'beta-',   parent: {A: 14,  Z: 6,  X: 'C'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 60,  Z: 27, X: 'Co'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 90,  Z: 38, X: 'Sr'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 234, Z: 90, X: 'Th'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta+',   parent: {A: 22,  Z: 11, X: 'Na'}, particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 13,  Z: 7,  X: 'N'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 18,  Z: 9,  X: 'F'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'capture', parent: {A: 40,  Z: 19, X: 'K'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 7,   Z: 4,  X: 'Be'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 55,  Z: 26, X: 'Fe'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' }
+        ];
+
+        
+        function generateTask() {
+            const task = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
+            const parent = task.parent;
+            
+            
+            const taskTypeRoll = Math.random();
+            if (taskTypeRoll < 0.45) {
+                currentTaskType = 'findProduct';
+            } else if (taskTypeRoll < 0.8) {
+                currentTaskType = 'findParent';
+            } else {
+                currentTaskType = 'findParticle';
+            }
+            
+            // Показываем/прячем нужные поля ввода
+            if (currentTaskType === 'findParticle') {
+                taskInputsNucleus.classList.add('hidden');
+                taskInputsParticle.classList.remove('hidden');
+            } else {
+                taskInputsNucleus.classList.remove('hidden');
+                taskInputsParticle.classList.add('hidden');
+            }
+
+            let solutionA = 0;
+            let solutionZ = 0;
+            let taskHTML = "";
+            const unknownNucleus = "<sup>?</sup><sub>??</sub>X";
+            const knownParticle = task.particle;
+            const parentHTML = `<sup>${parent.A}</sup><sub>${parent.Z}</sub>${parent.X}`;
+            
+            
+            switch (task.type) {
+                case 'alpha':
+                    solutionA = parent.A - 4;
+                    solutionZ = parent.Z - 2;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta-':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z + 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta+':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'capture':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} + ${knownParticle} &rarr; ${unknownNucleus}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} + ${knownParticle} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} + ? &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+            }
+            
+            
+            taskEquation.innerHTML = taskHTML;
+            taskFeedback.textContent = `(Правильно: ${correctTaskCount}, Неправильно: ${incorrectTaskCount})`;
+            taskFeedback.className = "";
+            taskAnsA.value = "";
+            taskAnsZ.value = "";
+            document.querySelectorAll('input[name="task-particle"]').forEach(radio => radio.checked = false);
+        }
+
+        
+        function checkTask() {
+            let isCorrect = false; 
+            
+            if (currentTaskType === 'findParticle') {
+                const selectedParticle = document.querySelector('input[name="task-particle"]:checked');
+                if (!selectedParticle) {
+                    taskFeedback.textContent = "Пожалуйста, выберите тип распада.";
+                    taskFeedback.className = "incorrect";
+                    return; 
+                }
+                isCorrect = (selectedParticle.value === currentParticleSolution);
+
+            } else {
+                const userA = parseInt(taskAnsA.value, 10);
+                const userZ = parseInt(taskAnsZ.value, 10);
+                
+                if (isNaN(userA) || isNaN(userZ)) {
+                    taskFeedback.textContent = "Пожалуйста, введите оба числа (A и Z).";
+                    taskFeedback.className = "incorrect";
+                    return; 
+                }
+                isCorrect = (userA === currentTaskSolution.A && userZ === currentTaskSolution.Z);
+            }
+            
+            
+            if (isCorrect) {
+                correctTaskCount++;
+                taskFeedback.textContent = `Верно! (Правильно: ${correctTaskCount}, Неправильно: ${incorrectTaskCount})`;
+                taskFeedback.className = "correct";
+            } else {
+                incorrectTaskCount++;
+                taskFeedback.textContent = `Неверно. (Правильно: ${correctTaskCount}, Неправильно: ${incorrectTaskCount})`;
+                if (currentTaskType !== 'findParticle') {
+                    if (parseInt(taskAnsA.value, 10) !== currentTaskSolution.A) taskFeedback.textContent += " Проверьте A. ";
+                    if (parseInt(taskAnsZ.value, 10) !== currentTaskSolution.Z) taskFeedback.textContent += " Проверьте Z.";
+                }
+                taskFeedback.className = "incorrect";
+            }
+        }
+        
+       
+        startTaskSessionBtn.addEventListener('click', () => {
+            currentTaskStudentName = taskStudentName.value;
+            currentTaskStudentGroup = taskStudentGroup.value;
+            
+            if (currentTaskStudentName.trim() === "" || currentTaskStudentGroup.trim() === "") {
+                alert("Пожалуйста, заполните ФИО и Группу.");
+                return;
+            }
+
+            correctTaskCount = 0;
+            incorrectTaskCount = 0;
+            
+            taskUserInfo.classList.add('hidden');
+            taskContainerMain.classList.remove('hidden');
+            
+            generateTask();
+        });
+
+        
+        newTaskBtn.addEventListener('click', generateTask);
+        
+        
+        checkTaskBtn.addEventListener('click', checkTask);
+        
+        
+        saveTaskBtn.addEventListener('click', () => {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('ru-RU'); 
+            
+            const newResultEntry = `
+--------------------------------
+Дата: ${dateTimeString}
+Студент: ${currentTaskStudentName}
+Группа: ${currentTaskStudentGroup}
+---
+Правильно: ${correctTaskCount}
+Неправильно: ${incorrectTaskCount}
+--------------------------------
+`;
+            let allResults = localStorage.getItem('taskResults') || "=== История решений задач ===";
+            allResults += newResultEntry;
+            localStorage.setItem('taskResults', allResults);
+            
+            downloadFile('task_results.txt', allResults);
+
+            
+            taskContainerMain.classList.add('hidden');
+            taskUserInfo.classList.remove('hidden');
+            
+            taskStudentName.value = "";
+            taskStudentGroup.value = "";
+            taskEquation.innerHTML = "Нажмите 'Начать', чтобы сгенерировать задачу";
+            taskFeedback.textContent = "";
+            taskFeedback.className = "";
+        });
+
+
+    }); 
+    </script>
+</body>
+</html>

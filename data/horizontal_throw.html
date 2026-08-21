@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Движение тела, брошенного горизонтально</title>
+  
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --bg: #F0F4FF;
+      --text: #1E293B;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.9);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+    
+    .top-bar { width: 100%; max-width: 1200px; display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255, 255, 255, 0.5); padding: 4px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.8); }
+    .lang-btn { background: transparent; border: none; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { color: #4F46E5; }
+    .lang-btn.active { background: #FFFFFF; color: #4F46E5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .header { text-align: center; margin-bottom: 30px; max-width: 800px; }
+    .header h1 { font-size: 2rem; color: #0F172A; margin-bottom: 10px; line-height: 1.2; }
+    .app-container { display: flex; flex-wrap: wrap; gap: 30px; max-width: 1200px; width: 100%; justify-content: center; }
+    .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(31, 38, 135, 0.05); }
+
+    .lab-setup { flex: 1; min-width: 500px; display: flex; flex-direction: column; align-items: center; }
+    .experiment-area { width: 100%; height: 350px; position: relative; margin-top: 20px; border-bottom: 4px solid #64748B; background: linear-gradient(to bottom, transparent 95%, #E2E8F0 100%); }
+    
+    .table-stand { position: absolute; left: 20px; bottom: 0; width: 6px; background: #475569; border-radius: 3px 3px 0 0; transition: height 0.3s; }
+    .ramp { position: absolute; left: 20px; width: 70px; height: 60px; border-left: 6px solid #94A3B8; border-bottom: 6px solid #94A3B8; border-bottom-left-radius: 70px; border-top: none; border-right: none; transition: bottom 0.3s; }
+    .ball { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #F1F5F9, #1E293B); border-radius: 50%; position: absolute; z-index: 10; box-shadow: -2px 2px 4px rgba(0,0,0,0.4); }
+    
+    .ruler-floor { position: absolute; bottom: -20px; left: 90px; right: 0; height: 15px; display: flex; }
+    .ruler-tick { flex: 1; border-left: 1px solid #94A3B8; height: 8px; position: relative; }
+    .ruler-tick:nth-child(5n+1) { height: 12px; border-left: 2px solid #475569; }
+    
+    .marker { position: absolute; bottom: 0; width: 6px; height: 6px; background: #EF4444; border-radius: 50%; transform: translateX(-50%); opacity: 0.7; }
+
+    .controls { margin-top: 40px; display: flex; gap: 15px; align-items: center; width: 100%; background: #FFFFFF; padding: 15px 20px; border-radius: 16px; border: 1px solid #E2E8F0; flex-wrap: wrap; }
+    .slider-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+    .slider-group label { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #475569; }
+    input[type=range] { width: 100%; cursor: pointer; }
+
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #2563EB; }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn-reset { background: #EF4444; }
+    .btn-reset:hover { background: #DC2626; }
+    .btn-clear { background: #64748B; }
+    .btn-clear:hover { background: #475569; }
+
+    .result-display { font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #0F172A; background: #F1F5F9; padding: 10px 15px; border-radius: 12px; border: 2px solid #CBD5E1; min-width: 150px; text-align: center; }
+
+    .data-table { flex: 1; min-width: 400px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #FFFFFF; border-radius: 12px; overflow: hidden; }
+    th, td { border: 1px solid #E2E8F0; padding: 10px; text-align: center; font-size: 0.95rem; }
+    th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    
+    .formula-box { margin-top: 20px; background: #EFF6FF; padding: 15px; border-radius: 12px; border: 1px dashed #93C5FD; font-size: 0.9rem; color: #1E3A8A; line-height: 1.6; }
+
+    .verification-box { margin-top: 20px; background: #FFFFFF; padding: 20px; border-radius: 16px; border: 1px solid #E2E8F0; display: none; }
+    .verification-box h3 { font-size: 1.1rem; margin-bottom: 15px; color: #0F172A; }
+    .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .input-group label { font-weight: 600; font-size: 0.95rem; }
+    .input-group input { width: 100px; padding: 8px; border-radius: 8px; border: 1px solid #CBD5E1; text-align: center; font-size: 1rem; }
+    
+    .feedback-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: none; }
+    .feedback-success { background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FBBF24; }
+    .feedback-error { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+    .attempts-info { font-size: 0.85rem; color: #64748B; margin-top: 10px; text-align: right; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 data-i18n="title">Изучение движения тела, брошенного горизонтально</h1>
+    <p data-i18n="desc">Установите высоту стола <b>h</b>. Проведите 5 измерений дальности полета при неизменной высоте.</p>
+  </div>
+
+  <div class="app-container">
+    <div class="glass-panel lab-setup">
+      <div class="experiment-area" id="exp-area">
+        <div class="table-stand" id="table-stand"></div>
+        <div class="ramp" id="ramp"></div>
+        <div class="ball" id="ball"></div>
+        <div class="ruler-floor">
+          <div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div>
+          <div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div>
+          <div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div>
+          <div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div><div class="ruler-tick"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="slider-group">
+          <label><span data-i18n="heightLabel">Высота h, м:</span> <span id="h-val">1.0</span> <span data-i18n="meter">м</span></label>
+          <input type="range" id="h-slider" min="0.5" max="1.5" step="0.1">
+        </div>
+        <div class="result-display"><span data-i18n="distL">l = </span> <span id="l-display">0.00</span> <span data-i18n="meter">м</span></div>
+        <button class="btn" id="btn-start" data-i18n="start">ПУСК</button>
+        <button class="btn btn-reset" id="btn-reset" data-i18n="reset">СБРОС</button>
+        <button class="btn btn-clear" id="btn-clear" data-i18n="newExp">НОВЫЙ ОПЫТ</button>
+      </div>
+    </div>
+
+    <div class="glass-panel data-table">
+      <h3 data-i18n="tableTitle">Таблица измерений</h3>
+      <table>
+        <thead><tr><th>№</th><th data-i18n="tableH">Высота $h$, м</th><th data-i18n="tableL">Дальность $l$, м</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+
+      <div class="formula-box">
+        <span data-i18n="formTitle">Формулы для расчета ($g = 9.8$ м/с²):</span><br>
+        1. $v_0 = l \sqrt{\frac{g}{2h}}$<br>
+        2. $v_{0cp} = \frac{v_{01} + v_{02} + v_{03} + v_{04} + v_{05}}{5}$<br>
+        3. $\Delta v_0 = |v_{0cp} - v_{0i}|$<br>
+        4. $\varepsilon = \frac{\Delta v_{0cp}}{v_{0cp}} \cdot 100\%$
+      </div>
+
+      <div class="verification-box" id="verify-box">
+        <h3 data-i18n="verifTitle">Проверка вычислений</h3>
+        <div class="input-group">
+          <label data-i18n="avgVel">Средняя нач. скорость ($v_{0cp}$), м/с:</label>
+          <input type="number" id="input-v" step="0.01" placeholder="0.00">
+        </div>
+        <div class="input-group">
+          <label data-i18n="relErr">Отн. погрешность ($\varepsilon$), %:</label>
+          <input type="number" id="input-e" step="0.1" placeholder="0.0">
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px;" id="btn-check" data-i18n="checkBtn">ПРОВЕРИТЬ</button>
+        
+        <div class="attempts-info"><span data-i18n="attempts">Осталось попыток:</span> <span id="attempts-left">3</span></div>
+        <div class="feedback-box" id="feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const translations = {
+      ru: {
+        title: "Изучение движения тела, брошенного горизонтально",
+        desc: "Установите высоту стола <b>h</b>. Проведите 5 измерений дальности полета при неизменной высоте.",
+        heightLabel: "Высота h, м:", meter: "м", distL: "l = ",
+        start: "ПУСК", reset: "СБРОС", newExp: "НОВЫЙ ОПЫТ",
+        tableTitle: "Таблица измерений", tableH: "Высота $h$, м", tableL: "Дальность $l$, м",
+        formTitle: "Формулы для расчета ($g = 9.8$ м/с²):", verifTitle: "Проверка вычислений",
+        avgVel: "Средняя нач. скорость ($v_{0cp}$), м/с:", relErr: "Отн. погрешность ($\\varepsilon$), %:",
+        checkBtn: "ПРОВЕРИТЬ", attempts: "Осталось попыток:"
+      },
+      kk: {
+        title: "Көлденең лақтырылған дененің қозғалысын зерттеу",
+        desc: "Үстелдің биіктігін <b>h</b> орнатыңыз. Тұрақты биіктікте ұшу қашықтығын 5 рет өлшеңіз.",
+        heightLabel: "Биіктік h, м:", meter: "м", distL: "l = ",
+        start: "БАСТАУ", reset: "ТАСТАУ", newExp: "ЖАҢА ТӘЖІРИБЕ",
+        tableTitle: "Өлшеулер кестесі", tableH: "Биіктік $h$, м", tableL: "Қашықтық $l$, м",
+        formTitle: "Есептеу формулалары ($g = 9.8$ м/с²):", verifTitle: "Есептеулерді тексеру",
+        avgVel: "Орташа бастапқы жылдамдық ($v_{0cp}$), м/с:", relErr: "Сал. қателік ($\\varepsilon$), %:",
+        checkBtn: "ТЕКСЕРУ", attempts: "Қалған мүмкіндіктер:"
+      },
+      en: {
+        title: "Study of the motion of a body thrown horizontally",
+        desc: "Set the table height <b>h</b>. Take 5 measurements of the flight range at a constant height.",
+        heightLabel: "Height h, m:", meter: "m", distL: "l = ",
+        start: "START", reset: "RESET", newExp: "NEW EXP",
+        tableTitle: "Measurement Table", tableH: "Height $h$, m", tableL: "Range $l$, m",
+        formTitle: "Formulas for calculation ($g = 9.8$ m/s²):", verifTitle: "Verification",
+        avgVel: "Average initial velocity ($v_{0cp}$), m/s:", relErr: "Rel. error ($\\varepsilon$), %:",
+        checkBtn: "CHECK", attempts: "Attempts left:"
+      }
+    };
+
+    const feedbackDict = {
+      ru: {
+        grade: "Оценка", perfect: "Отличный результат!", good: "Хорошо. Ошибка исправлена.", satisfactory: "Удовлетворительно.",
+        calcErr: "Ошибка в вычислениях. Попробуйте еще раз.", fail: "Оценка: 2/10. Правильные ответы:", speedUnit: "м/с", enterNums: "Введите числовые значения."
+      },
+      kk: {
+        grade: "Баға", perfect: "Керемет нәтиже!", good: "Жақсы. Қате түзетілді.", satisfactory: "Қанағаттанарлық.",
+        calcErr: "Есептеуде қате бар. Қайта көріңіз.", fail: "Баға: 2/10. Дұрыс жауаптар:", speedUnit: "м/с", enterNums: "Сандық мәндерді енгізіңіз."
+      },
+      en: {
+        grade: "Grade", perfect: "Excellent result!", good: "Good. Error corrected.", satisfactory: "Satisfactory.",
+        calcErr: "Calculation error. Try again.", fail: "Grade: 2/10. Correct answers:", speedUnit: "m/s", enterNums: "Please enter numeric values."
+      }
+    };
+
+    let currentLang = 'ru';
+    let fbState = { type: null, grade: 0, realV: 0, realE: 0 };
+    const feedback = document.getElementById('feedback');
+
+    function renderFeedback() {
+      if (!fbState.type) {
+        feedback.style.display = 'none';
+        return;
+      }
+      
+      let dict = feedbackDict[currentLang];
+      
+      if (fbState.type === 'success') {
+        let msg = '';
+        if (fbState.grade === 10) msg = dict.perfect;
+        else if (fbState.grade === 8) msg = dict.good;
+        else msg = dict.satisfactory;
+        
+        feedback.innerHTML = `${dict.grade}: ${fbState.grade}/10.<br>${msg}`;
+        feedback.className = 'feedback-box feedback-success';
+        
+      } else if (fbState.type === 'warning') {
+        feedback.innerHTML = dict.calcErr;
+        feedback.className = 'feedback-box feedback-warning';
+        
+      } else if (fbState.type === 'error') {
+        feedback.innerHTML = `${dict.fail}<br>$v_{0cp} \\approx ${fbState.realV.toFixed(2)}$ ${dict.speedUnit}<br>$\\varepsilon \\approx ${fbState.realE.toFixed(1)}\\%$`;
+        feedback.className = 'feedback-box feedback-error';
+        if (typeof MathJax !== 'undefined') MathJax.typesetPromise([feedback]);
+      }
+      feedback.style.display = 'block';
+    }
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const elements = document.querySelectorAll('[data-i18n]');
+      elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) el.innerHTML = translations[lang][key];
+      });
+      renderFeedback();
+      if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+    }
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        changeLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
+    const PIXELS_PER_METER = 150; 
+    const G = 9.8;
+    
+    const expArea = document.getElementById('exp-area');
+    const ball = document.getElementById('ball');
+    const tableStand = document.getElementById('table-stand');
+    const ramp = document.getElementById('ramp');
+    const hSlider = document.getElementById('h-slider');
+    const hVal = document.getElementById('h-val');
+    const lDisplay = document.getElementById('l-display');
+    const btnStart = document.getElementById('btn-start');
+    const btnReset = document.getElementById('btn-reset');
+    const btnClear = document.getElementById('btn-clear');
+    const tableBody = document.getElementById('table-body');
+    const verifyBox = document.getElementById('verify-box');
+    const btnCheck = document.getElementById('btn-check');
+    const spanAttempts = document.getElementById('attempts-left');
+    
+    let heightMeters, heightPixels;
+    let trueV0; 
+    let isRunning = false;
+    let attemptCount = 0;
+    let startTime = 0;
+    let animationFrame;
+    let recordedData = []; 
+    let checksLeft = 3;
+
+    function initSetup() {
+      hSlider.value = (Math.floor(Math.random() * 11) + 5) / 10;
+      trueV0 = (Math.floor(Math.random() * 21) + 20) / 10; 
+      updateVisuals();
+    }
+
+    function updateVisuals() {
+      heightMeters = parseFloat(hSlider.value);
+      hVal.innerText = heightMeters.toFixed(1);
+      heightPixels = heightMeters * PIXELS_PER_METER;
+      
+      tableStand.style.height = `${heightPixels}px`;
+      ramp.style.bottom = `${heightPixels}px`;
+      
+      ball.style.bottom = `${heightPixels + 54}px`;
+      ball.style.left = '16px';
+    }
+
+    hSlider.addEventListener('input', () => { if(!isRunning && attemptCount === 0) updateVisuals(); });
+
+    function initTable() {
+      tableBody.innerHTML = '';
+      for(let i = 1; i <= 5; i++) {
+        tableBody.innerHTML += `<tr><td>${i}</td><td id="h-${i}">-</td><td id="l-${i}">-</td></tr>`;
+      }
+    }
+    
+    window.onload = () => { initSetup(); initTable(); };
+
+    btnStart.addEventListener('click', () => {
+      if (isRunning || attemptCount >= 5) return;
+      isRunning = true;
+      btnStart.disabled = true;
+      hSlider.disabled = true; 
+      
+      startTime = performance.now();
+      requestAnimationFrame(updatePhysics);
+    });
+
+    function updatePhysics(currentTime) {
+      let t = (currentTime - startTime) / 1000;
+      
+      let vExitPixels = trueV0 * PIXELS_PER_METER;
+      let rollTime = (2 * 74) / vExitPixels; 
+      
+      if (t < rollTime) {
+        let u = t / rollTime; 
+        let currentX = 16 + 74 * (u * u);
+        let currentY = heightPixels + 54 * (1 - u) * (1 - u);
+        
+        ball.style.left = `${currentX}px`;
+        ball.style.bottom = `${currentY}px`;
+        animationFrame = requestAnimationFrame(updatePhysics);
+        return;
+      }
+      
+      let flightT = t - rollTime;
+      let xMeters = trueV0 * flightT;
+      let yMeters = (G * flightT * flightT) / 2;
+      
+      let xPixels = 90 + xMeters * PIXELS_PER_METER;
+      let yPixels = heightPixels - yMeters * PIXELS_PER_METER;
+
+      if (yPixels <= 0) {
+        yPixels = 0;
+        ball.style.left = `${xPixels}px`;
+        ball.style.bottom = `0px`;
+        
+        let exactFlightTime = Math.sqrt((2 * heightMeters) / G);
+        let exactL = trueV0 * exactFlightTime;
+        let measuredL = exactL + (Math.random() * 0.06 - 0.03); 
+        
+        lDisplay.innerText = measuredL.toFixed(2);
+        
+        let marker = document.createElement('div');
+        marker.className = 'marker';
+        marker.style.left = `${90 + measuredL * PIXELS_PER_METER}px`;
+        expArea.appendChild(marker);
+
+        recordResult(heightMeters, measuredL);
+        isRunning = false;
+        return; 
+      }
+      
+      ball.style.left = `${xPixels}px`;
+      ball.style.bottom = `${yPixels}px`;
+      animationFrame = requestAnimationFrame(updatePhysics);
+    }
+
+    function recordResult(h, l) {
+      attemptCount++;
+      document.getElementById(`h-${attemptCount}`).innerText = h.toFixed(2);
+      document.getElementById(`l-${attemptCount}`).innerText = l.toFixed(2);
+      recordedData.push({ h: h, l: l });
+
+      if (attemptCount >= 5) {
+        btnStart.disabled = true;
+        btnReset.disabled = true; 
+        verifyBox.style.display = 'block'; 
+      } else {
+        btnStart.disabled = true; 
+      }
+    }
+
+    btnReset.addEventListener('click', () => {
+      if (isRunning) { cancelAnimationFrame(animationFrame); isRunning = false; }
+      ball.style.left = '16px'; 
+      ball.style.bottom = `${heightPixels + 54}px`;
+      lDisplay.innerText = '0.00';
+      if (attemptCount < 5) btnStart.disabled = false;
+    });
+
+    btnClear.addEventListener('click', () => {
+      if (isRunning) { cancelAnimationFrame(animationFrame); isRunning = false; }
+      document.querySelectorAll('.marker').forEach(m => m.remove());
+      
+      attemptCount = 0;
+      recordedData = [];
+      checksLeft = 3;
+      fbState = { type: null, grade: 0, realV: 0, realE: 0 };
+      
+      initSetup();
+      hSlider.disabled = false;
+      btnStart.disabled = false;
+      btnReset.disabled = false;
+      btnCheck.disabled = false;
+      lDisplay.innerText = '0.00';
+      
+      verifyBox.style.display = 'none';
+      document.getElementById('input-v').value = '';
+      document.getElementById('input-e').value = '';
+      renderFeedback();
+      spanAttempts.innerText = checksLeft;
+      initTable();
+    });
+
+    btnCheck.addEventListener('click', () => {
+      if (checksLeft <= 0) return;
+      const userV = parseFloat(document.getElementById('input-v').value);
+      const userE = parseFloat(document.getElementById('input-e').value);
+
+      if (isNaN(userV) || isNaN(userE)) {
+        feedback.innerHTML = feedbackDict[currentLang].enterNums;
+        feedback.className = 'feedback-box feedback-warning';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      let vExact = recordedData.map(d => d.l * Math.sqrt(G / (2 * d.h)));
+      let realVcpExact = vExact.reduce((a, b) => a + b, 0) / 5;
+      let absErrorsExact = vExact.map(v => Math.abs(realVcpExact - v));
+      let realDeltaExact = absErrorsExact.reduce((a, b) => a + b, 0) / 5;
+      let realEExact = (realDeltaExact / realVcpExact) * 100;
+
+      let vRounded = recordedData.map(d => Math.round((d.l * Math.sqrt(G / (2 * d.h))) * 100) / 100);
+      let realVcpRounded = Math.round((vRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let absErrorsRounded = vRounded.map(v => Math.round(Math.abs(realVcpRounded - v) * 100) / 100);
+      let realDeltaRounded = Math.round((absErrorsRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let realERounded = (realDeltaRounded / realVcpRounded) * 100;
+
+      const marginV = 0.05;
+      const marginE = 2.0; 
+
+      const isVCorrect = Math.abs(userV - realVcpExact) <= marginV || Math.abs(userV - realVcpRounded) <= marginV;
+      const isECorrect = Math.abs(userE - realEExact) <= marginE || Math.abs(userE - realERounded) <= marginE;
+
+      checksLeft--;
+      spanAttempts.innerText = checksLeft;
+
+      if (isVCorrect && isECorrect) {
+        fbState.type = 'success';
+        fbState.grade = checksLeft === 2 ? 10 : (checksLeft === 1 ? 8 : 5);
+        btnCheck.disabled = true;
+      } else {
+        if (checksLeft > 0) {
+          fbState.type = 'warning';
+        } else {
+          fbState.type = 'error';
+          fbState.realV = realVcpRounded;
+          fbState.realE = realERounded;
+          btnCheck.disabled = true;
+        }
+      }
+      renderFeedback();
+    });
+  </script>
+</body>
+</html>

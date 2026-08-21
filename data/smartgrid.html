@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartGrid AI - Умная энергосеть</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    
+    .header { width: 100%; max-width: 1200px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 2rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .grid-container { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 20px; width: 100%; max-width: 1200px; }
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .panel h2 { font-size: 1.2rem; color: #E2E8F0; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
+
+    /* Controls */
+    .control-group { margin-bottom: 20px; }
+    .control-group label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #CBD5E1; font-weight: bold; }
+    input[type=range] { width: 100%; cursor: pointer; accent-color: #38BDF8; }
+    
+    /* Center Display */
+    .telemetry { display: flex; flex-direction: column; gap: 15px; }
+    .data-row { display: flex; justify-content: space-between; align-items: center; background: #1E293B; padding: 15px; border-radius: 12px; border-left: 4px solid #38BDF8; }
+    .data-row.warning { border-left-color: #EF4444; }
+    .data-value { font-size: 1.5rem; font-weight: bold; font-family: monospace; }
+    
+    .progress-bg { background: #334155; height: 10px; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #10B981; transition: width 0.3s; }
+    .progress-bar.danger { background: #EF4444; }
+
+    /* AI Assistant */
+    .ai-console { background: #000; border-radius: 12px; padding: 15px; height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.9rem; color: #10B981; border: 1px solid #334155; }
+    .ai-msg { margin-bottom: 10px; border-bottom: 1px dashed #334155; padding-bottom: 5px; }
+    .ai-msg span { color: #38BDF8; }
+
+    /* Voltage Buttons */
+    .voltage-controls { display: flex; gap: 10px; margin-top: 10px; }
+    .volt-btn { flex: 1; padding: 10px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    .volt-btn.active { background: #F59E0B; font-weight: bold; }
+
+    @media (max-width: 900px) {
+      .grid-container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="SmartGrid AI" data-kk="SmartGrid AI" data-en="SmartGrid AI">SmartGrid AI</h1>
+      <p data-ru="Симулятор управления городской энергосетью" data-kk="Қалалық энергия желісін басқару симуляторы" data-en="City power grid management simulator">Симулятор управления городской энергосетью</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="grid-container">
+    
+    <!-- LEFT: GENERATION -->
+    <div class="panel">
+      <h2 data-ru="Управление генерацией" data-kk="Генерацияны басқару" data-en="Generation Control">Управление генерацией</h2>
+      
+      <div class="control-group">
+        <label>
+          <span data-ru="☀️ Солнечная (0-100 МВт)" data-kk="☀️ Күн (0-100 МВт)" data-en="☀️ Solar (0-100 MW)">☀️ Солнечная (0-100 МВт)</span>
+          <span id="solar-val">0 МВт</span>
+        </label>
+        <input type="range" id="solar-slider" min="0" max="100" value="0">
+        <small style="color: #64748B" id="sun-weather" data-ru="Солнечная активность: 100%" data-kk="Күн белсенділігі: 100%" data-en="Solar activity: 100%">Солнечная активность: 100%</small>
+      </div>
+
+      <div class="control-group">
+        <label>
+          <span data-ru="💨 Ветровая (0-150 МВт)" data-kk="💨 Жел (0-150 МВт)" data-en="💨 Wind (0-150 MW)">💨 Ветровая (0-150 МВт)</span>
+          <span id="wind-val">0 МВт</span>
+        </label>
+        <input type="range" id="wind-slider" min="0" max="150" value="0">
+        <small style="color: #64748B" id="wind-weather" data-ru="Сила ветра: 100%" data-kk="Жел күші: 100%" data-en="Wind strength: 100%">Сила ветра: 100%</small>
+      </div>
+
+      <div class="control-group">
+        <label>
+          <span data-ru="🏭 ТЭЦ (Уголь) (0-300 МВт)" data-kk="🏭 ЖЭО (Көмір) (0-300 МВт)" data-en="🏭 Thermal (Coal) (0-300 MW)">🏭 ТЭЦ (Уголь) (0-300 МВт)</span>
+          <span id="thermal-val">150 МВт</span>
+        </label>
+        <input type="range" id="thermal-slider" min="0" max="300" value="150">
+        <small style="color: #EF4444" id="pollution" data-ru="Выбросы CO2: Средние" data-kk="CO2 шығарындылары: Орташа" data-en="CO2 Emissions: Medium">Выбросы CO2: Средние</small>
+      </div>
+    </div>
+
+    <!-- CENTER: TELEMETRY & PHYSICS -->
+    <div class="panel">
+      <h2 data-ru="Телеметрия сети (Закон Джоуля-Ленца)" data-kk="Желі телеметриясы (Джоуль-Ленц заңы)" data-en="Network Telemetry (Joule-Lenz Law)">Телеметрия сети (Закон Джоуля-Ленца)</h2>
+      
+      <div class="telemetry">
+        <div class="data-row">
+          <div>
+            <div style="color: #94A3B8" data-ru="Требуемая мощность города" data-kk="Қаланың қажетті қуаты" data-en="Required City Power">Требуемая мощность города</div>
+            <div class="progress-bg"><div class="progress-bar" id="demand-bar" style="width: 50%"></div></div>
+          </div>
+          <div class="data-value" id="demand-out">200 MW</div>
+        </div>
+
+        <div class="data-row" id="delivery-box">
+          <div>
+            <div style="color: #94A3B8" data-ru="Доставленная мощность" data-kk="Жеткізілген қуат" data-en="Delivered Power">Доставленная мощность</div>
+            <small style="color: #38BDF8">P_gen - P_loss</small>
+          </div>
+          <div class="data-value" id="delivered-out">150 MW</div>
+        </div>
+
+        <div class="data-row warning">
+          <div>
+            <div style="color: #94A3B8" data-ru="Потери на нагрев ЛЭП" data-kk="ЭБЖ қызу шығындары" data-en="Transmission Heat Losses">Потери на нагрев ЛЭП</div>
+            <small style="color: #EF4444">I² × R (R = 5 Ом)</small>
+          </div>
+          <div class="data-value" style="color: #EF4444" id="loss-out">0 MW</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 20px; font-size: 1rem; color: #E2E8F0;" data-ru="Трансформаторная подстанция (U)" data-kk="Трансформаторлық қосалқы станция (U)" data-en="Transformer Substation (U)">Трансформаторная подстанция (U)</h3>
+      <div class="voltage-controls">
+        <button class="volt-btn active" data-v="10" onclick="setVoltage(10)">10 kV</button>
+        <button class="volt-btn" data-v="110" onclick="setVoltage(110)">110 kV</button>
+        <button class="volt-btn" data-v="330" onclick="setVoltage(330)">330 kV</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: AI ASSISTANT -->
+    <div class="panel">
+      <h2 data-ru="ИИ Аналитик (ORBITSHIELD Core)" data-kk="ЖИ Аналитик (ORBITSHIELD Core)" data-en="AI Analyst (ORBITSHIELD Core)">ИИ Аналитик (ORBITSHIELD Core)</h2>
+      <div class="ai-console" id="console">
+        <!-- Messages will be injected here -->
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // State variables
+    let demand = 200; // MW
+    let voltage = 10; // kV
+    const lineResistance = 5; // Ohms
+    let weather = { sun: 1, wind: 1 };
+    
+    // DOM Elements
+    const solarSlider = document.getElementById('solar-slider');
+    const windSlider = document.getElementById('wind-slider');
+    const thermalSlider = document.getElementById('thermal-slider');
+    
+    const consoleEl = document.getElementById('console');
+    
+    // Logic Loop
+    setInterval(updateGrid, 1000);
+    setInterval(changeWeatherAndDemand, 8000);
+
+    function logAI(msgRU, msgKK, msgEN) {
+      const currentLang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+      const time = new Date().toLocaleTimeString();
+      let text = msgRU;
+      if (currentLang === 'kk') text = msgKK;
+      if (currentLang === 'en') text = msgEN;
+      
+      const p = document.createElement('div');
+      p.className = 'ai-msg';
+      p.innerHTML = `<span>[${time}] AI:</span> ${text}`;
+      consoleEl.prepend(p);
+    }
+
+    function setVoltage(v) {
+      voltage = v;
+      document.querySelectorAll('.volt-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.volt-btn[data-v="${v}"]`).classList.add('active');
+      logAI(
+        `Трансформатор переключен на ${v} кВ.`, 
+        `Трансформатор ${v} кВ-қа ауыстырылды.`, 
+        `Transformer switched to ${v} kV.`
+      );
+      updateGrid();
+    }
+
+    function changeWeatherAndDemand() {
+      // Randomize weather 0.2 to 1.0
+      weather.sun = (Math.random() * 0.8 + 0.2).toFixed(2);
+      weather.wind = (Math.random() * 0.8 + 0.2).toFixed(2);
+      
+      // Fluctuate demand
+      demand = Math.floor(Math.random() * 200 + 150); // 150 - 350 MW
+      
+      logAI(
+        `Изменение метеоусловий. Спрос города изменен на ${demand} МВт.`,
+        `Ауа райының өзгеруі. Қаланың сұранысы ${demand} МВт-қа өзгерді.`,
+        `Weather conditions changed. City demand is now ${demand} MW.`
+      );
+      updateGrid();
+    }
+
+    function updateGrid() {
+      // 1. Get Generation
+      let rawSolar = parseInt(solarSlider.value);
+      let rawWind = parseInt(windSlider.value);
+      let thermal = parseInt(thermalSlider.value);
+
+      // Apply weather caps
+      let solar = Math.floor(rawSolar * weather.sun);
+      let wind = Math.floor(rawWind * weather.wind);
+      
+      let totalGen = solar + wind + thermal; // in MW
+
+      // Update UI labels
+      document.getElementById('solar-val').innerText = `${solar} MW`;
+      document.getElementById('wind-val').innerText = `${wind} MW`;
+      document.getElementById('thermal-val').innerText = `${thermal} MW`;
+      
+      document.getElementById('demand-out').innerText = `${demand} MW`;
+
+      // 2. Physics Calculations
+      // I = P / U. Since P is in MW (10^6) and U is in kV (10^3), I will be in kA (10^3 A)
+      let current_kA = totalGen / voltage; 
+      
+      // Ploss = I^2 * R. (kA)^2 * Ohm = MW
+      let pLoss = Math.pow(current_kA, 2) * lineResistance;
+      
+      // Cannot lose more than we generate
+      if (pLoss > totalGen) pLoss = totalGen; 
+      
+      let pDelivered = totalGen - pLoss;
+
+      // 3. Update Telemetry
+      document.getElementById('loss-out').innerText = `${pLoss.toFixed(1)} MW`;
+      document.getElementById('delivered-out').innerText = `${pDelivered.toFixed(1)} MW`;
+      
+      const deliveryBox = document.getElementById('delivery-box');
+      if (pDelivered < demand) {
+        deliveryBox.style.borderLeftColor = '#EF4444'; // Red (Blackout)
+      } else {
+        deliveryBox.style.borderLeftColor = '#10B981'; // Green (Stable)
+      }
+
+      // AI warnings
+      if (pLoss > (totalGen * 0.15) && totalGen > 0) {
+        logAI(
+          `Критическое падение мощности (I²R)! Повысьте напряжение транзита!`,
+          `Қуаттың критикалық төмендеуі (I²R)! Транзит кернеуін арттырыңыз!`,
+          `Critical power loss (I²R)! Increase transmission voltage!`
+        );
+      }
+      if (thermal > 200) {
+        document.getElementById('pollution').innerText = 'Выбросы CO2: ВЫСОКИЕ (Снизьте долю ТЭЦ)';
+        document.getElementById('pollution').style.color = '#EF4444';
+      } else {
+        document.getElementById('pollution').innerText = 'Выбросы CO2: В норме';
+        document.getElementById('pollution').style.color = '#10B981';
+      }
+    }
+
+    // Translations Logic
+    const langBtns = document.querySelectorAll('.lang-btn');
+    function switchLanguage(lang) {
+      document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+        el.innerHTML = el.getAttribute(`data-${lang}`);
+      });
+    }
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        switchLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
+    // Init
+    logAI("Система ORBITSHIELD инициализирована. Ожидание данных...", "ORBITSHIELD жүйесі іске қосылды. Деректер күтілуде...", "ORBITSHIELD initialized. Awaiting data...");
+    updateGrid();
+
+  </script>
+</body>
+</html>

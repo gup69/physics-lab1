@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-lang="pageTitle">Лабораторная работа: Сцинтиллятор</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+       
+        :root {
+            --main-bg: #1a1a2e;        
+            --container-bg: #2a2a4e;  
+            --controls-bg: #232342;   
+            --border-color: #4a4a7e;  
+            --text-color: #e0e0e0;      
+            --text-light: #aaa;         
+            --text-title: #ffffff;      
+            --accent-color: #00BFFF;    
+            --accent-hover: #009ACD;  
+            --danger-color: #dc3545;  
+            --warning-color: #ffc107; 
+        }
+
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            text-align: center;
+            color: var(--text-title);
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            flex-basis: 100%; 
+            text-align: center;
+        }
+
+   
+        .lang-switcher {
+            flex-basis: 200px; 
+            margin: 10px auto; 
+        }
+        .lang-switcher label {
+            font-size: 0.8em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-light);
+        }
+        .lang-switcher select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box; 
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: var(--main-bg);
+            color: var(--text-color);
+            font-size: 1em; 
+        }
+        
+       
+        @media (min-width: 600px) {
+            header h1 {
+                flex-basis: auto; 
+                text-align: left;
+            }
+            .lang-switcher {
+                flex-basis: 200px;
+                margin: 0; 
+            }
+        }
+
+
+       
+        .container {
+            display: flex;
+            flex-wrap: wrap; 
+            background: var(--container-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            overflow: hidden; 
+        }
+
+       
+        .controls {
+            flex: 1; 
+            min-width: 300px; 
+            padding: 20px;
+            background: var(--controls-bg);
+            border-right: 2px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        .controls h2 {
+            margin-top: 0;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 5px;
+        }
+
+        
+        .simulation {
+            flex: 2; 
+            min-width: 400px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column; 
+            box-sizing: border-box;
+        }
+
+        .simulation h2 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+
+        
+        .setup-diagram {
+            background: var(--main-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .setup-diagram h3 {
+            margin-top: 0;
+            color: var(--text-light);
+        }
+        
+        .setup-diagram img {
+            max-width: 100%;
+            height: auto;
+     
+            border-radius: 5px;
+            background: #fff; 
+        }
+
+
+       
+        .chart-container {
+            position: relative;
+            height: 350px; 
+            width: 100%;
+            background: var(--main-bg);
+            border: 1px solid white;  
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #spectrum-info {
+            text-align: center;
+            margin-top: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--accent-color);
+            background: var(--main-bg);
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            color: var(--text-light);
+        }
+
+        input[type="range"],
+        input[type="number"],
+        input[type="text"], 
+        select,
+        button {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box; 
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: var(--main-bg);
+            color: var(--text-color);
+            font-size: 1em; 
+        }
+
+        input[type="range"] {
+            padding: 0; 
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 10px; 
+            margin-top: 25px;
+        }
+        
+        #start-button, #clear-button {
+             flex: 1 1 45%; 
+        }
+
+        button {
+            background: var(--accent-color);
+            color: var(--text-title);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+        
+        #clear-button {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-light);
+        }
+        #clear-button:hover:not(:disabled) {
+            background: var(--border-color);
+            color: var(--text-title);
+        }
+        
+        #help-button {
+            flex-basis: 100%; 
+            background: var(--border-color); 
+            color: var(--text-color);
+            border: none;
+        }
+        #help-button:hover:not(:disabled) {
+            background: #5a5a9e; 
+        }
+        
+        #reset-button {
+            flex-basis: 100%;
+            background: transparent;
+            border: 2px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+        #reset-button:hover:not(:disabled) {
+            background: var(--warning-color);
+            color: var(--main-bg); 
+        }
+
+
+        /* === 9. Секция Идентификации (ВНИЗУ) === */
+        .identification {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .identification h2 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+
+        .identification p {
+            color: var(--text-light);
+        }
+
+        
+        .identification .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .identification select {
+            flex: 2; 
+        }
+        .identification button {
+            flex: 1;
+            background-color: var(--danger-color);
+        }
+        .identification button:hover:not(:disabled) {
+            background-color: #b02a37;
+        }
+        
+        
+        button:disabled,
+        input:disabled,
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #333 !important;
+        }
+        
+        /* === 10. СТИЛИ: Модальное Окно (Общие) === */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgba(0, 0, 0, 0.6); 
+        }
+
+        .modal-content {
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            margin: 5% auto; 
+            padding: 20px 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        
+        .modal-content h2 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+        
+        .modal-content h3 {
+            color: var(--text-title);
+        }
+        
+        .modal-content ol, .modal-content ul { 
+            line-height: 1.8;
+            padding-left: 20px; 
+        }
+        
+        .modal-content li {
+            margin-bottom: 10px; 
+        }
+        
+        .modal-content code {
+            background-color: var(--main-bg);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--accent-color);
+        }
+        
+        .modal-warning {
+            background-color: rgba(220, 53, 69, 0.1); 
+            border: 1px solid var(--danger-color);
+            color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .modal-content .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .modal-content .reference-table th,
+        .modal-content .reference-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+        .modal-content .reference-table th {
+            background-color: var(--controls-bg);
+            color: var(--accent-color);
+        }
+        .modal-content .reference-table strong {
+            color: var(--text-title);
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+       
+        #result-content {
+            font-size: 1.1em;
+            line-height: 1.7;
+        }
+        #result-content .score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        #result-content .score.fail {
+            color: var(--danger-color);
+        }
+        
+        #print-result-button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background: var(--accent-color);
+            color: var(--text-title);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+        #print-result-button:hover {
+            background: var(--accent-hover);
+        }
+        
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #result-modal, #result-modal * {
+                visibility: visible;
+            }
+            #result-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: white !important; 
+            }
+            .modal-content {
+                margin: 0;
+                border: none;
+                box-shadow: none;
+                width: 100%;
+                max-width: 100%;
+                color: #000 !important; 
+            }
+            .modal-content h2, #result-content .score {
+                color: #000 !important;
+            }
+            #close-result-modal, #print-result-button {
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 data-lang="headerTitle">Изучение сцинтилляционного счетчика</h1>
+        <div class="lang-switcher">
+            <label for="lang-select" data-lang="labelLang">Язык:</label>
+            <select id="lang-select">
+                <option value="ru">Русский</option>
+                <option value="kz">Қазақша</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            
+            <h2 data-lang="h2Student">Студент</h2>
+            <div class="control-group">
+                <label for="student-name" data-lang="labelName">Ф.И.О.:</label>
+                <input type="text" id="student-name" data-lang-placeholder="placeholderName" placeholder="Иванов И.И.">
+            </div>
+            <div class="control-group">
+                <label for="student-group" data-lang="labelGroup">Группа:</label>
+                <input type="text" id="student-group" data-lang-placeholder="placeholderGroup" placeholder="ФЗ-21">
+            </div>
+
+            <h2 data-lang="h2Params">Параметры</h2>
+            <div class="control-group">
+                <label for="source-select" data-lang="labelSource">Источник:</label>
+                <select id="source-select">
+                    <option value="Background" data-lang="optBg">Фон (без источника)</option>
+                    <optgroup data-lang="optGroupCal" label="Калибровочные">
+                        <option value="Cs-137" data-lang="optCs137">Цезий-137</option>
+                        <option value="Co-60" data-lang="optCo60">Кобальт-60</option>
+                        <option value="Na-22" data-lang="optNa22">Натрий-22</option>
+                    </optgroup>
+                    <optgroup data-lang="optGroupTask" label="Задание">
+                        <option value="Unknown" data-lang="optUnknown">*** НЕИЗВЕСТНЫЙ ***</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="hv-slider" data-lang="labelHV">Напряжение (HV): <span id="hv-value">700</span> В</label>
+                <input type="range" id="hv-slider" min="600" max="900" value="700" step="10">
+            </div>
+            
+            <div class="control-group">
+                <label for="gain-slider" data-lang="labelGain">Усиление (Gain): x<span id="gain-value">50</span></label>
+                <input type="range" id="gain-slider" min="1" max="100" value="50" step="1">
+            </div>
+
+            <div class="control-group">
+                <label for="time-input" data-lang="labelTime">Время (T):</label>
+                <input type="number" id="time-input" value="120" min="1" max="1000">
+                <span data-lang="timeUnit">секунд</span>
+            </div>
+
+            <div class="button-group">
+                <button id="start-button" data-lang="btnStart">СТАРТ</button>
+                <button id="clear-button" data-lang="btnClear">ОЧИСТИТЬ</button>
+                <button id="help-button" data-lang="btnHelp">ИНСТРУКЦИЯ</button> 
+                <button id="reset-button" data-lang="btnReset">ОБЩИЙ СБРОС</button>
+            </div>
+        </div>
+
+        <div class="simulation">
+            <h2 data-lang="h2Spectrum">Спектр</h2>
+            
+            <div class="setup-diagram">
+                <h3 data-lang="h3Diagram">Схема Установки</h3>
+                <img src="img/im3.png" alt="Схема сцинтилляционного счетчика">
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="spectrum-chart"></canvas>
+            </div>
+            <div id="spectrum-info">(Кликните на график для данных)</div>
+        </div>
+    </div>
+
+    <div class="identification">
+        <h2 data-lang="idTitle">Идентификация Неизвестного Источника</h2>
+        <p data-lang="idDesc">После калибровки, проанализируйте "НЕИЗВЕСТНЫЙ" спектр и сделайте предположение. (У вас 3 попытки)</p>
+        
+        <div class="control-group">
+            <label for="isotope-guess" data-lang="idLabel">Ваш ответ:</label>
+            <select id="isotope-guess">
+                <option value="none" data-lang="idOptSelect">-- Выберите изотоп --</option>
+                <option value="Cs-137" data-lang="isoCs137">Цезий-137</option>
+                <option value="Co-60" data-lang="isoCo60">Кобальт-60</option>
+                <option value="Na-22" data-lang="isoNa22">Натрий-22</option>
+                <option value="Mn-54" data-lang="isoMn54">Марганец-54</option>
+                <option value="Bi-207" data-lang="isoBi207">Висмут-207</option>
+                <option value="Am-241" data-lang="isoAm241">Америций-241</option>
+                <option value="Cd-109" data-lang="isoCd109">Кадмий-109</option>
+                <option value="Ba-133" data-lang="isoBa133">Барий-133</option>
+                <option value="Eu-152" data-lang="isoEu152">Европий-152</option>
+                <option value="Zn-65" data-lang="isoZn65">Цинк-65</option>
+            </select>
+            <button id="check-button" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+        </div>
+        <div id="attempts-info">Осталось попыток: 3</div>
+    </div>
+    
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-modal-button">&times;</span>
+            <div id="help-modal-content-wrapper"></div>
+        </div>
+    </div>
+    
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-result-modal">&times;</span>
+            <h2 data-lang="modalResultTitle">Результаты Идентификации</h2>
+            <div id="result-content"></div>
+            <button id="print-result-button" data-lang="btnPrint">Печать / Сохранить в PDF</button>
+        </div>
+    </div>
+
+
+    <script>
+    
+      
+        const translations = {
+           
+            ru: {
+                pageTitle: "Лабораторная работа: Сцинтиллятор",
+                headerTitle: "Изучение сцинтилляционного счетчика",
+                labelLang: "Язык:",
+                h2Student: "Студент",
+                labelName: "Ф.И.О.:",
+                placeholderName: "Иванов И.И.",
+                labelGroup: "Группа:",
+                placeholderGroup: "ФЗ-21",
+                h2Params: "Параметры",
+                labelSource: "Источник:",
+                optBg: "Фон (без источника)",
+                optGroupCal: "Калибровочные",
+                optCs137: "Цезий-137",
+                optCo60: "Кобальт-60",
+                optNa22: "Натрий-22",
+                optGroupTask: "Задание",
+                optUnknown: "*** НЕИЗВЕСТНЫЙ ***",
+                labelHV: "Напряжение (HV):",
+                labelGain: "Усиление (Gain):",
+                labelTime: "Время (T):",
+                timeUnit: "секунд",
+                btnStart: "СТАРТ",
+                btnStartMeasuring: "ИДЕТ НАБОР...",
+                btnClear: "ОЧИСТИТЬ",
+                btnHelp: "ИНСТРУКЦИЯ",
+                btnReset: "ОБЩИЙ СБРОС",
+                h2Spectrum: "Спектр",
+                h3Diagram: "Схема Установки",
+                idTitle: "Идентификация Неизвестного Источника",
+                idDesc: "После калибровки, проанализируйте \"НЕИЗВЕСТНЫЙ\" спектр и сделайте предположение. (У вас 3 попытки)",
+                idLabel: "Ваш ответ:",
+                idOptSelect: "-- Выберите изотоп --",
+                isoCs137: "Цезий-137",
+                isoCo60: "Кобальт-60",
+                isoNa22: "Натрий-22",
+                isoMn54: "Марганец-54",
+                isoBi207: "Висмут-207",
+                isoAm241: "Америций-241",
+                isoCd109: "Кадмий-109",
+                isoBa133: "Барий-133",
+                isoEu152: "Европий-152",
+                isoZn65: "Цинк-65",
+                btnCheck: "ПРОВЕРИТЬ",
+                modalResultTitle: "Результаты Идентификации",
+                btnPrint: "Печать / Сохранить в PDF",
+                // Динамический текст
+                infoBoxInit: "Введите ФИО и Группу, чтобы начать работу.",
+                infoBoxCleared: "(Спектр очищен. Кликните на график для данных)",
+                infoBoxMeasuring: "ИДЕТ НАБОР...",
+                infoBoxClick: "(Кликните на график для данных)",
+                infoBoxContent: "Канал: {channel}, Отсчеты: {counts}",
+                infoBoxSpectrumFor: "Спектр для: {sourceName}",
+                sourceUnknown: "*** НЕИЗВЕСТНЫЙ ***",
+                attemptsLeft: "Осталось попыток: {count}",
+                attemptsDone: "Задание выполнено! Нажмите 'Общий Сброс' для нового.",
+                attemptsFailed: "Попытки закончились.",
+                chartXAxis: "Номер Канала",
+                chartYAxis: "Число Отсчетов",
+                chartLabel: "Число Отсчетов",
+                // Alerts
+                alertFillFields: "Пожалуйста, введите ФИО и Группу, прежде чем продолжить.",
+                alertSelectIsotope: "Пожалуйста, выберите изотоп из списка.",
+                alertGameOver: "Попытки закончились. Нажмите 'Общий Сброс' для нового задания.",
+                alertWrongGuess: "Неверно. ❌\n\nЭто не {sourceName}. \nПопробуйте проанализировать пики еще раз.",
+                // Окно результатов
+                resultStudent: "Студент:",
+                resultGroup: "Группа:",
+                resultTitle: "Результат:",
+                resultScorePass: "{score}% (Верно)",
+                resultScoreFail: "0% (Неверно)",
+                resultCorrect: "Вы правильно идентифицировали образец как:",
+                resultIncorrect: "Попытки закончились. Правильный ответ был:",
+                // HTML Инструкции
+                modalHelpHTML: `
+                    <h2 data-lang="modalHelpTitle">Инструкция к Лабораторной Работе</h2>
+                    <p>Ваша задача: откалибровать детектор и идентифицировать неизвестный источник.</p>
+                    <h3>Шаг 1: Калибровка</h3>
+                    <ol>
+                        <li><strong>(ВАЖНО)</strong> Введите ваши <strong>ФИО</strong> и <strong>Группу</strong> в поля слева. Кнопки не будут работать, пока вы это не сделаете.</li>
+                        <li>Выберите известный источник из списка "Калибровочные" (например, <strong>Цезий-137</strong>).</li>
+                        <li>Нажмите "СТАРТ".</li>
+                        <li>Кликните на самый высокий пик на графике. Инфо-блок (под графиком) покажет вам <strong>"Канал"</strong> и <strong>"Отсчеты"</strong>.</li>
+                        <li>Запишите эту пару (Канал -> Энергия).</li>
+                        <li>Повторите это для другого источника (например, <strong>Кобальт-60</strong>), чтобы получить 2-3 точки для калибровки.</li>
+                    </ol>
+                    <h3>Шаг 2: Важное правило</h3>
+                    <div class="modal-warning">
+                        <strong>ВНИМАНИЕ:</strong> После того как вы нашли свои калибровочные точки, <strong>НЕ МЕНЯЙТЕ</strong> ползунки "Напряжение (HV)" и "Усиление (Gain)". <br><br>
+                        Если вы их измените, калибровка "собьется", и вам придется начать Шаг 1 заново!
+                    </div>
+                    <h3>Шаг 3: Идентификация</h3>
+                    <ol>
+                        <li>Убедившись, что HV и Gain не изменились, выберите источник <strong>"*** НЕИЗВЕСТНЫЙ ***"</strong>.</li>
+                        <li>Нажмите "СТАРТ".</li>
+                        <li>Найдите 1-2 четких пика на графике.</li>
+                        <li>
+                            Используя свою калибровку (например, <code>E = k * N</code>), рассчитайте <strong>энергию (кэВ)</strong> для этих неизвестных пиков.
+                            <ul style="font-size: 0.9em; color: var(--text-light); margin-top: 5px;">
+                                <li><code>E</code> – это <strong>Энергия</strong> (которую вы ищете, в кэВ).</li>
+                                <li><code>N</code> – это <strong>Номер Канала</strong> (который вы видите на графике).</li>
+                                <li><code>k</code> – это ваш <strong>коэффициент</strong> (кэВ/канал), который вы нашли в Шаге 1.</li>
+                            </ul>
+                        </li>
+                        <li>Сравните полученные энергии со <strong>"Справочником"</strong> (см. ниже) и определите, какому изотопу они принадлежат.</li>
+                    </ol>
+                    <h3>Шаг 4: Проверка</h3>
+                    <ul>
+                        <li>Выберите ваш предполагаемый изотоп из списка "Ваш ответ".</li>
+                        <li>Нажмите "ПРОВЕРИТЬ". У вас 3 попытки.</li>
+                        <li>Правильный ответ с 1-й попытки = <strong>100%</strong>.</li>
+                        <li>Правильный ответ со 2-й попытки = <strong>85%</strong>.</li>
+                        <li>Правильный ответ с 3-й попытки = <strong>70%</strong>.</li>
+                        <li>После 3-х ошибок результат будет <strong>0%</strong>.</li>
+                    </ul>
+                    <h3>Шаг 5: Сброс</h3>
+                    <p>Нажатие <strong>"Общий Сброс"</strong> сгенерирует *новый* случайный "Неизвестный" образец и сбросит ваши попытки.</p>
+                    <hr style="border-color: var(--border-color); margin: 25px 0;">
+                    <h2>ЧАСТЬ 2: СПРАВОЧНИК (ОСНОВНЫЕ ГАММА-ЛИНИИ)</h2>
+                    <table class="reference-table">
+                        <thead>
+                            <tr><th>Изотоп</th><th>Основные Энергии (кэВ)</th><th>Примечание</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Cs-137</strong> (Цезий-137)</td><td><strong>661.7</strong></td><td>Стандартный пик для калибровки.</td></tr>
+                            <tr><td><strong>Co-60</strong> (Кобальт-60)</td><td><strong>1173.2</strong>, <strong>1332.5</strong></td><td>Два четких пика, близких по энергии.</td></tr>
+                            <tr><td><strong>Na-22</strong> (Натрий-22)</td><td><strong>511.0</strong>, <strong>1274.5</strong></td><td>Пик 511 кэВ - аннигиляция позитронов.</td></tr>
+                            <tr><td><strong>Mn-54</strong> (Марганец-54)</td><td><strong>834.8</strong></td><td>Одиночный пик средней энергии.</td></tr>
+                            <tr><td><strong>Bi-207</strong> (Висмут-207)</td><td><strong>569.7</strong>, <strong>1063.7</strong></td><td>Два пика, удобных для калибровки.</td></tr>
+                            <tr><td><strong>Am-241</strong> (Америций-241)</td><td><strong>59.5</strong></td><td>Очень "мягкий" (низкоэнергетический) пик.</td></tr>
+                            <tr><td><strong>Cd-109</strong> (Кадмий-109)</td><td><strong>88.0</strong></td><td>Низкоэнергетический пик.</td></tr>
+                            <tr><td><strong>Ba-133</strong> (Барий-133)</td><td>81.0, 276.4, <strong>302.9</strong>, <strong>356.0</strong>, 383.8</td><td>Характерная группа пиков.</td></tr>
+                            <tr><td><strong>Eu-152</strong> (Европий-152)</td><td><strong>121.8</strong>, 244.7, <strong>344.3</strong>, 778.9, ... <strong>1408.0</strong></td><td>"Сложный" спектр с множеством линий.</td></tr>
+                            <tr><td><strong>Zn-65</strong> (Цинк-65)</td><td>511.0, <strong>1115.5</strong></td><td>Высокоэнергетический пик + пик аннигиляции.</td></tr>
+                        </tbody>
+                    </table>`
+            },
+            
+           
+            en: {
+                pageTitle: "Lab Work: Scintillation Counter",
+                headerTitle: "Study of Scintillation Counter",
+                labelLang: "Language:",
+                h2Student: "Student",
+                labelName: "Name:",
+                placeholderName: "John Doe",
+                labelGroup: "Group:",
+                placeholderGroup: "PHYS-101",
+                h2Params: "Parameters",
+                labelSource: "Source:",
+                optBg: "Background (no source)",
+                optGroupCal: "Calibration",
+                optCs137: "Cesium-137",
+                optCo60: "Cobalt-60",
+                optNa22: "Sodium-22",
+                optGroupTask: "Task",
+                optUnknown: "*** UNKNOWN ***",
+                labelHV: "Voltage (HV):",
+                labelGain: "Gain:",
+                labelTime: "Time (T):",
+                timeUnit: "seconds",
+                btnStart: "START",
+                btnStartMeasuring: "ACQUIRING...",
+                btnClear: "CLEAR",
+                btnHelp: "INSTRUCTIONS",
+                btnReset: "FULL RESET",
+                h2Spectrum: "Spectrum",
+                h3Diagram: "Setup Diagram",
+                idTitle: "Unknown Source Identification",
+                idDesc: "After calibration, analyze the 'UNKNOWN' spectrum and make a guess. (You have 3 attempts)",
+                idLabel: "Your Answer:",
+                idOptSelect: "-- Select isotope --",
+                isoCs137: "Cesium-137",
+                isoCo60: "Cobalt-60",
+                isoNa22: "Sodium-22",
+                isoMn54: "Manganese-54",
+                isoBi207: "Bismuth-207",
+                isoAm241: "Americium-241",
+                isoCd109: "Cadmium-109",
+                isoBa133: "Barium-133",
+                isoEu152: "Europium-152",
+                isoZn65: "Zinc-65",
+                btnCheck: "CHECK",
+                modalResultTitle: "Identification Results",
+                btnPrint: "Print / Save as PDF",
+                // Динамический текст
+                infoBoxInit: "Enter your Name and Group to begin.",
+                infoBoxCleared: "(Spectrum cleared. Click chart for data)",
+                infoBoxMeasuring: "ACQUIRING...",
+                infoBoxClick: "(Click chart for data)",
+                infoBoxContent: "Channel: {channel}, Counts: {counts}",
+                infoBoxSpectrumFor: "Spectrum for: {sourceName}",
+                sourceUnknown: "*** UNKNOWN ***",
+                attemptsLeft: "Attempts left: {count}",
+                attemptsDone: "Task complete! Press 'Full Reset' for a new task.",
+                attemptsFailed: "No attempts left.",
+                chartXAxis: "Channel Number",
+                chartYAxis: "Counts",
+                chartLabel: "Counts",
+                // Alerts
+                alertFillFields: "Please enter your Name and Group to continue.",
+                alertSelectIsotope: "Please select an isotope from the list.",
+                alertGameOver: "No attempts left. Press 'Full Reset' for a new task.",
+                alertWrongGuess: "Incorrect. ❌\n\nThat is not {sourceName}. \nTry analyzing the peaks again.",
+                // Окно результатов
+                resultStudent: "Student:",
+                resultGroup: "Group:",
+                resultTitle: "Result:",
+                resultScorePass: "{score}% (Correct)",
+                resultScoreFail: "0% (Incorrect)",
+                resultCorrect: "You correctly identified the sample as:",
+                resultIncorrect: "Attempts finished. The correct answer was:",
+                // HTML Инструкции
+                modalHelpHTML: `
+                    <h2 data-lang="modalHelpTitle">Laboratory Work Instructions</h2>
+                    <p>Your task: Calibrate the detector and identify an unknown source.</p>
+                    <h3>Step 1: Calibration</h3>
+                    <ol>
+                        <li><strong>(IMPORTANT)</strong> Enter your <strong>Name</strong> and <strong>Group</strong> in the fields on the left. The controls are locked until you do.</li>
+                        <li>Select a known source from the "Calibration" list (e.g., <strong>Cesium-137</strong>).</li>
+                        <li>Press "START".</li>
+                        <li>Click the highest peak on the chart. The info-box below will show you the <strong>"Channel"</strong> and <strong>"Counts"</strong>.</li>
+                        <li>Write down this pair (Channel -> Energy).</li>
+                        <li>Repeat for another source (e.g., <strong>Cobalt-60</strong>) to get 2-3 calibration points.</li>
+                    </ol>
+                    <h3>Step 2: The Golden Rule</h3>
+                    <div class="modal-warning">
+                        <strong>WARNING:</strong> After you find your calibration points, <strong>DO NOT CHANGE</strong> the "Voltage (HV)" or "Gain" sliders.<br><br>
+                        If you change them, your calibration is lost, and you must restart from Step 1!
+                    </div>
+                    <h3>Step 3: Identification</h3>
+                    <ol>
+                        <li>Ensuring HV and Gain are unchanged, select the <strong>"*** UNKNOWN ***"</strong> source.</li>
+                        <li>Press "START".</li>
+                        <li>Find 1-2 clear peaks on the graph.</li>
+                        <li>
+                            Using your calibration (e.g., <code>E = k * N</code>), calculate the <strong>energy (keV)</strong> for these unknown peaks.
+                            <ul style="font-size: 0.9em; color: var(--text-light); margin-top: 5px;">
+                                <li><code>E</code> is the <strong>Energy</strong> (in keV) you are looking for.</li>
+                                <li><code>N</code> is the <strong>Channel Number</strong> (from the chart).</li>
+                                <li><code>k</code> is your <strong>coefficient</strong> (keV/channel) you found in Step 1.</li>
+                            </ul>
+                        </li>
+                        <li>Compare your calculated energies to the <strong>"Reference"</strong> (below) to identify the isotope.</li>
+                    </ol>
+                    <h3>Step 4: Check Answer</h3>
+                    <ul>
+                        <li>Select your guess from the "Your Answer" list.</li>
+                        <li>Press "CHECK". You have 3 attempts.</li>
+                        <li>1st try = <strong>100%</strong>.</li>
+                        <li>2nd try = <strong>85%</strong>.</li>
+                        <li>3rd try = <strong>70%</strong>.</li>
+                        <li>After 3 wrong attempts, the score is <strong>0%</strong>.</li>
+                    </ul>
+                    <h3>Step 5: Reset</h3>
+                    <p>Pressing <strong>"Full Reset"</strong> will generate a *new* random "Unknown" sample and reset your attempts.</p>
+                    <hr style="border-color: var(--border-color); margin: 25px 0;">
+                    <h2>PART 2: REFERENCE (COMMON GAMMA-LINES)</h2>
+                    <table class="reference-table">
+                        <thead>
+                            <tr><th>Isotope</th><th>Common Energies (keV)</th><th>Note</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Cs-137</strong></td><td><strong>661.7</strong></td><td>Standard calibration peak.</td></tr>
+                            <tr><td><strong>Co-60</strong></td><td><strong>1173.2</strong>, <strong>1332.5</strong></td><td>Two clear, high-energy peaks.</td></tr>
+                            <tr><td><strong>Na-22</strong></td><td><strong>511.0</strong>, <strong>1274.5</strong></td><td>511 keV is positron annihilation.</td></tr>
+                            <tr><td><strong>Mn-54</strong></td><td><strong>834.8</strong></td><td>Single mid-energy peak.</td></tr>
+                            <tr><td><strong>Bi-207</strong></td><td><strong>569.7</strong>, <strong>1063.7</strong></td><td>Two useful calibration peaks.</td></tr>
+                            <tr><td><strong>Am-241</strong></td><td><strong>59.5</strong></td><td>Very "soft" (low-energy) peak.</td></tr>
+                            <tr><td><strong>Cd-109</strong></td><td><strong>88.0</strong></td><td>Low-energy peak.</td></tr>
+                            <tr><td><strong>Ba-133</strong></td><td>81.0, 276.4, <strong>302.9</strong>, <strong>356.0</strong>, 383.8</td><td>A characteristic group of peaks.</td></tr>
+                            <tr><td><strong>Eu-152</strong></td><td><strong>121.8</strong>, 244.7, <strong>344.3</strong>, 778.9, ... <strong>1408.0</strong></td><td>"Complex" spectrum with many lines.</td></tr>
+                            <tr><td><strong>Zn-65</strong></td><td>511.0, <strong>1115.5</strong></td><td>High-energy peak + annihilation peak.</td></tr>
+                        </tbody>
+                    </table>`
+            },
+            
+            
+            kz: {
+                pageTitle: "Зертханалық жұмыс: Сцинтиллятор",
+                headerTitle: "Сцинтилляциялық есептегішті зерттеу",
+                labelLang: "Тіл:",
+                h2Student: "Студент",
+                labelName: "Аты-жөні:",
+                placeholderName: "Ахметов А.А.",
+                labelGroup: "Топ:",
+                placeholderGroup: "ФЗ-21",
+                h2Params: "Параметрлер",
+                labelSource: "Көз:",
+                optBg: "Фон (көз жоқ)",
+                optGroupCal: "Калибрлеу",
+                optCs137: "Цезий-137",
+                optCo60: "Кобальт-60",
+                optNa22: "Натрий-22",
+                optGroupTask: "Тапсырма",
+                optUnknown: "*** БЕЛГІСІЗ ***",
+                labelHV: "Кернеу (HV):",
+                labelGain: "Күшейту (Gain):",
+                labelTime: "Уақыт (T):",
+                timeUnit: "секунд",
+                btnStart: "БАСТАУ",
+                btnStartMeasuring: "ЖИНАҚТАЛУДА...",
+                btnClear: "ТАЗАРТУ",
+                btnHelp: "НҰСҚАУЛЫҚ",
+                btnReset: "ЖАЛПЫ ТАСЫРУ",
+                h2Spectrum: "Спектр",
+                h3Diagram: "Орнату Схемасы",
+                idTitle: "Белгісіз Көзді Идентификациялау",
+                idDesc: "Калибрлеуден кейін 'БЕЛГІСІЗ' спектрге талдау жасап, өз болжамыңызды жасаңыз. (Сізде 3 мүмкіндік бар)",
+                idLabel: "Сіздің жауабыңыз:",
+                idOptSelect: "-- Изотопты таңдаңыз --",
+                isoCs137: "Цезий-137",
+                isoCo60: "Кобальт-60",
+                isoNa22: "Натрий-22",
+                isoMn54: "Марганец-54",
+                isoBi207: "Висмут-207",
+                isoAm241: "Америций-241",
+                isoCd109: "Кадмий-109",
+                isoBa133: "Барий-133",
+                isoEu152: "Еуропий-152",
+                isoZn65: "Мырыш-65",
+                btnCheck: "ТЕКСЕРУ",
+                modalResultTitle: "Идентификация Нәтижелері",
+                btnPrint: "Басып шығару / PDF ретінде сақтау",
+                // Динамический текст
+                infoBoxInit: "Бастау үшін Аты-жөніңізді және Тобыңызды енгізіңіз.",
+                infoBoxCleared: "(Спектр тазартылды. Ақпарат алу үшін графикті басыңыз)",
+                infoBoxMeasuring: "ЖИНАҚТАЛУДА...",
+                infoBoxClick: "(Ақпарат алу үшін графикті басыңыз)",
+                infoBoxContent: "Арна: {channel}, Санақ: {counts}",
+                infoBoxSpectrumFor: "Спектр: {sourceName}",
+                sourceUnknown: "*** БЕЛГІСІЗ ***",
+                attemptsLeft: "Қалған мүмкіндік: {count}",
+                attemptsDone: "Тапсырма орындалды! Жаңа тапсырма үшін 'Жалпы Тасыру' басыңыз.",
+                attemptsFailed: "Мүмкіндіктер аяқталды.",
+                chartXAxis: "Арна нөмірі",
+                chartYAxis: "Санақтар саны",
+                chartLabel: "Санақтар саны",
+                // Alerts
+                alertFillFields: "Жалғастыру үшін Аты-жөніңізді және Тобыңызды енгізіңіз.",
+                alertSelectIsotope: "Тізімнен изотопты таңдаңыз.",
+                alertGameOver: "Мүмкіндіктер аяқталды. Жаңа тапсырма үшін 'Жалпы Тасыру' басыңыз.",
+                alertWrongGuess: "Қате. ❌\n\nБұл {sourceName} емес. \nПиктерді қайта талдап көріңіз.",
+                // Окно результатов
+                resultStudent: "Студент:",
+                resultGroup: "Топ:",
+                resultTitle: "Нәтиже:",
+                resultScorePass: "{score}% (Дұрыс)",
+                resultScoreFail: "0% (Қате)",
+                resultCorrect: "Сіз үлгіні дұрыс анықтадыңыз:",
+                resultIncorrect: "Мүмкіндіктер аяқталды. Дұрыс жауап:",
+                // HTML Инструкции
+                modalHelpHTML: `
+                    <h2 data-lang="modalHelpTitle">Зертханалық жұмыс нұсқаулығы</h2>
+                    <p>Сіздің міндетіңіз: детекторды калибрлеу және белгісіз көзді анықтау.</p>
+                    <h3>1-қадам: Калибрлеу</h3>
+                    <ol>
+                        <li><strong>(МАҢЫЗДЫ)</strong> Сол жақтағы өрістерге <strong>Аты-жөніңізді</strong> және <strong>Тобыңызды</strong> енгізіңіз. Олсыз батырмалар жұмыс істемейді.</li>
+                        <li>"Калибрлеу" тізімінен белгілі көзді таңдаңыз (мысалы, <strong>Цезий-137</strong>).</li>
+                        <li>"БАСТАУ" батырмасын басыңыз.</li>
+                        <li>Графиктегі ең биік пикті басыңыз. Ақпарат блогы (график астында) сізге <strong>"Арна"</strong> нөмірін және <strong>"Санақ"</strong> санын көрсетеді.</li>
+                        <li>Осы жұпты (Арна -> Энергия) жазып алыңыз.</li>
+                        <li>Калибрлеу үшін 2-3 нүкте алу үшін осыны басқа көзбен (мысалы, <strong>Кобальт-60</strong>) қайталаңыз.</li>
+                    </ol>
+                    <h3>2-қадам: Маңызды ереже</h3>
+                    <div class="modal-warning">
+                        <strong>ЕСКЕРТУ:</strong> Калибрлеу нүктелерін тапқаннан кейін, "Кернеу (HV)" және "Күшейту (Gain)" сырғытпаларын <strong>ӨЗГЕРТПЕҢІЗ</strong>.<br><br>
+                        Егер оларды өзгертсеңіз, калибрлеу бұзылады және 1-қадамды қайтадан бастау керек болады!
+                    </div>
+                    <h3>3-қадам: Идентификация</h3>
+                    <ol>
+                        <li>HV және Gain өзгермегеніне көз жеткізіп, <strong>"*** БЕЛГІСІЗ ***"</strong> көзін таңдаңыз.</li>
+                        <li>"БАСТАУ" батырмасын басыңыз.</li>
+                        <li>Графиктен 1-2 айқын пикті табыңыз.</li>
+                        <li>
+                            Өз калибрлеуіңізді (мысалы, <code>E = k * N</code>) пайдаланып, осы белгісіз пиктердің <strong>энергиясын (кэВ)</strong> есептеңіз.
+                            <ul style="font-size: 0.9em; color: var(--text-light); margin-top: 5px;">
+                                <li><code>E</code> – бұл сіз іздеген <strong>Энергия</strong> (кэВ).</li>
+                                <li><code>N</code> – бұл <strong>Арна нөмірі</strong> (графиктен аласыз).</li>
+                                <li><code>k</code> – бұл сіздің 1-қадамда тапқан <strong>коэффициентіңіз</strong> (кэВ/арна).</li>
+                            </ul>
+                        </li>
+                        <li>Алынған энергияларды <strong>"Анықтамамен"</strong> (төменде) салыстырып, изотопты анықтаңыз.</li>
+                    </ol>
+                    <h3>4-қадам: Тексеру</h3>
+                    <ul>
+                        <li>"Сіздің жауабыңыз" тізімінен болжамыңызды таңдаңыз.</li>
+                        <li>"ТЕКСЕРУ" батырмасын басыңыз. Сізде 3 мүмкіндік бар.</li>
+                        <li>1-ші мүмкіндік = <strong>100%</strong>.</li>
+                        <li>2-ші мүмкіндік = <strong>85%</strong>.</li>
+                        <li>3-ші мүмкіндік = <strong>70%</strong>.</li>
+                        <li>3 қатеден кейін нәтиже <strong>0%</strong> болады.</li>
+                    </ul>
+                    <h3>5-қадам: Тасыру</h3>
+                    <p><strong>"Жалпы Тасыру"</strong> батырмасын басу *жаңа* кездейсоқ "Белгісіз" үлгіні жасайды және мүмкіндіктерді қалпына келтіреді.</p>
+                    <hr style="border-color: var(--border-color); margin: 25px 0;">
+                    <h2>2-БӨЛІМ: АНЫҚТАМА (НЕГІЗГІ ГАММА-СЫЗЫҚТАР)</h2>
+                    <table class="reference-table">
+                        <thead>
+                            <tr><th>Изотоп</th><th>Негізгі Энергиялар (кэВ)</th><th>Ескерту</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Cs-137</strong> (Цезий-137)</td><td><strong>661.7</strong></td><td>Калибрлеуге арналған стандартты пик.</td></tr>
+                            <tr><td><strong>Co-60</strong> (Кобальт-60)</td><td><strong>1173.2</strong>, <strong>1332.5</strong></td><td>Энергиясы жақын екі айқын пик.</td></tr>
+                            <tr><td><strong>Na-22</strong> (Натрий-22)</td><td><strong>511.0</strong>, <strong>1274.5</strong></td><td>511 кэВ пигі - позитронды аннигиляция.</td></tr>
+                            <tr><td><strong>Mn-54</strong> (Марганец-54)</td><td><strong>834.8</strong></td><td>Орташа энергиялы жалғыз пик.</td></tr>
+                            <tr><td><strong>Bi-207</strong> (Висмут-207)</td><td><strong>569.7</strong>, <strong>1063.7</strong></td><td>Калибрлеуге ыңғайлы екі пик.</td></tr>
+                            <tr><td><strong>Am-241</strong> (Америций-241)</td><td><strong>59.5</strong></td><td>Өте "жұмсақ" (төмен энергиялы) пик.</td></tr>
+                            <tr><td><strong>Cd-109</strong> (Кадмий-109)</td><td><strong>88.0</strong></td><td>Төмен энергиялы пик.</td></tr>
+                            <tr><td><strong>Ba-133</strong> (Барий-133)</td><td>81.0, 276.4, <strong>302.9</strong>, <strong>356.0</strong>, 383.8</td><td>Сипатты пиктер тобы.</td></tr>
+                            <tr><td><strong>Eu-152</strong> (Еуропий-152)</td><td><strong>121.8</strong>, 244.7, <strong>344.3</strong>, 778.9, ... <strong>1408.0</strong></td><td>"Күрделі" спектр.</td></tr>
+                            <tr><td><strong>Zn-65</strong> (Мырыш-65)</td><td>511.0, <strong>1115.5</strong></td><td>Жоғары энергиялы пик + аннигиляция пигі.</td></tr>
+                        </tbody>
+                    </table>`
+            }
+        };
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+
+            
+            const langSelect = document.getElementById('lang-select');
+            const studentNameInput = document.getElementById('student-name');
+            const studentGroupInput = document.getElementById('student-group');
+
+           
+            const sourceSelect = document.getElementById('source-select');
+            const hvSlider = document.getElementById('hv-slider');
+            const hvValue = document.getElementById('hv-value');
+            const gainSlider = document.getElementById('gain-slider');
+            const gainValue = document.getElementById('gain-value');
+            const timeInput = document.getElementById('time-input');
+            const startButton = document.getElementById('start-button');
+            const clearButton = document.getElementById('clear-button');
+            const helpButton = document.getElementById('help-button'); 
+            const resetButton = document.getElementById('reset-button'); 
+            
+           
+            const chartCanvas = document.getElementById('spectrum-chart');
+            const spectrumInfo = document.getElementById('spectrum-info');
+            
+           
+            const helpModal = document.getElementById('help-modal'); 
+            const helpModalContentWrapper = document.getElementById('help-modal-content-wrapper');
+            const closeModalButton = document.getElementById('close-modal-button'); 
+            
+            
+            const resultModal = document.getElementById('result-modal');
+            const closeResultModalButton = document.getElementById('close-result-modal');
+            const resultContent = document.getElementById('result-content');
+            const printResultButton = document.getElementById('print-result-button');
+            
+            
+            const isotopeGuessSelect = document.getElementById('isotope-guess');
+            const checkButton = document.getElementById('check-button');
+            const attemptsInfo = document.getElementById('attempts-info');
+
+            
+            const CHANNELS = 1024; 
+            const M0_C2 = 511;     
+            const BASE_HV = 700;   
+            const BASE_GAIN = 50;
+            const BASE_CALIBRATION_K = 2.0; // кэВ / канал
+            
+            const BASE_FWHM_KEV = 661.7 * 0.075; 
+            const BASE_SIGMA_KEV = BASE_FWHM_KEV / 2.355; 
+            
+           
+            const ALL_SOURCES = {
+                'Background': { name: { ru: "Фон", en: "Background", kz: "Фон" }, lines: [] },
+                'Cs-137': { name: { ru: "Цезий-137", en: "Cesium-137", kz: "Цезий-137" }, lines: [ { energy: 661.7, intensity: 1.0 } ] },
+                'Co-60':  { name: { ru: "Кобальт-60", en: "Cobalt-60", kz: "Кобальт-60" }, lines: [ { energy: 1173.2, intensity: 1.0 }, { energy: 1332.5, intensity: 1.0 } ] },
+                'Na-22':  { name: { ru: "Натрий-22", en: "Sodium-22", kz: "Натрий-22" }, lines: [ { energy: 511, intensity: 1.8 }, { energy: 1274.5, intensity: 1.0 } ] },
+                'Mn-54': { name: { ru: "Марганец-54", en: "Manganese-54", kz: "Марганец-54" }, lines: [ { energy: 834.8, intensity: 1.0 } ] },
+                'Bi-207': { name: { ru: "Висмут-207", en: "Bismuth-207", kz: "Висмут-207" }, lines: [ { energy: 569.7, intensity: 0.98 }, { energy: 1063.7, intensity: 0.75 } ] },
+                'Am-241': { name: { ru: "Америций-241", en: "Americium-241", kz: "Америций-241" }, lines: [ { energy: 59.5, intensity: 1.0 } ] },
+                'Cd-109': { name: { ru: "Кадмий-109", en: "Cadmium-109", kz: "Кадмий-109" }, lines: [ { energy: 88.0, intensity: 0.1 } ] },
+                'Ba-133': { name: { ru: "Барий-133", en: "Barium-133", kz: "Барий-133" }, lines: [ { energy: 81.0, intensity: 0.34 }, { energy: 276.4, intensity: 0.07 }, { energy: 302.9, intensity: 0.18 }, { energy: 356.0, intensity: 0.62 }, { energy: 383.8, intensity: 0.09 } ] },
+                'Eu-152': { name: { ru: "Европий-152", en: "Europium-152", kz: "Еуропий-152" }, lines: [ { energy: 121.8, intensity: 0.28 }, { energy: 344.3, intensity: 0.26 }, { energy: 1408.0, intensity: 0.21 } ] },
+                'Zn-65': { name: { ru: "Цинк-65", en: "Zinc-65", kz: "Мырыш-65" }, lines: [ { energy: 511.0, intensity: 0.05 }, { energy: 1115.5, intensity: 0.5 } ] }
+            };
+
+            const UNKNOWN_OPTIONS = ['Mn-54', 'Bi-207', 'Am-241', 'Cd-109', 'Ba-133', 'Eu-152', 'Zn-65'];
+
+           
+            let myChart; 
+            let currentUnknownKey = "Mn-54"; 
+            let attemptsLeft = 3; 
+            let isMeasuring = false; 
+            let currentLang = 'ru'; // Язык по умолчанию
+
+            
+
+            function gaussian(x, A, mu, sigma) {
+                if (sigma <= 0) return (x === mu) ? A : 0;
+                return A * Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)));
+            }
+
+            function comptonContinuum(x, B, mu_c, sigma_c) {
+                const shape = B * (1 - Math.pow(x / (mu_c + 1e-6), 0.5));
+                const edge = 0.5 * (1 - Math.tanh((x - mu_c) / (sigma_c + 1e-6)));
+                return (x < mu_c) ? shape * edge : 0;
+            }
+
+            function poissonRandom(lambda) {
+                if (lambda > 30) {
+                    let u1 = Math.random(), u2 = Math.random();
+                    let z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                    let result = Math.round(lambda + z * Math.sqrt(lambda));
+                    return Math.max(0, result);
+                }
+                let L = Math.exp(-lambda), k = 0, p = 1;
+                do { k++; p *= Math.random(); } while (p > L);
+                return k - 1;
+            }
+
+            function getCalibrationFactor() {
+                const hv_factor = parseFloat(hvSlider.value) / BASE_HV;
+                const gain_factor = parseFloat(gainSlider.value) / BASE_GAIN;
+                return BASE_CALIBRATION_K / (hv_factor * gain_factor);
+            }
+            
+            function getSigmaForEnergy(energy_keV, k_session) {
+                const sigma_keV = BASE_SIGMA_KEV * Math.sqrt(energy_keV / 661.7);
+                const sigma_channels = sigma_keV / k_session;
+                return Math.max(1.5, sigma_channels); 
+            }
+
+            function generateSpectrum() {
+                const selectedSourceValue = sourceSelect.value;
+                const time = parseFloat(timeInput.value);
+                
+                let sourceKey = (selectedSourceValue === 'Unknown') ? currentUnknownKey : selectedSourceValue;
+                const source = ALL_SOURCES[sourceKey];
+                
+                const k_session = getCalibrationFactor(); 
+                
+                let spectrumData = new Array(CHANNELS).fill(0);
+
+                for (let x = 0; x < CHANNELS; x++) {
+                    spectrumData[x] += 50 * Math.exp(-x / (CHANNELS / 4));
+                }
+
+                if (source && source.lines) {
+                    for (const line of source.lines) {
+                        const E_gamma = line.energy; 
+                        const mu_pp = E_gamma / k_session; 
+                        
+                        const E_ce = E_gamma * (1 - (1 / (1 + (2 * E_gamma / M0_C2))));
+                        const mu_ce = E_ce / k_session; 
+
+                        const sigma_pp = getSigmaForEnergy(E_gamma, k_session);
+                        const sigma_ce = sigma_pp; 
+
+                        const A_pp = line.intensity * 50000;
+                        const B_ce = A_pp * 1.5; 
+
+                        for (let x = 0; x < CHANNELS; x++) {
+                            const photopk = gaussian(x, A_pp, mu_pp, sigma_pp);
+                            const compton = comptonContinuum(x, B_ce, mu_ce, sigma_ce);
+                            spectrumData[x] += photopk + compton;
+                        }
+                    }
+                }
+                
+                const time_factor = time / 120; 
+                for (let x = 0; x < CHANNELS; x++) {
+                    spectrumData[x] = poissonRandom(spectrumData[x] * time_factor);
+                }
+                
+                // Возвращаем имя на текущем языке
+                return { data: spectrumData, sourceName: source.name[currentLang] };
+            }
+
+
+            
+            
+            function initializeChart() {
+                const ctx = chartCanvas.getContext('2d');
+                const channelLabels = Array.from(Array(CHANNELS).keys());
+                const t = translations[currentLang];
+                
+                myChart = new Chart(ctx, {
+                    type: 'line', 
+                    data: {
+                        labels: channelLabels,
+                        datasets: [{
+                            label: t.chartLabel, // <-- ПЕРЕВОД
+                            data: new Array(CHANNELS).fill(0), 
+                            borderColor: 'var(--accent-color)',
+                            backgroundColor: 'rgba(0, 191, 255, 0.1)',
+                            borderWidth: 1.5,
+                            pointRadius: 0, 
+                            fill: true,
+                            tension: 0.1 
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 }, 
+                        scales: {
+                            x: {
+                                title: { display: true, text: t.chartXAxis, color: 'white' }, // <-- ПЕРЕВОД
+                                min: 0,
+                                max: CHANNELS,
+                                ticks: { color: 'white' }, 
+                                grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                                border: { color: 'white' } 
+                            },
+                            y: {
+                                title: { display: true, text: t.chartYAxis, color: 'white' }, // <-- ПЕРЕВОД
+                                beginAtZero: true,
+                                ticks: { color: 'white' }, 
+                                grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                                border: { color: 'white' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false } 
+                        },
+                        
+                        onClick: (e, elements, chart) => {
+                            const activePoints = chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+                            if (activePoints.length > 0) {
+                                const clickedIndex = activePoints[0].index;
+                                const counts = chart.data.datasets[0].data[clickedIndex];
+                                // Выводим текст из словаря, заменяя {ключи}
+                                spectrumInfo.textContent = translations[currentLang].infoBoxContent
+                                    .replace('{channel}', clickedIndex)
+                                    .replace('{counts}', counts);
+                            }
+                        }
+                    }
+                });
+            }
+
+           
+            function updateLanguage(lang) {
+                if (!translations[lang]) lang = 'ru';
+                currentLang = lang;
+                document.documentElement.lang = lang;
+                
+                const t = translations[lang];
+
+                
+                document.querySelectorAll('[data-lang]').forEach(el => {
+                    const key = el.getAttribute('data-lang');
+                    if (t[key]) {
+                        if (el.tagName === 'OPTGROUP') {
+                            el.label = t[key];
+                        } else {
+                            el.textContent = t[key];
+                        }
+                    }
+                });
+                
+                
+                document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-lang-placeholder');
+                    if (t[key]) {
+                        el.placeholder = t[key];
+                    }
+                });
+
+               
+                helpModalContentWrapper.innerHTML = t.modalHelpHTML;
+                
+                
+                if (myChart) {
+                    myChart.options.scales.x.title.text = t.chartXAxis;
+                    myChart.options.scales.y.title.text = t.chartYAxis;
+                    myChart.data.datasets[0].label = t.chartLabel;
+                    myChart.update('none');
+                }
+                
+              
+                if (!isMeasuring) {
+                    startButton.textContent = t.btnStart;
+                } else {
+                    startButton.textContent = t.btnStartMeasuring;
+                }
+                
+              
+                const currentInfo = spectrumInfo.textContent;
+                if (currentInfo.includes("Введите") || currentInfo.includes("Enter") || currentInfo.includes("Бастау")) {
+                    spectrumInfo.textContent = t.infoBoxInit;
+                } else if (currentInfo.includes("очищен") || currentInfo.includes("cleared") || currentInfo.includes("тазартылды")) {
+                    spectrumInfo.textContent = t.infoBoxCleared;
+                }
+                
+                
+                if (attemptsLeft > 0) {
+                    attemptsInfo.textContent = t.attemptsLeft.replace('{count}', attemptsLeft);
+                } else if (checkButton.disabled) { // Задание выполнено
+                    attemptsInfo.textContent = t.attemptsDone;
+                } else {
+                     attemptsInfo.textContent = t.attemptsFailed;
+                }
+            }
+
+            
+            function checkStudentFields() {
+                const nameFilled = studentNameInput.value.trim() !== '';
+                const groupFilled = studentGroupInput.value.trim() !== '';
+                return nameFilled && groupFilled;
+            }
+
+            function updateControlLock() {
+                const fieldsFilled = checkStudentFields();
+                const canUseControls = fieldsFilled && !isMeasuring;
+                
+                startButton.disabled = !canUseControls;
+                clearButton.disabled = !canUseControls;
+                resetButton.disabled = !canUseControls;
+                
+                sourceSelect.disabled = !fieldsFilled;
+                hvSlider.disabled = !fieldsFilled;
+                gainSlider.disabled = !fieldsFilled;
+                timeInput.disabled = !fieldsFilled;
+                
+                checkButton.disabled = !fieldsFilled || (attemptsLeft <= 0);
+                
+                helpButton.disabled = isMeasuring; 
+            }
+
+            function setControlsDisabled(disabled) {
+                isMeasuring = disabled;
+                // Обновляем текст кнопки С УЧЕТОМ ЯЗЫКА
+                startButton.textContent = disabled ? translations[currentLang].btnStartMeasuring : translations[currentLang].btnStart;
+                updateControlLock();
+            }
+            
+            function startSimulation() {
+                if (isMeasuring) return;
+                
+                setControlsDisabled(true); 
+                
+                setTimeout(() => {
+                    // generateSpectrum() теперь сама вернет имя на нужном языке
+                    const { data, sourceName } = generateSpectrum(); 
+                    
+                    myChart.data.datasets[0].data = data;
+                    myChart.update(); 
+                    
+                    const t = translations[currentLang];
+                    const selectedSourceValue = sourceSelect.value;
+                    let titleName;
+                    
+                    if (selectedSourceValue === 'Unknown') {
+                        titleName = t.sourceUnknown;
+                    } else if (ALL_SOURCES[selectedSourceValue]) {
+                        titleName = ALL_SOURCES[selectedSourceValue].name[currentLang];
+                    } else {
+                        titleName = ALL_SOURCES['Background'].name[currentLang]; 
+                    }
+                    
+                    spectrumInfo.textContent = t.infoBoxSpectrumFor.replace('{sourceName}', titleName) + ` ${t.infoBoxClick}`;
+                    
+                    setControlsDisabled(false); 
+                }, 500); 
+            }
+
+            function clearChart() {
+                if (isMeasuring) return;
+                myChart.data.datasets[0].data = new Array(CHANNELS).fill(0);
+                myChart.update();
+                spectrumInfo.textContent = translations[currentLang].infoBoxCleared;
+            }
+
+            function fullReset() {
+                if (isMeasuring) return;
+                
+                if (!checkStudentFields()) {
+                    alert(translations[currentLang].alertFillFields);
+                    return;
+                }
+                
+                console.log("--- ОБЩИЙ СБРОС ---");
+                
+                setRandomUnknown(); 
+                clearChart();       
+                sourceSelect.value = 'Background'; 
+                
+                hvSlider.value = BASE_HV;
+                gainSlider.value = BASE_GAIN;
+                timeInput.value = 120;
+                updateSliderValues();
+                
+                updateControlLock(); 
+                
+                setTimeout(startSimulation, 100); 
+            }
+
+            function updateSliderValues() {
+                hvValue.textContent = hvSlider.value;
+                gainValue.textContent = gainSlider.value;
+            }
+            
+            function calculateScore(attemptsLeft) {
+                 if (attemptsLeft === 2) return 100; // 1-я попытка
+                 if (attemptsLeft === 1) return 85;  // 2-я попытка
+                 if (attemptsLeft === 0) return 70;  // 3-я попытка
+                 return 0; 
+            }
+            
+            function showResultModal(score, isCorrect) {
+                const name = studentNameInput.value.trim();
+                const group = studentGroupInput.value.trim();
+                const correctIsotopeName = ALL_SOURCES[currentUnknownKey].name[currentLang];
+                const t = translations[currentLang];
+
+                let resultHTML = `
+                    <p><strong>${t.resultStudent}</strong> ${name}</p>
+                    <p><strong>${t.resultGroup}</strong> ${group}</p>
+                    <hr>
+                `;
+
+                if (isCorrect) {
+                    resultHTML += `
+                        <p><strong>${t.resultTitle}</strong> <span class="score">${t.resultScorePass.replace('{score}', score)}</span></p>
+                        <p>${t.resultCorrect} <strong>${correctIsotopeName}</strong>.</p>
+                    `;
+                } else { // Это значит score === 0
+                    resultHTML += `
+                        <p><strong>${t.resultTitle}</strong> <span class="score fail">${t.resultScoreFail}</span></p>
+                        <p>${t.resultIncorrect} <strong>${correctIsotopeName}</strong>.</p>
+                    `;
+                }
+                
+                resultContent.innerHTML = resultHTML;
+                resultModal.style.display = "block";
+            }
+
+            function checkAnswer() {
+                const t = translations[currentLang]; // Получаем текущий язык
+                
+                if (!checkStudentFields()) {
+                    alert(t.alertFillFields);
+                    return;
+                }
+                
+                if (attemptsLeft <= 0) {
+                    alert(t.alertGameOver);
+                    return;
+                }
+                
+                const guess = isotopeGuessSelect.value;
+                
+                if (guess === 'none') {
+                    alert(t.alertSelectIsotope);
+                    return;
+                }
+
+                if (guess === currentUnknownKey) {
+                   
+                    const score = calculateScore(attemptsLeft - 1); 
+                    showResultModal(score, true); 
+                    
+                    attemptsLeft = 0; 
+                    attemptsInfo.textContent = t.attemptsDone;
+                    checkButton.disabled = true;
+                } else {
+                    
+                    attemptsLeft--;
+                    if (attemptsLeft > 0) {
+                        const wrongIsotopeName = ALL_SOURCES[guess].name[currentLang];
+                        alert(t.alertWrongGuess.replace('{sourceName}', wrongIsotopeName));
+                        attemptsInfo.textContent = t.attemptsLeft.replace('{count}', attemptsLeft);
+                    } else {
+                       
+                        showResultModal(0, false); 
+                        
+                        attemptsInfo.textContent = t.attemptsFailed;
+                        checkButton.disabled = true;
+                    }
+                }
+            }
+
+            function setRandomUnknown() {
+                const randomIndex = Math.floor(Math.random() * UNKNOWN_OPTIONS.length);
+                currentUnknownKey = UNKNOWN_OPTIONS[randomIndex];
+                
+                attemptsLeft = 3;
+                if (translations[currentLang]) { // Проверка, что словарь уже загружен
+                     attemptsInfo.textContent = translations[currentLang].attemptsLeft.replace('{count}', attemptsLeft);
+                }
+                isotopeGuessSelect.value = 'none';
+                
+                console.log(`--- НОВОЕ ЗАДАНИЕ --- \nПравильный ответ: ${currentUnknownKey}`);
+            }
+
+
+         
+            langSelect.addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+            });
+
+            studentNameInput.addEventListener('input', updateControlLock);
+            studentGroupInput.addEventListener('input', updateControlLock);
+
+           
+            hvSlider.addEventListener('input', updateSliderValues);
+            gainSlider.addEventListener('input', updateSliderValues);
+            
+           
+            startButton.addEventListener('click', startSimulation);
+            clearButton.addEventListener('click', clearChart);
+            checkButton.addEventListener('click', checkAnswer);
+            resetButton.addEventListener('click', fullReset); 
+            
+           
+            helpButton.addEventListener('click', () => {
+                helpModal.style.display = "block";
+            });
+            
+            closeModalButton.addEventListener('click', () => {
+                helpModal.style.display = "none";
+            });
+            
+          
+            printResultButton.addEventListener('click', () => {
+                window.print();
+            });
+            
+            closeResultModalButton.addEventListener('click', () => {
+                resultModal.style.display = "none";
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == helpModal) {
+                    helpModal.style.display = "none";
+                }
+                if (event.target == resultModal) {
+                    resultModal.style.display = "none";
+                }
+            });
+
+         
+            initializeChart();  
+            setRandomUnknown(); 
+            updateSliderValues(); 
+            sourceSelect.value = 'Background';
+            
+            
+            updateLanguage(currentLang); 
+            
+           
+            updateControlLock(); 
+            
+            
+            clearChart(); 
+            spectrumInfo.textContent = translations[currentLang].infoBoxInit;
+            
+        });
+    </script>
+
+</body>
+</html>

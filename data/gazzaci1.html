@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Газовые законы и 1-й закон термодинамики</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --accent: #e67e22;
+            --text: #2c3e50;
+            --bg: #ecf0f1;
+            --panel: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        @media (max-width: 800px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        /* Карточки */
+        .card {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 { margin-top: 0; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        /* Кнопки выбора процесса */
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: #bdc3c7;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .mode-btn.active {
+            background: var(--primary);
+            transform: scale(1.05);
+        }
+
+        /* Формула */
+        .formula-box {
+            font-size: 1.8em;
+            text-align: center;
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .crossed {
+            text-decoration: line-through;
+            text-decoration-color: #e74c3c;
+            text-decoration-thickness: 3px;
+            opacity: 0.5;
+        }
+
+        .zero-val {
+            color: #e74c3c;
+            font-size: 0.7em;
+            vertical-align: super;
+        }
+
+        /* Канвасы */
+        canvas {
+            width: 100%;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+
+        /* Управление */
+        input[type=range] {
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .data-val { font-weight: bold; font-size: 1.2em; color: var(--primary); }
+        .data-label { font-size: 0.85em; color: #7f8c8d; }
+
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align:center;">Применение газовых законов к термодинамике</h1>
+
+    <div class="mode-buttons">
+        <button class="mode-btn active" onclick="setMode('isochoric')">Изохорный (V=const)</button>
+        <button class="mode-btn" onclick="setMode('isobaric')">Изобарный (P=const)</button>
+        <button class="mode-btn" onclick="setMode('isothermal')">Изотермический (T=const)</button>
+        <button class="mode-btn" onclick="setMode('adiabatic')">Адиабатный (Q=0)</button>
+    </div>
+
+    <div class="formula-box" id="formula-display">
+        Q = &Delta;U + <span class="crossed">A</span>
+    </div>
+
+    <div class="container">
+        
+        <div class="card">
+            <h2>PV - Диаграмма</h2>
+            <canvas id="graphCanvas" width="400" height="300"></canvas>
+            <div style="text-align: center; margin-top: 5px; color: #7f8c8d;">
+                Ось Y: Давление (P) | Ось X: Объем (V)
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Состояние системы</h2>
+            <canvas id="pistonCanvas" width="300" height="150"></canvas>
+            
+            <label style="display:block; margin-top:15px; font-weight:bold;">Изменить состояние:</label>
+            <input type="range" id="mainSlider" min="1" max="100" value="50">
+            
+            <div class="data-grid">
+                <div>
+                    <div class="data-val" id="val-p">100</div>
+                    <div class="data-label">Давление (кПа)</div>
+                </div>
+                <div>
+                    <div class="data-val" id="val-v">2.0</div>
+                    <div class="data-label">Объем (л)</div>
+                </div>
+                <div>
+                    <div class="data-val" id="val-t">300</div>
+                    <div class="data-label">Температура (К)</div>
+                </div>
+            </div>
+            
+            <div id="desc-text" style="margin-top: 15px; font-style: italic; color: #555;">
+                Газ нагревается в закрытом сосуде. Работа не совершается.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Конфигурация ---
+        const graphCanvas = document.getElementById('graphCanvas');
+        const pistonCanvas = document.getElementById('pistonCanvas');
+        const gCtx = graphCanvas.getContext('2d');
+        const pCtx = pistonCanvas.getContext('2d');
+        
+        // Переменные состояния (начальные)
+        // V: 1-5 л, P: 100-500 кПа, T: вычисляется
+        let mode = 'isochoric';
+        
+        // Базовые константы для симуляции
+        const nR = 8.31 * 0.5; // ню * R (для простоты)
+        
+        // Текущие значения
+        let P = 100; // кПа
+        let V = 2;   // л
+        let T = 300; // К
+        
+        // Истории точек для графика (след)
+        let pathPoints = []; 
+
+        function setMode(newMode) {
+            mode = newMode;
+            pathPoints = []; // Сброс следа на графике
+            
+            // Сброс слайдера в середину
+            document.getElementById('mainSlider').value = 50;
+            
+            // Обновляем кнопки
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`button[onclick="setMode('${newMode}')"]`).classList.add('active');
+
+            // Обновляем формулу и описание
+            const formulaDiv = document.getElementById('formula-display');
+            const descDiv = document.getElementById('desc-text');
+            
+            if (mode === 'isochoric') { // Шарль
+                formulaDiv.innerHTML = `Q = &Delta;U + <span class="crossed">A</span> <span class="zero-val">0</span>`;
+                descDiv.innerText = "Изохорный процесс: Объем постоянен. Всё тепло идет на изменение внутренней энергии.";
+                V = 2.5; // Фиксируем объем
+            } 
+            else if (mode === 'isobaric') { // Гей-Люссак
+                formulaDiv.innerHTML = `Q = &Delta;U + A`;
+                descDiv.innerText = "Изобарный процесс: Давление постоянно. Тепло расходуется и на нагрев, и на работу.";
+                P = 150; // Фиксируем давление
+            } 
+            else if (mode === 'isothermal') { // Бойль-Мариотт
+                formulaDiv.innerHTML = `Q = <span class="crossed">&Delta;U</span> <span class="zero-val">0</span> + A`;
+                descDiv.innerText = "Изотермический процесс: Температура постоянна. Внутренняя энергия не меняется. Всё тепло идет на работу.";
+                T = 300; // Фиксируем температуру
+            }
+            else if (mode === 'adiabatic') {
+                formulaDiv.innerHTML = `<span class="crossed">Q</span> <span class="zero-val">0</span> = &Delta;U + A`;
+                descDiv.innerText = "Адиабатный процесс: Теплообмена нет. Газ совершает работу за счет убыли внутренней энергии (охлаждается при расширении).";
+                // Начальная точка для адиабаты
+                P = 200; V = 2; T = (P*V)/nR * 10; // примерный старт
+            }
+            
+            updateSimulation();
+        }
+
+        function updateSimulation() {
+            const sliderVal = parseInt(document.getElementById('mainSlider').value);
+            const percent = sliderVal / 100; // 0.0 to 1.0
+
+            // Логика пересчета переменных
+            if (mode === 'isochoric') {
+                // V const, меняем P и T
+                V = 2.5;
+                // P от 50 до 450
+                P = 50 + (400 * percent);
+                // T = PV
+                T = (P * V) / 0.8; // коэффициент для масштаба
+            }
+            else if (mode === 'isobaric') {
+                // P const, меняем V и T
+                P = 150;
+                // V от 1 до 5
+                V = 1 + (4 * percent);
+                T = (P * V) / 0.8;
+            }
+            else if (mode === 'isothermal') {
+                // T const, меняем V, вычисляем P
+                T = 300;
+                // V от 1 до 5
+                V = 1 + (4 * percent);
+                // P = nRT / V -> P ~ Const / V
+                // Подгоним константу чтобы при V=2.5 P было норм
+                const constant = 400; 
+                P = constant / V;
+            }
+            else if (mode === 'adiabatic') {
+                // PV^gamma = const. gamma = 1.67
+                // Пусть V меняется слайдером
+                V = 1 + (4 * percent);
+                // P = C / V^1.67. Пусть при V=2, P=200
+                const C = 200 * Math.pow(2, 1.67);
+                P = C / Math.pow(V, 1.67);
+                // T ~ PV
+                T = (P * V) / 0.8;
+            }
+
+            // Ограничения для UI
+            document.getElementById('val-p').innerText = Math.round(P);
+            document.getElementById('val-v').innerText = V.toFixed(2);
+            document.getElementById('val-t').innerText = Math.round(T);
+
+            drawGraph();
+            drawPiston();
+        }
+
+        function drawGraph() {
+            // Очистка
+            gCtx.clearRect(0,0, graphCanvas.width, graphCanvas.height);
+            
+            // Оси
+            const margin = 40;
+            const w = graphCanvas.width - margin * 2;
+            const h = graphCanvas.height - margin * 2;
+            
+            gCtx.beginPath();
+            gCtx.strokeStyle = "#333";
+            gCtx.lineWidth = 2;
+            gCtx.moveTo(margin, margin); // Y top
+            gCtx.lineTo(margin, h + margin); // Origin
+            gCtx.lineTo(w + margin, h + margin); // X right
+            gCtx.stroke();
+            
+            // Сетка / Метки
+            gCtx.font = "12px Arial";
+            gCtx.fillStyle = "#333";
+            gCtx.fillText("P", margin - 20, margin);
+            gCtx.fillText("V", w + margin, h + margin + 20);
+
+            // Масштабирование
+            // V (1-6) -> X
+            // P (0-500) -> Y
+            const mapX = (val) => margin + ((val) / 6) * w;
+            const mapY = (val) => (h + margin) - ((val) / 500) * h;
+
+            // Добавляем точку в историю для рисования линии процесса
+            pathPoints.push({x: V, y: P});
+            if(pathPoints.length > 50) pathPoints.shift(); // Храним последние 50 точек
+
+            // Рисуем линию (след)
+            if (pathPoints.length > 1) {
+                gCtx.beginPath();
+                gCtx.strokeStyle = "#e74c3c";
+                gCtx.lineWidth = 3;
+                gCtx.moveTo(mapX(pathPoints[0].x), mapY(pathPoints[0].y));
+                for(let p of pathPoints) {
+                    gCtx.lineTo(mapX(p.x), mapY(p.y));
+                }
+                gCtx.stroke();
+            }
+
+            // Текущая точка
+            const px = mapX(V);
+            const py = mapY(P);
+            
+            gCtx.beginPath();
+            gCtx.fillStyle = "#2980b9";
+            gCtx.arc(px, py, 6, 0, Math.PI*2);
+            gCtx.fill();
+            
+            // Пунктиры к осям
+            gCtx.setLineDash([5, 5]);
+            gCtx.lineWidth = 1;
+            gCtx.beginPath();
+            gCtx.moveTo(px, py);
+            gCtx.lineTo(px, h + margin); // вниз
+            gCtx.moveTo(px, py);
+            gCtx.lineTo(margin, py); // влево
+            gCtx.stroke();
+            gCtx.setLineDash([]);
+        }
+
+        function drawPiston() {
+            pCtx.clearRect(0,0, pistonCanvas.width, pistonCanvas.height);
+            
+            // Цвет газа зависит от T (300K - синий, 800K - красный)
+            // Нормализация T: (T - 100) / 1000
+            let tColor = Math.min(1, Math.max(0, (T - 100) / 800));
+            let r = Math.round(tColor * 255);
+            let b = Math.round((1 - tColor) * 255);
+            let color = `rgb(${r}, 50, ${b})`;
+
+            // Рисуем цилиндр
+            const cw = pistonCanvas.width - 40;
+            const ch = 100;
+            const cx = 20;
+            const cy = 25;
+
+            // Стенки
+            pCtx.fillStyle = "#ecf0f1";
+            pCtx.fillRect(cx, cy, cw, ch);
+            pCtx.strokeStyle = "#7f8c8d";
+            pCtx.lineWidth = 4;
+            pCtx.strokeRect(cx, cy, cw, ch);
+
+            // Поршень и газ
+            // V (1-6) переводим в ширину газа
+            const maxV = 6;
+            let gasW = (V / maxV) * cw;
+            
+            // Газ
+            pCtx.fillStyle = color;
+            pCtx.globalAlpha = 0.6;
+            pCtx.fillRect(cx, cy, gasW, ch);
+            pCtx.globalAlpha = 1.0;
+
+            // Поршень (прямоугольник справа от газа)
+            pCtx.fillStyle = "#34495e";
+            pCtx.fillRect(cx + gasW, cy, 10, ch);
+            
+            // Шток
+            pCtx.beginPath();
+            pCtx.strokeStyle = "#34495e";
+            pCtx.lineWidth = 6;
+            pCtx.moveTo(cx + gasW + 10, cy + ch/2);
+            pCtx.lineTo(cx + cw + 15, cy + ch/2);
+            pCtx.stroke();
+            
+            // Теплоизоляция (для адиабатного)
+            if (mode === 'adiabatic') {
+                 pCtx.strokeStyle = "#e67e22";
+                 pCtx.lineWidth = 8;
+                 pCtx.strokeRect(cx-5, cy-5, cw+10, ch+10);
+                 pCtx.font = "12px Arial";
+                 pCtx.fillStyle = "#e67e22";
+                 pCtx.fillText("Теплоизоляция", cx, cy - 10);
+            }
+            // Горелка (для не адиабатного)
+            else {
+                // Рисуем иконку тепла снизу, если T растет
+                pCtx.font = "20px Arial";
+                pCtx.fillStyle = "#e74c3c";
+                pCtx.fillText("Q", cx + gasW/2 - 10, cy + ch + 25);
+            }
+        }
+
+        document.getElementById('mainSlider').addEventListener('input', updateSimulation);
+        
+        // Старт
+        setMode('isochoric');
+
+    </script>
+</body>
+</html>

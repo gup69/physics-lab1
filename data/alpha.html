@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-key="title">Определение длины пробега альфа-частицы</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]  
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        
+        :root {
+            --main-accent-color: #00c2c2;
+            --main-accent-hover: #009a9a;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --secondary-color: #6c757d;
+        }
+
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1000px; 
+            margin: 0 auto;
+            background: #2a2a4e;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #4a4a7e;
+            overflow: hidden; 
+        }
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 2px solid #4a4a7e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        header h1 {  
+            color: #ffffff;  
+            margin: 0;  
+            font-size: 1.8em;
+            text-align: left;  
+            flex-grow: 1; 
+        }
+
+       
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            background-color: var(--main-accent-color); 
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .header-button:hover {
+            background-color: var(--main-accent-hover); 
+        }
+        #language-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+
+        
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 20px;
+            padding: 20px;
+            background: #232342;
+            border-bottom: 2px solid #4a4a7e;
+        }
+        .student-id-area {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 20px;
+        }
+        .student-id-area .control-group {
+            flex: 1 1 45%; 
+        }
+        
+        .control-group {
+            flex: 1 1 200px; 
+            min-width: 180px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: var(--main-accent-color);  
+        }
+        .control-group select,  
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box; 
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 0;
+            margin-top: 5px;
+        }
+        .value-display {
+            font-size: 1.1em;
+            text-align: right;
+            color: #ffffff;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-basis: 100%; 
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .button-group button {
+            padding: 10px 15px; 
+            font-size: 1.0em; 
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-basis: 200px; 
+            background-color: transparent;
+            border-width: 2px;
+            border-style: solid;
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+
+        
+        .button-group button:disabled,
+        #record-journal-button:disabled,  
+        #clear-journal-button:disabled,  
+        #check-answer-button:disabled,
+        #source-guess:disabled {
+            border-color: #4a4a7e !important;
+            color: #4a4a7e !important;
+            background-color: transparent !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .button-group button:disabled:hover,
+        #record-journal-button:disabled:hover,  
+        #clear-journal-button:disabled:hover,  
+        #check-answer-button:disabled:hover {
+            color: #4a4a7e !important;
+            background-color: transparent !important;
+        }
+
+        
+        #start-button {
+            border-color: var(--main-accent-color);
+            color: var(--main-accent-color);
+        }
+        #start-button:hover:not(:disabled) {
+            background-color: var(--main-accent-color);
+            color: white;
+        }
+        
+        /* ОЧИСТИТЬ (Красный - сохранен) */
+        #clear-sim-button {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+        #clear-sim-button:hover:not(:disabled) {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        
+        #reset-button {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+        #reset-button:hover:not(:disabled) {
+            background-color: var(--warning-color);
+            color: #212529; 
+        }
+       
+        .simulation-area {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            align-items: flex-start; 
+        }
+        
+        .detector-visual {
+            flex: 1 1 300px; 
+            min-width: 250px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            text-align: center;
+        }
+        .detector-visual img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            background: #e0e0e0;
+        }
+        .detector-visual p {
+            font-size: 0.9em;
+            color: var(--main-accent-color); 
+            margin: 5px 0 0 0;
+        }
+
+        .info-box {
+            flex: 2 1 400px; 
+            min-width: 300px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: var(--main-accent-color); 
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        #main-counter-display {
+            font-family: "Courier New", Courier, monospace;
+            color: var(--main-accent-color); 
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            min-height: 50px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .info-row span:first-child {
+            font-weight: bold;
+            color: var(--main-accent-color); 
+        }
+        .info-row span:last-child {
+            font-weight: bold;
+            color: #ffffff;
+            font-family: "Courier New", Courier, monospace;
+        }
+        #timer-progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #4a4a7e;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        #timer-progress-fill {
+            width: 0%; 
+            height: 100%;
+            background-color: var(--main-accent-color); 
+            transition: width 0.1s linear;
+        }
+
+        
+        .lab-section {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid #4a4a7e;
+        }
+        .lab-section h2 {
+            color: var(--main-accent-color); 
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        
+        .data-analysis-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .journal-area {
+            flex: 1 1 300px; 
+            min-width: 280px;
+        }
+        .analysis-area {
+            flex: 2 1 500px; 
+            min-width: 400px;
+        }
+
+        #record-journal-button, #clear-journal-button {
+             padding: 8px 12px;
+             font-size: 0.9em;
+             font-weight: bold;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             margin-right: 10px;
+             margin-top: 5px;  
+             background-color: transparent;
+             border-width: 2px;
+             border-style: solid;
+             text-transform: uppercase;
+        }
+        #record-journal-button { 
+            border-color: var(--main-accent-color); 
+            color: var(--main-accent-color); 
+        }
+        #record-journal-button:hover:not(:disabled) { 
+            background-color: var(--main-accent-color); 
+            color: white; 
+        }
+        
+        #clear-journal-button { 
+            border-color: var(--secondary-color); 
+            color: var(--secondary-color); 
+        }
+        #clear-journal-button:hover:not(:disabled) { 
+            background-color: var(--secondary-color); 
+            color: white; 
+        }
+
+        #journal-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            font-size: 1.1em;
+        }
+        #journal-table th, #journal-table td {
+            border: 1px solid #4a4a7e;
+            padding: 10px;
+            text-align: center;
+        }
+        #journal-table th {
+            background-color: #232342;
+        }
+        #journal-table tr:nth-child(even) {
+            background-color: #232342;
+        }
+
+        .chart-container-analysis {
+            width: 100%;
+            height: 350px;
+            background: #1a1a2e;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #point-count-display {  
+            color: var(--warning-color); 
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+       
+        #check-answer-button {
+            padding: 10px 15px;
+            font-size: 1.0em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 400px;
+            background-color: transparent;
+            border-width: 2px;
+            border-style: solid;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            
+            border-color: var(--main-accent-color); 
+            color: var(--main-accent-color); 
+        }
+        #check-answer-button:hover:not(:disabled) {
+            background-color: var(--main-accent-color); 
+            color: white;
+        }
+        
+        #feedback-message {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: left;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        .feedback-success {
+            background-color: rgba(0, 194, 194, 0.1); 
+            color: var(--main-accent-color); 
+        }
+        .feedback-fail {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+        }
+
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none; 
+        }
+        .modal-content {
+            background: #2a2a4e;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #4a4a7e;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #e0e0e0;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--main-accent-color); 
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        .modal-content code {
+            background-color: #1a1a2e;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--main-accent-color); 
+        }
+
+        
+        #result-content {
+            text-align: center;
+            color: #e0e0e0 !important;
+        }
+        #result-content h2 {
+            font-size: 2em;
+            color: var(--warning-color); 
+            border-color: var(--warning-color);
+        }
+        #result-content p {
+            font-size: 1.4em;
+            margin: 10px 0;
+        }
+        .final-score {
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--main-accent-color) !important; 
+            margin: 20px 0;
+        }
+        #print-button, #close-result-button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+            margin-right: 10px;  
+            background-color: transparent;
+            border-width: 2px;
+            border-style: solid;
+            text-transform: uppercase;
+        }
+        #print-button {
+            border-color: var(--main-accent-color);
+            color: var(--main-accent-color);
+        }
+        #print-button:hover {
+            background-color: var(--main-accent-color);
+            color: white;
+        }
+        #close-result-button {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+        #close-result-button:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* Стили для печати */
+        @media print {
+            body > .container {
+                box-shadow: none; border: none; background-color: white; color: black;
+            }
+            header, .controls-panel, .simulation-area, .data-analysis-container, 
+            .identification-area, #instructions-modal, #close-result-button, #print-button {
+                display: none !important;
+            }
+            #result-modal {
+                position: static; display: block !important; background: none;
+            }
+            #result-content {
+                width: 100%; max-width: none; background: none; border: none;
+                box-shadow: none; color: black;
+            }
+            #result-content h2 { color: black; border-color: black; }
+            #result-content .final-score { color: black; }
+            body > *:not(#result-modal) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container dark-theme">
+        
+        <header>
+            <div class="header-controls">
+                <select id="language-select">
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                    <option value="kz">Қазақша</option>
+                </select>
+                <h1 data-key="header_title">Определение длины пробега альфа-частицы</h1>
+            </div>
+            <button id="open-instructions-button" class="header-button" data-key="button_instructions">ИНСТРУКЦИЯ</button>
+        </header>
+
+        <div class="controls-panel">
+            <div class="student-id-area">
+                <div class="control-group">
+                    <label for="student-name" data-key="label_name">Ф.И. (Обязательно):</label>
+                    <input type="text" id="student-name" data-key="placeholder_name" placeholder="Иванов И.И.">
+                </div>
+                <div class="control-group">
+                    <label for="student-group" data-key="label_group">Группа (Обязательно):</label>
+                    <input type="text" id="student-group" data-key="placeholder_group" placeholder="П-201">
+                </div>
+            </div>
+            
+            <div class="control-group" style="flex-basis: 400px;">
+                <label for="distance-slider" data-key="label_distance">1. РАССТОЯНИЕ (X, СМ):</label>
+                <input type="range" id="distance-slider" min="0" max="10" value="1" step="0.2">
+                <div class="value-display" id="distance-value">1.0 см</div>
+            </div>
+
+            <div class="control-group">
+                <label for="time-input" data-key="label_time">2. ВРЕМЯ ИЗМЕРЕНИЯ (СЕК):</label>
+                <input type="number" id="time-input" min="1" max="60" value="5" step="1">
+            </div>
+
+            <div class="button-group">
+                <button id="start-button" disabled data-key="button_start">ЗАПУСК СЧЕТЧИКА</button>
+                <button id="clear-sim-button" disabled data-key="button_clear_sim">СБРОС СЧЕТЧИКА</button>
+                <button id="reset-button" disabled data-key="button_reset">НОВЫЙ ИСТОЧНИК</button>
+            </div>
+        </div>
+
+        <div class="simulation-area">
+            <div class="detector-visual">
+                <h3 data-key="heading_detector">Установка</h3>
+                <img src="img/im1.png" alt="Схема установки (Источник и Детектор)">
+                <p data-key="detector_desc">"Источник-X" и Детектор</p>
+            </div>
+
+            <div class="info-box">
+                <h3 data-key="heading_data">Данные измерений</h3>
+                
+                <div id="main-counter-display" data-key="counter_default">--.--</div>
+                
+                <div class="info-row">
+                    <span data-key="info_timer">Таймер:</span>
+                    <span id="timer-display">0.0 сек</span>
+                </div>
+                <div id="timer-progress-bar">
+                    <div id="timer-progress-fill"></div>
+                </div>
+                <hr style="border-color: #4a4a7e; margin: 15px 0;">
+                
+                <div class="info-row">
+                    <span data-key="info_total_counts">Всего событий (N):</span>
+                    <span id="total-counts-display">0</span>
+                </div>
+                <div class="info-row">
+                    <span data-key="info_current_distance">Расстояние (x):</span>
+                    <span id="current-distance-display">1.0 см</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lab-section data-analysis-container">
+            
+            <div class="journal-area">
+                <h2 data-key="heading_journal">Лабораторный журнал</h2>
+                <button id="record-journal-button" disabled data-key="button_record">ЗАФИКСИРОВАТЬ (N)</button>
+                <button id="clear-journal-button" disabled data-key="button_clear_journal">ОЧИСТИТЬ ЖУРНАЛ</button>
+                
+                <table id="journal-table">
+                    <thead>
+                        <tr>
+                            <th data-key="table_x">Расстояние (x, см)</th>
+                            <th data-key="table_n">Всего событий (N)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="analysis-area">
+                <h2 data-key="heading_analysis">Анализ данных: График N(x)</h2>
+                <div class="chart-container-analysis">
+                    <canvas id="analysis-chart-n-vs-x"></canvas>
+                </div>
+                 <div id="point-count-display" data-key="info_points_count">
+                    Точек в журнале: 0/5
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-section identification-area">
+            <h2 data-key="heading_id_prefix">Идентификация "Источника-X" (Попыток: <span id="attempt-counter">3</span>)</h2>
+            <div class="control-group" style="max-width: 400px;">
+                <label for="source-guess" data-key="label_your_answer">Ваш ответ (Источник):</label>
+                <select id="source-guess" disabled>
+                    <option value="none" data-key="option_select_answer">--- Выберите ваш ответ ---</option>
+                    <option value="Po-210" data-key="opt_po">Полоний-210</option>
+                    <option value="Am-241" data-key="opt_am">Америций-241</option>
+                    <option value="U-238" data-key="opt_u">Уран-238</option>
+                    <option value="Cm-244" data-key="opt_cm">Кюрий-244</option>
+                    <option value="Ra-226" data-key="opt_ra">Радий-226</option> 
+                </select>
+            </div>
+            <button id="check-answer-button" disabled data-key="button_check">ИДЕНТИФИЦИРОВАТЬ</button>
+            <div id="feedback-message"></div>
+        </div>
+    </div>
+
+    <div id="instructions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-instructions-button" class="modal-close">&times;</button>
+            <h2 data-key="inst_h2">ИНСТРУКЦИЯ К РАБОТЕ</h2>
+            <div id="inst-content">
+                <p>Загрузка инструкции...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-content" id="result-content">
+            <h2 data-key="res_h2">РЕЗУЛЬТАТ ЛАБОРАТОРНОЙ РАБОТЫ</h2>
+            <p id="result-name-p" data-key="res_name">Студент: </p>
+            <p id="result-group-p" data-key="res_group">Группа: </p>
+            <p id="result-attempts-p" data-key="res_attempts">Использовано попыток: </p>
+            <p data-key="res_final_score">Финальный результат:</p>
+            <div class="final-score" id="result-score">0%</div>
+            <button id="print-button" data-key="button_print">Распечатать</button>
+            <button id="close-result-button" data-key="button_close_program">Закрыть</button>
+        </div>
+    </div>
+    
+   <script>
+        
+        const PHYSICS_CONSTANTS = {
+            'BASE_INTENSITY_CPS': 8000, 
+            'BACKGROUND_CPS': 0.2, 
+            'MIN_POINTS_FOR_TREND': 10,
+            'STRAGGLING_FACTOR': 0.05, 
+            'SOURCES': {
+                'U-238':  { name_ru: "Уран-238",   name_en: "Uranium-238",   name_kz: "Уран-238",   range_cm: 2.7 },
+                'Ra-226': { name_ru: "Радий-226",  name_en: "Radium-226",  name_kz: "Радий-226",  range_cm: 3.3 },
+                'Po-210': { name_ru: "Полоний-210",name_en: "Polonium-210",name_kz: "Полоний-210",range_cm: 3.8 },
+                'Am-241': { name_ru: "Америций-241",name_en: "Americium-241",name_kz: "Америций-241",range_cm: 4.0 },
+                'Cm-244': { name_ru: "Кюрий-244",  name_en: "Curium-244",  name_kz: "Кюрий-244",  range_cm: 4.3 }
+            }
+        };
+
+        
+        const LANGUAGE_STRINGS = {
+            ru: {
+                // ( ... СЛОВАРИ ... )
+                title: "Определение длины пробега альфа-частицы", unit_cm: "см", unit_sec: "сек", unit_cps: "событий/сек", res_no_data: "НЕТ ДАННЫХ",
+                header_title: "Определение длины пробега альфа-частицы", button_instructions: "ИНСТРУКЦИЯ",
+                label_name: "Ф.И. (Обязательно):", placeholder_name: "Иванов И.И.", label_group: "Группа (Обязательно):", placeholder_group: "П-201",
+                label_distance: '1. РАССТОЯНИЕ (X, СМ):', label_time: "2. ВРЕМЯ ИЗМЕРЕНИЯ (СЕК):",
+                button_start: "ЗАПУСК СЧЕТЧIKA", button_sampling: "ИЗМЕРЕНИЕ...", button_clear_sim: "СБРОС СЧЕТЧИКА", button_reset: "НОВЫЙ ИСТОЧНИК",
+                heading_detector: "Установка", detector_desc: '"Источник-X" и Детектор', heading_data: "Данные измерений",
+                counter_default: "--.--", info_timer: "Таймер:", info_total_counts: "Всего событий (N):", info_current_distance: "Расстояние (x):",
+                heading_journal: "Лабораторный журнал", button_record: "ЗАФИКСИРОВАТЬ (N)", button_clear_journal: "ОЧИСТИТЬ ЖУРНАЛ",
+                table_x: "Расстояние (x, см)", table_n: "Всего событий (N)",
+                heading_analysis: "Анализ данных: График N(x)", info_points_count: "Точек в журнале: 0/10",
+                info_points_count_prefix: "Точек в журнале",
+                chart_n_vs_x_label: "События (N)", chart_x_axis: "Расстояние (x, см)", chart_y_n: "Всего событий (N)",
+                heading_id_prefix: 'Идентификация "Источника-X" (Попыток: ', label_your_answer: 'Ваш ответ (Источник):',
+                option_select_answer: "--- Выберите ваш ответ ---", 
+                opt_po: "Полоний-210", opt_am: "Америций-241", opt_u: "Уран-238", opt_cm: "Кюрий-244", opt_ra: "Радий-226",
+                button_check: "ИДЕНТИФИЦИРОВАТЬ",
+                feedback_correct: "ПРАВИЛЬНО! Вы определили источник с {N}-й попытки.",
+                feedback_incorrect: "НЕПРАВИЛЬНО. Пересмотрите ваш график и длину пробега (R). Осталось попыток: {N}.",
+                feedback_no_attempts: "НЕПРАВИЛЬНО. Попытки закончились. Правильный ответ: {source} (R ≈ {range} см).",
+                error_select_source: "Пожалуйста, выберите источник из списка.",
+                error_record_in_progress: "Дождитесь окончания измерения перед записью!",
+                error_zero_counts: "Нельзя записать 0 событий. Проведите измерение.",
+                error_duplicate_point: "Ошибка: Точка для расстояния x={x} см уже есть в журнале. Выберите другое расстояние.",
+                res_h2: "РЕЗУЛЬТАТ ЛАБОРАТОРНОЙ РАБОТЫ", res_name: "Студент:", res_group: "Группа:", res_attempts: "Использовано попыток:",
+                res_final_score: "Финальный результат:", button_print: "Распечатать", button_close_program: "Закрыть",
+                alert_closing: "Работа завершена. Для сохранения результата нажмите 'Распечатать'. \n\nСтраница будет перезагружена.",
+                inst_h2: "ИНСТРУКЦИЯ К РАБОТЕ",
+                instructions_content: `
+                    <ol>
+                        <li><strong>Идентификация:</strong> Введите <strong>Ф.И.</strong> и <strong>Группу</strong>, чтобы активировать кнопки управления.</li>
+                        <li><strong>Цель работы:</strong> Определить неизвестный "Источник-X", измерив длину пробега (R) его альфа-частиц в воздухе.</li>
+                        <li><strong>Теория:</strong> Альфа-частицы имеют очень малую проникающую способность. Вся их энергия теряется на коротком, почти одинаковом расстоянии - <strong>длине пробега (R)</strong>.
+                            <ul>
+                                <li>Если расстояние (x) до детектора <strong>меньше R</strong>, детектор регистрирует много частиц.</li>
+                                <li>Если расстояние (x) <strong>больше R</strong>, детектор не регистрирует ничего (кроме естественного фона).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Сбор данных (Журнал):</strong>
+                            <ul>
+                                <li>Установите <strong>"Время измерения"</strong> (например, 5 секунд). <strong>Не меняйте</strong> это значение!</li>
+                                <li>Соберите <strong>минимум 10 точек</strong> для разных значений расстояния (x).</li>
+                                <li>Начните с <strong>x = 1.0 см</strong>. Нажмите "ЗАПУСК СЧЕТЧИКА".</li>
+                                <li>Дождитесь окончания и нажмите <strong>"ЗАФИКСИРОВАТЬ (N)"</strong>.</li>
+                                <li>Повторите, плавно увеличивая расстояние (например, 1.5, 2.0, 2.5... см). Важно найти точку, где число событий (N) <strong>резко упадет до нуля (фона)</strong>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Анализ и Идентификация:</strong>
+                            <ul>
+                                <li>Программа автоматически построит <strong>График N(x)</strong>.</li>
+                                <li>Найдите на графике <strong>точку обрыва</strong> - расстояние (x), при котором число событий N резко падает. Это и есть ваша измеренная <strong>длина пробега R</strong>.</li>
+                                <li>Сравните ваш R с эталонными значениями:</li>
+                                <li style="list-style-type: none;">
+                                    <ul>
+                                        <li>Уран-238 (U-238): &nbsp; R ≈ 2.7 см</li>
+                                        <li>Радий-226 (Ra-226): &nbsp; R ≈ 3.3 см</li>
+                                        <li>Полоний-210 (Po-210): R ≈ 3.8 см</li>
+                                        <li>Америций-241 (Am-241): R ≈ 4.0 см</li>
+                                        <li>Кюрий-244 (Cm-244): &nbsp; R ≈ 4.3 см</li>
+                                    </ul>
+                                </li>
+                                <li>Выберите ваш ответ в блоке "Идентификация" и нажмите "ИДЕНТИФИЦИРОВАТЬ".</li>
+                            </ul>
+                        </li>
+                         <li><strong>Оценка:</strong> У вас 3 попытки. (100% / 80% / 60%).</li>
+                    </ol>`
+            },
+            en: { // (Словарь 'en' заполнен)
+                title: "Alpha Particle Range Determination", unit_cm: "cm", unit_sec: "sec", unit_cps: "events/sec", res_no_data: "NO DATA",
+                header_title: "Lab Work: Alpha Particle Range", button_instructions: "INSTRUCTIONS",
+                label_name: "Name (Required):", placeholder_name: "John Doe", label_group: "Group (Required):", placeholder_group: "P-201",
+                label_distance: '1. DISTANCE (X, CM):', label_time: "2. MEASUREMENT TIME (SEC):",
+                button_start: "START COUNTER", button_sampling: "MEASURING...", button_clear_sim: "RESET COUNTER", button_reset: "NEW SOURCE",
+                heading_detector: "Setup", detector_desc: '"Source-X" and Detector', heading_data: "Measurement Data",
+                counter_default: "--.--", info_timer: "Timer:", info_total_counts: "Total Events (N):", info_current_distance: "Distance (x):",
+                heading_journal: "Laboratory Journal", button_record: "RECORD (N)", button_clear_journal: "CLEAR JOURNAL",
+                table_x: "Distance (x, cm)", table_n: "Total Events (N)",
+                heading_analysis: "Data Analysis: Graph N(x)", info_points_count: "Points in journal: 0/10",
+                info_points_count_prefix: "Points in journal",
+                chart_n_vs_x_label: "Events (N)", chart_x_axis: "Distance (x, cm)", chart_y_n: "Total Events (N)",
+                heading_id_prefix: 'Identification of "Source-X" (Attempts: ', label_your_answer: 'Your Answer (Source):',
+                option_select_answer: "--- Select your answer ---", 
+                opt_po: "Polonium-210", opt_am: "Americium-241", opt_u: "Uranium-238", opt_cm: "Curium-244", opt_ra: "Radium-226",
+                button_check: "IDENTIFY",
+                feedback_correct: "CORRECT! You identified the source on attempt #{N}.",
+                feedback_incorrect: "INCORRECT. Re-check your graph and the range (R). Attempts left: {N}.",
+                feedback_no_attempts: "INCORRECT. No attempts left. The correct answer was: {source} (R ≈ {range} cm).",
+                error_select_source: "Please select a source from the list.",
+                error_record_in_progress: "Wait for the measurement to finish before recording!",
+                error_zero_counts: "Cannot record 0 events. Run a measurement.",
+                error_duplicate_point: "Error: A point for distance x={x} cm is already in the journal. Choose a different distance.",
+                res_h2: "LABORATORY WORK RESULT", res_name: "Student:", res_group: "Group:", res_attempts: "Attempts used:",
+                res_final_score: "Final Score:", button_print: "Print", button_close_program: "Close",
+                alert_closing: "Work finished. To save your result, press 'Print'. \n\nThe page will be reloaded.",
+                inst_h2: "INSTRUCTIONS",
+                instructions_content: `
+                    <ol>
+                        <li><strong>Identification:</strong> Enter your <strong>Name</strong> and <strong>Group</strong> to activate control buttons.</li>
+                        <li><strong>Objective:</strong> Identify the unknown "Source-X" by measuring the range (R) of its alpha particles in air.</li>
+                        <li><strong>Theory:</strong> Alpha particles have very low penetration. They lose all their energy over a short, well-defined distance called the <strong>Range (R)</strong>.
+                            <ul>
+                                <li>If the distance (x) to the detector is <strong>less than R</strong>, the detector registers many particles.</li>
+                                <li>If the distance (x) is <strong>greater than R</strong>, the detector registers nothing (except natural background).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Data Collection (Journal):</strong>
+                            <ul>
+                                <li>Set the <strong>"Measurement Time"</strong> (e.g., 5 seconds). <strong>Do not change</strong> this value!</li>
+                                <li>Collect a <strong>minimum of 10 points</strong> for different distance values (x).</li>
+                                <li>Start with <strong>x = 1.0 cm</strong>. Press "START COUNTER".</li>
+                                <li>Wait for the measurement to finish. Press <strong>"RECORD (N)"</strong>.</li>
+                                <li>Repeat, increasing the distance (e.g., 1.5, 2.0, 2.5... cm). It's important to find the point where the event count (N) <strong>drops sharply to zero (background)</strong>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Analysis and Identification:</strong>
+                            <ul>
+                                <li>The program will auto-plot the <strong>Graph N(x)</strong>.</li>
+                                <li>Find the <strong>cutoff point</strong> on your graph - the distance (x) where the count N drops. This is your measured <strong>Range (R)</strong>.</li>
+                                <li>Compare your R to the standard values:</li>
+                                <li style="list-style-type: none;">
+                                    <ul>
+                                        <li>Uranium-238 (U-238): &nbsp; R ≈ 2.7 cm</li>
+                                        <li>Radium-226 (Ra-226): &nbsp; R ≈ 3.3 cm</li>
+                                        <li>Polonium-210 (Po-210): R ≈ 3.8 cm</li>
+                                        <li>Americium-241 (Am-241): R ≈ 4.0 cm</li>
+                                        <li>Curium-244 (Cm-244): &nbsp; R ≈ 4.3 cm</li>
+                                    </ul>
+                                </li>
+                                <li>Select your answer in the "Identification" block and press "IDENTIFY".</li>
+                            </ul>
+                        </li>
+                         <li><strong>Grading:</strong> You have 3 attempts. (100% / 80% / 60%).</li>
+                    </ol>`
+            },
+            kz: { 
+                title: "Альфа-бөлшектердің ұшу қашықтығын анықтау", unit_cm: "см", unit_sec: "сек", unit_cps: "оқиға/сек", res_no_data: "ДЕРЕКТЕР ЖОҚ",
+                header_title: "Альфа-бөлшектердің ұшу қашықтығын анықтау", button_instructions: "НҰСҚАУЛЫҚ",
+                label_name: "Аты-жөні (Міндетті):", placeholder_name: "Иванов И.И.", label_group: "Топ (Міндетті):", placeholder_group: "П-201",
+                label_distance: '1. ҚАШЫҚТЫҚ (X, СМ):', label_time: "2. ӨЛШЕУ УАҚЫТЫ (СЕК):",
+                button_start: "ЕСЕПТЕГІШТІ ІСКЕ ҚОСУ", button_sampling: "ӨЛШЕНУДЕ...", button_clear_sim: "ЕСЕПТЕГІШТІ СЫДЫРУ", button_reset: "ЖАҢА КӨЗ",
+                heading_detector: "Қондырғы", detector_desc: '"X-Көзі" және Детектор', heading_data: "Өлшеу деректері",
+                counter_default: "--.--", info_timer: "Таймер:", info_total_counts: "Барлық оқиға (N):", info_current_distance: "Қашықтық (x):",
+                heading_journal: "Зертханалық журнал", button_record: "БЕКІТУ (N)", button_clear_journal: "ЖУРНАЛДЫ ТАЗАРТУ",
+                table_x: "Қашықтық (x, см)", table_n: "Барлық оқиға (N)",
+                heading_analysis: "Деректерді талдау: N(x) графигі", info_points_count: "Журналдағы нүктелер: 0/10",
+                info_points_count_prefix: "Журналдағы нүктелер",
+                chart_n_vs_x_label: "Оқиғалар (N)", chart_x_axis: "Қашықтық (x, см)", chart_y_n: "Барлық оқиға (N)",
+                heading_id_prefix: '"X-Көзін" анықтау (Әрекет: ', label_your_answer: 'Сіздің жауабыңыз (Көз):',
+                option_select_answer: "--- Жауабыңызды таңдаңыз ---", 
+                opt_po: "Полоний-210", opt_am: "Америций-241", opt_u: "Уран-238", opt_cm: "Кюрий-244", opt_ra: "Радий-226",
+                button_check: "АНЫҚТАУ",
+                feedback_correct: "ДҰРЫС! Сіз {N}-ші әрекеттен көзді таптыңыз.",
+                feedback_incorrect: "ҚАТЕ. Графикті және ұшу қашықтығын (R) қайта тексеріңіз. Қалған әрекет саны: {N}.",
+                feedback_no_attempts: "ҚАТЕ. Әрекеттер аяқталды. Дұрыс жауап: {source} (R ≈ {range} см).",
+                error_select_source: "Тізімнен дереккөзді таңдаңыз.",
+                error_record_in_progress: "Жазу үшін өлшеудің аяқталуын күтіңіз!",
+                error_zero_counts: "0 оқиғаны жазу мүмкін емес. Өлшеу жүргізіңіз.",
+                error_duplicate_point: "Қате: x={x} см қашықтық үшін нүкте журналда бар. Басқа қашықтықты таңдаңыз.",
+                res_h2: "ЗЕРТХАНАЛЫҚ ЖҰМЫС НӘТИЖЕСІ", res_name: "Студент:", res_group: "Топ:", res_attempts: "Пайдаланылған әрекеттер:",
+                res_final_score: "Қорытынды нәтиже:", button_print: "Басып шығару", button_close_program: "Жабу",
+                alert_closing: "Жұмыс аяқталды. Нәтижені сақтау үшін 'Басып шығару' түймесін басыңыз. \n\nБет қайта жүктеледі.",
+                inst_h2: "ЖҰМЫС НҰСҚАУЛЫҒЫ",
+                instructions_content: `
+                    <ol>
+                        <li><strong>Идентификация:</strong> Басқару түймелерін іске қосу үшін <strong>Аты-жөніңізді</strong> және <strong>Тобыңызды</strong> енгізіңіз.</li>
+                        <li><strong>Жұмыс мақсаты:</strong> Белгісіз "X-Көзінің" альфа-бөлшектерінің ауадағы ұшу қашықтығын (R) өлшеу арқылы оны анықтау.</li>
+                        <li><strong>Теория:</strong> Альфа-бөлшектердің өтімділік қабілеті өте төмен. Олар барлық энергиясын қысқа, нақты анықталған қашықтықта - <strong>ұшу қашықтығында (R)</strong> жоғалтады.
+                            <ul>
+                                <li>Егер детекторға дейінгі қашықтық (x) <strong>R-дан аз</strong> болса, детектор көп бөлшектерді тіркейді.</li>
+                                <li>Егер қашықтық (x) <strong>R-дан көп</strong> болса, детектор ештеңе тіркемейді (табиғи фоннан басқа).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Деректерді жинау (Журнал):</strong>
+                            <ul>
+                                <li><strong>"Өлшеу уақытын"</strong> орнатыңыз (мыс., 5 секунд). Бұл мәнді <strong>өзгертпеңіз</strong>!</li>
+                                <li>Әртүрлі қашықтық (x) мәндері үшін <strong>кемінде 10 нүкте</strong> жинаңыз.</li>
+                                <li><strong>x = 1.0 см</strong> бастаңыз. "ЕСЕПТЕГІШТІ ІСКЕ ҚОСУ" түймесін басыңыз.</li>
+                                <li>Аяқталуын күтіп, <strong>"БЕКІТУ (N)"</strong> түймесін басыңыз.</li>
+                                <li>Қашықтықты біртіндеп арттыра отырып қайталаңыз (мыс., 1.5, 2.0, 2.5... см). Оқиғалар саны (N) <strong>нөлге (фонға) дейін күрт төмендейтін</strong> нүктені табу маңызды.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Талдау және Анықтау:</strong>
+                            <ul>
+                                <li>Бағдарлама автоматты түрде <strong>N(x) графигін</strong> тұрғызады.</li>
+                                <li>Графиктен <strong>үзілу нүктесін</strong> табыңыз - N оқиға саны күрт төмендейтін (x) қашықтығы. Бұл сіздің өлшенген <strong>ұшу қашықтығыңыз R</strong> болады.</li>
+                                <li>Өзіңіздің R мәніңізді эталондық мәндермен салыстырыңыз:</li>
+                                <li style="list-style-type: none;">
+                                    <ul>
+                                        <li>Уран-238 (U-238): &nbsp; R ≈ 2.7 см</li>
+                                        <li>Радий-226 (Ra-226): &nbsp; R ≈ 3.3 см</li>
+                                        <li>Полоний-210 (Po-210): R ≈ 3.8 см</li>
+                                        <li>Америций-241 (Am-241): R ≈ 4.0 см</li>
+                                        <li>Кюрий-244 (Cm-244): &nbsp; R ≈ 4.3 см</li>
+                                    </ul>
+                                </li>
+                                <li>"Идентификация" блогында жауабыңызды таңдап, "АНЫҚТАУ" түймесін басыңыз.</li>
+                            </ul>
+                        </li>
+                         <li><strong>Бағалау:</strong> Сізде 3 әрекет бар. (100% / 80% / 60%).</li>
+                    </ol>`
+            }
+        };
+
+        
+        let currentLang = 'ru';
+        let currentSourceKey = 'Po-210'; 
+        let currentSourceRange = 3.8; 
+        let attemptCount = 3;
+        let attemptSucceeded = false;
+        
+        let journalData = []; 
+        let isSampling = false; 
+        let lastMeasurement = { x: 0, n: 0 }; 
+
+        let chart_N_vs_X; 
+
+        
+        
+        function poissonRandom(lambda) {
+            if (lambda < 30) {
+                let L = Math.exp(-lambda), k = 0, p = 1;
+                do { k++; p *= Math.random(); } while (p > L);
+                return k - 1;
+            } else {
+                let u1 = Math.random(), u2 = Math.random();
+                let z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                let result = Math.round(lambda + z * Math.sqrt(lambda));  
+                return Math.max(0, result);
+            }
+        }
+        
+        function sigmoidFalloff(x, R, straggling) {
+            const k = 10 / straggling;
+            return 1 / (1 + Math.exp(k * (x - R)));
+        }
+
+        function calculateScore(attemptsUsed, isCorrect) {
+            if (!isCorrect) return 0;
+            switch (attemptsUsed) {
+                case 1: return 100;
+                case 2: return 80;  
+                case 3: return 60;  
+                default: return 0;
+            }
+        }
+        function closeWindow() {
+            alert(LANGUAGE_STRINGS[currentLang].alert_closing);
+            location.reload();
+        }
+        function printResult() {
+            window.print();
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 5.1. Поиск всех DOM-элементов ---
+            const studentNameInput = document.getElementById('student-name');
+            const studentGroupInput = document.getElementById('student-group');
+            const distanceSlider = document.getElementById('distance-slider');
+            const distanceValue = document.getElementById('distance-value');
+            const timeInput = document.getElementById('time-input');
+            const startButton = document.getElementById('start-button');
+            const clearSimButton = document.getElementById('clear-sim-button');
+            const resetButton = document.getElementById('reset-button');
+            
+            const mainCounter = document.getElementById('main-counter-display');
+            const totalCountsDisplay = document.getElementById('total-counts-display');
+            const timerDisplay = document.getElementById('timer-display');
+            const progressFill = document.getElementById('timer-progress-fill');
+            const currentDistanceDisplay = document.getElementById('current-distance-display');
+
+            const recordJournalButton = document.getElementById('record-journal-button');
+            const clearJournalButton = document.getElementById('clear-journal-button');
+            const journalTableBody = document.querySelector("#journal-table tbody"); 
+            
+            const checkAnswerButton = document.getElementById('check-answer-button');
+            const pointCountDisplay = document.getElementById('point-count-display'); 
+            const sourceGuessSelect = document.getElementById('source-guess'); 
+            const feedbackMessage = document.getElementById('feedback-message'); 
+            const attemptCounter = document.getElementById('attempt-counter'); 
+
+            const resultModal = document.getElementById('result-modal');
+            const resultNamePDom = document.getElementById('result-name-p');
+            const resultGroupPDom = document.getElementById('result-group-p');
+            const resultAttemptsPDom = document.getElementById('result-attempts-p');
+            const resultScoreDom = document.getElementById('result-score');
+            
+            const ctx_N_vs_X = document.getElementById('analysis-chart-n-vs-x').getContext('2d');
+
+            
+            const allControlButtons = [
+                startButton, clearSimButton, resetButton,
+                recordJournalButton, clearJournalButton, checkAnswerButton
+            ];
+            
+            
+            function checkIdFields() {
+                const nameFilled = studentNameInput.value.trim() !== '';
+                const groupFilled = studentGroupInput.value.trim() !== '';
+                const canProceed = nameFilled && groupFilled && !attemptSucceeded && attemptCount > 0;
+                const canCheck = canProceed && journalData.length >= PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND;
+
+                studentNameInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0); 
+                studentGroupInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+                resetButton.disabled = isSampling; 
+                
+                distanceSlider.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+                timeInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+
+                startButton.disabled = !canProceed || isSampling;
+                clearSimButton.disabled = !canProceed || isSampling;
+                recordJournalButton.disabled = !canProceed || isSampling || lastMeasurement.n === 0;
+                clearJournalButton.disabled = !canProceed || isSampling || journalData.length === 0; 
+                
+                checkAnswerButton.disabled = !canCheck || isSampling;
+                sourceGuessSelect.disabled = !canCheck || isSampling; 
+            }
+
+            
+            function setRandomSource() {
+                const sources = Object.keys(PHYSICS_CONSTANTS.SOURCES);
+                currentSourceKey = sources[Math.floor(Math.random() * sources.length)];
+                currentSourceRange = PHYSICS_CONSTANTS.SOURCES[currentSourceKey].range_cm;
+                
+                console.log(`Новый Источник-X: ${currentSourceKey} (R = ${currentSourceRange} см)`);
+            }
+
+            
+            function updateLanguage(langKey) {
+                if (!LANGUAGE_STRINGS[langKey] || Object.keys(LANGUAGE_STRINGS[langKey]).length === 0) {
+                    langKey = 'ru';
+                }
+                currentLang = langKey;
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                document.querySelectorAll('[data-key]').forEach(el => {
+                    const key = el.getAttribute('data-key');
+                    if (strings[key]) {
+                        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                            el.placeholder = strings[key];
+                        } else if (key.endsWith('_prefix')) {
+                            el.innerHTML = strings[key] + `<span id="attempt-counter">${attemptCount}</span>)`;
+                        } else if (el.tagName === 'OPTGROUP') {
+                            el.label = strings[key];
+                        } else if (el.tagName === 'P' && (el.id === 'result-name-p' || el.id === 'result-group-p' || el.id === 'result-attempts-p')) {
+                        }
+                         else {
+                            el.textContent = strings[key];
+                        }
+                    }
+                });
+                
+                distanceValue.textContent = `${parseFloat(distanceSlider.value).toFixed(1)} ${strings.unit_cm}`;
+                currentDistanceDisplay.textContent = `${parseFloat(distanceSlider.value).toFixed(1)} ${strings.unit_cm}`;
+                timerDisplay.textContent = `0.0 ${strings.unit_sec}`;
+                
+                const guessSelect = document.getElementById('source-guess');
+                Object.keys(PHYSICS_CONSTANTS.SOURCES).forEach(key => {
+                    const source = PHYSICS_CONSTANTS.SOURCES[key];
+                    const name = source[`name_${langKey}`] || source.name_ru;
+                    const guessOption = guessSelect.querySelector(`[value="${key}"]`);
+                    if (guessOption) {
+                        guessOption.textContent = name;
+                    }
+                });
+                
+                const instContent = document.getElementById('inst-content');
+                if (instContent && strings.instructions_content) { 
+                    instContent.innerHTML = strings.instructions_content;
+                    if (window.MathJax) {
+                        MathJax.typesetPromise([instContent]).catch(err => console.error(err));
+                    }
+                }
+                
+                pointCountDisplay.textContent = `${strings.info_points_count_prefix}: ${journalData.length}/${PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND}`;
+                updateChartLabels(); 
+            }
+            
+            
+            function startMeasurement() {
+                isSampling = true;
+                checkIdFields();
+                startButton.textContent = LANGUAGE_STRINGS[currentLang].button_sampling;
+                const durationSec = parseFloat(timeInput.value);
+                const distanceX = parseFloat(distanceSlider.value);
+                const R = currentSourceRange;
+                const straggling = R * PHYSICS_CONSTANTS.STRAGGLING_FACTOR; 
+                
+                const baseIntensity = PHYSICS_CONSTANTS.BASE_INTENSITY_CPS;
+                const backgroundCPS = PHYSICS_CONSTANTS.BACKGROUND_CPS;
+                
+                const geometricFactor = 1 / Math.pow(distanceX + 0.5, 2);
+                const rangeFactor = sigmoidFalloff(distanceX, R, straggling);
+                
+                const expectedCPS = (baseIntensity * geometricFactor * rangeFactor) + backgroundCPS;
+                
+                const UPDATE_INTERVAL_MS = 100;
+                const expectedCountsPerInterval = expectedCPS / (1000 / UPDATE_INTERVAL_MS);
+                let totalCounts = 0;
+                let timeElapsedMs = 0;
+                const totalDurationMs = durationSec * 1000;
+                
+                clearSimulationDisplay(); 
+                currentDistanceDisplay.textContent = `${distanceX.toFixed(1)} ${LANGUAGE_STRINGS[currentLang].unit_cm}`;
+
+                const simulationTimer = setInterval(() => {
+                    timeElapsedMs += UPDATE_INTERVAL_MS;
+                    const newCounts = poissonRandom(expectedCountsPerInterval);
+                    totalCounts += newCounts;
+                    const currentCPS = (totalCounts / (timeElapsedMs / 1000)).toFixed(2);
+
+                    mainCounter.textContent = currentCPS + " " + LANGUAGE_STRINGS[currentLang].unit_cps;
+                    totalCountsDisplay.textContent = Math.round(totalCounts);
+                    timerDisplay.textContent = (timeElapsedMs / 1000).toFixed(1) + " " + LANGUAGE_STRINGS[currentLang].unit_sec;
+                    progressFill.style.width = `${(timeElapsedMs / totalDurationMs) * 100}%`;
+                    
+                    if (timeElapsedMs >= totalDurationMs) {
+                        clearInterval(simulationTimer);
+                        isSampling = false;
+                        
+                        totalCounts = Math.round(totalCounts);
+                        const finalCPS = (totalCounts / durationSec).toFixed(2);
+                        
+                        mainCounter.textContent = finalCPS + " " + LANGUAGE_STRINGS[currentLang].unit_cps;
+                        totalCountsDisplay.textContent = totalCounts;
+                        timerDisplay.textContent = durationSec.toFixed(1) + " " + LANGUAGE_STRINGS[currentLang].unit_sec;
+                        progressFill.style.width = "100%";
+                        
+                        lastMeasurement = { x: distanceX, n: totalCounts };
+                        
+                        startButton.textContent = LANGUAGE_STRINGS[currentLang].button_start;
+                        checkIdFields(); 
+                    }
+                }, UPDATE_INTERVAL_MS);
+            }
+
+            function clearSimulationDisplay() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                mainCounter.textContent = strings.counter_default;
+                totalCountsDisplay.textContent = "0";
+                timerDisplay.textContent = `0.0 ${strings.unit_sec}`;
+                progressFill.style.width = "0%";
+                lastMeasurement = { x: parseFloat(distanceSlider.value), n: 0 };
+                recordJournalButton.disabled = true;
+            }
+            
+            
+            function initializeCharts() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                chart_N_vs_X = new Chart(ctx_N_vs_X, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: strings.chart_n_vs_x_label,
+                            data: [],
+                            backgroundColor: '#00c2c2', 
+                            borderColor: '#00c2c2',
+                            pointRadius: 5,
+                            showLine: true, 
+                            tension: 0.1 
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: strings.chart_x_axis, color: '#e0e0e0' },
+                                ticks: { color: '#e0e0e0' },
+                                grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                            },
+                            y: {
+                                title: { display: true, text: strings.chart_y_n, color: '#e0e0e0' },
+                                ticks: { color: '#e0e0e0' },
+                                grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true, labels: { color: '#e0e0e0' } }
+                        }
+                    }
+                });
+            }
+            
+            function updateChartLabels() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                if (!strings || !chart_N_vs_X) return; 
+
+                chart_N_vs_X.data.datasets[0].label = strings.chart_n_vs_x_label;
+                chart_N_vs_X.options.scales.x.title.text = strings.chart_x_axis;
+                chart_N_vs_X.options.scales.y.title.text = strings.chart_y_n;
+                chart_N_vs_X.update('none'); 
+            }
+
+            function updateAnalysisGraph() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                pointCountDisplay.textContent = `${strings.info_points_count_prefix}: ${journalData.length}/${PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND}`;
+                const data_N_vs_X = journalData.map(p => ({ x: p.x, y: p.n }));
+                
+                if (chart_N_vs_X) {
+                    chart_N_vs_X.data.datasets[0].data = data_N_vs_X;
+                    chart_N_vs_X.update();
+                }
+                
+                checkIdFields();
+            }
+
+            function recordToJournal() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                if (isSampling) {
+                    alert(strings.error_record_in_progress); return;
+                }
+                
+                // if (lastMeasurement.n === 0) {
+                //     alert(strings.error_zero_counts); return;
+                // }
+                if (journalData.some(p => p.x === lastMeasurement.x)) {
+                    alert(strings.error_duplicate_point.replace('{x}', lastMeasurement.x)); return;
+                }
+                
+                journalData.push({
+                    x: lastMeasurement.x,
+                    n: lastMeasurement.n
+                });
+                
+                journalData.sort((a, b) => a.x - b.x);
+                
+                renderTable();
+                updateAnalysisGraph();
+                
+                lastMeasurement.n = 0; 
+                checkIdFields();
+            }
+            
+            function clearJournal() {
+                journalData = [];
+                renderTable(); 
+                updateAnalysisGraph(); 
+            }
+
+            function renderTable() {
+                journalTableBody.innerHTML = ''; 
+                journalData.forEach(point => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${point.x.toFixed(1)}</td>
+                        <td>${point.n}</td>
+                    `;
+                    journalTableBody.appendChild(newRow);
+                });
+            }
+
+            
+            
+            function checkAnswer() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                const guess = sourceGuessSelect.value;
+                
+                if (guess === 'none') {
+                    alert(strings.error_select_source);
+                    return;
+                }
+                
+                const attemptNum = 4 - attemptCount; 
+                
+                if (guess === currentSourceKey) {
+                    
+                    attemptSucceeded = true;
+                    feedbackMessage.innerHTML = strings.feedback_correct.replace('{N}', attemptNum);
+                    feedbackMessage.className = 'feedback-success';
+                    showFinalResult(true);
+                } else {
+                    
+                    attemptCount--;
+                    attemptCounter.textContent = attemptCount;
+                    
+                    if (attemptCount > 0) {
+                        
+                        feedbackMessage.innerHTML = strings.feedback_incorrect.replace('{N}', attemptCount);
+                        feedbackMessage.className = 'feedback-fail';
+                    } else {
+                        
+                        const correctSource = PHYSICS_CONSTANTS.SOURCES[currentSourceKey];
+                        const correctName = correctSource[`name_${currentLang}`] || correctSource.name_ru;
+                        
+                        feedbackMessage.innerHTML = strings.feedback_no_attempts
+                            .replace('{source}', correctName)
+                            .replace('{range}', currentSourceRange.toFixed(1));
+                        feedbackMessage.className = 'feedback-fail';
+                        showFinalResult(false);
+                    }
+                }
+                checkIdFields(); 
+            }
+
+            function showFinalResult(isCorrect) {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                let attemptsUsed = isCorrect ? (4 - attemptCount) : 3;
+                if (!isCorrect && attemptCount === 0) attemptsUsed = 3;
+
+                const score = calculateScore(attemptsUsed, isCorrect);
+                
+                resultNamePDom.textContent = strings.res_name + " " + (studentNameInput.value || strings.res_no_data);
+                resultGroupPDom.textContent = strings.res_group + " " + (studentGroupInput.value || strings.res_no_data);
+                resultAttemptsPDom.textContent = strings.res_attempts + " " + attemptsUsed;
+                resultScoreDom.textContent = `${score}%`;
+                resultScoreDom.style.color = score > 0 ? 'var(--main-accent-color)' : 'var(--danger-color)';
+                
+                resultModal.style.display = 'flex';
+                checkIdFields();
+            }
+            
+            function resetLab() {
+                
+                attemptCount = 3;
+                attemptSucceeded = false;
+                
+                
+                setRandomSource();
+                
+                
+                clearJournal();
+                clearSimulationDisplay();
+                
+                
+                feedbackMessage.innerHTML = '';
+                feedbackMessage.className = '';
+                sourceGuessSelect.value = 'none';
+                distanceSlider.value = 1; // Сброс на 1 см
+                timeInput.value = 5; // Сброс времени
+                
+                
+                updateLanguage(currentLang);
+                
+                
+                checkIdFields();
+            }
+
+            
+
+            studentNameInput.addEventListener('input', checkIdFields);
+            studentGroupInput.addEventListener('input', checkIdFields);
+
+            distanceSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value).toFixed(1);
+                const unit = LANGUAGE_STRINGS[currentLang].unit_cm;
+                distanceValue.textContent = `${val} ${unit}`;
+                currentDistanceDisplay.textContent = `${val} ${unit}`;
+                clearSimulationDisplay(); 
+            });
+            
+            document.getElementById('language-select').addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+            });
+            
+            document.getElementById('open-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'flex';
+                if (window.MathJax) {
+                    MathJax.typesetPromise().catch(err => console.error(err));
+                }
+            });
+            document.getElementById('close-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'none';
+            });
+             document.getElementById('instructions-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('instructions-modal')) {
+                    document.getElementById('instructions-modal').style.display = 'none';
+                }
+            });
+
+            
+            startButton.addEventListener('click', startMeasurement);
+            clearSimButton.addEventListener('click', clearSimulationDisplay);
+            
+            
+            recordJournalButton.addEventListener('click', recordToJournal);
+            clearJournalButton.addEventListener('click', clearJournal);
+            
+            
+            checkAnswerButton.addEventListener('click', checkAnswer);
+            resetButton.addEventListener('click', resetLab);
+
+            
+            document.getElementById('print-button').addEventListener('click', printResult);
+            document.getElementById('close-result-button').addEventListener('click', closeWindow);
+
+            
+            setRandomSource();
+            initializeCharts(); 
+            updateLanguage(currentLang); 
+            clearSimulationDisplay(); 
+            checkIdFields(); 
+        });
+    </script>
+
+</body>
+</html>

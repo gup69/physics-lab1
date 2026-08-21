@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Законы сохранения: Лабораторная работа</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ff4081;
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+            --warning: #ffbb33;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-group { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .header-s { font-weight: bold; color: #fff; margin-bottom: 10px; display: block; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { width: 100%; padding: 8px; background: #000; border: 1px solid #444; color: white; border-radius: 4px; }
+        .val { float: right; color: var(--accent); font-weight: bold; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 300px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            margin-bottom: 20px;
+        }
+        canvas#sim-canvas { display: block; width: 100%; height: 100%; }
+
+        /* Table Area */
+        .lab-table-container {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        table.lab-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #fff;
+            font-size: 0.9em;
+        }
+        table.lab-table th, table.lab-table td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: center;
+        }
+        table.lab-table th {
+            background: #2c2c2c;
+            color: var(--accent);
+        }
+        table.lab-table input {
+            width: 80px;
+            background: #111;
+            border: 1px solid #555;
+            text-align: center;
+            color: white;
+        }
+        .row-btn {
+            padding: 5px 10px;
+            font-size: 0.8em;
+            background: #2196F3;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+        }
+        .row-btn:disabled { background: #555; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 700px;
+            text-align: center; color: white;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-score { font-size: 3em; margin: 10px 0; font-weight: bold; }
+        .modal-details { text-align: left; background: #000; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .modal-details p { margin: 5px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .result-row-correct { color: var(--success); }
+        .result-row-wrong { color: var(--danger); }
+        .calc-info { font-size: 0.85em; color: #aaa; margin-left: 10px; font-style: italic; }
+
+        .cart1-color { color: #29b6f6; } /* Blue */
+        .cart2-color { color: #ffea00; } /* Yellow */
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Законы сохранения: Удар</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-group">
+            <span class="header-s" data-lang="headReg">1. Регистрация</span>
+            <input type="text" id="student-name" placeholder="ФИ Ученика" style="margin-bottom: 5px;">
+            <input type="text" id="student-grade" placeholder="Класс">
+            <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ</button>
+        </div>
+
+        <div id="controls-block" style="opacity:0.5; pointer-events:none;">
+            <div class="control-group">
+                <span class="header-s" data-lang="headSettings">2. Настройки</span>
+                <label data-lang="lblMode">Режим:</label>
+                <select id="mode-select">
+                    <option value="training" data-lang="optTrain">Обучение (Ответ виден)</option>
+                    <option value="exam" data-lang="optExam">Задание (Ответ скрыт)</option>
+                </select>
+                
+                <label style="margin-top:10px;" data-lang="lblType">Тип удара:</label>
+                <select id="collision-type">
+                    <option value="elastic" data-lang="optElastic">Упругий</option>
+                    <option value="inelastic" data-lang="optInelastic">Неупругий (слипание)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span class="header-s cart1-color" data-lang="headCart1">Тележка 1 (Синяя)</span>
+                <label><span data-lang="lblMass">Масса (m1):</span> <span class="val"><span id="m1-val">1.0</span> кг</span></label>
+                <input type="range" id="m1-slider" min="1.0" max="5.0" step="0.1" value="1.0">
+                
+                <label><span data-lang="lblVel">Скорость (v1):</span> <span class="val"><span id="v1-val">2.0</span> м/с</span></label>
+                <input type="range" id="v1-slider" min="-10.0" max="10.0" step="0.5" value="2.0">
+            </div>
+
+            <div class="control-group">
+                <span class="header-s cart2-color" data-lang="headCart2">Тележка 2 (Желтая)</span>
+                <label><span data-lang="lblMass">Масса (m2):</span> <span class="val"><span id="m2-val">1.0</span> кг</span></label>
+                <input type="range" id="m2-slider" min="1.0" max="5.0" step="0.1" value="1.0">
+                
+                <label><span data-lang="lblVel">Скорость (v2):</span> <span class="val"><span id="v2-val">0.0</span> м/с</span></label>
+                <input type="range" id="v2-slider" min="-10.0" max="10.0" step="0.5" value="0.0">
+            </div>
+
+            <button class="action-btn" id="run-btn" data-lang="btnRun">ЗАПУСК</button>
+            <button class="action-btn" id="reset-btn" style="background:#555; margin-top:10px;" data-lang="btnReset">СБРОС</button>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column;">
+        <div class="visualizer">
+            <canvas id="sim-canvas" width="900" height="300"></canvas>
+        </div>
+        
+        <div class="lab-table-container" id="table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 data-lang="lblTableTitle" style="margin:0; color:var(--accent);">Таблица результатов (4 опыта)</h3>
+                <button id="finish-btn" style="background:var(--success); border:none; padding:10px 20px; color:white; font-weight:bold; border-radius:5px; cursor:pointer;" disabled data-lang="btnFinish">ЗАВЕРШИТЬ И ОЦЕНИТЬ</button>
+            </div>
+
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th data-lang="colTrial">№</th>
+                        <th>Тип</th>
+                        <th>m1 (кг)</th>
+                        <th>v1 (м/с)</th>
+                        <th>m2 (кг)</th>
+                        <th>v2 (м/с)</th>
+                        <th data-lang="colAction">Действие</th>
+                        <th data-lang="colResult">ОТВЕТ: v1' (м/с)</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-body">
+                    </tbody>
+            </table>
+            <p style="color:#aaa; font-size:0.9em; margin-top:10px;" data-lang="tableHint">Инструкция: 1. Настройте параметры. 2. Нажмите "Запуск". 3. Нажмите "Записать" в строку. 4. Вычислите v1' (после удара скорость скрывается!) и впишите ответ.</p>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат Лабораторной Работы</h2>
+        <div style="text-align:left; margin-bottom:10px;">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+        </div>
+        
+        <div class="modal-score" id="res-score-val">0</div>
+        
+        <div class="modal-details" id="res-details"></div>
+        
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Законы сохранения: Удар",
+            headReg: "1. Регистрация", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headSettings: "2. Настройки", lblType: "Тип удара:", optElastic: "Упругий", optInelastic: "Неупругий",
+            lblMode: "Режим:", optTrain: "Обучение (Ответ виден)", optExam: "Задание (Ответ скрыт)",
+            headCart1: "Тележка 1 (Синяя)", headCart2: "Тележка 2 (Желтая)",
+            lblMass: "Масса", lblVel: "Скорость",
+            btnRun: "ЗАПУСК", btnReset: "СБРОС ПОЗИЦИЙ",
+            lblTableTitle: "Таблица результатов (4 опыта)", btnFinish: "ЗАВЕРШИТЬ И ОЦЕНИТЬ",
+            colTrial: "№", colAction: "Действие", colResult: "ОТВЕТ: v1' (м/с)",
+            btnRecord: "Записать", tableHint: "Настройте параметры -> Запуск -> Записать -> Вычислите v1' (скрыта) -> Впишите ответ.",
+            alertName: "Введите Имя и Класс!", alertEmpty: "Заполните все 4 строки!",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ",
+            resRow: "Опыт {n} ({type}): Ваш ответ {ans}. Верно: {true}. {status}",
+            lblInelastic: "Неупругий", lblElastic: "Упругий"
+        },
+        kz: {
+            mainTitle: "Сақталу заңдары: Соққы",
+            headReg: "1. Тіркелу", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headSettings: "2. Баптаулар", lblType: "Соқтығысу түрі:", optElastic: "Серпімді", optInelastic: "Серпімсіз",
+            lblMode: "Режим:", optTrain: "Оқу (Жауап көрінеді)", optExam: "Тапсырма (Жауап жасырын)",
+            headCart1: "Арбаша 1 (Көк)", headCart2: "Арбаша 2 (Сары)",
+            lblMass: "Масса", lblVel: "Жылдамдық",
+            btnRun: "ІСКЕ ҚОСУ", btnReset: "БАСТАПКЫ КҮЙ",
+            lblTableTitle: "Нәтижелер кестесі (4 тәжірибе)", btnFinish: "АЯҚТАУ ЖӘНЕ БАҒАЛАУ",
+            colTrial: "№", colAction: "Әрекет", colResult: "ЖАУАП: v1' (м/с)",
+            btnRecord: "Жазу", tableHint: "Параметрлерді қою -> Іске қосу -> Жазу -> v1' есептеу -> Жауапты жазу.",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertEmpty: "Барлық 4 жолды толтырыңыз!",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ",
+            resRow: "Тәжірибе {n} ({type}): Жауап {ans}. Дұрыс: {true}. {status}",
+            lblInelastic: "Серпімсіз", lblElastic: "Серпімді"
+        },
+        en: {
+            mainTitle: "Conservation Laws: Collision",
+            headReg: "1. Registration", btnStartLab: "START LAB",
+            headSettings: "2. Settings", lblType: "Collision:", optElastic: "Elastic", optInelastic: "Inelastic",
+            lblMode: "Mode:", optTrain: "Training (Show value)", optExam: "Task (Hide value)",
+            headCart1: "Cart 1 (Blue)", headCart2: "Cart 2 (Yellow)",
+            lblMass: "Mass", lblVel: "Velocity",
+            btnRun: "RUN", btnReset: "RESET",
+            lblTableTitle: "Result Table (4 Trials)", btnFinish: "FINISH & GRADE",
+            colTrial: "#", colAction: "Action", colResult: "ANSWER: v1' (m/s)",
+            btnRecord: "Record", tableHint: "Setup -> Run -> Record -> Calculate v1' (hidden) -> Enter answer.",
+            alertName: "Enter Name and Class!", alertEmpty: "Fill all 4 rows!",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resScoreLabel: "Score:", btnRestart: "FINISH",
+            resRow: "Trial {n} ({type}): Your ans {ans}. Correct: {true}. {status}",
+            lblInelastic: "Inelastic", lblElastic: "Elastic"
+        }
+    };
+
+    let currentLang = 'ru';
+    let isRunning = false;
+    let hasCollided = false;
+    
+    // Physics State
+    const state = {
+        m1: 1.0, v1: 2.0,
+        m2: 1.0, v2: 0.0,
+        type: 'elastic',
+        mode: 'training',
+        v1_init: 2.0, v2_init: 0.0,
+        v1_final: 0, v2_final: 0
+    };
+
+    // Visual State
+    const vis = { x1: 100, x2: 500, w: 80, h: 50, groundY: 150 };
+
+    // Table Data
+    const trials = [
+        { id: 1, type: 'elastic', m1: 0, v1: 0, m2: 0, v2: 0, userAns: null, filled: false },
+        { id: 2, type: 'elastic', m1: 0, v1: 0, m2: 0, v2: 0, userAns: null, filled: false },
+        { id: 3, type: 'elastic', m1: 0, v1: 0, m2: 0, v2: 0, userAns: null, filled: false },
+        { id: 4, type: 'elastic', m1: 0, v1: 0, m2: 0, v2: 0, userAns: null, filled: false }
+    ];
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        document.querySelectorAll('.row-btn').forEach(btn => btn.innerText = t.btnRecord);
+        
+        // Update select options
+        const modeSel = document.getElementById('mode-select');
+        modeSel.options[0].text = t.optTrain;
+        modeSel.options[1].text = t.optExam;
+        
+        const typeSel = document.getElementById('collision-type');
+        typeSel.options[0].text = t.optElastic;
+        typeSel.options[1].text = t.optInelastic;
+    }
+
+    function calculateCollision() {
+        const m1 = state.m1;
+        const m2 = state.m2;
+        const v1 = state.v1_init;
+        const v2 = state.v2_init;
+
+        if (state.type === 'elastic') {
+            state.v1_final = ((m1 - m2)*v1 + 2*m2*v2) / (m1 + m2);
+            state.v2_final = ((m2 - m1)*v2 + 2*m1*v1) / (m1 + m2);
+        } else {
+            const v_common = (m1*v1 + m2*v2) / (m1 + m2);
+            state.v1_final = v_common;
+            state.v2_final = v_common;
+        }
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, vis.groundY, cvs.width, 5);
+        ctx.fillStyle = '#555';
+        for(let i=0; i<cvs.width; i+=50) ctx.fillRect(i, vis.groundY, 2, 10);
+
+        let hideText = (state.mode === 'exam' && hasCollided);
+
+        drawCart(vis.x1, state.v1, '#29b6f6', state.m1, hideText);
+        drawCart(vis.x2, state.v2, '#ffea00', state.m2, hideText);
+
+        if (isRunning && !hasCollided) {
+            vis.x1 += state.v1 * 2;
+            vis.x2 += state.v2 * 2;
+
+            if (vis.x1 + vis.w >= vis.x2) {
+                hasCollided = true;
+                state.v1 = state.v1_final;
+                state.v2 = state.v2_final;
+                const overlap = (vis.x1 + vis.w) - vis.x2;
+                vis.x1 -= overlap/2;
+                vis.x2 += overlap/2;
+            }
+        } else if (isRunning && hasCollided) {
+            vis.x1 += state.v1 * 2;
+            vis.x2 += state.v2 * 2;
+        }
+        requestAnimationFrame(draw);
+    }
+
+    function drawCart(x, v, color, m, hideVelocity) {
+        const y = vis.groundY - vis.h;
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, vis.w, vis.h);
+        ctx.fillStyle = '#aaa';
+        ctx.beginPath(); ctx.arc(x + 15, y + vis.h, 8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + vis.w - 15, y + vis.h, 8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(m.toFixed(1)+"kg", x+15, y+30);
+        
+        if (Math.abs(v) > 0.05) {
+            const vecLen = v * 15;
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(x + vis.w/2, y - 15); ctx.lineTo(x + vis.w/2 + vecLen, y - 15); ctx.stroke();
+            
+            if (!hideVelocity) {
+                ctx.fillStyle = 'white'; ctx.fillText(v.toFixed(2), x + vis.w/2 - 10, y - 25);
+            } else {
+                ctx.fillStyle = '#ff4081'; ctx.fillText("???", x + vis.w/2 - 10, y - 25);
+            }
+        }
+    }
+
+    // --- Table Logic ---
+    function initTable() {
+        const tbody = document.getElementById('tasks-body');
+        tbody.innerHTML = '';
+        trials.forEach(trial => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trial.id}</td>
+                <td id="type-${trial.id}">-</td>
+                <td id="m1-${trial.id}">-</td>
+                <td id="v1-${trial.id}">-</td>
+                <td id="m2-${trial.id}">-</td>
+                <td id="v2-${trial.id}">-</td>
+                <td><button class="row-btn" onclick="recordTrial(${trial.id})">Записать</button></td>
+                <td><input type="text" id="ans-${trial.id}" placeholder="..." disabled></td>
+            `;
+            tbody.appendChild(row);
+        });
+        updateLanguage(currentLang);
+    }
+
+    window.recordTrial = function(id) {
+        const t = trials[id-1];
+        
+        t.m1 = state.m1;
+        t.m2 = state.m2;
+        t.v1 = state.v1_init; 
+        t.v2 = state.v2_init;
+        t.type = state.type;
+        t.filled = true;
+
+        const langObj = LANG[currentLang];
+        const typeName = (t.type === 'elastic') ? langObj.lblElastic : langObj.lblInelastic;
+
+        document.getElementById(`type-${id}`).innerText = typeName;
+        document.getElementById(`m1-${id}`).innerText = t.m1.toFixed(1);
+        document.getElementById(`v1-${id}`).innerText = t.v1.toFixed(1);
+        document.getElementById(`m2-${id}`).innerText = t.m2.toFixed(1);
+        document.getElementById(`v2-${id}`).innerText = t.v2.toFixed(1);
+        
+        const inp = document.getElementById(`ans-${id}`);
+        inp.disabled = false;
+        inp.focus();
+        
+        event.target.disabled = true;
+        event.target.style.background = "#555";
+
+        checkAllFilled();
+    }
+
+    function checkAllFilled() {
+        const allFilled = trials.every(t => t.filled);
+        document.getElementById('finish-btn').disabled = !allFilled;
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        initTable();
+        updateLanguage('ru');
+        draw();
+
+        document.getElementById('m1-slider').oninput = (e) => { state.m1 = parseFloat(e.target.value); document.getElementById('m1-val').innerText = state.m1.toFixed(1); };
+        document.getElementById('v1-slider').oninput = (e) => { state.v1 = parseFloat(e.target.value); state.v1_init = state.v1; document.getElementById('v1-val').innerText = state.v1.toFixed(1); };
+        
+        document.getElementById('m2-slider').oninput = (e) => { state.m2 = parseFloat(e.target.value); document.getElementById('m2-val').innerText = state.m2.toFixed(1); };
+        document.getElementById('v2-slider').oninput = (e) => { state.v2 = parseFloat(e.target.value); state.v2_init = state.v2; document.getElementById('v2-val').innerText = state.v2.toFixed(1); };
+
+        document.getElementById('collision-type').onchange = (e) => { state.type = e.target.value; };
+        document.getElementById('mode-select').onchange = (e) => { state.mode = e.target.value; };
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+            document.getElementById('controls-block').style.opacity = 1;
+            document.getElementById('controls-block').style.pointerEvents = "auto";
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+        };
+
+        document.getElementById('run-btn').onclick = () => {
+            if(isRunning) return;
+            calculateCollision();
+            isRunning = true;
+            hasCollided = false;
+        };
+
+        document.getElementById('reset-btn').onclick = () => {
+            isRunning = false; hasCollided = false;
+            vis.x1 = 100; vis.x2 = 500;
+            state.v1 = state.v1_init; state.v2 = state.v2_init;
+        };
+
+        document.getElementById('finish-btn').onclick = () => {
+            let correctCount = 0;
+            let detailsHTML = "";
+            const t = LANG[currentLang];
+
+            trials.forEach(trial => {
+                const userAns = parseFloat(document.getElementById(`ans-${trial.id}`).value.replace(',','.'));
+                let trueAns = 0;
+
+                if (trial.type === 'elastic') {
+                     trueAns = ((trial.m1 - trial.m2) * trial.v1 + 2 * trial.m2 * trial.v2) / (trial.m1 + trial.m2);
+                } else {
+                     trueAns = (trial.m1 * trial.v1 + trial.m2 * trial.v2) / (trial.m1 + trial.m2);
+                }
+                
+                let isRight = false;
+                if (!isNaN(userAns) && Math.abs(userAns - trueAns) < 0.15) { 
+                    correctCount++;
+                    isRight = true;
+                }
+
+                const statusText = isRight ? "OK" : "FAIL";
+                const typeLabel = (trial.type === 'elastic') ? t.lblElastic : t.lblInelastic;
+                
+                let rowText = t.resRow
+                    .replace('{n}', trial.id)
+                    .replace('{type}', typeLabel)
+                    .replace('{ans}', userAns)
+                    .replace('{true}', trueAns.toFixed(2))
+                    .replace('{status}', statusText);
+
+                detailsHTML += `<p class="${isRight?'result-row-correct':'result-row-wrong'}">${rowText}</p>`;
+            });
+
+            let finalScore = 0;
+            if (correctCount === 4) finalScore = 10;
+            else if (correctCount === 3) finalScore = 8;
+            else if (correctCount === 2) finalScore = 5;
+            else if (correctCount === 1) finalScore = 3;
+
+            document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+            document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+            document.getElementById('res-score-val').innerText = finalScore + " / 10";
+            document.getElementById('res-details').innerHTML = detailsHTML;
+            
+            document.getElementById('result-modal').style.display = 'flex';
+        };
+    };
+</script>
+
+</body>
+</html>

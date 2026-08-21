@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пузырьковая камера: Треки частиц | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1050px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; width: 100%; max-width: 1050px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* ВИЗУАЛИЗАЦИЯ КАМЕРЫ */
+    .viewport { position: relative; width: 100%; height: 320px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #475569; }
+    
+    .grid-bg { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.25) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(56, 189, 248, 0.25) 1px, transparent 1px),
+            linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px; 
+    }
+
+    svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+    .particle-track { fill: none; stroke: #38BDF8; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 6px #38BDF8); }
+
+    /* Линейка/Маркер радиуса */
+    .r-ruler { position: absolute; border: 1px dashed #10B981; border-radius: 50%; pointer-events: none; z-index: 3; display: none; }
+
+    /* Инструменты управления */
+    .tools { margin-top: 15px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .tools label { font-size: 0.9rem; color: #CBD5E1; font-family: monospace; }
+    .toggle-btn { background: #334155; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .toggle-btn.active { background: #10B981; color: #0F172A; }
+
+    /* Расчеты */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 0.9rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.85rem; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 160px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8;}
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } 
+
+    .formulas { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 0.85rem; color: #94A3B8; }
+    .formulas b { color: #38BDF8; font-size: 0.9rem;}
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Пузырьковая камера: Треки частиц" data-kk="Көпіршікті камера: Бөлшектер тректері" data-en="Bubble Chamber: Particle Tracks">Пузырьковая камера: Треки частиц</h1>
+      <p data-ru="Ядерная физика. Сила Лоренца и радиус кривизны." data-kk="Ядролық физика. Лоренц күші және қисықтық радиусы." data-en="Nuclear physics. Lorentz force and radius of curvature.">Ядерная физика. Сила Лоренца и радиус кривизны.</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ВИД КАМЕРЫ -->
+    <div class="panel">
+      <h2 data-ru="Детектор в магнитном поле" data-kk="Магнит өрісіндегі детектор" data-en="Detector in Magnetic Field">Детектор в магнитном поле</h2>
+      
+      <div class="viewport">
+          <div class="grid-bg"></div>
+          <svg id="svg-viewport" viewBox="0 0 500 320">
+              <!-- Трек частицы генерируется динамически -->
+              <path class="particle-track" id="track-path" d="" />
+          </svg>
+      </div>
+
+      <div class="tools">
+          <label data-ru="Масштаб: 1 клетка = 0.05 м" data-kk="Масштаб: 1 тор = 0.05 м" data-en="Scale: 1 grid = 0.05 m">Масштаб: 1 клетка = 0.05 м</label>
+          <button class="toggle-btn" id="btn-grid-helper" onclick="toggleHelper()" data-ru="Подсказка радиуса" data-kk="Радиус көмекшісі" data-en="Radius Helper">Подсказка радиуса</button>
+      </div>
+    </div>
+
+    <!-- РАСЧЕТНЫЙ МОДУЛЬ -->
+    <div class="panel">
+      <h2 data-ru="Анализ трека частицы" data-kk="Бөлшек трегін талдау" data-en="Particle Track Analysis">Анализ трека частицы</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+          <div class="data-row">
+            <span data-ru="Индукция поля (B):" data-kk="Өріс индукциясы (B):" data-en="Magnetic Field (B):">Индукция поля (B):</span>
+            <strong>1.5 Тл</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Заряд протона (q):" data-kk="Протон заряды (q):" data-en="Proton Charge (q):">Заряд протона (q):</span>
+            <strong>1.6 * 10⁻¹⁹ Кл</strong>
+          </div>
+      </div>
+
+      <div class="formulas">
+          <div data-ru="Связь импульса с силой Лоренца:" data-kk="Импульстің Лоренц күшімен байланысы:" data-en="Momentum & Lorentz force relation:">Связь импульса с силой Лоренца:</div>
+          <div style="margin-top:5px"><b>p = q * B * R</b></div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="in-r" placeholder="Радиус трека R (м)" data-ru="Радиус трека R (м)" data-kk="Трек радиусы R (м)" data-en="Track Radius R (m)" step="0.01">
+        <input type="number" id="in-p" placeholder="Импульс протона p (кг*м/с)" data-ru="Импульс протона p (кг*м/с)" data-kk="Протон импульсі p (кг*м/с)" data-en="Proton momentum p (kg*m/s)" step="1e-21">
+      </div>
+
+      <button class="btn-submit" onclick="analyzeTrack()" data-ru="ВЕРИФИЦИРОВАТЬ ЧЕРЕЗ ИИ" data-kk="ЖИ АРҚЫЛЫ ТЕКСЕРУ" data-en="VERIFY VIA AI">ВЕРИФИЦИРОВАТЬ ЧЕРЕЗ ИИ</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD NUCLEAR готов. Измерьте радиус кривизны трека по сетке.</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD NUCLEAR дайын. Т тор арқылы тректің қисықтық радиусын өлшеңіз.</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD NUCLEAR ready. Measure track radius of curvature using the grid.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ФИЗИЧЕСКАЯ МОДЕЛЬ
+    const B = 1.5; // Тл
+    const q = 1.6e-19; // Кл
+    const pxPerMeter = 1000; // 1 метр = 1000 пикселей в SVG (50px = 0.05м)
+    
+    // Генерация случайного радиуса R от 0.20 до 0.45 метров
+    const actual_R = (Math.floor(Math.random() * 25) + 20) / 100; // 0.20 - 0.44 м
+    const actual_p = q * B * actual_R; // Импульс протона
+
+    // Отрисовка трека в SVG
+    // Центр окружности (cx, cy), радиус в пикселях R_px = actual_R * pxPerMeter
+    const R_px = actual_R * pxPerMeter;
+    
+    // Начальная точка входа частицы снизу
+    const startX = 150;
+    const startY = 300;
+    
+    // Дуга окружности для трека (движение протона)
+    // Строим путь дуги
+    const pathString = `M ${startX} ${startY} A ${R_px} ${R_px} 0 0 1 ${startX + R_px*0.8} ${startY - R_px*1.2}`;
+    document.getElementById('track-path').setAttribute('d', pathString);
+
+    let helperVisible = false;
+    function toggleHelper() {
+        helperVisible = !helperVisible;
+        const btn = document.getElementById('btn-grid-helper');
+        if (helperVisible) {
+            btn.classList.add('active');
+            btn.innerText = "Подсказка вкл.";
+        } else {
+            btn.classList.remove('active');
+            btn.innerText = "Подсказка радиуса";
+        }
+    }
+
+    // ИИ АНАЛИЗАТОР
+    function analyzeTrack() {
+        const studentR = parseFloat(document.getElementById('in-r').value);
+        const studentP = parseFloat(document.getElementById('in-p').value);
+        
+        if (isNaN(studentR) || isNaN(studentP)) {
+            printAI("ОШИБКА: Заполните оба поля (R и p).", "ҚАТЕ: Екі өрісті де толтырыңыз (R және p).", "ERROR: Fill in both fields (R and p).", "error");
+            return;
+        }
+
+        let errRU = [], errKK = [], errEN = [];
+
+        // Погрешность 5%
+        if (Math.abs(studentR - actual_R) > actual_R * 0.06) {
+            errRU.push("Радиус R"); errKK.push("Радиус R"); errEN.push("Radius R");
+        }
+        if (Math.abs(studentP - actual_p) > actual_p * 0.06) {
+            errRU.push("Импульс p"); errKK.push("Импульс p"); errEN.push("Momentum p");
+        }
+
+        if (errRU.length === 0) {
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Радиус: ${studentR.toFixed(2)} м | Импульс: ${studentP.toExponential(2)} кг*м/с.<br>Частица идентифицирована как протон высокой энергии. Трек верифицирован!`,
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Радиус: ${studentR.toFixed(2)} м | Импульс: ${studentP.toExponential(2)} кг*м/с.<br>Бөлшек протон ретінде анықталды. Трек расталды!`,
+                    `SYNC SUCCESSFUL.<br>Radius: ${studentR.toFixed(2)} m | Momentum: ${studentP.toExponential(2)} kg*m/s.<br>Particle identified as high-energy proton. Track verified!`,
+                    "success");
+        } else {
+            printAI(`ОШИБКА РАСЧЕТА.<br>Ошибки в параметрах: <b>${errRU.join(", ")}</b>.<br>Проверьте масштаб сетки (1 клетка = 0.05 м) и формулу p = qBR.`,
+                    `ЕСЕПТЕУ ҚАТЕСІ.<br>Параметрлердегі қателер: <b>${errKK.join(", ")}</b>.<br>Тор масштабын (1 тор = 0.05 м) және p = qBR формуласын тексеріңіз.`,
+                    `CALCULATION ERROR.<br>Errors in parameters: <b>${errEN.join(", ")}</b>.<br>Check grid scale (1 square = 0.05 m) and formula p = qBR.`,
+                    "error");
+        }
+    }
+
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        document.getElementById('ai-output').prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const lang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            span.style.display = span.getAttribute('data-lang-text') === lang ? 'inline' : 'none';
+        });
+    }
+
+    applyLogLanguage();
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        applyLogLanguage();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Марсианской Базы v15.0 (Speed Bonus)</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #333; color: #fff; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; background-color: #2a0a0a;  background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1541873676-a18131494184?w=500'); background-size: cover; background-attachment: fixed; }
+        .hidden { display: none !important; }
+        .fullscreen-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; padding: 20px; box-sizing: border-box; }
+        #start-button, #victory-restart-btn { padding: 20px 40px; font-size: 24px; font-weight: bold; color: #111; background-color: #ff8c00; border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s; margin-top: 20px; }
+        #start-button:hover, #victory-restart-btn:hover { transform: scale(1.05); }
+        .fullscreen-modal p { font-size: 18px; color: #ccc; margin-top: 20px; }
+        .language-switcher { margin-bottom: 20px; background-color: rgba(0, 0, 0, 0.6); padding: 5px; border-radius: 10px; border: 1px solid #555; display: flex; gap: 5px; }
+        .lang-btn { padding: 8px 15px; border: 1px solid #777; background-color: transparent; color: #ccc; cursor: pointer; border-radius: 7px; transition: background-color 0.3s, color 0.3s; }
+        .lang-btn:hover { background-color: #555; }
+        .lang-btn.active { background-color: #ff8c00; color: #111; font-weight: bold; border-color: #ffaf4d; }
+        h1 { color: #ff8c00; border-bottom: 2px solid #ff8c00; padding-bottom: 10px; text-align: center; }
+        .simulator-container { display: flex; flex-wrap: wrap; gap: 30px; width: 90%; max-width: 1200px; background-color: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 15px; border: 1px solid #555; }
+        .control-panel, .visual-panel { flex: 1; min-width: 320px; padding: 20px; border-radius: 10px; background-color: rgba(30, 30, 30, 0.8); }
+        h2 { color: #ffaf4d; text-align: center; margin-top: 0; }
+        button { padding: 15px; font-size: 16px; font-weight: bold; color: #fff; background-color: #5a8a9e; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
+        button:hover { background-color: #7ab8d2; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #555 !important; cursor: not-allowed !important; opacity: 0.5; }
+        .broken-btn { background-color: #c94c4c !important; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 5px #ff7b7b; } 50% { box-shadow: 0 0 20px #ff7b7b; } 100% { box-shadow: 0 0 5px #ff7b7b; } }
+        #research-btn { background-color: #8e5a9e; }
+        #task-btn { background-color: #9e745a; }
+        #geology-survey-btn { background-color: #5a9e6e; }
+        #lab-analysis-btn { background-color: #9e8e5a; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .status-item { background-color: #2e2e2e; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .icon { font-size: 40px; transition: transform 0.5s; }
+        .status-bar { width: 100%; height: 10px; background-color: #555; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .bar { height: 100%; width: 100%; border-radius: 10px; background-color: #4caf50; transition: width 0.5s, background-color 0.5s; }
+        .section-container { border-top: 2px solid #555; margin-top: 20px; padding-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .upgrade-btn { background-color: #444; text-align: left; padding: 10px; opacity: 0.6; width: 100%; box-sizing: border-box; }
+        .upgrade-btn.can-afford { background-color: #3b8d5a; cursor: pointer; opacity: 1; box-shadow: 0 0 10px #7dffb3; }
+        .upgrade-btn.purchased { background-color: #555; cursor: not-allowed; opacity: 0.4; }
+        .upgrade-btn .upgrade-cost { float: right; color: #ffc278; font-size: 14px; }
+        .upgrade-btn .upgrade-text { font-weight: bold; }
+        .upgrade-btn .upgrade-desc { font-size: 13px; color: #ddd; margin-top: 5px; }
+        #instructions-btn { background-color: #6c757d; }
+        .top-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        .top-buttons button { flex-grow: 1; }
+        #pause-btn { background-color: #9d5a9e; }
+        #pause-btn.paused-btn { background-color: #ff8c00; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 101; display: flex; justify-content: center; align-items: center; }
+        .modal-window { background-color: #2e2e2e; padding: 30px; border-radius: 15px; border: 2px solid #ffaf4d; text-align: center; width: 90%; max-width: 550px; position: relative; }
+        .modal-window.error { animation: shake 0.5s; }
+        .modal-close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; color: #ff6b6b; cursor: pointer; padding: 0; line-height: 1; }
+        .modal-close-btn:hover { color: #ff8c8c; }
+        #task-question, #geology-question, #chemistry-question, #biology-question, #repair-desc { font-size: 20px; font-weight: bold; margin-bottom: 20px; min-height: 50px;}
+        #result-desc { font-size: 18px; color: #eee; margin-top: 10px; }
+        input[type="text"], input[type="number"] { width: 80%; padding: 10px; font-size: 20px; text-align: center; border-radius: 5px; border: 2px solid #555; background-color: #111; color: #fff; }
+        .modal-button { margin-top: 20px; width: 90%; background-color: #3b8d5a; }
+        #seismic-canvas { background-color: #111; border: 1px solid #555; border-radius: 5px; margin-bottom: 15px; }
+        .lab-choices, .conversion-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .lab-choices button, .conversion-buttons button { flex-grow: 1; font-size: 18px; }
+        .instructions-window ul { text-align: left; padding-left: 20px; list-style-type: '➡️ '; }
+        .instructions-window li { margin-bottom: 10px; line-height: 1.4; }
+        .instructions-window strong { color: #ffc278; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .missions-panel { margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.5); border: 1px solid #777; border-radius: 8px; }
+        #missions-list { list-style: none; padding: 0; }
+        #missions-list li { margin-bottom: 8px; transition: color 0.5s; }
+        #missions-list .phase-title { font-weight: bold; color: #ffaf4d; font-size: 18px; margin-top: 15px; }
+        #missions-list .completed { color: #7dffb3; text-decoration: line-through; }
+        #missions-list .locked { color: #777; }
+        .action-buttons { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; margin-bottom: 15px; }
+        .action-buttons button { width: 100%; box-sizing: border-box; }
+        .difficulty-selector { display: flex; gap: 15px; margin-bottom: 20px; }
+        .difficulty-btn { background-color: #444; border: 2px solid #777; padding: 15px 30px; font-size: 18px; }
+        .difficulty-btn.active { background-color: #3b8d5a; border-color: #7dffb3; box-shadow: 0 0 10px #7dffb3; }
+        #conversion-input { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        .log-window { grid-column: 1 / -1; background-color: #222; text-align: left; padding: 5px 15px; border-radius: 8px; border: 1px solid #444; }
+        .log-window h4 { margin: 5px 0; font-size: 16px; color: #ffc278;}
+        .log-window p { margin: 0 0 5px 0; font-size: 14px; }
+        
+        /* Repair mini-game styles */
+        #repair-grid { display: grid; grid-template-columns: repeat(4, 60px); grid-template-rows: repeat(4, 60px); gap: 5px; margin: 20px auto; width: fit-content; }
+        .repair-tile {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            background-color: #7ab8d2; /* This sets the pipe color */
+            -webkit-mask-size: cover; /* These properties apply the SVG as a mask */
+            mask-size: cover;
+        }
+        .start { background-color: #4caf50; cursor: default; } .end { background-color: #d9534f; cursor: default; }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="fullscreen-modal">
+        <h1 id="start-title"></h1> <p id="start-desc"></p>
+        <h2 id="difficulty-title" style="margin-top: 30px; color: #ffaf4d;"></h2>
+        <div class="difficulty-selector">
+            <button id="difficulty-easy" class="difficulty-btn"></button> <button id="difficulty-medium" class="difficulty-btn"></button> <button id="difficulty-hard" class="difficulty-btn"></button>
+        </div>
+        <button id="start-button" disabled></button>
+    </div>
+
+    <div id="victory-modal" class="fullscreen-modal hidden">
+        <h1 id="victory-title"></h1> <p id="victory-desc"></p> <button id="victory-restart-btn"></button>
+    </div>
+
+    <div id="geology-modal" class="modal hidden"> <div class="modal-window"> <button class="modal-close-btn" onclick="this.parentElement.parentElement.classList.add('hidden')">&times;</button> <h2 id="geology-title"></h2> <canvas id="seismic-canvas" width="450" height="200"></canvas> <div id="geology-question"></div> <input type="text" inputmode="decimal" id="geology-answer" placeholder="Ответ"> <button id="check-geology-btn" class="modal-button"></button> </div> </div>
+    <div id="lab-modal" class="modal hidden"> <div class="modal-window"> <button class="modal-close-btn" onclick="this.parentElement.parentElement.classList.add('hidden')">&times;</button> <h2 id="lab-title"></h2> <div id="chemistry-question"></div> <div class="lab-choices"> <button id="reagent-water"></button> <button id="reagent-acid"></button> <button id="reagent-alkali"></button> </div> </div> </div>
+    <div id="biology-modal" class="modal hidden"> <div class="modal-window"> <button class="modal-close-btn" onclick="this.parentElement.parentElement.classList.add('hidden')">&times;</button> <h2 id="biology-title"></h2> <div id="biology-question"></div> <div class="lab-choices"> <button id="biology-true"></button> <button id="biology-false"></button> </div> </div> </div>
+    <div id="result-modal" class="modal hidden"> <div class="modal-window"> <div id="result-icon" class="icon"></div> <h2 id="result-title"></h2> <p id="result-desc"></p> <button id="close-result-btn" class="modal-button"></button> </div> </div>
+    <div id="task-modal" class="modal hidden"> <div class="modal-window"> <button id="close-task-btn" class="modal-close-btn">&times;</button> <h2 id="task-title"></h2> <div id="task-question"></div> <input type="text" inputmode="decimal" id="task-answer" placeholder="Ответ"> <button id="check-answer-btn" class="modal-button"></button> </div> </div>
+    <div id="instructions-modal" class="modal hidden">
+        <div class="modal-window instructions-window">
+            <h2 id="instructions-title"></h2>
+            <ul> <li id="instruction-objective"></li><li id="instruction-resources"></li><li id="instruction-recovery"></li><li id="instruction-development"></li><li id="instruction-upgrades"></li><li id="instruction-expedition"></li><li id="instruction-repair"></li><li id="instruction-conversion"></li><li id="instruction-events"></li> </ul>
+            <button id="close-instructions-btn" class="modal-button"></button>
+        </div>
+    </div>
+    <div id="repair-modal" class="modal hidden">
+        <div class="modal-window">
+            <button class="modal-close-btn" onclick="this.parentElement.parentElement.classList.add('hidden')">&times;</button>
+            <h2 id="repair-title"></h2>
+            <p id="repair-desc"></p>
+            <div id="repair-grid"></div>
+            <button id="check-repair-btn" class="modal-button"></button>
+        </div>
+    </div>
+
+    <div class="language-switcher"> <button id="lang-ru" class="lang-btn active">RU</button> <button id="lang-kz" class="lang-btn">KZ</button> <button id="lang-en" class="lang-btn">EN</button> </div>
+    <h1 id="main-title"></h1>
+    <div class="simulator-container">
+        <div class="control-panel">
+            <h2 id="control-panel-title"></h2>
+            <div class="top-buttons"> <button id="pause-btn"></button> <button id="instructions-btn"></button> </div>
+            <p id="control-panel-desc"></p>
+            <div class="action-buttons"> <button id="solar-panel-btn"></button> <button id="water-pump-btn"></button> <button id="oxygen-generator-btn"></button> <button id="research-btn"></button> <button id="task-btn"></button> <button id="geology-survey-btn"></button> <button id="lab-analysis-btn" disabled></button> </div>
+            <div id="upgrades-container" class="section-container">
+                <h2 id="upgrades-title"></h2>
+                <button id="upgrade-battery" class="upgrade-btn"> <div><span class="upgrade-cost">25🔬/10⚙️</span><span id="upgrade-battery-name" class="upgrade-text"></span></div> <div id="upgrade-battery-desc" class="upgrade-desc"></div> </button>
+                <button id="upgrade-pump" class="upgrade-btn"> <div><span class="upgrade-cost">30🔬/20⚙️</span><span id="upgrade-pump-name" class="upgrade-text"></span></div> <div id="upgrade-pump-desc" class="upgrade-desc"></div> </button>
+                <button id="upgrade-solar" class="upgrade-btn"> <div><span class="upgrade-cost">50🔬/30⚙️</span><span id="upgrade-solar-name" class="upgrade-text"></span></div> <div id="upgrade-solar-desc" class="upgrade-desc"></div> </button>
+                <button id="upgrade-hydroponics" class="upgrade-btn"> <div><span class="upgrade-cost">40🔬/40⚙️</span><span id="upgrade-hydroponics-name" class="upgrade-text"></span></div> <div id="upgrade-hydroponics-desc" class="upgrade-desc"></div> </button>
+                <button id="upgrade-reactor" class="upgrade-btn"> <div><span class="upgrade-cost">200🔬/150⚙️/15💎</span><span id="upgrade-reactor-name" class="upgrade-text"></span></div> <div id="upgrade-reactor-desc" class="upgrade-desc"></div> </button>
+                <button id="upgrade-shield" class="upgrade-btn"> <div><span class="upgrade-cost">150🔬/100⚙️/25💎</span><span id="upgrade-shield-name" class="upgrade-text"></span></div> <div id="upgrade-shield-desc" class="upgrade-desc"></div> </button>
+            </div>
+            <div id="conversion-container" class="section-container">
+                <h2 id="conversion-title"></h2> <input type="number" id="conversion-input" placeholder="Количество">
+                <div class="conversion-buttons"> <button id="convert-s-to-e-btn">🔬 ⟶ ⚙️</button> <button id="convert-e-to-s-btn">⚙️ ⟶ 🔬</button> </div>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <h2 id="visual-panel-title"></h2>
+            <div class="status-grid">
+                <div class="status-item"><div class="icon">🔋</div><p><span id="energy-label"></span>: <span id="energy-level">100</span>%</p><div class="status-bar"><div id="energy-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">💧</div><p><span id="water-label"></span>: <span id="water-level">100</span>%</p><div class="status-bar"><div id="water-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">💨</div><p><span id="oxygen-label"></span>: <span id="oxygen-level">100</span>%</p><div class="status-bar"><div id="oxygen-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">🔬</div><p><span id="science-label"></span>: <span id="science-level">0</span></p></div>
+                <div class="status-item"><div class="icon">⚙️</div><p><span id="engineering-label"></span>: <span id="engineering-level">0</span></p></div>
+                <div class="status-item"><div class="icon">💎</div><p><span id="rare-minerals-label"></span>: <span id="rare-minerals-level">0</span></p></div>
+                <div class="status-item"><div id="plant-icon" class="icon">🌱</div><p id="plant-label"></p><p class="small-text" id="plant-status"></p></div>
+                <div class="log-window status-item"><h4 id="log-title"></h4><p id="log-message"></p></div>
+            </div>
+            <div class="missions-panel"> <h2 id="missions-title"></h2> <ul id="missions-list"></ul> </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const sounds = { click: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/click.mp3'), alert: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/alert.mp3'), positive: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/positive.mp3'), negative: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/negative.mp3') };
+    
+    // ОБЪЕКТ ПЕРЕВОДОВ (С ОБНОВЛЕННЫМИ КЛЮЧАМИ)
+    const translations = {
+        ru: {
+            mainTitle: "🚀 Симулятор Марсианской Базы v15.0", controlPanelTitle: "Панель управления", controlPanelDesc: "Ваша задача: развивать базу и управлять ресурсами.", solarBtn: "⚡️ Включить солнечные панели", waterBtn: "💧 Запустить водяной насос", oxygenBtn: "💨 Активировать генератор O₂", researchBtn: "🔬 Провести исследование", taskBtn: "∑ Решить Задачу", geologySurveyBtn: "🛰️ Начать геологическую разведку", labAnalysisBtn: "🔬 Анализ в лаборатории", visualPanelTitle: "Состояние базы", energyLabel: "Энергия", waterLabel: "Вода", oxygenLabel: "Кислород", scienceLabel: "Наука", engineeringLabel: "Инж. Данные", rareMineralsLabel: "Редкие минералы", plantLabel: "Состояние теплицы", plantStatusOK: "Все в порядке", plantStatusBad: "Недостаточно ресурсов!", logTitle: "Журнал событий:", logInitial: "Системы запущены. Добро пожаловать!",
+            logTaskCorrect: "Задача решена! Инж. данные +{amount}.", // ИЗМЕНЕНО
+            logTaskCorrectBonus: "Быстрый ответ! Бонус! Инж. данные +{amount}.", // ДОБАВЛЕНО
+            logTaskIncorrect: "Ошибка в расчетах! Попробуйте еще раз.", upgradesTitle: "Улучшения", upgradeBatteryName: "Улучшенные батареи", upgradeBatteryDesc: "Снижает пассивный расход энергии", upgradePumpName: "Эффективный насос", upgradePumpDesc: "Водяной насос тратит меньше энергии", upgradeSolarName: "Усиленные панели", upgradeSolarDesc: "Панели вырабатывают больше энергии", upgradeHydroponicsName: "Гидропоника", upgradeHydroponicsDesc: "Теплица становится более эффективной", upgradeReactorName: "Мини-реактор", upgradeReactorDesc: "Генерирует энергию пассивно. Требует минералы.", upgradeShieldName: "Электромагнитный щит", upgradeShieldDesc: "Защищает от негативных событий. Требует минералы.", startTitle: "Симулятор Марсианской Базы", startButton: "🚀 Начать миссию", startDesc: "Нажмите, чтобы запустить системы и активировать звук.", pauseBtn: "⏸️ Пауза", resumeBtn: "▶️ Продолжить", taskTitle: "Научная Задача", checkBtn: "Проверить", missionsTitle: "Цели Миссии", victoryTitle: "Миссия Выполнена!", victoryDesc: "База готова к прибытию колонистов. Вы победили!", victoryRestartBtn: "Начать заново", instructionsBtn: "📖 Инструкция", closeInstructionsBtn: "Закрыть", instructionsTitle: "Как играть:", 
+            instructionObjective: "<strong>Цель:</strong> Выполнить все цели миссии, чтобы подготовить базу к прибытию колонистов.", instructionResources: "<strong>Ресурсы:</strong> 🔋Энергия, 💧Вода и 💨Кислород постоянно расходуются.", instructionRecovery: "<strong>Восстановление:</strong> Используйте кнопки управления, чтобы пополнять ресурсы.", instructionDevelopment: "<strong>Развитие:</strong> Проводите 🔬Исследования и решайте ∑Задачи. В задачах, где ответ может быть дробным, округляйте его до десятых (один знак после запятой).", instructionUpgrades: "<strong>Улучшения:</strong> Тратьте очки на покупку улучшений. Некоторые требуют 💎Редких минералов.", instructionExpedition: "<strong>Гео-разведка:</strong> Отправляйте 🛰️марсоход за образцами. Анализируйте данные (Физика и Математика), а затем изучайте образцы в лаборатории (Химия и Биология).", instructionRepair: "<strong>Ремонт:</strong> Случайные события могут ломать системы. Нажмите на сломанную красную кнопку, чтобы начать ремонт, решив инженерную головоломку.", instructionConversion: "<strong>Конвертация:</strong> Вы можете конвертировать 🔬Науку в ⚙️Инж. данные и наоборот с потерей 50% от исходной суммы.", instructionEvents: "<strong>События:</strong> Будьте готовы к случайным событиям.",
+            geologySurveyInProgress: "Возврат через: {s}с", geologyTitle: "Сейсмический Анализ", geologyQuestion: "Данные сейсмосканера получены. Определите пиковое значение (амплитуду) на графике (округлите до десятых).", checkGeologyBtn: "Проанализировать", labTitle: "Лабораторный Анализ", reagentWater: "💧 Вода", reagentAcid: "🧪 Кислота", reagentAlkali: "🧂 Щелочь", biologyTitle: "Биологическое Открытие!", logBiologyDiscovery: "ВЕЛИКОЕ ОТКРЫТИЕ! Подтверждение теории о возможности жизни на Марсе! +200 Науки.",
+            chemQuestionOxide: "Образец содержит оксидную руду. Требуется сильный реагент для извлечения металлов.", chemQuestionSalt: "В образце высокое содержание растворимых солей. Их нужно вымыть.", chemQuestionAlkali: "Обнаружены щелочные породы. Нужен реагент для их нейтрализации перед анализом.", chemQuestionSilicate: "Образец состоит из инертных силикатов. Требуется щелочь для вскрытия породы.",
+            biologyQuestionAmino: "ВНИМАНИЕ! В образце найдены следы аминокислот. Верно ли, что они являются строительными блоками для белков?", biologyQuestionPhoto: "Анализ показал следы хлорофилла. Верно ли, что фотосинтез производит кислород?", biologyQuestionMito: "Обнаружены сложные органеллы. Верно ли, что митохондрии - это 'энергетические станции' клетки?",
+            biologyTrue: "✅ Верно", biologyFalse: "❌ Неверно",
+            resultTitleSuccess: "Успех!", resultTitleFail: "Неудача", closeResultBtn: "Принято",
+            geologyResultDescHigh: "Анализ верен! Получен образец грунта высокого качества. Он позволит извлечь больше минералов.", geologyResultDescLow: "Ошибка в расчетах. Получен образец грунта низкого качества. Минералов будет извлечено меньше.", labResultDescSuccess: "Реакция прошла успешно! Извлечено {amount} 💎Редких минералов.", labResultDescFail: "Реакция не удалась. Образец загрязнен и безвозвратно утерян.",
+            taskSpeedQuestion: "Корабль пролетел {d} км за {t} ч. Какова его скорость (км/ч)?", taskDensityQuestion: "Образец массой {m} г имеет объем {v} см³. Какова его плотность (г/см³)? (округлите до десятых)", taskAtomsQuestion: "Сколько всего атомов в молекуле {formula}?", taskAreaQuestion: "Солнечная панель имеет размеры {l} м на {w} м. Какова её площадь (м²)?", taskPercentageQuestion: "Резервуар с водой объемом {total} л заполнен на {perc}%. Сколько литров воды в резервуаре?",
+            difficultyTitle: "Выберите уровень сложности", difficultyEasy: "Легкий", difficultyMedium: "Средний", difficultyHard: "Сложный",
+            missionPhase1: "Фаза 1: Стабилизация", missionPhase2: "Фаза 2: Расширение", missionPhase3: "Фаза 3: Подготовка",
+            missionSurvive5Min: "Продержаться 5 минут", missionCollect50Science: "Накопить 50 Науки", missionBuy1Upgrade: "Купить 1-е улучшение", missionCollect150Science: "Накопить 150 Науки и 100 Инж. Данных", missionBuy3Upgrades: "Купить 3 улучшения", missionSurviveStorm: "Пережить Пыльную бурю", missionBuyAllUpgrades: "Купить все улучшения", missionMaintain80: "Держать ресурсы >80% в течение 1 мин",
+            conversionTitle: "Конвертация ресурсов", conversionPlaceholder: "Количество", conversionSuccess: "Конвертация успешна. Потрачено {spent} {from}, получено {gained} {to}.", conversionFail: "Недостаточно ресурсов для конвертации.",
+            eventNormalDesc: "Все системы функционируют в штатном режиме.", eventDustStormDesc: "Производство энергии снижено.", eventClearDayDesc: "Производство энергии увеличено.", eventWaterLeakDesc: "Расход воды удвоен.", eventIceFoundDesc: "Запасы воды пополнены.",
+            eventSolarBreakdownDesc: "⚠️ Вспышка на Солнце! Панели повреждены!", eventPumpBreakdownDesc: "⚠️ Засор! Водяной насос заблокирован!", eventOxygenBreakdownDesc: "⚠️ Сбой фильтра! Генератор O₂ отключен!",
+            repairBtn: "🔧 Ремонт", repairTitle: "Ремонтный отсек", repairDesc: "Восстановите цепь, поворачивая плитки, чтобы соединить зеленый и красный блоки.", checkRepairBtn: "Подать питание",
+            repairSuccess: "Система восстановлена! +{amount} ⚙️", // ИЗМЕНЕНО
+            repairSuccessBonus: "Быстрый ремонт! Бонус! +{amount} ⚙️", // ДОБАВЛЕНО
+            repairFail: "Короткое замыкание! Потеряно 5% энергии."
+        },
+        en: { 
+            mainTitle: "🚀 Mars Base Simulator v15.0", controlPanelTitle: "Control Panel", controlPanelDesc: "Your mission: develop the base and manage resources.", solarBtn: "⚡️ Activate Solar Panels", waterBtn: "💧 Start Water Pump", oxygenBtn: "💨 Activate O₂ Generator", researchBtn: "🔬 Conduct Research", taskBtn: "∑ Solve Task", geologySurveyBtn: "🛰️ Start Geological Survey", labAnalysisBtn: "🔬 Lab Analysis", visualPanelTitle: "Base Status", energyLabel: "Energy", waterLabel: "Water", oxygenLabel: "Oxygen", scienceLabel: "Science", engineeringLabel: "Eng. Data", rareMineralsLabel: "Rare Minerals", plantLabel: "Greenhouse Status", plantStatusOK: "All systems nominal", plantStatusBad: "Insufficient resources!", logTitle: "Event Log:", logInitial: "Systems online. Welcome!",
+            logTaskCorrect: "Task solved! +{amount} Eng. Data.", // ИЗМЕНЕНО
+            logTaskCorrectBonus: "Quick answer! Bonus! +{amount} Eng. Data.", // ДОБАВЛЕНО
+            logTaskIncorrect: "Calculation error! Try again.", upgradesTitle: "Upgrades", upgradeBatteryName: "Improved Batteries", upgradeBatteryDesc: "Reduces passive energy consumption", upgradePumpName: "Efficient Pump", upgradePumpDesc: "Water pump uses less energy", upgradeSolarName: "Reinforced Panels", upgradeSolarDesc: "Panels generate more energy", upgradeHydroponicsName: "Hydroponics", upgradeHydroponicsDesc: "The greenhouse becomes more efficient", upgradeReactorName: "Mini-Reactor", upgradeReactorDesc: "Generates energy passively. Requires minerals.", upgradeShieldName: "Electromagnetic Shield", upgradeShieldDesc: "Protects against negative events. Requires minerals.", startTitle: "Mars Base Simulator", startButton: "🚀 Start Mission", startDesc: "Click to initialize systems and enable audio.", pauseBtn: "⏸️ Pause", resumeBtn: "▶️ Resume", taskTitle: "Scientific Task", checkBtn: "Check", missionsTitle: "Mission Objectives", victoryTitle: "Mission Accomplished!", victoryDesc: "The base is ready for colonists. You have won!", victoryRestartBtn: "Start Over", instructionsBtn: "📖 Instructions", closeInstructionsBtn: "Close", instructionsTitle: "How to Play:", 
+            instructionObjective: "<strong>Objective:</strong> Complete all mission objectives to prepare the base for colonists.", instructionResources: "<strong>Resources:</strong> 🔋Energy, 💧Water, and 💨Oxygen are constantly being consumed.", instructionRecovery: "<strong>Recovery:</strong> Use the control buttons to replenish resources.", instructionDevelopment: "<strong>Development:</strong> Conduct 🔬Research and solve ∑Tasks. For tasks with decimal answers, round your answer to the nearest tenth (one digit after the decimal point).", instructionUpgrades: "<strong>Upgrades:</strong> Spend points to buy upgrades. Some require 💎Rare Minerals.", instructionExpedition: "<strong>Geo-Survey:</strong> Send the 🛰️rover for samples. Analyze data (Physics & Math), then study samples in the lab (Chemistry & Biology).", instructionRepair: "<strong>Repairs:</strong> Random events can break systems. Click the broken red button to start repairs by solving an engineering puzzle.", instructionConversion: "<strong>Conversion:</strong> You can convert 🔬Science into ⚙️Eng. Data and vice versa, but with a 50% loss.", instructionEvents: "<strong>Events:</strong> Be prepared for random events.",
+            geologySurveyInProgress: "Return in: {s}s", geologyTitle: "Seismic Analysis", geologyQuestion: "Seismic scanner data received. Determine the peak value (amplitude) on the graph (round to one decimal place).", checkGeologyBtn: "Analyze", labTitle: "Lab Analysis", reagentWater: "💧 Water", reagentAcid: "🧪 Acid", reagentAlkali: "🧂 Alkali", biologyTitle: "Biological Discovery!", logBiologyDiscovery: "GREAT DISCOVERY! Confirmation of possible life on Mars is a huge scientific breakthrough! +200 Science.",
+            chemQuestionOxide: "The sample contains oxide ore. A strong reagent is required to extract the metals.", chemQuestionSalt: "The sample has a high content of soluble salts. They need to be washed out.", chemQuestionAlkali: "Alkaline rocks detected. A reagent is needed to neutralize them before analysis.", chemQuestionSilicate: "The sample consists of inert silicates. An alkali is required to break down the rock.",
+            biologyQuestionAmino: "ATTENTION! Traces of amino acids found. Is it true they are the building blocks of proteins?", biologyQuestionPhoto: "Analysis shows traces of chlorophyll. Is it true that photosynthesis produces oxygen?", biologyQuestionMito: "Complex organelles detected. Is it true that mitochondria are the 'powerhouses' of the cell?",
+            biologyTrue: "✅ True", biologyFalse: "❌ False",
+            resultTitleSuccess: "Success!", resultTitleFail: "Failure", closeResultBtn: "Acknowledged",
+            geologyResultDescHigh: "Analysis correct! A high-quality soil sample was obtained. It will yield more minerals.", geologyResultDescLow: "Calculation error. A low-quality soil sample was obtained. Fewer minerals will be extracted.", labResultDescSuccess: "The reaction was successful! Extracted {amount} 💎Rare Minerals.", labResultDescFail: "The reaction failed. The sample is contaminated and has been lost.",
+            taskSpeedQuestion: "A ship traveled {d} km in {t} h. What is its speed (km/h)?", taskDensityQuestion: "A sample weighing {m} g has a volume of {v} cm³. What is its density (g/cm³)? (round to one decimal place)", taskAtomsQuestion: "How many atoms are in a {formula} molecule?", taskAreaQuestion: "A solar panel measures {l} m by {w} m. What is its area (m²)?", taskPercentageQuestion: "A water tank with a capacity of {total} L is {perc}% full. How many liters of water are in the tank?",
+            difficultyTitle: "Select Difficulty Level", difficultyEasy: "Easy", difficultyMedium: "Medium", difficultyHard: "Hard",
+            missionPhase1: "Phase 1: Stabilization", missionPhase2: "Phase 2: Expansion", missionPhase3: "Phase 3: Preparation",
+            missionSurvive5Min: "Survive for 5 minutes", missionCollect50Science: "Collect 50 Science", missionBuy1Upgrade: "Buy 1st upgrade", missionCollect150Science: "Collect 150 Science & 100 Eng. Data", missionBuy3Upgrades: "Buy 3 upgrades", missionSurviveStorm: "Survive a Dust Storm", missionBuyAllUpgrades: "Buy all upgrades", missionMaintain80: "Keep resources >80% for 1 min",
+            conversionTitle: "Resource Conversion", conversionPlaceholder: "Amount", conversionSuccess: "Conversion successful. Spent {spent} {from}, gained {gained} {to}.", conversionFail: "Not enough resources to convert.",
+            eventNormalDesc: "All systems are functioning normally.", eventDustStormDesc: "Energy production is reduced.", eventClearDayDesc: "Energy production is increased.", eventWaterLeakDesc: "Water consumption is doubled.", eventIceFoundDesc: "Water reserves have been replenished.",
+            eventSolarBreakdownDesc: "⚠️ Solar Flare! Panels damaged!", eventPumpBreakdownDesc: "⚠️ Clogging! Water pump blocked!", eventOxygenBreakdownDesc: "⚠️ Filter failure! O₂ generator offline!",
+            repairBtn: "🔧 Repair", repairTitle: "Repair Bay", repairDesc: "Restore the circuit by rotating the tiles to connect the green and red blocks.", checkRepairBtn: "Apply Power",
+            repairSuccess: "System restored! +{amount} ⚙️", // ИЗМЕНЕНО
+            repairSuccessBonus: "Quick repair! Bonus! +{amount} ⚙️", // ДОБАВЛЕНО
+            repairFail: "Short circuit! 5% energy lost."
+        },
+        kz: { 
+            mainTitle: "🚀 Марс Базасының Симуляторы v15.0", controlPanelTitle: "Басқару панелі", controlPanelDesc: "Сіздің міндетіңіз: базаны дамытып, ресурстарды басқару.", solarBtn: "⚡️ Күн панельдерін қосу", waterBtn: "💧 Су сорғысын іске қосу", oxygenBtn: "💨 O₂ генераторын іске қосу", researchBtn: "🔬 Зерттеу жүргізу", taskBtn: "∑ Есепті шешу", geologySurveyBtn: "🛰️ Геологиялық барлауды бастау", labAnalysisBtn: "🔬 Зертханалық талдау", visualPanelTitle: "Базаның жағдайы", energyLabel: "Энергия", waterLabel: "Су", oxygenLabel: "Оттегі", scienceLabel: "Ғылым", engineeringLabel: "Инж. деректер", rareMineralsLabel: "Сирек минералдар", plantLabel: "Жылыжай жағдайы", plantStatusOK: "Барлығы қалыпты", plantStatusBad: "Ресурстар жеткіліксіз!", logTitle: "Оқиғалар журналы:", logInitial: "Жүйелер іске қосылды. Қош келдіңіз!",
+            logTaskCorrect: "Есеп шешілді! Инж. деректер +{amount}.", // ИЗМЕНЕНО
+            logTaskCorrectBonus: "Жылдам жауап! Бонус! Инж. деректер +{amount}.", // ДОБАВЛЕНО
+            logTaskIncorrect: "Есептеуде қате! Қайталап көріңіз.", upgradesTitle: "Жақсартулар", upgradeBatteryName: "Жақсартылған батареялар", upgradeBatteryDesc: "Пассивті энергия шығынын азайтады", upgradePumpName: "Тиімді сорғы", upgradePumpDesc: "Су сорғысы аз энергия жұмсайды", upgradeSolarName: "Күшейтілген панельдер", upgradeSolarDesc: "Панельдер көбірек энергия өндіреді", upgradeHydroponicsName: "Гидропоника", upgradeHydroponicsDesc: "Жылыжай тиімдірек болады", upgradeReactorName: "Шағын реактор", upgradeReactorDesc: "Пассивті түрде энергия өндіреді. Минералдарды қажет етеді.", upgradeShieldName: "Электромагниттік қалқан", upgradeShieldDesc: "Жағымсыз оқиғалардан қорғайды. Минералдарды қажет етеді.", startTitle: "Марс Базасының Симуляторы", startButton: "🚀 Миссияны бастау", startDesc: "Жүйелерді іске қосу және дыбысты қосу үшін басыңыз.", pauseBtn: "⏸️ Кідіріс", resumeBtn: "▶️ Жалғастыру", taskTitle: "Ғылыми есеп", checkBtn: "Тексеру", missionsTitle: "Миссия мақсаттары", victoryTitle: "Миссия орындалды!", victoryDesc: "База колонистердің келуіне дайын. Сіз жеңдіңіз!", victoryRestartBtn: "Қайтадан бастау", instructionsBtn: "📖 Нұсқаулық", closeInstructionsBtn: "Жабу", instructionsTitle: "Қалай ойнау керек:", 
+            instructionObjective: "<strong>Мақсат:</strong> Базаны колонистердің келуіне дайындау үшін барлық миссия мақсаттарын орындаңыз.", instructionResources: "<strong>Ресурстар:</strong> 🔋Энергия, 💧Су және 💨Оттегі үнемі жұмсалады.", instructionRecovery: "<strong>Қалпына келтіру:</strong> Ресурстарды толтыру үшін басқару түймелерін пайдаланыңыз.", instructionDevelopment: "<strong>Даму:</strong> Ғылым ұпайларын алу үшін 🔬Зерттеулер жүргізіп, ∑Есептерді шешіңіз. Жауабы бөлшек сан болуы мүмкін есептерде оны ондық үлеске дейін дөңгелектеңіз.", instructionUpgrades: "<strong>Жақсартулар:</strong> Ұпайларды жақсартуларды сатып алуға жұмсаңыз. Кейбіреулері 💎Сирек минералдарды қажет етеді.", instructionExpedition: "<strong>Гео-барлау:</strong> Топырақ үлгілері үшін 🛰️марсоходты жіберіңіз. Деректерді талдап (Физика мен Математика), содан кейін зертханада (Химия мен Биология) үлгілерді зерттеңіз.", instructionRepair: "<strong>Жөндеу:</strong> Кездейсоқ оқиғалар жүйелерді бұзуы мүмкін. Инженерлік басқатырғышты шешу арқылы жөндеуді бастау үшін сынған қызыл түймені басыңыз.", instructionConversion: "<strong>Айырбастау:</strong> 🔬Ғылымды ⚙️Инж. деректерге және керісінше 50% жоғалтумен айырбастай аласыз.", instructionEvents: "<strong>Оқиғалар:</strong> Кездейсоқ оқиғаларға дайын болыңыз.",
+            geologySurveyInProgress: "Қайтуға: {s}с", geologyTitle: "Сейсмикалық талдау", geologyQuestion: "Сейсмосканер деректері алынды. Графиктегі ең жоғарғы мәнді (амплитуданы) анықтаңыз (ондық үлеске дейін дөңгелектеңіз).", checkGeologyBtn: "Талдау", labTitle: "Зертханалық талдау", reagentWater: "💧 Су", reagentAcid: "🧪 Қышқыл", reagentAlkali: "🧂 Сілті", biologyTitle: "Биологиялық жаңалық!", logBiologyDiscovery: "ҰЛЫ ЖАҢАЛЫҚ! Марста өмірдің болуы мүмкін деген теорияның расталуы үлкен ғылыми серпіліс әкелді! +200 Ғылым.",
+            chemQuestionOxide: "Үлгіде оксидті кен бар. Металдарды алу үшін күшті реагент қажет.", chemQuestionSalt: "Үлгіде ерігіш тұздардың мөлшері жоғары. Оларды шайып тастау керек.", chemQuestionAlkali: "Сілтілі жыныстар табылды. Талдау алдында оларды бейтараптандыру үшін реагент қажет.", chemQuestionSilicate: "Үлгі инертті силикаттардан тұрады. Жынысты ашу үшін сілті қажет.",
+            biologyQuestionAmino: "НАЗАР АУДАРЫҢЫЗ! Үлгіде аминқышқылдарының іздері табылды. Олар ақуыздардың құрылыс материалы болып табылады ма?", biologyQuestionPhoto: "Талдау хлорофилл іздерін көрсетті. Фотосинтез оттегін өндіреді ме?", biologyQuestionMito: "Күрделі органеллалар табылды. Митохондриялар жасушаның 'энергетикалық станциялары' болып табылады ма?",
+            biologyTrue: "✅ Дұрыс", biologyFalse: "❌ Бұрыс",
+            resultTitleSuccess: "Сәтті!", resultTitleFail: "Сәтсіз", closeResultBtn: "Қабылданды",
+            geologyResultDescHigh: "Талдау дұрыс! Жоғары сапалы топырақ үлгісі алынды. Ол көбірек минерал алуға мүмкіндік береді.", geologyResultDescLow: "Есептеуде қате. Төмен сапалы топырақ үлгісі алынды. Азырақ минерал алынады.", labResultDescSuccess: "Реакция сәтті өтті! {amount} 💎Сирек минерал алынды.", labResultDescFail: "Реакция сәтсіз аяқталды. Үлгі ластанып, жоғалды.",
+            taskSpeedQuestion: "Кеме {t} сағатта {d} км ұшты. Оның жылдамдығы қандай (км/сағ)?", taskDensityQuestion: "Салмағы {m} г үлгінің көлемі {v} см³. Оның тығыздығы қандай (г/см³)? (ондық үлеске дейін дөңгелектеңіз)", taskAtomsQuestion: "{formula} молекуласында барлығы қанша атом бар?", taskAreaQuestion: "Күн панелінің өлшемдері {l} м x {w} м. Оның ауданы қандай (м²)?", taskPercentageQuestion: "Сыйымдылығы {total} л су резервуары {perc}% толтырылған. Резервуарда қанша литр су бар?",
+            difficultyTitle: "Қиындық деңгейін таңдаңыз", difficultyEasy: "Жеңіл", difficultyMedium: "Орташа", difficultyHard: "Қиын",
+            missionPhase1: "1-кезең: Тұрақтандыру", missionPhase2: "2-кезең: Кеңейту", missionPhase3: "3-кезең: Дайындық",
+            missionSurvive5Min: "5 минут бойы шыдау", missionCollect50Science: "50 Ғылым жинау", missionBuy1Upgrade: "1-ші жақсартуды сатып алу", missionCollect150Science: "150 Ғылым және 100 Инж. деректер жинау", missionBuy3Upgrades: "3 жақсарту сатып алу", missionSurviveStorm: "Шаңды дауылдан аман қалу", missionBuyAllUpgrades: "Барлық жақсартуларды сатып алу", missionMaintain80: "Ресурстарды 1 мин бойы >80% ұстау",
+            conversionTitle: "Ресурстарды айырбастау", conversionPlaceholder: "Саны", conversionSuccess: "Айырбастау сәтті аяқталды. Жұмсалды: {spent} {from}, алынды: {gained} {to}.", conversionFail: "Айырбастау үшін ресурстар жеткіліксіз.",
+            eventNormalDesc: "Барлық жүйелер штаттық режимде жұмыс істеп тұр.", eventDustStormDesc: "Энергия өндірісі төмендеді.", eventClearDayDesc: "Энергия өндірісі артты.", eventWaterLeakDesc: "Су шығыны екі еселенді.", eventIceFoundDesc: "Су қорлары толтырылды.",
+            eventSolarBreakdownDesc: "⚠️ Күндегі жарқыл! Панельдер зақымдалды!", eventPumpBreakdownDesc: "⚠️ Бітелу! Су сорғысы бұғатталды!", eventOxygenBreakdownDesc: "⚠️ Сүзгі істен шықты! O₂ генераторы өшірілді!",
+            repairBtn: "🔧 Жөндеу", repairTitle: "Жөндеу бөлімі", repairDesc: "Жасыл және қызыл блоктарды қосу үшін тақтайшаларды бұрап, тізбекті қалпына келтіріңіз.", checkRepairBtn: "Қуатты қосу",
+            repairSuccess: "Жүйе қалпына келтірілді! +{amount} ⚙️", // ИЗМЕНЕНО
+            repairSuccessBonus: "Жылдам жөндеу! Бонус! +{amount} ⚙️", // ДОБАВЛЕНО
+            repairFail: "Қысқа тұйықталу! 5% энергия жоғалды."
+        }
+    };
+
+    const allElements = {
+        mainTitle: document.getElementById('main-title'), pauseBtn: document.getElementById('pause-btn'), controlPanelTitle: document.getElementById('control-panel-title'), controlPanelDesc: document.getElementById('control-panel-desc'), solarBtn: document.getElementById('solar-panel-btn'), waterBtn: document.getElementById('water-pump-btn'), oxygenBtn: document.getElementById('oxygen-generator-btn'), researchBtn: document.getElementById('research-btn'), taskBtn: document.getElementById('task-btn'), visualPanelTitle: document.getElementById('visual-panel-title'), energyLabel: document.getElementById('energy-label'), waterLabel: document.getElementById('water-label'), oxygenLabel: document.getElementById('oxygen-label'), scienceLabel: document.getElementById('science-label'), engineeringLabel: document.getElementById('engineering-label'), plantLabel: document.getElementById('plant-label'), plantStatus: document.getElementById('plant-status'), logTitle: document.getElementById('log-title'), logMessage: document.getElementById('log-message'), energyLevelSpan: document.getElementById('energy-level'), waterLevelSpan: document.getElementById('water-level'), oxygenLevelSpan: document.getElementById('oxygen-level'), scienceLevelSpan: document.getElementById('science-level'), engineeringLevelSpan: document.getElementById('engineering-level'), energyBar: document.getElementById('energy-bar'), waterBar: document.getElementById('water-bar'), oxygenBar: document.getElementById('oxygen-bar'), plantIcon: document.getElementById('plant-icon'), upgradesTitle: document.getElementById('upgrades-title'), taskModal: document.getElementById('task-modal'), taskTitle: document.getElementById('task-title'), taskQuestion: document.getElementById('task-question'), taskAnswer: document.getElementById('task-answer'), checkAnswerBtn: document.getElementById('check-answer-btn'), missionsTitle: document.getElementById('missions-title'), missionsList: document.getElementById('missions-list'), victoryModal: document.getElementById('victory-modal'), victoryTitle: document.getElementById('victory-title'), victoryDesc: document.getElementById('victory-desc'), victoryRestartBtn: document.getElementById('victory-restart-btn'), startButton: document.getElementById('start-button'), startTitle: document.getElementById('start-title'), startDesc: document.getElementById('start-desc'), instructionsBtn: document.getElementById('instructions-btn'), instructionsModal: document.getElementById('instructions-modal'), closeInstructionsBtn: document.getElementById('close-instructions-btn'), instructionsTitle: document.getElementById('instructions-title'), instructionObjective: document.getElementById('instruction-objective'), instructionResources: document.getElementById('instruction-resources'), instructionRecovery: document.getElementById('instruction-recovery'), instructionDevelopment: document.getElementById('instruction-development'), instructionUpgrades: document.getElementById('instruction-upgrades'), instructionExpedition: document.getElementById('instruction-expedition'), instructionEvents: document.getElementById('instruction-events'), instructionConversion: document.getElementById('instruction-conversion'), instructionRepair: document.getElementById('instruction-repair'), upgradeBatteryName: document.getElementById('upgrade-battery-name'), upgradeBatteryDesc: document.getElementById('upgrade-battery-desc'), upgradePumpName: document.getElementById('upgrade-pump-name'), upgradePumpDesc: document.getElementById('upgrade-pump-desc'), upgradeSolarName: document.getElementById('upgrade-solar-name'), upgradeSolarDesc: document.getElementById('upgrade-solar-desc'), upgradeHydroponicsName: document.getElementById('upgrade-hydroponics-name'), upgradeHydroponicsDesc: document.getElementById('upgrade-hydroponics-desc'), langRu: document.getElementById('lang-ru'), langKz: document.getElementById('lang-kz'), langEn: document.getElementById('lang-en'), difficultyTitle: document.getElementById('difficulty-title'), difficultyEasy: document.getElementById('difficulty-easy'), difficultyMedium: document.getElementById('difficulty-medium'), difficultyHard: document.getElementById('difficulty-hard'),
+        geologySurveyBtn: document.getElementById('geology-survey-btn'), labAnalysisBtn: document.getElementById('lab-analysis-btn'), rareMineralsLabel: document.getElementById('rare-minerals-label'), rareMineralsLevel: document.getElementById('rare-minerals-level'), geologyModal: document.getElementById('geology-modal'), geologyTitle: document.getElementById('geology-title'), seismicCanvas: document.getElementById('seismic-canvas'), geologyQuestion: document.getElementById('geology-question'), geologyAnswer: document.getElementById('geology-answer'), checkGeologyBtn: document.getElementById('check-geology-btn'), labModal: document.getElementById('lab-modal'), labTitle: document.getElementById('lab-title'), chemistryQuestion: document.getElementById('chemistry-question'), reagentWaterBtn: document.getElementById('reagent-water'), reagentAcidBtn: document.getElementById('reagent-acid'), reagentAlkaliBtn: document.getElementById('reagent-alkali'), biologyModal: document.getElementById('biology-modal'), biologyTitle: document.getElementById('biology-title'), biologyQuestion: document.getElementById('biology-question'), biologyTrueBtn: document.getElementById('biology-true'), biologyFalseBtn: document.getElementById('biology-false'), upgradeReactorName: document.getElementById('upgrade-reactor-name'), upgradeReactorDesc: document.getElementById('upgrade-reactor-desc'), upgradeShieldName: document.getElementById('upgrade-shield-name'), upgradeShieldDesc: document.getElementById('upgrade-shield-desc'),
+        resultModal: document.getElementById('result-modal'), resultIcon: document.getElementById('result-icon'), resultTitle: document.getElementById('result-title'), resultDesc: document.getElementById('result-desc'), closeResultBtn: document.getElementById('close-result-btn'),
+        conversionTitle: document.getElementById('conversion-title'), conversionInput: document.getElementById('conversion-input'), convertSToEBtn: document.getElementById('convert-s-to-e-btn'), convertEToSBtn: document.getElementById('convert-e-to-s-btn'),
+        closeTaskBtn: document.getElementById('close-task-btn'),
+        repairModal: document.getElementById('repair-modal'), repairTitle: document.getElementById('repair-title'), repairDesc: document.getElementById('repair-desc'), repairGrid: document.getElementById('repair-grid'), checkRepairBtn: document.getElementById('check-repair-btn'),
+    };
+    let gameState = {};
+    let mainGameInterval = null, secondaryGameInterval = null, eventInterval = null;
+
+    const upgrades = [ { id: 'battery', costScience: 25, costEngineering: 10, purchased: false, applyEffect: () => { gameState.modifiers.energyConsumption *= 0.75; } }, { id: 'pump', costScience: 30, costEngineering: 20, purchased: false, applyEffect: () => { gameState.modifiers.pumpEnergyCost = 7; } }, { id: 'solar', costScience: 50, costEngineering: 30, purchased: false, applyEffect: () => { gameState.modifiers.solarEnergyGain = 15; } }, { id: 'hydroponics', costScience: 40, costEngineering: 40, purchased: false, applyEffect: () => { gameState.modifiers.waterConsumption *= 0.8; gameState.modifiers.oxygenConsumption *= 0.8;} }, { id: 'reactor', costScience: 200, costEngineering: 150, costRareMinerals: 15, purchased: false, applyEffect: () => { gameState.modifiers.passiveEnergyGain = 0.2; } }, { id: 'shield', costScience: 150, costEngineering: 100, costRareMinerals: 25, purchased: false, applyEffect: () => { gameState.modifiers.eventProtection = true; } } ];
+    const missions = [ { titleKey: "missionPhase1", objectives: [ { id: 'survive_5_min', check: (state) => state.totalTimeSurvived >= 300000 }, { id: 'collect_50_science', check: (state) => state.science >= 50 }, { id: 'buy_1_upgrade', check: (state) => state.firstUpgradePurchased } ] }, { titleKey: "missionPhase2", objectives: [ { id: 'collect_150_science', check: (state) => state.science >= 150 && state.engineeringData >= 100 }, { id: 'buy_3_upgrades', check: () => upgrades.filter(u => u.purchased).length >= 3 }, { id: 'survive_storm', check: (state) => state.survivedStorm } ] }, { titleKey: "missionPhase3", objectives: [ { id: 'buy_all_upgrades', check: () => upgrades.every(u => u.purchased) }, { id: 'maintain_80', check: (state) => state.highResourceTime >= 60000 } ] } ];
+    const events = [ { id: 'dustStorm', duration: 20000, effect: () => { gameState.modifiers.energyProduction = 0.5; gameState.survivedStorm = true; }, removeEffect: () => { gameState.modifiers.energyProduction = 1; } }, { id: 'clearDay', duration: 15000, effect: () => { gameState.modifiers.energyProduction = 1.5; }, removeEffect: () => { gameState.modifiers.energyProduction = 1; } }, { id: 'waterLeak', duration: 15000, effect: () => { gameState.modifiers.waterConsumption *= 2; }, removeEffect: () => { gameState.modifiers.waterConsumption /= 2; } }, { id: 'iceFound', duration: 1000, effect: () => { gameState.water = Math.min(100, gameState.water + 30); }, removeEffect: () => {} }, { id: 'solarBreakdown', duration: 1000, effect: () => breakSystem('solar'), removeEffect: () => {} }, { id: 'pumpBreakdown', duration: 1000, effect: () => breakSystem('water'), removeEffect: () => {} }, { id: 'oxygenBreakdown', duration: 1000, effect: () => breakSystem('oxygen'), removeEffect: () => {} } ];
+    const taskFunctions = { easy: [ () => { const d = Math.floor(Math.random() * 500) + 100; const t = Math.floor(Math.random() * 10) + 2; return { key: 'taskSpeedQuestion', params: {d, t}, answer: Math.round((d / t) * 10) / 10 }; }, () => { const l = Math.floor(Math.random() * 10) + 2; const w = Math.floor(Math.random() * 10) + 3; return { key: 'taskAreaQuestion', params: {l, w}, answer: l * w }; }, () => { const molecules = [{ formula: 'H₂O', atoms: 3 }, { formula: 'CO₂', atoms: 3 }, { formula: 'CH₄', atoms: 5 }]; const molecule = molecules[Math.floor(Math.random() * molecules.length)]; return { key: 'taskAtomsQuestion', params: {formula: molecule.formula}, answer: molecule.atoms }; }, () => { const total = (Math.floor(Math.random() * 10) + 5) * 1000; const perc = (Math.floor(Math.random() * 8) + 1) * 10; return { key: 'taskPercentageQuestion', params: {total, perc}, answer: total * (perc / 100) }; } ], medium: [ () => { const m = Math.floor(Math.random() * 200) + 50; const v = Math.floor(Math.random() * 20) + 5; return { key: 'taskDensityQuestion', params: {m, v}, answer: Math.round((m / v) * 10) / 10 }; } ], hard: [] };
+    const chemistryScenarios = [ { key: 'chemQuestionOxide', correctReagent: 'acid' }, { key: 'chemQuestionSalt', correctReagent: 'water' }, { key: 'chemQuestionAlkali', correctReagent: 'acid' }, { key: 'chemQuestionSilicate', correctReagent: 'alkali'} ];
+    const biologyQuestions = [ { key: 'biologyQuestionAmino', answer: true }, { key: 'biologyQuestionPhoto', answer: true }, { key: 'biologyQuestionMito', answer: true } ];
+
+    // ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ (С ДОБАВЛЕННЫМ modalOpenTime)
+    function initializeState() {
+        gameState = { energy: 100, water: 100, oxygen: 100, science: 0, engineeringData: 0, rareMinerals: 0, modifiers: { energyProduction: 1, waterConsumption: 1, oxygenConsumption: 1, energyConsumption: 1, pumpEnergyCost: 10, solarEnergyGain: 10, passiveEnergyGain: 0, eventProtection: false }, isPaused: false, gameWon: false, gameHasStarted: false, isAlarmPlaying: false, currentTaskAnswer: 0, activeEvent: null, currentMissionPhase: 0, survivedStorm: false, totalTimeSurvived: 0, highResourceTime: 0, lastTickTime: Date.now(), firstUpgradePurchased: false, currentLanguage: 'ru', difficulty: null, geologicalSurveyInProgress: false, surveyReturnTime: 0, hasSoilSample: null, currentSeismicPeak: 0, pendingBiologyDiscovery: false, currentBiologyQuestion: null, currentChemistryScenario: null, lastLogKey: 'logInitial', lastLogReplacements: {}, 
+            brokenSystems: { solar: false, water: false, oxygen: false }, 
+            systemToRepair: null,
+            modalOpenTime: 0 // <--- ДОБАВЛЕНО
+        };
+        upgrades.forEach(u => u.purchased = false);
+    }
+    
+    function changeLanguage(lang) {
+        if (!translations[lang]) return;
+        gameState.currentLanguage = lang; const langData = translations[lang];
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`lang-${lang}`).classList.add('active');
+        Object.keys(allElements).forEach(key => {
+            const element = allElements[key]; if (!element) return;
+            const translationKey = key.replace(/Btn$/, '').replace(/Name$/, '').replace(/Desc$/, '');
+            let finalKey;
+            if (langData[key]) { finalKey = key; } 
+            else if (langData[`${translationKey}Btn`]) { finalKey = `${translationKey}Btn`; } 
+            else if (langData[`${translationKey}Name`]) { finalKey = `${translationKey}Name`; } 
+            else if (langData[`${translationKey}Desc`]) { finalKey = `${translationKey}Desc`; }
+            if (finalKey && langData[finalKey]) { element.innerHTML = langData[finalKey]; }
+        });
+        allElements.pauseBtn.textContent = gameState.isPaused ? langData.resumeBtn : langData.pauseBtn;
+        allElements.reagentWaterBtn.innerHTML = langData.reagentWater; allElements.reagentAcidBtn.innerHTML = langData.reagentAcid; allElements.reagentAlkaliBtn.innerHTML = langData.reagentAlkali;
+        allElements.biologyTrueBtn.innerHTML = langData.biologyTrue; allElements.biologyFalseBtn.innerHTML = langData.biologyFalse;
+        allElements.checkAnswerBtn.innerHTML = langData.checkBtn;
+        allElements.conversionInput.placeholder = langData.conversionPlaceholder;
+        updateLog(gameState.lastLogKey || 'logInitial', gameState.lastLogReplacements);
+        renderMissions(); updatePlantStatus(); updateBrokenSystemsUI();
+    }
+    
+    function gameLoop() {
+        if (!gameState.gameHasStarted || gameState.isPaused) return;
+        const now = Date.now(); const deltaTime = now - gameState.lastTickTime; gameState.lastTickTime = now; const deltaSeconds = deltaTime / 1000;
+        gameState.energy -= (0.2 * deltaSeconds * gameState.modifiers.energyConsumption); gameState.energy += (gameState.modifiers.passiveEnergyGain * deltaSeconds);
+        gameState.water -= (0.25 * deltaSeconds * gameState.modifiers.waterConsumption); gameState.oxygen -= (0.3 * deltaSeconds * gameState.modifiers.oxygenConsumption);
+        gameState.energy = Math.max(0, Math.min(100, gameState.energy)); gameState.water = Math.max(0, gameState.water); gameState.oxygen = Math.max(0, gameState.oxygen);
+        gameState.totalTimeSurvived += deltaTime; updateSurveyStatus(deltaTime);
+        if (gameState.energy === 0 && gameState.water === 0 && gameState.oxygen === 0) { updateLog("logMissionFailed"); setPauseState(true); }
+        if (gameState.energy > 80 && gameState.water > 80 && gameState.oxygen > 80) { gameState.highResourceTime += deltaTime; } else { gameState.highResourceTime = 0; }
+        updateDisplay();
+    }
+    
+    function updateDisplay() {
+        allElements.energyLevelSpan.textContent = Math.round(gameState.energy); allElements.waterLevelSpan.textContent = Math.round(gameState.water); allElements.oxygenLevelSpan.textContent = Math.round(gameState.oxygen);
+        allElements.scienceLevelSpan.textContent = gameState.science; allElements.engineeringLevelSpan.textContent = gameState.engineeringData;
+        allElements.energyBar.style.width = gameState.energy + '%'; allElements.waterBar.style.width = gameState.water + '%'; allElements.oxygenBar.style.width = gameState.oxygen + '%';
+        updateBarColor(allElements.energyBar, gameState.energy); updateBarColor(allElements.waterBar, gameState.water); updateBarColor(allElements.oxygenBar, gameState.oxygen);
+        allElements.rareMineralsLevel.textContent = gameState.rareMinerals;
+        checkAlarms(); renderUpgrades(); updatePlantStatus();
+    }
+    
+    function renderUpgrades() {
+        upgrades.forEach(upg => {
+            const btn = document.getElementById(`upgrade-${upg.id}`); if (!btn) return;
+            btn.classList.remove('can-afford', 'purchased');
+            const costSpan = btn.querySelector('.upgrade-cost');
+            if (upg.purchased) { btn.classList.add('purchased'); costSpan.textContent = "✅"; } 
+            else { const canAfford = gameState.science >= upg.costScience && gameState.engineeringData >= upg.costEngineering && (upg.costRareMinerals ? gameState.rareMinerals >= upg.costRareMinerals : true); if (canAfford) { btn.classList.add('can-afford'); } }
+        });
+    }
+
+    function showResultModal(titleKey, descKey, icon, isSuccess = true, replacements = {}) {
+        const lang = translations[gameState.currentLanguage]; let desc = lang[descKey] || descKey;
+        for (const placeholder in replacements) { desc = desc.replace(`{${placeholder}}`, replacements[placeholder]); }
+        allElements.resultTitle.textContent = lang[titleKey] || titleKey; allElements.resultDesc.textContent = desc; allElements.resultIcon.textContent = icon;
+        allElements.resultModal.classList.remove('hidden'); setPauseState(true);
+    }
+
+    function generateTask() {
+        const lang = translations[gameState.currentLanguage]; const difficulty = gameState.difficulty; let availableTasks = [];
+        if (difficulty === 'easy') { availableTasks = taskFunctions.easy; } else if (difficulty === 'medium') { availableTasks = [...taskFunctions.easy, ...taskFunctions.medium]; } else if (difficulty === 'hard') { availableTasks = [...taskFunctions.easy, ...taskFunctions.medium, ...taskFunctions.hard]; } 
+        if(availableTasks.length === 0) return; const taskGenerator = availableTasks[Math.floor(Math.random() * availableTasks.length)]; const task = taskGenerator();
+        let questionText = lang[task.key];
+        for(const param in task.params) { questionText = questionText.replace(`{${param}}`, task.params[param]); }
+        allElements.taskQuestion.textContent = questionText; gameState.currentTaskAnswer = task.answer;
+    }
+
+    function updateSurveyStatus(deltaTime) {
+        if (!gameState.geologicalSurveyInProgress) return;
+        gameState.surveyReturnTime -= deltaTime; const timeLeft = Math.ceil(gameState.surveyReturnTime / 1000); const lang = translations[gameState.currentLanguage];
+        if (timeLeft > 0) { allElements.geologySurveyBtn.textContent = lang.geologySurveyInProgress.replace('{s}', timeLeft); } 
+        else { gameState.geologicalSurveyInProgress = false; allElements.geologySurveyBtn.disabled = false; allElements.geologySurveyBtn.textContent = lang.geologySurveyBtn; sounds.positive.play(); showGeologyModal(); }
+    }
+
+    function showGeologyModal() {
+        setPauseState(true); const peakValue = (Math.random() * 4 + 5.5).toFixed(1);
+        gameState.currentSeismicPeak = parseFloat(peakValue);
+        drawSeismicGraph(allElements.seismicCanvas, gameState.currentSeismicPeak);
+        allElements.geologyAnswer.value = ''; allElements.geologyModal.classList.remove('hidden');
+    }
+
+    function drawSeismicGraph(canvas, peakValue) {
+        const ctx = canvas.getContext('2d'); const width = canvas.width; const height = canvas.height;
+        ctx.clearRect(0, 0, width, height); ctx.font = '12px Segoe UI'; ctx.fillStyle = '#888';
+        for (let i = 0; i <= 10; i++) {
+            const y = height - (i / 10) * (height - 20) - 10;
+            if (i > 0 && i < 10) { for (let j = 1; j < 5; j++) { const yMinor = y + ( (height - 20) / 10 ) * (j * 0.2); ctx.strokeStyle = '#333'; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(25, yMinor); ctx.lineTo(width, yMinor); ctx.stroke(); } }
+            ctx.strokeStyle = '#555'; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(25, y); ctx.lineTo(width, y); ctx.stroke();
+            if(i % 1 === 0) ctx.fillText(i, 5, y + 4);
+        }
+        ctx.strokeStyle = '#7dffb3'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(25, height / 2);
+        const peakX = width * (0.6 + Math.random() * 0.15);
+        for (let x = 25; x < width; x++) { const normalizedX = (x - 25) / (width - 25); let y = height / 1.5; y -= Math.sin(normalizedX * Math.PI * 4) * 20; y -= (Math.random() - 0.5) * 10; const peakInfluence = Math.exp(-Math.pow(x - peakX, 2) / 2000); y -= peakInfluence * (peakValue * 15 - 50); ctx.lineTo(x, y); }
+        ctx.stroke();
+    }
+    
+    // ФУНКЦИЯ ОБРАБОТЧИКОВ (С ОБНОВЛЕННОЙ ЛОГИКОЙ БОНУСОВ)
+    function attachEventListeners() {
+        allElements.startButton.onclick = startSimulation;
+        allElements.victoryRestartBtn.onclick = () => location.reload();
+        allElements.pauseBtn.onclick = () => setPauseState(!gameState.isPaused);
+        allElements.solarBtn.onclick = () => { if (gameState.brokenSystems.solar) { openRepairModal('solar'); } else if(!gameState.isPaused) { gameState.energy = Math.min(100, gameState.energy + gameState.modifiers.solarEnergyGain * gameState.modifiers.energyProduction); } };
+        allElements.waterBtn.onclick = () => { if (gameState.brokenSystems.water) { openRepairModal('water'); } else if(!gameState.isPaused) { if(gameState.energy >= gameState.modifiers.pumpEnergyCost) { gameState.energy -= gameState.modifiers.pumpEnergyCost; gameState.water = Math.min(100, gameState.water + 10); } else { updateLog('logWaterNoEnergy'); }}};
+        allElements.oxygenBtn.onclick = () => { if (gameState.brokenSystems.oxygen) { openRepairModal('oxygen'); } else if(!gameState.isPaused) { if(gameState.energy >= 15) { gameState.energy -= 15; gameState.oxygen = Math.min(100, gameState.oxygen + 10); } else { updateLog('logOxygenNoEnergy'); }}};
+        allElements.researchBtn.onclick = () => { if(gameState.isPaused) return; if (gameState.energy >= 20 && gameState.water >= 10) { gameState.energy -= 20; gameState.water -= 10; gameState.science += 5; checkMissions(); } else { updateLog('logResearchNoEnergy'); } };
+        
+        allElements.taskBtn.onclick = () => { 
+            if(gameState.isPaused) return; 
+            generateTask(); 
+            gameState.modalOpenTime = Date.now(); // <--- ЗАПУСКАЕМ ТАЙМЕР
+            allElements.taskModal.classList.remove('hidden'); 
+        };
+        
+        allElements.closeTaskBtn.onclick = () => allElements.taskModal.classList.add('hidden');
+        
+        allElements.checkAnswerBtn.onclick = () => {
+            const userAnswer = parseFloat(allElements.taskAnswer.value.replace(',', '.')); 
+            if (isNaN(userAnswer)) { 
+                sounds.negative.play(); 
+                return; 
+            }
+
+            if (Math.abs(userAnswer - gameState.currentTaskAnswer) < 0.05) {
+                // --- НАЧАЛО НОВОЙ ЛОГИКИ БОНУСА ---
+                const timeElapsed = Date.now() - gameState.modalOpenTime;
+                let reward = 10; // Базовая награда
+                let logKey = 'logTaskCorrect';
+
+                if (timeElapsed <= 10000) { // 10 секунд
+                    reward *= 2; // Удваиваем
+                    logKey = 'logTaskCorrectBonus';
+                }
+
+                gameState.engineeringData += reward;
+                updateLog(logKey, { amount: reward });
+                // --- КОНЕЦ НОВОЙ ЛОГИКИ БОНУСА ---
+
+                sounds.positive.play(); 
+                allElements.taskModal.classList.add('hidden'); 
+                allElements.taskAnswer.value = ''; 
+                checkMissions(); 
+            } 
+            else { 
+                updateLog('logTaskIncorrect'); 
+                sounds.negative.play(); 
+                const taskWindow = allElements.taskModal.querySelector('.modal-window'); 
+                taskWindow.classList.add('error'); 
+                allElements.taskAnswer.value = ''; 
+                setTimeout(() => { taskWindow.classList.remove('error'); }, 500); 
+            }
+        };
+
+        allElements.geologySurveyBtn.onclick = () => { if (gameState.isPaused || gameState.geologicalSurveyInProgress) return; if (gameState.energy >= 25) { gameState.energy -= 25; gameState.geologicalSurveyInProgress = true; gameState.surveyReturnTime = 20000; allElements.geologySurveyBtn.disabled = true; } };
+        allElements.checkGeologyBtn.onclick = () => {
+            const userAnswer = parseFloat(allElements.geologyAnswer.value.replace(',', '.')); if (isNaN(userAnswer)) { sounds.negative.play(); return; }
+            allElements.geologyModal.classList.add('hidden');
+            if (Math.abs(userAnswer - gameState.currentSeismicPeak) <= 0.2) { gameState.hasSoilSample = 'high'; sounds.positive.play(); showResultModal('resultTitleSuccess', 'geologyResultDescHigh', '✅'); } 
+            else { gameState.hasSoilSample = 'low'; sounds.negative.play(); showResultModal('resultTitleFail', 'geologyResultDescLow', '❌'); }
+            allElements.labAnalysisBtn.disabled = false;
+        };
+        allElements.labAnalysisBtn.onclick = () => { if (!gameState.isPaused && gameState.hasSoilSample) { gameState.currentChemistryScenario = chemistryScenarios[Math.floor(Math.random() * chemistryScenarios.length)]; allElements.chemistryQuestion.textContent = translations[gameState.currentLanguage][gameState.currentChemistryScenario.key]; setPauseState(true); allElements.labModal.classList.remove('hidden'); }};
+        const handleReagentChoice = (reagent) => {
+            allElements.labModal.classList.add('hidden'); let mineralsGained = 0;
+            if (reagent === gameState.currentChemistryScenario.correctReagent) {
+                mineralsGained = (gameState.hasSoilSample === 'high') ? 10 : 5; gameState.rareMinerals += mineralsGained; sounds.positive.play();
+                showResultModal('resultTitleSuccess', 'labResultDescSuccess', '💎', true, { amount: mineralsGained });
+                if (Math.random() < 0.25) { gameState.pendingBiologyDiscovery = true; }
+            } else { sounds.negative.play(); showResultModal('resultTitleFail', 'labResultDescFail', '💥'); }
+            gameState.hasSoilSample = null; allElements.labAnalysisBtn.disabled = true;
+        };
+        allElements.reagentAcidBtn.onclick = () => handleReagentChoice('acid'); allElements.reagentWaterBtn.onclick = () => handleReagentChoice('water'); allElements.reagentAlkaliBtn.onclick = () => handleReagentChoice('alkali');
+        const handleBiologyAnswer = (userAnswer) => { if (userAnswer === gameState.currentBiologyQuestion.answer) { gameState.science += 200; updateLog('logBiologyDiscovery'); sounds.positive.play(); } allElements.biologyModal.classList.add('hidden'); setPauseState(false); };
+        allElements.biologyTrueBtn.onclick = () => handleBiologyAnswer(true); allElements.biologyFalseBtn.onclick = () => handleBiologyAnswer(false);
+        allElements.closeResultBtn.onclick = () => {
+            allElements.resultModal.classList.add('hidden');
+            if (gameState.pendingBiologyDiscovery) {
+                gameState.pendingBiologyDiscovery = false; gameState.currentBiologyQuestion = biologyQuestions[Math.floor(Math.random() * biologyQuestions.length)];
+                allElements.biologyQuestion.textContent = translations[gameState.currentLanguage][gameState.currentBiologyQuestion.key];
+                setTimeout(() => allElements.biologyModal.classList.remove('hidden'), 200);
+            } else { if (!gameState.gameWon) setPauseState(false); }
+        };
+        document.getElementById('upgrades-container').addEventListener('click', (event) => {
+            const button = event.target.closest('.upgrade-btn'); if (!button || gameState.isPaused) return;
+            const upgradeId = button.id.replace('upgrade-', ''); const upg = upgrades.find(u => u.id === upgradeId); if (!upg || upg.purchased) return;
+            const canAfford = gameState.science >= upg.costScience && gameState.engineeringData >= upg.costEngineering && (!upg.costRareMinerals || gameState.rareMinerals >= upg.costRareMinerals);
+            if (canAfford) { gameState.science -= upg.costScience; gameState.engineeringData -= upg.costEngineering; if (upg.costRareMinerals) { gameState.rareMinerals -= upg.costRareMinerals; } upg.purchased = true; upg.applyEffect(); sounds.positive.play(); if (!gameState.firstUpgradePurchased) { gameState.firstUpgradePurchased = true; } checkMissions(); renderUpgrades(); }
+        });
+        const handleConversion = (from, to) => {
+            const amount = parseInt(allElements.conversionInput.value, 10); if (isNaN(amount) || amount <= 0) { return; }
+            if (gameState[from] >= amount) {
+                gameState[from] -= amount; const gained = Math.floor(amount * 0.5); gameState[to] += gained;
+                sounds.positive.play();
+                showResultModal('resultTitleSuccess', 'conversionSuccess', '✅', true, { spent: amount, from: translations[gameState.currentLanguage][from === 'science' ? 'scienceLabel' : 'engineeringLabel'], gained: gained, to: translations[gameState.currentLanguage][to === 'science' ? 'scienceLabel' : 'engineeringLabel'] });
+            } else { sounds.negative.play(); showResultModal('resultTitleFail', 'conversionFail', '❌'); }
+            allElements.conversionInput.value = '';
+        };
+        allElements.convertSToEBtn.onclick = () => handleConversion('science', 'engineeringData');
+        allElements.convertEToSBtn.onclick = () => handleConversion('engineeringData', 'science');
+        allElements.checkRepairBtn.onclick = checkRepairSolution;
+        allElements.langRu.onclick = () => changeLanguage('ru'); allElements.langKz.onclick = () => changeLanguage('kz'); allElements.langEn.onclick = () => changeLanguage('en');
+        [allElements.difficultyEasy, allElements.difficultyMedium, allElements.difficultyHard].forEach(btn => { btn.addEventListener('click', (event) => { [allElements.difficultyEasy, allElements.difficultyMedium, allElements.difficultyHard].forEach(b => b.classList.remove('active')); event.target.classList.add('active'); gameState.difficulty = event.target.id.replace('difficulty-', ''); allElements.startButton.disabled = false; }); });
+        allElements.instructionsBtn.onclick = () => { setPauseState(true); allElements.instructionsModal.classList.remove('hidden'); };
+        allElements.closeInstructionsBtn.onclick = () => { allElements.instructionsModal.classList.add('hidden'); if (!gameState.gameWon) setPauseState(false); };
+    }
+    // UTILITY AND SETUP FUNCTIONS
+    function setPauseState(shouldBePaused) { if (gameState.gameWon && !shouldBePaused) return; gameState.isPaused = shouldBePaused; const lang = translations[gameState.currentLanguage]; allElements.pauseBtn.textContent = gameState.isPaused ? lang.resumeBtn : lang.pauseBtn; allElements.pauseBtn.classList.toggle('paused-btn', gameState.isPaused); if (gameState.isAlarmPlaying) { if (gameState.isPaused) sounds.alert.pause(); else sounds.alert.play().catch(e=>{}); } if(!gameState.isPaused) { gameState.lastTickTime = Date.now(); } }
+    function checkAlarms() { const isCritical = gameState.energy < 25 || gameState.water < 25 || gameState.oxygen < 25; if (isCritical && !gameState.isAlarmPlaying) { sounds.alert.loop = true; sounds.alert.play().catch(e=>{}); gameState.isAlarmPlaying = true; } else if (!isCritical && gameState.isAlarmPlaying) { sounds.alert.pause(); sounds.alert.currentTime = 0; gameState.isAlarmPlaying = false; } }
+    function updateLog(key, replacements = {}) { 
+        gameState.lastLogKey = key; gameState.lastLogReplacements = replacements;
+        let message = (translations[gameState.currentLanguage] && translations[gameState.currentLanguage][key]) || key; 
+        for (const placeholder in replacements) { message = message.replace(`{${placeholder}}`, replacements[placeholder]); } 
+        allElements.logMessage.textContent = message; 
+    }
+    function updatePlantStatus() { const lang = translations[gameState.currentLanguage]; if (gameState.water < 30 || gameState.energy < 20) { allElements.plantStatus.textContent = lang.plantStatusBad; allElements.plantIcon.textContent = '🥀'; } else { allElements.plantStatus.textContent = lang.plantStatusOK; allElements.plantIcon.textContent = '🌱'; } }
+    function updateBarColor(barElement, value) { if (value < 25) { barElement.style.backgroundColor = '#d9534f'; } else if (value < 50) { barElement.style.backgroundColor = '#f0ad4e'; } else { barElement.style.backgroundColor = '#4caf50'; } }
+    function startSimulation() { try { if (gameState.gameHasStarted || !gameState.difficulty) return; const selectedLang = gameState.currentLanguage; const selectedDifficulty = gameState.difficulty; initializeState(); updateLog('logInitial'); gameState.difficulty = selectedDifficulty; gameState.currentLanguage = selectedLang; gameState.gameHasStarted = true; changeLanguage(gameState.currentLanguage); document.getElementById('start-screen').classList.add('hidden'); if(mainGameInterval) clearInterval(mainGameInterval); if(secondaryGameInterval) clearInterval(secondaryGameInterval); if(eventInterval) clearInterval(eventInterval); mainGameInterval = setInterval(gameLoop, 50); secondaryGameInterval = setInterval(checkMissions, 1000); eventInterval = setInterval(triggerRandomEvent, 25000); } catch (error) { console.error("CRITICAL ERROR on simulation start:", error); alert("A critical error occurred."); } }
+    function checkMissions() { if (gameState.gameWon) return; let missionCompletedNow = false; missions.forEach(phase => { phase.objectives.forEach(obj => { if (!obj.isComplete && obj.check(gameState)) { obj.isComplete = true; missionCompletedNow = true; } }); }); if (missionCompletedNow) { sounds.positive.play(); } const currentPhase = missions[gameState.currentMissionPhase]; if (currentPhase && currentPhase.objectives.every(obj => obj.isComplete)) { if (gameState.currentMissionPhase < missions.length - 1) { gameState.currentMissionPhase++; sounds.positive.play(); } else if (!gameState.gameWon) { gameState.gameWon = true; allElements.victoryModal.classList.remove('hidden'); setPauseState(true); } } renderMissions(); }
+    function renderMissions() { const lang = translations[gameState.currentLanguage]; allElements.missionsList.innerHTML = ''; missions.forEach((phase, phaseIndex) => { const phaseItem = document.createElement('li'); phaseItem.textContent = lang[phase.titleKey]; phaseItem.className = 'phase-title'; if (phaseIndex > gameState.currentMissionPhase) phaseItem.classList.add('locked'); allElements.missionsList.appendChild(phaseItem); phase.objectives.forEach(obj => { const objItem = document.createElement('li'); const prefix = obj.isComplete ? '✅ ' : '⬜ '; const camelCaseId = obj.id.split('_').map((word, i) => i > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(''); const missionKey = `mission${camelCaseId.charAt(0).toUpperCase() + camelCaseId.slice(1)}`; objItem.textContent = prefix + (lang[missionKey] || obj.id); if (obj.isComplete) objItem.classList.add('completed'); if (phaseIndex > gameState.currentMissionPhase) objItem.classList.add('locked'); allElements.missionsList.appendChild(objItem); }); }); }
+    
+    // ФУНКЦИЯ СОБЫТИЙ (С ИСПРАВЛЕНИЕМ ДЛЯ ЩИТА)
+    function triggerRandomEvent() {
+        if (gameState.activeEvent || gameState.isPaused || !gameState.gameHasStarted) return;
+
+        let randomEvent = events[Math.floor(Math.random() * events.length)];
+        
+        // --- НОВАЯ ЛОГИКА ПРОВЕРКИ ЩИТА ---
+        const isNegativeEvent = ['dustStorm', 'waterLeak', 'solarBreakdown', 'pumpBreakdown', 'oxygenBreakdown'].includes(randomEvent.id);
+
+        if (isNegativeEvent && gameState.modifiers.eventProtection) {
+            // Щит активен! Отменяем негативное событие.
+            const positiveEvents = events.filter(e => e.id === 'clearDay' || e.id === 'iceFound');
+            if (positiveEvents.length > 0) {
+                randomEvent = positiveEvents[Math.floor(Math.random() * positiveEvents.length)];
+            } else {
+                return;
+            }
+        }
+        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+        gameState.activeEvent = randomEvent;
+        gameState.activeEvent.effect();
+        checkMissions();
+        
+        const eventLogKey = `event${randomEvent.id?.charAt(0).toUpperCase() + randomEvent.id?.slice(1)}Desc`;
+        updateLog(eventLogKey);
+
+        setTimeout(() => {
+            if (gameState.activeEvent === randomEvent) {
+                gameState.activeEvent.removeEffect();
+                gameState.activeEvent = null;
+                updateLog('eventNormalDesc');
+            }
+        }, randomEvent.duration);
+    }
+    
+    // --- REPAIR SYSTEM LOGIC ---
+    function breakSystem(system) {
+        let systemName;
+        if (system === 'pump') systemName = 'water';
+        else systemName = system;
+        
+        if (gameState.brokenSystems[systemName]) return;
+        gameState.brokenSystems[systemName] = true;
+        updateBrokenSystemsUI();
+        const key = `event${system.charAt(0).toUpperCase() + system.slice(1)}BreakdownDesc`;
+        updateLog(key);
+        sounds.alert.play();
+    }
+    
+    // ФУНКЦИЯ ПОЧИНКИ (УПРОЩЕНА, УБРАНА НАГРАДА)
+    function fixSystem(system) {
+        gameState.brokenSystems[system] = false;
+        updateBrokenSystemsUI();
+        setPauseState(false);
+    }
+    
+    function updateBrokenSystemsUI() {
+        const lang = translations[gameState.currentLanguage];
+        const systemMap = { solar: allElements.solarBtn, water: allElements.waterBtn, oxygen: allElements.oxygenBtn };
+        for (const system in gameState.brokenSystems) {
+            const btn = systemMap[system];
+            if (gameState.brokenSystems[system]) {
+                btn.classList.add('broken-btn');
+                btn.textContent = lang.repairBtn;
+            } else {
+                btn.classList.remove('broken-btn');
+                const key = {solar: 'solarBtn', water: 'waterBtn', oxygen: 'oxygenBtn'}[system];
+                btn.textContent = lang[key];
+            }
+        }
+    }
+    
+    // ФУНКЦИЯ ОТКРЫТИЯ РЕМОНТА (ЗАПУСКАЕТ ТАЙМЕР)
+    function openRepairModal(system) {
+        gameState.modalOpenTime = Date.now(); // <--- ЗАПУСКАЕМ ТАЙМЕР
+        setPauseState(true);
+        gameState.systemToRepair = system;
+        generateRepairPuzzle();
+        allElements.repairModal.classList.remove('hidden');
+    }
+    
+    // ГЕНЕРАЦИЯ ГОЛОВОЛОМКИ (С КОРРЕКТНЫМ SVG)
+    function generateRepairPuzzle() {
+        const svgData = {
+            line: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                       <rect x="30" y="0" width="40" height="100" fill="#ffffff"/>
+                     </svg>`,
+            corner: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                         <rect x="30" y="0" width="40" height="70" fill="#ffffff"/>
+                         <rect x="30" y="30" width="70" height="40" fill="#ffffff"/>
+                       </svg>`,
+            tpipe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <rect x="30" y="0" width="40" height="100" fill="#ffffff"/>
+                        <rect x="70" y="30" width="30" height="40" fill="#ffffff"/>
+                      </svg>`
+        };
+
+        const createDataUrl = (svgString) => `url("data:image/svg+xml,${encodeURIComponent(svgString)}")`;
+
+        const grid = Array(16).fill(null).map(() => {
+            const rand = Math.random();
+            const type = rand < 0.4 ? 'line' : (rand < 0.8 ? 'corner' : 'tpipe');
+            return { type: type, rotation: Math.floor(Math.random() * 4) * 90 };
+        });
+        
+        grid[0].type = 'start'; grid[15].type = 'end';
+        allElements.repairGrid.innerHTML = '';
+        
+        grid.forEach((tile, index) => {
+            const tileEl = document.createElement('div');
+            tileEl.classList.add('repair-tile');
+            if (tile.type === 'start' || tile.type === 'end') {
+                tileEl.classList.add(tile.type);
+            } else {
+                const maskUrl = createDataUrl(svgData[tile.type]);
+                tileEl.style.webkitMaskImage = maskUrl;
+                tileEl.style.maskImage = maskUrl;
+                tileEl.dataset.type = tile.type; 
+
+                tileEl.style.transform = `rotate(${tile.rotation}deg)`;
+                tileEl.dataset.rotation = tile.rotation;
+                tileEl.onclick = () => {
+                    let currentRotation = parseInt(tileEl.dataset.rotation, 10);
+                    currentRotation = (currentRotation + 90) % 360;
+                    tileEl.dataset.rotation = currentRotation;
+                    tileEl.style.transform = `rotate(${currentRotation}deg)`;
+                };
+            }
+            allElements.repairGrid.appendChild(tileEl);
+        });
+    }
+
+    // ПРОВЕРКА РЕШЕНИЯ (С ЛОГИКОЙ БОНУСА)
+    function checkRepairSolution() {
+        const tiles = allElements.repairGrid.children;
+        const grid = [];
+        for (let i = 0; i < tiles.length; i++) {
+            const tile = tiles[i];
+            const type = tile.classList.contains('start') ? 'start' : (tile.classList.contains('end') ? 'end' : tile.dataset.type);
+            grid.push({ type: type, rotation: parseInt(tile.dataset.rotation || 0, 10) });
+        }
+        
+        // 0: Верх, 1: Право, 2: Низ, 3: Лево
+        const connections = {
+            line:   [[0, 2], [1, 3]],
+            corner: [[0, 1], [1, 2], [2, 3], [3, 0]],
+            tpipe:  [[0, 1, 2], [1, 2, 3], [2, 3, 0], [3, 0, 1]],
+            start:  [[0, 1, 2, 3]],
+            end:    [[0, 1, 2, 3]]
+        };
+        
+        const queue = [{ index: 0, from: null }]; const visited = new Set([0]);
+        while (queue.length > 0) {
+            const { index, from } = queue.shift();
+            
+            if (index === 15) {
+                // --- НАЧАЛО НОВОЙ ЛОГИКИ БОНУСА ---
+                allElements.repairModal.classList.add('hidden');
+                fixSystem(gameState.systemToRepair); // Чиним UI и снимаем паузу
+                
+                const timeElapsed = Date.now() - gameState.modalOpenTime;
+                let reward = 5; // Базовая награда
+                let logKey = 'repairSuccess';
+
+                if (timeElapsed <= 10000) { // 10 секунд
+                    reward *= 2; // Удваиваем
+                    logKey = 'repairSuccessBonus';
+                }
+
+                gameState.engineeringData += reward;
+                updateLog(logKey, { amount: reward });
+                sounds.positive.play();
+                // --- КОНЕЦ НОВОЙ ЛОГИКИ БОНУСА ---
+                return; // Успех, выходим из функции
+            }
+            
+            const getDirs = (tile) => {
+                if (!tile || !tile.type || !connections[tile.type]) return [];
+                if (tile.type === 'start' || tile.type === 'end') return connections.start[0];
+                
+                let rotIndex = 0;
+                if (tile.type === 'line') rotIndex = (tile.rotation / 90) % 2;
+                if (tile.type === 'corner') rotIndex = (tile.rotation / 90) % 4;
+                if (tile.type === 'tpipe') rotIndex = (tile.rotation / 90) % 4;
+
+                return connections[tile.type][rotIndex];
+            };
+            
+            const currentDirs = getDirs(grid[index]);
+            for (const dir of currentDirs) {
+                let neighborIndex = -1;
+                if (dir === 0 && index > 3) neighborIndex = index - 4; // 0 = Верх
+                if (dir === 1 && (index + 1) % 4 !== 0) neighborIndex = index + 1; // 1 = Право
+                if (dir === 2 && index < 12) neighborIndex = index + 4; // 2 = Низ
+                if (dir === 3 && index % 4 !== 0) neighborIndex = index - 1; // 3 = Лево
+                
+                if (neighborIndex !== -1 && !visited.has(neighborIndex)) {
+                    const neighborDirs = getDirs(grid[neighborIndex]);
+                    const requiredDir = (dir + 2) % 4; // Требуемое направление (противоположное)
+                    if (neighborDirs.includes(requiredDir)) { 
+                        visited.add(neighborIndex); 
+                        queue.push({ index: neighborIndex, from: index }); 
+                    }
+                }
+            }
+        }
+        
+        // Сюда мы попадаем, только если цикл while закончился (путь не найден)
+        sounds.negative.play(); updateLog('repairFail'); gameState.energy = Math.max(0, gameState.energy - 5);
+        allElements.repairModal.querySelector('.modal-window').classList.add('error');
+        setTimeout(() => allElements.repairModal.querySelector('.modal-window').classList.remove('error'), 500);
+    }
+
+    
+    // --- ENTRY POINT ---
+    initializeState();
+    attachEventListeners();
+    changeLanguage('ru');
+});
+</script>
+
+</body>
+</html>

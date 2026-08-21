@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Временного Инженера v1.7.3 (Автор)</title>
+    <style>
+        /* --- Общие Стили --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #000; color: #e0e0e0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+        .hidden { display: none !important; }
+
+        /* --- Анимация звезд --- */
+        @keyframes move-twink-back { from { background-position: 0 0; } to { background-position: -10000px 5000px; } }
+        @keyframes move-clouds-back { from { background-position: 0 0; } to { background-position: 10000px 0; } }
+        .stars, .twinkling { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; display:block; z-index: 0; }
+        .stars { background:#000 url(https://www.script-tutorials.com/demos/360/images/stars.png) repeat top center; animation: move-twink-back 200s linear infinite; }
+        .twinkling{ background:transparent url(https://www.script-tutorials.com/demos/360/images/twinkling.png) repeat top center; animation: move-clouds-back 200s linear infinite; z-index: 1; }
+        
+        /* --- Стартовый Экран --- */
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 200; padding-bottom: 30px; box-sizing: border-box; background: transparent; }
+        
+        /* (НОВЫЙ БЛОК) Стили для информации об авторе */
+        #author-notice {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ccc;
+            font-size: 12px; /* Уменьшенный шрифт */
+            z-index: 210;
+            max-width: 60%; /* Чтобы не мешать кнопкам языка */
+            line-height: 1.4;
+        }
+
+        .language-switcher { position: absolute; top: 20px; right: 20px; background-color: rgba(0, 0, 0, 0.6); padding: 5px; border-radius: 10px; border: 1px solid #ffc90e; display: flex; gap: 5px; z-index: 210; }
+        .lang-btn { padding: 8px 15px; border: 1px solid #aaa; background-color: transparent; color: #ccc; cursor: pointer; border-radius: 7px; transition: background-color 0.3s, color 0.3s; }
+        .lang-btn:hover { background-color: #555; }
+        .lang-btn.active { background-color: #ffc90e; color: #000; font-weight: bold; border-color: #ffeb3b; }
+        #crawl-container { position: absolute; top: 0; left: 0; width: 100%; height: 70%; overflow: hidden; }
+        #crawl-perspective { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80%; max-width: 600px; height: 100%; perspective: 300px; }
+        #crawl-text { position: absolute; top: 100%; left: 0; width: 100%; color: #ffc90e; font-size: 2em; font-weight: bold; text-align: justify; transform-origin: 50% 100%; transform: rotateX(25deg); animation: crawl 50s linear infinite; }
+        #crawl-text h3, #crawl-text h4 { text-align: center; margin: 0.5em 0; }
+        #crawl-text p { margin-bottom: 1em; }
+        @keyframes crawl { 0% { top: 100%; } 100% { top: -120%; } }
+        .user-info-form { margin-top: 10px; z-index: 210; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; border: 1px solid #ffc90e; }
+        .user-info-form label { margin-right: 10px; color: #ffc90e; }
+        .user-info-form input { padding: 8px; margin-right: 15px; border-radius: 4px; border: 1px solid #aaa; background: #ddd; }
+        #start-game-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; color: #000; background-color: #ffc90e; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; margin-top: 20px; z-index: 210; }
+        #start-game-btn:disabled { background-color: #555; cursor: not-allowed; opacity: 0.7; }
+        #start-game-btn:hover:enabled { background-color: #fff; box-shadow: 0 0 15px #ffc90e; }
+
+        /* --- Стили Основной Игры --- */
+        #game-container { width: 90%; max-width: 800px; background-color: #1f1f3a; border: 2px solid #0af; border-radius: 10px; padding: 20px; box-shadow: 0 0 20px #0af; text-align: center; position: relative; z-index: 10; }
+        h1, h2, h3 { color: #0af; border-bottom: 1px solid #0af; padding-bottom: 10px; }
+        #epoch-description { font-size: 1.1em; font-style: italic; color: #ccc; min-height: 40px; margin-bottom: 15px; }
+        .status-bar-container { width: 100%; height: 25px; background-color: #111; border-radius: 5px; border: 1px solid #0af; margin-bottom: 15px; overflow: hidden; }
+        #time-energy-bar { width: 100%; height: 100%; background-color: #f0a; transition: width 0.5s ease-out; box-shadow: 0 0 10px #f0a; }
+        #time-energy-label { font-size: 1em; font-weight: bold; color: #f0a; margin-bottom: 5px; }
+        .score-display { display: flex; justify-content: space-around; margin-bottom: 15px; font-size: 1.1em; }
+        #score-label { color: #0f0; }
+        #skill-points-label { color: #ff0; }
+        button { padding: 10px 20px; font-size: 15px; font-weight: bold; color: #1a1a2e; background-color: #0af; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; margin: 5px; }
+        button:hover { background-color: #fff; box-shadow: 0 0 15px #0af; }
+        button:disabled { background-color: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+        #upgrade-section { background-color: rgba(0,0,0,0.2); border-radius: 5px; padding: 10px; margin-top: 15px; }
+        #upgrade-tree { display: flex; justify-content: space-around; gap: 10px; margin-top: 10px; }
+        .upgrade-btn { background-color: #0a8; flex-grow: 1; }
+        .upgrade-btn.purchased { background-color: #444; color: #aaa; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: center; }
+        .modal-content { width: 90%; max-width: 600px; background-color: #1f1f3a; border: 2px solid #f0a; border-radius: 10px; padding: 20px; box-shadow: 0 0 20px #f0a; text-align: left; }
+        #task-question { font-size: 1.05em; line-height: 1.5; }
+        #task-answer { width: 100%; padding: 10px; font-size: 18px; text-align: center; border-radius: 5px; border: 2px solid #0af; background-color: #111; color: #fff; margin-top: 15px; box-sizing: border-box; }
+        .modal-buttons { display: flex; justify-content: space-between; margin-top: 15px; }
+        #check-answer-btn { background-color: #0a8; }
+        #check-answer-btn:hover { background-color: #0f0; }
+        #hint-btn { background-color: #ff8c00; }
+        #hint-btn:hover { background-color: #ffa500; }
+
+        /* --- Экран Результатов --- */
+        #results-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 300; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #fff; text-align: center; padding: 20px; box-sizing: border-box; }
+        #results-content { background-color: #1f1f3a; border: 2px solid #0f0; border-radius: 10px; padding: 30px; box-shadow: 0 0 20px #0f0; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+        #results-content h2 { color: #0f0; }
+        #user-results-info { margin-bottom: 20px; font-size: 1.1em; }
+        #results-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #results-table th, #results-table td { border: 1px solid #0af; padding: 8px; }
+        #results-table th { background-color: #1a1a2e; color: #0af; }
+        .correct-count { color: #0f0; } .incorrect-count { color: #f0a; }
+        #final-grade { font-size: 1.5em; margin-top: 20px; color: #ff0; }
+        #feedback-section { margin-top: 20px; text-align: left; border-top: 1px solid #0af; padding-top: 15px; }
+        #feedback-section h3 { margin-top: 0; }
+        #restart-btn { margin-top: 25px; padding: 15px 30px; font-size: 18px; background-color: #0f0; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+
+    <div id="start-screen">
+        
+        <div id="author-notice"></div>
+
+        <div class="language-switcher">
+            <button id="lang-ru" class="lang-btn">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div id="crawl-container">
+            <div id="crawl-perspective">
+                <div id="crawl-text"></div>
+            </div>
+        </div>
+        <div class="user-info-form">
+            <label for="user-lastname" id="lastname-label"></label>
+            <input type="text" id="user-lastname" name="lastname">
+            <label for="user-firstname" id="firstname-label"></label>
+            <input type="text" id="user-firstname" name="firstname">
+            <label for="user-class" id="class-label"></label>
+            <input type="text" id="user-class" name="class">
+        </div>
+        <button id="start-game-btn" disabled></button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <h1 id="main-title"></h1>
+        <div id="time-energy-label">⏳ <span id="time-energy-text"></span>: <span id="time-energy-value">100</span>%</div>
+        <div class="status-bar-container">
+            <div id="time-energy-bar"></div>
+        </div>
+        <div class="score-display">
+            <div><span id="score-label"></span>: <span id="score-value">0</span></div>
+            <div><span id="skill-points-label"></span>: <span id="skill-points-value">0</span></div>
+        </div>
+        <h2><span id="epoch-label"></span>: <span id="epoch-name"></span></h2>
+        <p id="epoch-description"></p>
+        <button id="solve-task-btn"><span id="analyze-anomaly-text"></span></button>
+        <div id="upgrade-section">
+            <h3 id="upgrades-title"></h3>
+            <div id="upgrade-tree">
+                <button id="upgrade-slow-time-btn" class="upgrade-btn" disabled><span id="slow-time-upgrade-text"></span> (<span id="slow-time-cost-text"></span>: 3 <span id="sp-text"></span>)</button>
+                <button id="upgrade-buy-hint-btn" class="upgrade-btn" disabled><span id="buy-hint-upgrade-text"></span> (<span id="buy-hint-cost-text"></span>: 1 <span id="sp-text2"></span>)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="task-title"></h2>
+            <p id="task-question"></p>
+            <input type="number" step="0.01" id="task-answer" placeholder="">
+            <div class="modal-buttons">
+                <button id="hint-btn">💡 <span id="hint-text"></span></button>
+                <button id="check-answer-btn"><span id="check-core-text"></span></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="results-screen" class="hidden">
+        <div id="results-content">
+            <h2 id="results-title"></h2>
+            <div id="user-results-info">
+                <span id="results-user-label"></span>: <span id="results-user-name"></span> (<span id="results-class-label"></span>: <span id="results-user-class"></span>)
+            </div>
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th id="results-era-header"></th>
+                        <th id="results-correct-header"></th>
+                        <th id="results-incorrect-header"></th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body"></tbody>
+            </table>
+            <div id="final-grade">
+                <span id="results-grade-label"></span>: <span id="final-grade-value"></span> / 10</div>
+            <div id="feedback-section">
+                <h3 id="results-feedback-title"></h3>
+                <p><strong id="results-upgrades-label"></strong> <span id="purchased-upgrades-list"></span></p>
+                <p id="results-summary"></p>
+            </div>
+            <button id="restart-btn"></button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. "МОЗГ" ИГРЫ: СОСТОЯНИЕ, БАЗА ДАННЫХ, ЭЛЕМЕНТЫ ---
+            const allElements = {
+                // (ИЗМЕНЕНО) Добавлен authorNotice
+                startScreen: document.getElementById('start-screen'), 
+                authorNotice: document.getElementById('author-notice'),
+                langRu: document.getElementById('lang-ru'), 
+                langKz: document.getElementById('lang-kz'), 
+                langEn: document.getElementById('lang-en'), 
+                crawlText: document.getElementById('crawl-text'), 
+                startGameBtn: document.getElementById('start-game-btn'), 
+                userLastnameInput: document.getElementById('user-lastname'), 
+                userFirstnameInput: document.getElementById('user-firstname'), 
+                userClassInput: document.getElementById('user-class'), 
+                lastnameLabel: document.getElementById('lastname-label'), 
+                firstnameLabel: document.getElementById('firstname-label'), 
+                classLabel: document.getElementById('class-label'),
+                // ... (остальные элементы)
+                gameContainer: document.getElementById('game-container'), timeEnergyValue: document.getElementById('time-energy-value'), timeEnergyBar: document.getElementById('time-energy-bar'), epochName: document.getElementById('epoch-name'), epochDescription: document.getElementById('epoch-description'), solveTaskBtn: document.getElementById('solve-task-btn'), taskModal: document.getElementById('task-modal'), taskQuestion: document.getElementById('task-question'), taskAnswer: document.getElementById('task-answer'), checkAnswerBtn: document.getElementById('check-answer-btn'), skillPointsValue: document.getElementById('skill-points-value'), upgradeSlowTimeBtn: document.getElementById('upgrade-slow-time-btn'), upgradeBuyHintBtn: document.getElementById('upgrade-buy-hint-btn'), hintBtn: document.getElementById('hint-btn'), scoreValue: document.getElementById('score-value'), mainTitle: document.getElementById('main-title'), timeEnergyText: document.getElementById('time-energy-text'), scoreLabel: document.getElementById('score-label'), skillPointsLabel: document.getElementById('skill-points-label'), epochLabel: document.getElementById('epoch-label'), analyzeAnomalyText: document.getElementById('analyze-anomaly-text'), upgradesTitle: document.getElementById('upgrades-title'), slowTimeUpgradeText: document.getElementById('slow-time-upgrade-text'), slowTimeCostText: document.getElementById('slow-time-cost-text'), spText: document.getElementById('sp-text'), buyHintUpgradeText: document.getElementById('buy-hint-upgrade-text'), buyHintCostText: document.getElementById('buy-hint-cost-text'), spText2: document.getElementById('sp-text2'), taskTitle: document.getElementById('task-title'), 
+                hintText: document.getElementById('hint-text'), 
+                checkCoreText: document.getElementById('check-core-text'),
+                resultsScreen: document.getElementById('results-screen'), resultsContent: document.getElementById('results-content'), resultsTitle: document.getElementById('results-title'), resultsUserLabel: document.getElementById('results-user-label'), resultsUserName: document.getElementById('results-user-name'), resultsClassLabel: document.getElementById('results-class-label'), resultsUserClass: document.getElementById('results-user-class'), resultsEraHeader: document.getElementById('results-era-header'), resultsCorrectHeader: document.getElementById('results-correct-header'), resultsIncorrectHeader: document.getElementById('results-incorrect-header'), resultsTableBody: document.getElementById('results-table-body'), resultsGradeLabel: document.getElementById('results-grade-label'), finalGradeValue: document.getElementById('final-grade-value'), resultsFeedbackTitle: document.getElementById('results-feedback-title'), resultsUpgradesLabel: document.getElementById('results-upgrades-label'), purchasedUpgradesList: document.getElementById('purchased-upgrades-list'), resultsSummary: document.getElementById('results-summary'), restartBtn: document.getElementById('restart-btn')
+            };
+
+            let gameState = {
+                currentEra: 0, timeEnergy: 100, isPaused: true, lastTick: Date.now(),
+                currentTask: {
+                    eraIndex: 0,
+                    data: null, 
+                    formula: ""
+                },
+                score: 0, skillPoints: 0, modalOpenTime: 0,
+                upgrades: {
+                    hasTimeSlow: false,
+                    formulaHintCount: 0,
+                    slowTimePurchased: false,
+                    hintsPurchasedCount: 0 
+                },
+                currentLanguage: 'ru', userInfo: { lastname: '', firstname: '', class: '' }, epochResults: []
+            };
+
+            // --- (ИЗМЕНЕНО) ОБЪЕКТ ПЕРЕВОДОВ ---
+            const translations = {
+                ru: {
+                    // (НОВЫЙ КЛЮЧ)
+                    authorNotice: "Автор: учитель физики специализированной гимназии №8 с обучением на трех языках им.М.Х.Дулати г.Шымкент. Все права защищены © {year}.",
+                    startGameBtn: "Начать Игру", crawlTitle: "Эпизод I", crawlSubtitle: "УГРОЗА ВРЕМЕНИ", crawlText: `Вы - Временной Инженер. Ваша машина времени сломана. Ядро дестабилизировано, вы прыгаете сквозь эпохи. Стабилизируйте ядро, решая физические задачи. Временная энергия иссякает... Удачи!`, lastnameLabel: "Фамилия:", firstnameLabel: "Имя:", classLabel: "Класс:", fillFieldsAlert: "Пожалуйста, заполните все поля!", mainTitle: "Симулятор Временного Инженера", timeEnergyText: "Временная Энергия", scoreLabel: "Очки", skillPointsLabel: "Очки Навыков", epochLabel: "Эпоха", analyzeAnomalyText: "Проанализировать Аномалию", upgradesTitle: "Улучшения Машины Времени", slowTimeUpgradeText: "Замедлитель", slowTimeCostText: "Стоимость", spText: "СП", buyHintUpgradeText: "Справочник", buyHintCostText: "Стоимость", spText2: "СП", taskTitle: " Физическая Задача", hintText: "Подсказка", checkCoreText: "Проверить Ядро", answerPlaceholder: "Введите ответ...", correctMsg: "Верно!", stabilizeMsg: "Ядро стабилизировано.", jumpMsg: "Запускаю прыжок...", pointsMsg: "+{points} Очко(в).", bonusMsg: "⏱️ БЫСТРЫЙ ОТВЕТ! (менее 2 мин) ⏱️", spAwardMsg: "+1 Очко Навыков!", incorrectMsg: "Неверно!", destabilizeMsg: "Ядро дестабилизируется!", energyLossMsg: "Потеряно 10% энергии.", gameOverMsg: "GAME OVER. Энергия иссякла.", finalScoreMsg: "Финальный счет:", congratsMsg: "Поздравляем!", allEpochsMsg: "Вы прошли все эпохи!", hintUsedMsg: "ПОДСКАЗКА:\n\n{formula}", noHintsMsg: "У вас нет подсказок.", buyHintConfirm: "1 подсказка добавлена!", slowTimeConfirm: "Улучшение 'Замедлитель Времени' куплено!", purchasedMsg: "✓ Куплено", costMsg: "Стоимость: {cost} СП", resultsTitle: "Итоги Путешествия", resultsUserLabel: "Студент", resultsClassLabel: "Класс", resultsEraHeader: "Эпоха", resultsCorrectHeader: "Правильно", resultsIncorrectHeader: "Неправильно", resultsGradeLabel: "Итоговая Оценка", resultsFeedbackTitle: "Обратная связь:", resultsUpgradesLabel: "Купленные улучшения:", purchasedUpgradesListNone: "Нет", purchasedUpgradesSlowTime: "Замедлитель Времени", purchasedUpgradesHints: "Справочник ({count} подсказок)", resultsSummaryExcellent: "Отличный результат! Вы мастерски владеете физикой времени.", resultsSummaryGood: "Хорошая работа! Вы успешно стабилизировали ядро.", resultsSummarySatisfactory: "Удовлетворительно. Многие концепции требуют повторения.", resultsSummaryPoor: "Требуется больше практики.", restartBtn: "Начать заново", totalLabel: "Итого", noAttemptsMsg: "Попыток не было",
+                    eras: [
+                        { name: "Древний Египет", description: "Рабочие тянут блок по пандусу.", question: `Блок m={m} кг тянут по пандусу (30°). Коэф. трения μ={mu}. Сила F (Н)? (g≈10 м/с², sin30=0.5, cos30≈0.866. До целого).`, formula: "F = mg(sinα + μcosα)" },
+                        { name: "Древняя Греция", description: "Архимед объясняет принцип рычага.", question: `Сила F₁={F1} Н на плече d₁={d1} м. Какая F₂ (Н) нужна на плече d₂={d2} м для равновесия? (До десятых).`, formula: "F₁d₁ = F₂d₂" },
+                        { name: "Ренессанс (Пиза)", description: "Галилей изучает падение тел.", question: `Тело m={m} кг падает с высоты h={h} м. Скорость v (м/с) у земли? (g≈10 м/с². (До десятых).`, formula: "v = sqrt(2gh)" },
+                        { name: "Англия, 17 век", description: "Ньютон формулирует свои законы.", question: `Какая сила F (Н) нужна, чтобы телу m={m} кг придать ускорение a={a} м/с²?`, formula: "F = ma" },
+                        { name: "Англия, 19 век", description: "Паровые машины меняют мир.", question: `КПД машины η={etaPercent}%, работа W={W} Дж. Теплота от нагревателя Qн (Дж)? (До целого.)`, formula: "Qн = W / η (η = %/100)" },
+                        { name: "Германия, 19 век", description: "Ом исследует электрические цепи.", question: `Резистор R={R} Ом подключен к источнику V={V} В. Сила тока I (А)? (До десятых.)`, formula: "I = V / R" },
+                        { name: "Голландия, 17 век", description: "Снеллиус открывает закон преломления.", question: `Луч из воздуха (n₁=1) падает на среду (n₂={n2}) под углом α₁={angle1}°. Угол преломления α₂ (°)? (До целого).`, formula: "n₁sin(α₁) = n₂sin(α₂)" },
+                        { name: "Начало 20 века", description: "Теория относительности и сохранение импульса.", question: `Вагон m₁={m1} т (v₁={v1} м/с) сцепляется с неподвижным m₂={m2} т. Их общая скорость v (м/с)? (До десятых).`, formula: "m₁v₁ = (m₁+m₂)v" },
+                        { name: "Середина 20 века", description: "Квантовая революция.", question: `Фотон λ={lambda_nm} нм. Энергия E (в эВ)? (h ≈ 6.63×10<sup>-34</sup>, c ≈ 3×10<sup>8</sup>, 1эВ ≈ 1.6×10<sup>-19</sup> Дж. (До сотых).`, formula: "E = hc/λ (перевести в эВ)" },
+                        { name: "Финал (???)", description: "Прыжок домой...", question: "Вы победили! (Нажмите 1)", formula: "Победа!" }
+                    ]
+                },
+                en: {
+                    // (НОВЫЙ КЛЮЧ)
+                    authorNotice: "Author: physics teacher at the specialized gymnasium No. 8 with trilingual education named after M.Kh. Dulati, Shymkent. All rights reserved © {year}.",
+                    startGameBtn: "Start Game", crawlTitle: "Episode I", crawlSubtitle: "THE PHANTOM PARADOX", crawlText: `A long time ago... You are a Time Engineer. Your time machine is broken. The core is destabilized, вы jumping through epochs. Stabilize the core by solving physics problems. Temporal energy is running out... Good luck!`, lastnameLabel: "Last Name:", firstnameLabel: "First Name:", classLabel: "Class:", fillFieldsAlert: "Please fill in all fields!", mainTitle: "Temporal Engineer Simulator", timeEnergyText: "Temporal Energy", scoreLabel: "Score", skillPointsLabel: "Skill Points", epochLabel: "Epoch", analyzeAnomalyText: "Analyze Anomaly", upgradesTitle: "Time Machine Upgrades", slowTimeUpgradeText: "Time Dilator", slowTimeCostText: "Cost", spText: "SP", buyHintUpgradeText: "Handbook", buyHintCostText: "Cost", spText2: "SP", taskTitle: " Physics Problem", hintText: "Hint", checkCoreText: "Check Core", answerPlaceholder: "Enter your answer...", correctMsg: "Correct!", stabilizeMsg: "Core stabilized.", jumpMsg: "Initiating jump...", pointsMsg: "+{points} Point(s).", bonusMsg: "⏱️ QUICK ANSWER! (under 2 min) ⏱️", spAwardMsg: "+1 Skill Point!", incorrectMsg: "Incorrect!", destabilizeMsg: "Core destabilizing!", energyLossMsg: "Lost 10% energy.", gameOverMsg: "GAME OVER. Energy depleted.", finalScoreMsg: "Final Score:", congratsMsg: "Congratulations!", allEpochsMsg: "You have completed all epochs!", hintUsedMsg: "HINT:\n\n{formula}", noHintsMsg: "You have no hints.", buyHintConfirm: "1 hint added!", slowTimeConfirm: "Upgrade 'Time Dilator' purchased!", purchasedMsg: "✓ Purchased", costMsg: "Cost: {cost} SP", resultsTitle: "Journey Summary", resultsUserLabel: "Student", resultsClassLabel: "Class", resultsEraHeader: "Epoch", resultsCorrectHeader: "Correct", resultsIncorrectHeader: "Incorrect", resultsGradeLabel: "Final Grade", resultsFeedbackTitle: "Feedback:", resultsUpgradesLabel: "Upgrades Purchased:", purchasedUpgradesListNone: "None", purchasedUpgradesSlowTime: "Time Dilator", purchasedUpgradesHints: "Handbook ({count} hints)", resultsSummaryExcellent: "Excellent result! You master the physics of time.", resultsSummaryGood: "Good job! You successfully stabilized the core.", resultsSummarySatisfactory: "Satisfactory. Many concepts need review.", resultsSummaryPoor: "More practice needed.", restartBtn: "Restart", totalLabel: "Total", noAttemptsMsg: "No attempts made",
+                    eras: [
+                        { name: "Ancient Egypt", description: "Workers are pulling a block up a ramp.", question: `A block (m={m} kg) is pulled up a ramp (30°). Friction coeff. μ={mu}. What is the Force F (N)? (g≈10 м/с², sin30=0.5, cos30≈0.866. To integer).`, formula: "F = mg(sinα + μcosα)" },
+                        { name: "Ancient Greece", description: "Archimedes explains the principle of the lever.", question: `Force F₁={F1} N is on a lever d₁={d1} m. What F₂ (N) is needed on arm d₂={d2} m for balance? (To tenths).`, formula: "F₁d₁ = F₂d₂" },
+                        { name: "Renaissance (Pisa)", description: "Galileo studies falling bodies.", question: `A body m={m} kg falls from height h={h} m. What is the velocity v (m/s) at the ground? (g≈10 м/с². To tenths.)`, formula: "v = sqrt(2gh)" },
+                        { name: "England, 17th Cent.", description: "Newton formulates his laws.", question: `What force F (N) is needed to give a mass m={m} kg an acceleration a={a} m/s²?`, formula: "F = ma" },
+                        { name: "England, 19th Cent.", description: "Steam engines are changing the world.", question: `Engine efficiency η={etaPercent}%, work W={W} J. Heat from heater Qн (J)? (To integer.)`, formula: "Qн = W / η (η = %/100)" },
+                        { name: "Germany, 19th Cent.", description: "Ohm investigates electric circuits.", question: `A resistor R={R} Ω is connected to a source V={V} V. What is the current I (A)? (To tenths.)`, formula: "I = V / R" },
+                        { name: "Holland, 17th Cent.", description: "Snellius discovers the law of refraction.", question: `A ray from air (n₁=1) enters a medium (n₂={n2}) at angle α₁={angle1}°. Refraction angle α₂ (°)? (To integer).`, formula: "n₁sin(α₁) = n₂sin(α₂)" },
+                        { name: "Early 20th Cent.", description: "Relativity and momentum conservation.", question: `A cart m₁={m1} t (v₁={v1} m/s) couples with a stationary m₂={m2} t. Their combined velocity v (m/s)? (To tenths).`, formula: "m₁v₁ = (m₁+m₂)v" },
+                        { name: "Mid-20th Cent.", description: "The Quantum Revolution.", question: `A photon λ={lambda_nm} nm. What is its Energy E (in eV)? (h ≈ 6.63×10<sup>-34</sup>, c ≈ 3×10<sup>8</sup>, 1eV ≈ 1.6×10<sup>-19</sup> J. (To hundredths).`, formula: "E = hc/λ (convert to eV)" },
+                        { name: "Finale (???)", description: "The jump home...", question: "You won! (Press 1)", formula: "Victory!" }
+                    ]
+                },
+                kz: {
+                    // (НОВЫЙ КЛЮЧ)
+                    authorNotice: "Авторы: Шымкент қ. М.Х.Дулати ат. №8 мамандандырылған үш тілде оқытатын гимназияның физика пәні мұғалімі. Барлық құқықтар қорғалған © {year}.",
+                    startGameBtn: "Ойынды Бастау", crawlTitle: "Эпизод I", crawlSubtitle: "УАҚЫТ ҚАУІПІ", crawlText: `Баяғыда... Сіз – Уақыт Инженерісіз. Сіздің уақыт машинасы сынып қалды. Ядро тұрақсызданды, сіз дәуірлер арасында секіріп жүрсіз. Физикалық есептерді шешу арқылы ядроны тұрақтандырыңыз. Уақытша энергия таусылып барады... Сәттілік!`, lastnameLabel: "Тегі:", firstnameLabel: "Аты:", classLabel: "Сынып:", fillFieldsAlert: "Барлық өрістерді толтырыңыз!", mainTitle: "Уақыт Инженері Симуляторы", timeEnergyText: "Уақыт Энергиясы", scoreLabel: "Ұпайлар", skillPointsLabel: "Дағды Ұпайлары", epochLabel: "Дәуір", analyzeAnomalyText: "Аномалияны Талдау", upgradesTitle: "Уақыт Машинасын Жақсарту", slowTimeUpgradeText: "Уақыт Баяулатқыш", slowTimeCostText: "Құны", spText: "ДҰ", buyHintUpgradeText: "Анықтамалық", buyHintCostText: "Құны", spText2: "ДҰ", taskTitle: " Физикалық Есеп", hintText: "Көмек", checkCoreText: "Ядроны Тексеру", answerPlaceholder: "Жауабыңызды енгізіңіз...", correctMsg: "Дұрыс!", stabilizeMsg: "Ядро тұрақтандырылды.", jumpMsg: "Секіру басталуда...", pointsMsg: "+{points} Ұпай.", bonusMsg: "⏱️ ЖЫЛДАМ ЖАУАП! (2 мин аз) ⏱️", spAwardMsg: "+1 Дағды Ұпайы!", incorrectMsg: "Қате!", destabilizeMsg: "Ядро тұрақсыздануда!", energyLossMsg: "10% энергия жоғалды.", gameOverMsg: "ОЙЫН АЯҚТАЛДЫ. Энергия таусылды.", finalScoreMsg: "Соңғы есеп:", congratsMsg: "Құттықтаймыз!", allEpochsMsg: "Сіз барлық дәуірлерді өттіңіз!", hintUsedMsg: "КӨМEK:\n\n{formula}", noHintsMsg: "Сізде көмек жоқ.", buyHintConfirm: "1 көмек қосылды!", slowTimeConfirm: "'Уақыт Баяулатқыш' жақсартуы сатып алынды!", purchasedMsg: "✓ Сатып алынған", costMsg: "Құны: {cost} ДҰ", resultsTitle: "Саяхат Қорытындысы", resultsUserLabel: "Студент", resultsClassLabel: "Сынып", resultsEraHeader: "Дәуір", resultsCorrectHeader: "Дұрыс", resultsIncorrectHeader: "Қате", resultsGradeLabel: "Қорытынды Баға", resultsFeedbackTitle: "Кері байланыс:", resultsUpgradesLabel: "Сатып алынған жақсартулар:", purchasedUpgradesListNone: "Жоқ", purchasedUpgradesSlowTime: "Уақыт Баяулатқыш", purchasedUpgradesHints: "Анықтамалық ({count} көмек)", resultsSummaryExcellent: "Керемет нәтиже! Уақыт физикасын жақсы меңгердіңіз.", resultsSummaryGood: "Жақсы жұмыс! Ядроны сәтті тұрақтандырдыңыз.", resultsSummarySatisfactory: "Қанағаттанарлық. Көптеген ұғымдарды қайталау керек.", resultsSummaryPoor: "Көбірек жаттығу қажет.", restartBtn: "Қайта бастау", totalLabel: "Барлығы", noAttemptsMsg: "Талпыныс жасалмады",
+                    eras: [
+                        { name: "Ежелгі Египет", description: "Жұмысшылар блокты пандуспен тартып жатыр.", question: `Блок m={m} кг пандуспен (30°) тартылуда. Үйкеліс коэф. μ={mu}. F күші (Н) қандай? (g≈10 м/с², sin30=0.5, cos30≈0.866. Бүтінге дейін).`, formula: "F = mg(sinα + μcosα)" },
+                        { name: "Ежелгі Грекия", description: "Архимед иінтірек принципін түсіндіреді.", question: `Күш F₁={F1} Н иінтіректе d₁={d1} м. Тепе-теңдік үшін d₂={d2} м иінтіректе қандай F₂ (Н) қажет? (Ондыққа дейін).`, formula: "F₁d₁ = F₂d₂" },
+                        { name: "Ренессанс (Пиза)", description: "Галилей денелердің құлауын зерттейді.", question: `Дене m={m} кг h={h} м биіктіктен құлайды. Жерге жақын v жылдамдығы (м/с)? (g≈10 м/с². Ондыққа дейін.)`, formula: "v = sqrt(2gh)" },
+                        { name: "Англия, 17 ғасыр", description: "Ньютон өз заңдарын тұжырымдайды.", question: `m={m} кг денеге a={a} м/с² үдеу беру үшін қандай F күші (Н) қажет?`, formula: "F = ma" },
+                        { name: "Англия, 19 ғасыр", description: "Бу машиналары әлемді өзгертуде.", question: `Машинаның ПӘК η={etaPercent}%, жұмыс W={W} Дж. Қыздырғыштан алынған Qн жылуы (Дж)? (Бүтінге дейін).`, formula: "Qн = W / η (η = %/100)" },
+                        { name: "Германия, 19 ғасыр", description: "Ом электр тізбектерін зерттейді.", question: `Резистор R={R} Ом V={V} В көзіне қосылған. Ток күші I (А)? (Ондыққа дейін.)`, formula: "I = V / R" },
+                        { name: "Голландия, 17 ғасыр", description: "Снеллиус сыну заңын ашады.", question: `Ауадан (n₁=1) ортаға (n₂={n2}) α₁={angle1}° бұрышпен сәуле түседі. Сыну бұрышы α₂ (°)? (Бүтінге дейін).`, formula: "n₁sin(α₁) = n₂sin(α₂)" },
+                        { name: "20 ғасырдың басы", description: "Салыстырмалылық теориясы және импульстің сақталуы.", question: `Вагон m₁={m1} т (v₁={v1} м/с) қозғалмайтын m₂={m2} т вагонмен тіркеседі. Олардың ортақ v жылдамдығы (м/с)? (Ондыққа дейін.)`, formula: "m₁v₁ = (m₁+m₂)v" },
+                        { name: "20 ғасырдың ортасы", description: "Кванттық революция.", question: `Фотон λ={lambda_nm} нм. Оның E энергиясы (эВ)? (h ≈ 6.63×10<sup>-34</sup>, c ≈ 3×10<sup>8</sup>, 1эВ ≈ 1.6×10<sup>-19</sup> Дж. (Жүздікке дейін).`, formula: "E = hc/λ (эВ-қа ауыстыру)" },
+                        { name: "Финал (???)", description: "Үйге секіру...", question: "Сіз жеңдіңіз! (1 деп басыңыз)", formula: "Жеңіс!" }
+                    ]
+                }
+            };
+            
+            // --- "ПОМОЩНИКИ" ---
+            function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+            function getRandomFloat(min, max) { return parseFloat((Math.random() * (max - min) + min).toFixed(1)); }
+            function getRandomFloat2(min, max) { return parseFloat((Math.random() * (max - min) + min).toFixed(2)); } 
+            
+            function formatString(template, data) {
+                if (!template) return "";
+                let text = template;
+                for (const key in data) {
+                    if (key !== 'answer') { 
+                        text = text.replace(new RegExp(`{${key}}`, 'g'), data[key]);
+                    }
+                }
+                return text;
+            }
+
+            // --- БАЗА ДАННЫХ ЭПОХ (Только данные) ---
+            const eraDatabase = [
+                { taskPool: [() => { const m = getRandomInt(100, 300) * 10; const mu = getRandomFloat(0.2, 0.5); const F = (m * 10 * 0.5) + (m * 10 * 0.866 * mu); return { m, mu, answer: Math.round(F) }; }] },
+                { taskPool: [() => { const F1 = getRandomInt(100, 500); const d1 = getRandomInt(2, 5); const d2 = getRandomInt(d1 + 1, 10); const F2 = (F1 * d1) / d2; return { F1, d1, d2, answer: getRandomFloat(F2 - 0.01, F2 + 0.01) }; }] },
+                { taskPool: [() => { const m = getRandomInt(1, 10); const h = getRandomInt(5, 50); const v = Math.sqrt(2 * 10 * h); return { m, h, answer: getRandomFloat(v - 0.01, v + 0.01) }; }] },
+                { taskPool: [() => { const m = getRandomInt(50, 200); const a = getRandomInt(2, 10); const F = m * a; return { m, a, answer: F }; }] },
+                { taskPool: [() => { const W = getRandomInt(300, 800); const etaPercent = getRandomInt(20, 40); const QH = W / (etaPercent / 100); return { W, etaPercent, answer: Math.round(QH) }; }] },
+                { taskPool: [() => { const V = getRandomInt(10, 50); const R = getRandomInt(2, 20); const I = V / R; return { V, R, answer: getRandomFloat(I - 0.01, I + 0.01) }; }] },
+                { taskPool: [() => { const n1 = 1; const n2 = getRandomFloat(1.3, 1.7); const angle1 = getRandomInt(20, 60); const sin1 = Math.sin(angle1 * Math.PI / 180); const sin2 = (n1 * sin1) / n2; const angle2 = Math.asin(sin2) * 180 / Math.PI; return { n1, n2, angle1, answer: Math.round(angle2) }; }] },
+                { taskPool: [() => { const m1 = getRandomInt(2, 5); const v1 = getRandomInt(10, 20); const m2 = getRandomInt(m1 + 1, 10); const v2 = (m1 * v1) / (m1 + m2); return { m1, v1, m2, answer: getRandomFloat(v2 - 0.01, v2 + 0.01) }; }] },
+                { taskPool: [() => { const h = 6.63e-34; const c = 3e8; const lambda_nm = getRandomInt(400, 700); const lambda_m = lambda_nm * 1e-9; const E_joules = (h * c) / lambda_m; const E_eV = E_joules / 1.6e-19; return { lambda_nm, answer: getRandomFloat2(E_eV - 0.001, E_eV + 0.001) }; }] },
+                { taskPool: [ () => ({ answer: 1 }) ] }
+            ];
+
+            // --- 2. ОСНОВНЫЕ ФУНКЦИИ ИГРЫ ---
+            
+            function initializeEpochResult(eraIndex) { 
+                if (!gameState.epochResults[eraIndex]) { 
+                    gameState.epochResults[eraIndex] = { eraIndex: eraIndex, correct: 0, incorrect: 0 }; 
+                } 
+            }
+            
+            function loadEpoch(eraIndex) {
+                if (eraIndex >= eraDatabase.length) { 
+                    showResultsScreen(); 
+                    setPause(true); 
+                    return; 
+                } 
+                
+                const era = eraDatabase[eraIndex]; 
+                const taskPool = era.taskPool; 
+                const taskGenerator = taskPool[Math.floor(Math.random() * taskPool.length)]; 
+                const generatedData = taskGenerator();
+                
+                gameState.currentEra = eraIndex;
+                gameState.currentTask = {
+                    eraIndex: eraIndex,
+                    data: generatedData,
+                    formula: ""
+                };
+
+                allElements.taskAnswer.value = "";
+                initializeEpochResult(eraIndex);
+                updateEraUI();
+            }
+
+            function updateEraUI() {
+                const lang = gameState.currentLanguage;
+                const eraIndex = gameState.currentEra;
+                if (!translations[lang] || !translations[lang].eras[eraIndex]) return; 
+
+                const eraLang = translations[lang].eras[eraIndex];
+                const taskData = gameState.currentTask.data;
+                const questionText = formatString(eraLang.question, taskData);
+                
+                gameState.currentTask.formula = eraLang.formula;
+                
+                allElements.epochName.textContent = eraLang.name;
+                allElements.epochDescription.textContent = eraLang.description;
+                allElements.taskQuestion.innerHTML = questionText; 
+            }
+
+            function checkAnswer() {
+                const correctAnswer = gameState.currentTask.data.answer; 
+                const userAnswer = parseFloat(allElements.taskAnswer.value.replace(',', '.')); 
+                const currentEraIndex = gameState.currentEra;
+                
+                initializeEpochResult(currentEraIndex); 
+
+                if (Math.abs(userAnswer - correctAnswer) < 0.05) {
+                    gameState.epochResults[currentEraIndex].correct++; 
+                    let pointsEarned = 1; 
+                    let bonusAwarded = false; 
+                    const timeElapsed = Date.now() - gameState.modalOpenTime;
+                    
+                    if (timeElapsed <= 120000) { pointsEarned += 2; bonusAwarded = true; }
+                    
+                    gameState.score += pointsEarned; 
+                    gameState.skillPoints++;
+                    
+                    let alertMessage = `${T('correctMsg')} ${T('pointsMsg', {points: pointsEarned})}`;
+                    if (bonusAwarded) alertMessage += `\n${T('bonusMsg')}`;
+                    alertMessage += `\n${T('spAwardMsg')}\n${T('stabilizeMsg')} ${T('jumpMsg')}`; 
+                    alert(alertMessage);
+                    
+                    closeModal(); 
+                    gameState.currentEra++; 
+                    gameState.timeEnergy = 100; 
+                    loadEpoch(gameState.currentEra); 
+                } else {
+                    gameState.epochResults[currentEraIndex].incorrect++; 
+                    alert(`${T('incorrectMsg')}\n${T('destabilizeMsg')}\n${T('energyLossMsg')}`);
+                    gameState.timeEnergy = Math.max(0, gameState.timeEnergy - 10); 
+                    allElements.taskAnswer.value = "";
+                }
+                updateUI();
+            }
+
+            function gameLoop() {
+                if (gameState.isPaused) return; const now = Date.now(); const deltaSeconds = (now - gameState.lastTick) / 1000; gameState.lastTick = now; let energyLossPerSecond = 0.5; if (gameState.upgrades.hasTimeSlow) { energyLossPerSecond *= 0.5; } gameState.timeEnergy -= energyLossPerSecond * deltaSeconds; if (gameState.timeEnergy <= 0) { gameState.timeEnergy = 0; showResultsScreen(); setPause(true); } updateUI();
+            }
+
+            function updateUI() {
+                allElements.timeEnergyValue.textContent = Math.floor(gameState.timeEnergy); 
+                allElements.timeEnergyBar.style.width = gameState.timeEnergy + '%'; 
+                allElements.scoreValue.textContent = gameState.score; 
+                allElements.skillPointsValue.textContent = gameState.skillPoints; 
+                
+                allElements.hintBtn.innerHTML = `💡 <span id="hint-text">${T('hintText')}</span> (x${gameState.upgrades.formulaHintCount})`;
+
+                const slowTimeCost = 3; 
+                if (gameState.upgrades.slowTimePurchased) { 
+                    allElements.upgradeSlowTimeBtn.textContent = T('purchasedMsg'); 
+                    allElements.upgradeSlowTimeBtn.disabled = true; 
+                    allElements.upgradeSlowTimeBtn.classList.add('purchased'); 
+                } else { 
+                    allElements.upgradeSlowTimeBtn.disabled = gameState.skillPoints < slowTimeCost; 
+                    allElements.upgradeSlowTimeBtn.classList.remove('purchased'); 
+                    allElements.slowTimeUpgradeText.textContent = T('slowTimeUpgradeText'); 
+                    allElements.slowTimeCostText.textContent = T('slowTimeCostText'); 
+                    allElements.spText.textContent = T('spText'); 
+                }
+                
+                const hintCost = 1; 
+                allElements.upgradeBuyHintBtn.disabled = gameState.skillPoints < hintCost; 
+                allElements.hintBtn.disabled = gameState.upgrades.formulaHintCount <= 0;
+                
+                allElements.buyHintUpgradeText.textContent = T('buyHintUpgradeText'); 
+                allElements.buyHintCostText.textContent = T('buyHintCostText'); 
+                allElements.spText2.textContent = T('spText2'); 
+
+                allElements.mainTitle.textContent = T('mainTitle'); 
+                allElements.timeEnergyText.textContent = T('timeEnergyText'); 
+                allElements.scoreLabel.textContent = T('scoreLabel'); 
+                allElements.skillPointsLabel.textContent = T('skillPointsLabel'); 
+                allElements.epochLabel.textContent = T('epochLabel'); 
+                allElements.analyzeAnomalyText.textContent = T('analyzeAnomalyText'); 
+                allElements.upgradesTitle.textContent = T('upgradesTitle'); 
+                
+                allElements.taskTitle.textContent = T('taskTitle'); 
+                allElements.checkCoreText.textContent = T('checkCoreText'); 
+                allElements.taskAnswer.placeholder = T('answerPlaceholder');
+            }
+
+            // --- 3. УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ, ПАУЗОЙ, УЛУЧШЕНИЯМИ ---
+            function openModal() { allElements.taskModal.style.display = 'flex'; setPause(true); gameState.modalOpenTime = Date.now(); updateUI(); }
+            function closeModal() { allElements.taskModal.style.display = 'none'; setPause(false); }
+            function setPause(isPaused) { gameState.isPaused = isPaused; if (!isPaused) { gameState.lastTick = Date.now(); } }
+            
+            function showHint() { 
+                if (gameState.upgrades.formulaHintCount > 0) { 
+                    gameState.upgrades.formulaHintCount--; 
+                    alert(T('hintUsedMsg', {formula: gameState.currentTask.formula})); 
+                    updateUI(); 
+                } else { 
+                    alert(T('noHintsMsg')); 
+                } 
+            }
+
+            function buySlowTime() { const cost = 3; if (gameState.skillPoints >= cost && !gameState.upgrades.slowTimePurchased) { gameState.skillPoints -= cost; gameState.upgrades.slowTimePurchased = true; gameState.upgrades.hasTimeSlow = true; alert(T('slowTimeConfirm')); updateUI(); } }
+            
+            function buyHint() { 
+                const cost = 1; 
+                if (gameState.skillPoints >= cost) { 
+                    gameState.skillPoints -= cost; 
+                    gameState.upgrades.formulaHintCount++; 
+                    gameState.upgrades.hintsPurchasedCount++; 
+                    alert(T('buyHintConfirm')); 
+                    updateUI(); 
+                } 
+            }
+
+            function T(key, replacements = {}) { 
+                let text = translations[gameState.currentLanguage]?.[key] || key; 
+                for(const placeholder in replacements) { 
+                    text = text.replace(`{${placeholder}}`, replacements[placeholder]); 
+                } 
+                return text; 
+            }
+
+            // (ИЗМЕНЕНО) Функция смены языка
+            function changeLanguage(lang) {
+                if (!translations[lang]) return;
+                gameState.currentLanguage = lang;
+                
+                document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`lang-${lang}`).classList.add('active');
+                
+                // (НОВЫЙ БЛОК) Обновление информации об авторе
+                const currentYear = new Date().getFullYear();
+                allElements.authorNotice.textContent = T('authorNotice', {year: currentYear});
+
+                // Обновление стартового экрана
+                allElements.crawlText.innerHTML = `<h3>${T('crawlTitle')}</h3><h4>${T('crawlSubtitle')}</h4><p>${T('crawlText')}</p>`;
+                allElements.crawlText.style.animation = 'none'; void allElements.crawlText.offsetWidth; allElements.crawlText.style.animation = 'crawl 50s linear infinite';
+                allElements.startGameBtn.textContent = T('startGameBtn');
+                allElements.lastnameLabel.textContent = T('lastnameLabel'); allElements.firstnameLabel.textContent = T('firstnameLabel'); allElements.classLabel.textContent = T('classLabel');
+                
+                // Обновление экрана игры (если он активен)
+                if (!allElements.gameContainer.classList.contains('hidden')) { 
+                    if (gameState.currentTask.data) { 
+                        updateEraUI(); 
+                    }
+                    updateUI(); 
+                }
+
+                // Обновление экрана результатов (если он активен)
+                if (!allElements.resultsScreen.classList.contains('hidden')) { 
+                    showResultsScreen(); 
+                }
+            }
+
+            function startGame() {
+                const lastname = allElements.userLastnameInput.value.trim(); const firstname = allElements.userFirstnameInput.value.trim(); const userClass = allElements.userClassInput.value.trim();
+                if (!lastname || !firstname || !userClass) { alert(T('fillFieldsAlert')); return; }
+                gameState.userInfo.lastname = lastname; gameState.userInfo.firstname = firstname; gameState.userInfo.class = userClass;
+                allElements.startScreen.classList.add('hidden'); allElements.gameContainer.classList.remove('hidden');
+                
+                changeLanguage(gameState.currentLanguage); 
+                setPause(false); 
+                loadEpoch(gameState.currentEra); 
+                updateUI(); 
+            }
+
+            function checkUserInfo() { const lastname = allElements.userLastnameInput.value.trim(); const firstname = allElements.userFirstnameInput.value.trim(); const userClass = allElements.userClassInput.value.trim(); allElements.startGameBtn.disabled = !(lastname && firstname && userClass); }
+            
+            function showResultsScreen() {
+                setPause(true); allElements.gameContainer.classList.add('hidden'); allElements.resultsScreen.classList.remove('hidden');
+                allElements.resultsUserName.textContent = `${gameState.userInfo.lastname} ${gameState.userInfo.firstname}`; allElements.resultsUserClass.textContent = gameState.userInfo.class;
+                let totalCorrect = 0; let totalIncorrect = 0;
+                allElements.resultsTableBody.innerHTML = '';
+                
+                gameState.epochResults.forEach(result => {
+                    if(result && (result.correct > 0 || result.incorrect > 0)) {
+                        const eraName = translations[gameState.currentLanguage]?.eras[result.eraIndex]?.name || `Era ${result.eraIndex}`;
+                        const row = `<tr><td>${eraName}</td><td class="correct-count">${result.correct}</td><td class="incorrect-count">${result.incorrect}</td></tr>`;
+                        allElements.resultsTableBody.innerHTML += row;
+                        totalCorrect += result.correct; totalIncorrect += result.incorrect;
+                    }
+                });
+                
+                if (totalCorrect > 0 || totalIncorrect > 0) {
+                    const totalRow = `<tr><th>${T('totalLabel')}</th><th class="correct-count">${totalCorrect}</th><th class="incorrect-count">${totalIncorrect}</th></tr>`; 
+                    allElements.resultsTableBody.innerHTML += totalRow;
+                } else {
+                    allElements.resultsTableBody.innerHTML = `<tr><td colspan="3">${T('noAttemptsMsg')}</td></tr>`; 
+                }
+
+                const totalAttempts = totalCorrect + totalIncorrect;
+                const accuracy = totalAttempts > 0 ? (totalCorrect / totalAttempts) : 0;
+                const grade = totalAttempts === 0 ? 1 : Math.max(1, Math.min(10, Math.floor(accuracy * 10) + 1)); 
+                allElements.finalGradeValue.textContent = grade;
+
+                let upgradesText = T('purchasedUpgradesListNone'); const purchased = [];
+                if (gameState.upgrades.slowTimePurchased) purchased.push(T('purchasedUpgradesSlowTime'));
+                if (gameState.upgrades.hintsPurchasedCount > 0) { 
+                    purchased.push(T('purchasedUpgradesHints', {count: gameState.upgrades.formulaHintCount})); 
+                }
+                
+                if (purchased.length > 0) upgradesText = purchased.join(', ');
+                allElements.purchasedUpgradesList.textContent = upgradesText;
+
+                let summaryKey = 'resultsSummaryPoor';
+                if (accuracy >= 0.9) summaryKey = 'resultsSummaryExcellent';
+                else if (accuracy >= 0.7) summaryKey = 'resultsSummaryGood';
+                else if (accuracy >= 0.5) summaryKey = 'resultsSummarySatisfactory';
+                allElements.resultsSummary.textContent = T(summaryKey);
+
+                allElements.resultsTitle.textContent = T('resultsTitle'); allElements.resultsUserLabel.textContent = T('resultsUserLabel'); allElements.resultsClassLabel.textContent = T('resultsClassLabel'); allElements.resultsEraHeader.textContent = T('resultsEraHeader'); allElements.resultsCorrectHeader.textContent = T('resultsCorrectHeader'); allElements.resultsIncorrectHeader.textContent = T('resultsIncorrectHeader'); allElements.resultsGradeLabel.textContent = T('resultsGradeLabel'); allElements.resultsFeedbackTitle.textContent = T('resultsFeedbackTitle'); allElements.resultsUpgradesLabel.textContent = T('resultsUpgradesLabel'); allElements.restartBtn.textContent = T('restartBtn');
+            }
+
+            // --- 4. ЗАПУСК ИГРЫ ---
+            allElements.solveTaskBtn.onclick = openModal; allElements.checkAnswerBtn.onclick = checkAnswer; allElements.hintBtn.onclick = showHint; allElements.upgradeSlowTimeBtn.onclick = buySlowTime; allElements.upgradeBuyHintBtn.onclick = buyHint;
+            allElements.langRu.onclick = () => changeLanguage('ru'); allElements.langKz.onclick = () => changeLanguage('kz'); allElements.langEn.onclick = () => changeLanguage('en'); allElements.startGameBtn.onclick = startGame;
+            allElements.userLastnameInput.oninput = checkUserInfo; allElements.userFirstnameInput.oninput = checkUserInfo; allElements.userClassInput.oninput = checkUserInfo;
+            allElements.restartBtn.onclick = () => window.location.reload();
+
+            // Инициализация
+            changeLanguage(gameState.currentLanguage); 
+            checkUserInfo(); 
+            setInterval(gameLoop, 100);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v22.0 (Атомная и Ядерная Физика)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                    </div>
+                    <p id="mission-question">...</p>
+                </div>
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- (НОВЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (АТОМНАЯ И ЯДЕРНАЯ ФИЗИКА) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Дефект масс", scenario: "Ядро состоит из Z протонов и N нейтронов. Рассчитайте дефект масс ядра.", data: { Z: "Число протонов (Z)", N: "Число нейтронов (N)", M_nucleus: "Масса ядра (а.е.м.)" }, question: "Задача: Введите дефект масс (Δm) в а.е.м." },
+                    { title: "Миссия 2: Энергия связи", scenario: "Дефект масс ядра равен Δm. Рассчитайте энергию связи ядра.", data: { delta_m: "Дефект масс (а.е.м.)" }, question: "Задача: Введите энергию связи (E) в МэВ." },
+                    { title: "Миссия 3: Радиоактивный распад", scenario: "Изначально было N₀ ядер. Через время t их осталось N. Рассчитайте постоянную распада.", data: { N0: "Начальное число (N₀)", N: "Конечное число (N)", t: "Время (лет)" }, question: "Задача: Введите пост. распада (λ) в 1/год." },
+                    { title: "Миссия 4: Период полураспада", scenario: "Постоянная распада изотопа равна λ. Рассчитайте период его полураспада.", data: { lambda: "Пост. распада (λ) (1/с)" }, question: "Задача: Введите период полураспада (T½) в секундах (с)." },
+                    { title: "Миссия 5: Активность", scenario: "Образец содержит N радиоактивных ядер с периодом полураспада T½. Рассчитайте активность образца.", data: { N: "Число ядер (N)", T_half: "Период T½ (дней)" }, question: "Задача: Введите активность (A) в Беккерелях (Бк)." },
+                    { title: "Миссия 6: Атом Бора (Уровень)", scenario: "Рассчитайте энергию электрона в атоме водорода на энергетическом уровне n.", data: { n: "Уровень (n)" }, question: "Задача: Введите энергию (E_n) в электрон-вольтах (эВ)." },
+                    { title: "Миссия 7: Атом Бора (Радиус)", scenario: "Рассчитайте радиус n-й боровской орбиты в атоме водорода.", data: { n: "Уровень (n)" }, question: "Задача: Введите радиус (r_n) в нанометрах (нм)." },
+                    { title: "Миссия 8: Энергия реакции", scenario: "Рассчитайте энергетический выход Q ядерной реакции (Δm = масса_до - масса_после).", data: { delta_m: "Изменение массы (Δm) (а.е.м.)" }, question: "Задача: Введите энергию реакции (Q) в МэВ." },
+                    { title: "Миссия 9: Мощность дозы", scenario: "Поглощенная доза излучения D получена за время t. Рассчитайте мощность поглощенной дозы.", data: { D: "Доза (Гр)", t: "Время (мин)" }, question: "Задача: Введите мощность дозы (P) в Гр/с." },
+                    { title: "Миссия 10: Активность и T½", scenario: "Активность образца A, число ядер N. Рассчитайте период полураспада.", data: { A: "Активность (МБк)", N: "Число ядер (N)" }, question: "Задача: Введите период полураспада (T½) в годах." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Массалар ақауы", scenario: "Ядро Z протоннан және N нейтроннан тұрады. Ядроның массалар ақауын есептеңіз.", data: { Z: "Протондар саны (Z)", N: "Нейтрондар саны (N)", M_nucleus: "Ядро массасы (а.м.б.)" }, question: "Тапсырма: Массалар ақауын (Δm) а.м.б.-мен енгізіңіз." },
+                    { title: "Миссия 2: Байланыс энергиясы", scenario: "Ядроның массалар ақауы Δm. Ядроның байланыс энергиясын есептеңіз.", data: { delta_m: "Массалар ақауы (а.м.б.)" }, question: "Тапсырма: Байланыс энергиясын (E) МэВ-пен енгізіңіз." },
+                    { title: "Миссия 3: Радиоактивті ыдырау", scenario: "Бастапқыда N₀ ядро болды. t уақыттан кейін N ядро қалды. Ыдырау тұрақтысын есептеңіз.", data: { N0: "Бастапқы сан (N₀)", N: "Соңғы сан (N)", t: "Уақыт (жыл)" }, question: "Тапсырма: Ыдырау тұрақтысын (λ) 1/жыл-мен енгізіңіз." },
+                    { title: "Миссия 4: Жартылай ыдырау периоды", scenario: "Изотоптың ыдырау тұрақтысы λ. Оның жартылай ыдырау периодын есептеңіз.", data: { lambda: "Ыдырау тұрақтысы (λ) (1/с)" }, question: "Тапсырма: Жартылай ыдырау периодын (T½) секундпен (с) енгізіңіз." },
+                    { title: "Миссия 5: Белсенділік", scenario: "Үлгіде жартылай ыдырау периоды T½ болатын N радиоактивті ядро бар. Үлгінің белсенділігін есептеңіз.", data: { N: "Ядролар саны (N)", T_half: "Период T½ (тәулік)" }, question: "Тапсырма: Белсенділікті (A) Беккерельмен (Бк) енгізіңіз." },
+                    { title: "Миссия 6: Бор атомы (Деңгей)", scenario: "Сутегі атомындағы электронның n энергетикалық деңгейдегі энергиясын есептеңіз.", data: { n: "Деңгей (n)" }, question: "Тапсырма: Энергияны (E_n) электрон-вольтпен (эВ) енгізіңіз." },
+                    { title: "Миссия 7: Бор атомы (Радиус)", scenario: "Сутегі атомындағы n-ші бор орбитасының радиусын есептеңіз.", data: { n: "Деңгей (n)" }, question: "Тапсырма: Радиусты (r_n) нанометрмен (нм) енгізіңіз." },
+                    { title: "Миссия 8: Реакция энергиясы", scenario: "Ядролық реакцияның Q энергетикалық шығымын есептеңіз (Δm = бастапқы_масса - соңғы_масса).", data: { delta_m: "Масса өзгерісі (Δm) (а.м.б.)" }, question: "Тапсырма: Реакция энергиясын (Q) МэВ-пен енгізіңіз." },
+                    { title: "Миссия 9: Доза қуаты", scenario: "Сәулеленудің жұтылған дозасы D, t уақыт ішінде алынды. Жұтылған дозаның қуатын есептеңіз.", data: { D: "Доза (Гр)", t: "Уақыт (мин)" }, question: "Тапсырма: Доза қуатын (P) Гр/с-пен енгізіңіз." },
+                    { title: "Миссия 10: Белсенділік және T½", scenario: "Үлгінің белсенділігі A, ядролар саны N. Жартылай ыдырау периодын есептеңіз.", data: { A: "Белсенділік (МБк)", N: "Ядролар саны (N)" }, question: "Тапсырма: Жартылай ыдырау периодын (T½) жылмен енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct Answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Mass Defect", scenario: "A nucleus consists of Z protons and N neutrons. Calculate the mass defect of the nucleus.", data: { Z: "Proton number (Z)", N: "Neutron number (N)", M_nucleus: "Nuclear mass (amu)" }, question: "Task: Enter the mass defect (Δm) in amu." },
+                    { title: "Mission 2: Binding Energy", scenario: "The mass defect of a nucleus is Δm. Calculate the binding energy of the nucleus.", data: { delta_m: "Mass defect (amu)" }, question: "Task: Enter the binding energy (E) in MeV." },
+                    { title: "Mission 3: Radioactive Decay", scenario: "Initially, there were N₀ nuclei. After time t, N nuclei remained. Calculate the decay constant.", data: { N0: "Initial number (N₀)", N: "Final number (N)", t: "Time (years)" }, question: "Task: Enter the decay constant (λ) in 1/year." },
+                    { title: "Mission 4: Half-Life", scenario: "The decay constant of an isotope is λ. Calculate its half-life.", data: { lambda: "Decay constant (λ) (1/s)" }, question: "Task: Enter the half-life (T½) in seconds (s)." },
+                    { title: "Mission 5: Activity", scenario: "A sample contains N radioactive nuclei with a half-life T½. Calculate the activity of the sample.", data: { N: "Number of nuclei (N)", T_half: "Half-life T½ (days)" }, question: "Task: Enter the activity (A) in Becquerels (Bq)." },
+                    { title: "Mission 6: Bohr Atom (Level)", scenario: "Calculate the energy of an electron in a hydrogen atom at the energy level n.", data: { n: "Level (n)" }, question: "Task: Enter the energy (E_n) in electron-volts (eV)." },
+                    { title: "Mission 7: Bohr Atom (Radius)", scenario: "Calculate the radius of the n-th Bohr orbit in a hydrogen atom.", data: { n: "Level (n)" }, question: "Task: Enter the radius (r_n) in nanometers (nm)." },
+                    { title: "Mission 8: Reaction Energy", scenario: "Calculate the energy release Q of a nuclear reaction (Δm = mass_before - mass_after).", data: { delta_m: "Mass change (Δm) (amu)" }, question: "Task: Enter the reaction energy (Q) in MeV." },
+                    { title: "Mission 9: Dose Rate", scenario: "An absorbed dose D of radiation is received over time t. Calculate the absorbed dose rate.", data: { D: "Dose (Gy)", t: "Time (min)" }, question: "Task: Enter the dose rate (P) in Gy/s." },
+                    { title: "Mission 10: Activity and T½", scenario: "The activity of a sample is A, the number of nuclei is N. Calculate the half-life.", data: { A: "Activity (MBq)", N: "Number of nuclei (N)" }, question: "Task: Enter the half-life (T½) in years." }
+                ]
+            }
+        };
+
+
+        // --- (НОВЫЕ) Глобальные Константы и Состояние ---
+        const C_LIGHT = 3e8;        // Скорость света (м/с)
+        const H_CONST = 6.626e-34;  // Постоянная Планка (Дж·с)
+        const E_CHARGE = 1.602e-19; // Элементарный заряд (Кл)
+        const E_MASS = 9.11e-31;    // Масса электрона (кг)
+        const P_MASS_AMU = 1.007276; // Масса протона (а.е.м.)
+        const N_MASS_AMU = 1.008665; // Масса нейтрона (а.е.м.)
+        const AMU_KG = 1.66054e-27;  // а.е.м. в кг
+        const AMU_MEV = 931.5;      // а.е.м. в МэВ/c²
+        const AVOGADRO_NA = 6.022e23;// Число Авогадро (1/моль)
+        const BOHR_ENERGY = 13.6;   // Энергия Бора (эВ)
+        const BOHR_RADIUS = 0.0529; // Радиус Бора (нм)
+        const LN_2 = Math.log(2);   // Натуральный логарифм 2
+
+        // Константы для вывода
+        const C_DISPLAY = "3&times;10⁸ м/с";
+        const H_DISPLAY = "6.63&times;10⁻³⁴ Дж·с";
+        const E_DISPLAY = "1.6&times;10⁻¹⁹ Кл";
+        const MP_DISPLAY = "1.0073 а.е.м.";
+        const MN_DISPLAY = "1.0087 а.е.м.";
+        const AMU_MEV_DISPLAY = "931.5 МэВ/а.е.м.";
+        const BOHR_DISPLAY = "13.6 эВ";
+        const R1_DISPLAY = "0.053 нм";
+
+        const TOLERANCE = 0.03; // Погрешность (3%)
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        let missionTitle, missionScenario, missionData, missionQuestion,
+            userAnswerInput, submitButton, newDataButton, feedbackMessage,
+            navButtons, progressList, langButtons, progressTitle, inputLabel;
+
+
+        // --- Утилиты (Без изменений) ---
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+        
+        function degToRad(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        function radToDeg(radians) {
+            return radians * (180 / Math.PI);
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов (Без изменений) ---
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+
+            const t = translations[currentLang];
+            if (!t) {
+                console.error("Переводы для языка не найдены:", lang);
+                return;
+            }
+
+            if (t.ui) {
+                submitButton.textContent = t.ui.submit;
+                newDataButton.textContent = t.ui.newData;
+                inputLabel.textContent = t.ui.inputLabel;
+                userAnswerInput.placeholder = t.ui.placeholder;
+            } else {
+                 console.error("Секция 'ui' в переводах отсутствует для:", lang);
+            }
+
+            if (t.progress) {
+                 updateProgressWindow();
+            } else {
+                console.error("Секция 'progress' в переводах отсутствует для:", lang);
+            }
+           
+            if (t.missions && missionLoaders[currentMissionId]) {
+                missionLoaders[currentMissionId]();
+            } else {
+                 if (missionLoaders.length > 0) {
+                    console.error("Секция 'missions' в переводах отсутствует или загрузчик миссии не найден для:", lang, currentMissionId);
+                 }
+            }
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            
+            const t = translations[currentLang].progress;
+            if (!t) {
+                console.error("Переводы 'progress' не найдены для:", currentLang);
+                return;
+            }
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress || !missionProgress[i]) {
+                    console.error("Объект прогресса отсутствует для миссии:", i);
+                    continue; 
+                }
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                    <span class="correct">${progress.correct} ✔</span> /
+                                    <span class="incorrect">${progress.incorrect} ❌</span>
+                                </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    console.error("Кнопка не найдена для миссии:", i);
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (НОВЫЕ) Загрузчики Миссий (Атомная и Ядерная Физика) ---
+
+        function loadMission1() { // Δm = Z*mp + N*mn - M_ядра
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const Z = getRandom(2, 20, 0); // Протоны
+            const N = getRandom(Z, Z + 5, 0); // Нейтроны
+            // Генерируем "реалистичную" массу ядра чуть меньше суммы масс нуклонов
+            const sum_mass = Z * P_MASS_AMU + N * N_MASS_AMU;
+            const M_nucleus = getRandom(sum_mass - 0.05, sum_mass - 0.01, 4); 
+            
+            currentCorrectAnswer = sum_mass - M_nucleus; // Ответ в а.е.м.
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.Z}: ${Z}</p><p>${t.data.N}: ${N}</p><p>${t.data.M_nucleus}: ${M_nucleus} а.е.м.</p><p>(m<sub >p</sub> &approx; ${MP_DISPLAY}, m<sub >n</sub> &approx; ${MN_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() { // E = Δm * 931.5 МэВ
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const delta_m = getRandom(0.01, 0.5, 4); // а.е.м.
+            
+            currentCorrectAnswer = delta_m * AMU_MEV; // Ответ в МэВ
+
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.delta_m}: ${delta_m} а.е.м.</p><p>(1 а.е.м. &approx; ${AMU_MEV_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() { // N = N₀ * exp(-λt) => λ = -ln(N/N₀) / t
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const N0 = getRandom(1e6, 1e7, 0);
+            const N = getRandom(N0 * 0.1, N0 * 0.8, 0);
+            const t_years = getRandom(10, 100, 0); // лет
+            
+            const ratio = N / N0;
+            currentCorrectAnswer = -Math.log(ratio) / t_years; // Ответ в 1/год
+
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.N0}: ${N0.toExponential(2)}</p><p>${t.data.N}: ${N.toExponential(2)}</p><p>${t.data.t}: ${t_years} лет</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() { // T½ = ln(2) / λ
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const lambda = getRandom(1e-9, 1e-6, 3); // 1/с
+            
+            currentCorrectAnswer = LN_2 / lambda; // Ответ в с
+
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda.toExponential(2)} 1/с</p><p>(ln(2) &approx; 0.693)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() { // A = λN = (ln(2)/T½) * N
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const N = getRandom(1e15, 1e18); // число ядер
+            const T_days = getRandom(10, 365, 0); // дней
+            const T_sec = T_days * 24 * 3600;     // секунд
+            
+            const lambda = LN_2 / T_sec;
+            currentCorrectAnswer = lambda * N; // Ответ в Бк
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.N}: ${N.toExponential(2)}</p><p>${t.data.T_half}: ${T_days} дней</p><p>(ln(2) &approx; 0.693)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() { // E_n = -13.6 / n²
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const n = getRandom(2, 5, 0); // уровень
+            
+            currentCorrectAnswer = -BOHR_ENERGY / (n * n); // Ответ в эВ
+
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n}</p><p>(E₁ &approx; -${BOHR_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() { // r_n = r₁ * n²
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const n = getRandom(2, 6, 0); // уровень
+            
+            currentCorrectAnswer = BOHR_RADIUS * n * n; // Ответ в нм
+
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n}</p><p>(r₁ &approx; ${R1_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() { // Q = Δm * 931.5 МэВ
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            // Δm > 0 - энергия выделяется, Δm < 0 - поглощается
+            const delta_m = getRandom(-0.02, 0.05, 4); // а.е.м. 
+            
+            currentCorrectAnswer = delta_m * AMU_MEV; // Ответ в МэВ
+
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.delta_m}: ${delta_m} а.е.м.</p><p>(1 а.е.м. &approx; ${AMU_MEV_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() { // P = D / t
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const D_Gy = getRandom(0.1, 1, 2); // Гр
+            const t_min = getRandom(5, 60, 0); // мин
+            const t_sec = t_min * 60;        // с
+            
+            currentCorrectAnswer = D_Gy / t_sec; // Ответ в Гр/с
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.D}: ${D_Gy} Гр</p><p>${t.data.t}: ${t_min} мин</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() { // A = λN => λ = A/N => T½ = ln(2)/λ = ln(2) * N / A
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const A_MBq = getRandom(1, 10, 1);  // МБк
+            const A_Bq = A_MBq * 1e6;         // Бк (распадов/с)
+            const N = getRandom(1e18, 1e21);    // число ядер
+            
+            const lambda = A_Bq / N; // 1/с
+            const T_half_sec = LN_2 / lambda; // с
+            const seconds_in_year = 365.25 * 24 * 3600;
+            currentCorrectAnswer = T_half_sec / seconds_in_year; // Ответ в годах
+
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.A}: ${A_MBq} МБк</p><p>${t.data.N}: ${N.toExponential(2)}</p><p>(ln(2) &approx; 0.693)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+
+        // --- Обработчик Проверки (Без изменений) ---
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                missionProgress[currentMissionId].incorrect++;
+                const t_feedback = translations[currentLang].feedback;
+                // Показываем ответ в научной нотации, если он очень маленький или большой
+                const answerString = (Math.abs(currentCorrectAnswer) < 0.01 || Math.abs(currentCorrectAnswer) > 1e6) 
+                                     ? currentCorrectAnswer.toExponential(2) 
+                                     : currentCorrectAnswer.toFixed(2);
+                feedbackMessage.textContent = `${t_feedback.incorrect} (${t_feedback.correctAnswer}: ${answerString})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+
+        // --- Инициализация Игры (Исправлено в v15.1, без изменений) ---
+        function initializeGame() {
+            
+            // Назначаем DOM-элементы
+            missionTitle = document.getElementById('mission-title');
+            missionScenario = document.getElementById('mission-scenario');
+            missionData = document.getElementById('mission-data');
+            missionQuestion = document.getElementById('mission-question');
+            userAnswerInput = document.getElementById('user-answer');
+            submitButton = document.getElementById('submit-button');
+            newDataButton = document.getElementById('new-data-button');
+            feedbackMessage = document.getElementById('feedback-message');
+            navButtons = document.querySelectorAll('.mission-nav button');
+            progressList = document.getElementById('progress-list');
+            langButtons = document.querySelectorAll('.lang-btn');
+            progressTitle = document.getElementById('progress-title');
+            inputLabel = document.getElementById('input-label');
+            
+            // (ИЗМЕНЕНО) Заполняем массив НОВЫМИ загрузчиками миссий
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            // (Без изменений) Инициализируем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true 
+                };
+            }
+
+            // (Без изменений) Назначаем слушателей
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Загрузчик миссии не найден для ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                if (missionLoaders[currentMissionId]) {
+                    missionLoaders[currentMissionId](); 
+                }
+            });
+            
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // (Без изменений) Запускаем игру с языком по умолчанию
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

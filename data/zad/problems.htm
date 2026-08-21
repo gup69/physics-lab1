@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" - Выбор темы</title>
+    <style>
+        /* --- Стили CSS (Обновлен размер шрифта author-info) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .author-info {
+            /* --- ИЗМЕНЕНО: Уменьшен размер шрифта --- */
+            font-size: 0.6em; /* Сделаем еще мельче */
+            color: #aaa;
+            margin-bottom: 25px; /* Немного уменьшим отступ */
+            line-height: 1.3; /* Можно чуть сблизить строки */
+        }
+        .author-info p {
+            margin: 4px 0; /* Уменьшим отступ между параграфами */
+        }
+
+
+        h1 {
+            color: #00ffcc;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+
+        h1 span {
+            display: block;
+            font-size: 1em;
+        }
+        h1 .lang-kz {
+            font-size: 0.9em;
+             opacity: 0.9;
+        }
+        h1 .lang-en {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+        }
+
+        .topic-button {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: none;
+            border: 1px solid #666;
+            color: #ccc;
+            padding: 15px 10px;
+            min-height: 110px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-size: 1em;
+            line-height: 1.4;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 255, 100, 0.3); /* Зеленое свечение */
+        }
+
+        .topic-button:hover {
+            color: #87CEFA;
+            border-color: #6495ED;
+            background-color: rgba(100, 149, 237, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(70, 130, 255, 0.5); /* Синее свечение */
+        }
+
+        .lang-ru, .lang-kz, .lang-en {
+            display: block;
+        }
+
+        .lang-kz {
+            font-size: 0.95em;
+        }
+         .lang-en {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <div class="author-info">
+             <p class="lang-ru">Автор: Грязнов Юрий Петрович, учитель физики специализированной гимназии №8 с обучением на трех языках имени М.Х.Дулати г.Шымкент. Все права защищены © <span class="current-year"></span></p>
+             <p class="lang-kz">Авторы: Грязнов Юрий Петрович, Шымкент қ. М.Х.Дулати атындағы үш тілде оқытатын №8 мамандандырылған гимназиясының физика пәні мұғалімі. Барлық құқықтар қорғалған © <span class="current-year"></span></p>
+             <p class="lang-en">Author: Yury Petrovich Gryaznov, physics teacher at Specialized Gymnasium No. 8 named after M.H. Dulati with instruction in three languages, Shymkent. All rights reserved © <span class="current-year"></span></p>
+        </div>
+        <h1>
+            <span class="lang-ru">Выберите тему</span>
+            <span class="lang-kz">Тақырыпты таңдаңыз</span>
+            <span class="lang-en">Select a Topic</span>
+        </h1>
+
+        <div class="button-grid">
+            <a href="data/1.htm" class="topic-button"><span class="lang-ru">Кинематика</span><span class="lang-kz">Кинематика</span><span class="lang-en">Kinematics</span></a>
+            <a href="data/2.htm" class="topic-button"><span class="lang-ru">Динамика</span><span class="lang-kz">Динамика</span><span class="lang-en">Dynamics</span></a>
+            <a href="data/3.htm" class="topic-button"><span class="lang-ru">Статика</span><span class="lang-kz">Статика</span><span class="lang-en">Statics</span></a>
+            <a href="data/4.htm" class="topic-button"><span class="lang-ru">Законы сохранения</span><span class="lang-kz">Сақталу заңдары</span><span class="lang-en">Conservation Laws</span></a>
+            <a href="data/5.htm" class="topic-button"><span class="lang-ru">Молекулярно-кинетическая теория</span><span class="lang-kz">Молекулалық-кинетикалық теория</span><span class="lang-en">Molecular Kinetic Theory</span></a>
+            <a href="data/6.htm" class="topic-button"><span class="lang-ru">Термодинамика</span><span class="lang-kz">Термодинамика</span><span class="lang-en">Thermodynamics</span></a>
+            <a href="data/7.htm" class="topic-button"><span class="lang-ru">Свойства паров, жидкостей и тв. тел</span><span class="lang-kz">Булардың, сұйықтықтардың және қатты денелердің қасиеттері</span><span class="lang-en">Properties of Vapors, Liquids & Solids</span></a>
+            <a href="data/8.htm" class="topic-button"><span class="lang-ru">Электрическое поле</span><span class="lang-kz">Электр өрісі</span><span class="lang-en">Electric Field</span></a>
+            <a href="data/9.htm" class="topic-button"><span class="lang-ru">Законы постоянного тока</span><span class="lang-kz">Тұрақты ток заңдары</span><span class="lang-en">DC Laws</span></a>
+            <a href="data/10.htm" class="topic-button"><span class="lang-ru">Электрический ток в средах</span><span class="lang-kz">Орталардағы электр тогы</span><span class="lang-en">Electric Current in Media</span></a>
+            <a href="data/11.htm" class="topic-button"><span class="lang-ru">Электромагнетизм</span><span class="lang-kz">Электромагнетизм</span><span class="lang-en">Electromagnetism</span></a>
+            <a href="data/12.htm" class="topic-button"><span class="lang-ru">Механические колебания</span><span class="lang-kz">Механикалық тербелістер</span><span class="lang-en">Mechanical Oscillations</span></a>
+            <a href="data/13.htm" class="topic-button"><span class="lang-ru">Электрические колебания</span><span class="lang-kz">Электрлік тербелістер</span><span class="lang-en">Electrical Oscillations</span></a>
+            <a href="data/14.htm" class="topic-button"><span class="lang-ru">Волны (Мех. и ЭМ)</span><span class="lang-kz">Толқындар (Мех. және ЭМ)</span><span class="lang-en">Waves (Mech. & EM)</span></a>
+            <a href="data/15.htm" class="topic-button"><span class="lang-ru">Геометрическая оптика</span><span class="lang-kz">Геометриялық оптика</span><span class="lang-en">Geometrical Optics</span></a>
+            <a href="data/16.htm" class="topic-button"><span class="lang-ru">Волновая оптика и СТО</span><span class="lang-kz">Толқындық оптика және СТО</span><span class="lang-en">Wave Optics & SRT</span></a>
+            <a href="data/17.htm" class="topic-button"><span class="lang-ru">Квантовая физика</span><span class="lang-kz">Кванттық физика</span><span class="lang-en">Quantum Physics</span></a>
+            <a href="data/18.htm" class="topic-button"><span class="lang-ru">Атомная и ядерная физика</span><span class="lang-kz">Атомдық және ядролық физика</span><span class="lang-en">Atomic & Nuclear Physics</span></a>
+        </div>
+    </div>
+
+    <script>
+        // Находим все элементы с классом 'current-year'
+        const yearSpans = document.querySelectorAll('.current-year');
+        // Получаем текущий год
+        const currentYear = new Date().getFullYear();
+        // Вставляем год в каждый найденный span
+        yearSpans.forEach(span => {
+            span.textContent = currentYear;
+        });
+    </script>
+    </body>
+</html>

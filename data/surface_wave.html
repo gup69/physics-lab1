@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа: Скорость поверхностной волны</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header h2 { margin: 0; color: #2c3e50; }
+        .page-header p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px; }
+        .lang-switcher { display: flex; gap: 5px; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 4px 10px;
+            cursor: pointer; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #475569;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+
+        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+        .instruction-block {
+            background-color: #eaf5ff; border-left: 5px solid #3498db;
+            padding: 15px; margin: 20px 0; border-radius: 5px;
+        }
+        .simulation-box {
+            display: flex; flex-direction: column; align-items: center;
+            background: #e9ecef; border: 1px solid #ccc; border-radius: 8px;
+            padding: 20px; margin-bottom: 20px; position: relative;
+        }
+        .controls-panel {
+            display: flex; gap: 20px; align-items: center; justify-content: center;
+            margin-top: 15px; width: 100%; flex-wrap: wrap; background: #fff; padding: 15px; border-radius: 8px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .measurement-table {
+            width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff;
+        }
+        .measurement-table th, .measurement-table td {
+            border: 1px solid #ddd; padding: 10px; text-align: center;
+        }
+        .measurement-table th { background-color: #f1f2f6; }
+        .calculation-panel {
+            background: #fafafa; border: 1px solid #ddd; padding: 20px;
+            border-radius: 8px; margin-bottom: 20px; text-align: center;
+        }
+        .calculation-panel input {
+            width: 90px; padding: 8px; text-align: center; font-size: 1.1em;
+            border: 1px solid #ccc; border-radius: 4px; margin: 0 10px;
+        }
+        .action-button {
+            display: inline-block; margin: 5px; padding: 10px 20px;
+            font-size: 1em; cursor: pointer; color: white; border: none;
+            border-radius: 5px; background-color: #3498db; transition: background 0.3s;
+        }
+        .action-button:hover { background-color: #2980b9; }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .result-feedback { font-weight: bold; margin-top: 10px; display: block; font-size: 1.1em; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; background-color: #e8f8f5 !important; }
+        .incorrect-input { border-color: #e74c3c !important; background-color: #fdedec !important; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; margin-top: 20px; display: none; }
+        
+        .stopwatch { font-family: monospace; font-size: 1.8em; font-weight: bold; color: #c0392b; background: #fff; padding: 5px 15px; border: 2px solid #c0392b; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="title_lab">Интерактивная лабораторная работа</h2>
+                <p><span data-key="author_info"><b>Автор:</b> Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright">© Все права защищены, <span id="current-year"></span></div>
+
+        <div class="top-nav">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <h1 data-key="main_heading">Лабораторная работа: Определение скорости поверхностной волны</h1>
+        
+        <div class="lab-section">
+            <p><strong><span data-key="goal_title">Цель работы:</span></strong> <span data-key="goal_text">Определение скорости распространения волн на поверхности воды.</span></p>
+
+            <div class="instruction-block">
+                <h4 data-key="instruction_title">Порядок выполнения работы:</h4>
+                <ol>
+                    <li data-key="inst_1">Установите дальность поплавка <i>l</i> с помощью ползунка.</li>
+                    <li data-key="inst_2">Нажмите кнопку «Бросить шарик» и измерьте время <i>t</i>, за которое волна дойдет до поплавка (секундомер остановится автоматически).</li>
+                    <li data-key="inst_3">Проделайте опыт 3 раза и занесите результаты в таблицу.</li>
+                    <li data-key="inst_4">Вычислите среднее значение времени <i>t<sub>ср</sub></i> и скорость волны <i>v</i>.</li>
+                </ol>
+            </div>
+
+            <div class="simulation-box">
+                <h3 style="margin-top:0; border:none; color:#2c3e50;" data-key="sim_title">Резервуар с водой</h3>
+                <canvas id="waveCanvas" width="600" height="200" style="background:#fff; border:1px solid #bbb; border-radius:4px;"></canvas>
+                
+                <div class="controls-panel">
+                    <div>
+                        <label><b data-key="lbl_dist">Дальность поплавка (l):</b> <span id="valL">0.8</span> м</label><br>
+                        <input type="range" id="sliderL" min="0.5" max="1.0" step="0.1" value="0.8" style="width: 150px;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; margin: 0 20px;">
+                        <span style="font-size: 0.9em; color: #777;" data-key="lbl_stopwatch">Секундомер:</span>
+                        <div class="stopwatch" id="stopwatchDisplay">0.00 с</div>
+                    </div>
+                    <div>
+                        <button id="btnStartWave" class="action-button" data-key="btn_start">Бросить шарик</button>
+                    </div>
+                </div>
+            </div>
+
+            <table class="measurement-table">
+                <thead>
+                    <tr>
+                        <th data-key="tbl_exp">№ опыта</th>
+                        <th data-key="tbl_t">Время t, с</th>
+                        <th data-key="tbl_l">Дальность l, м</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Строки добавляются динамически -->
+                </tbody>
+            </table>
+
+            <div class="calculation-panel">
+                <p data-key="calc_hint">После проведения 3 опытов вычислите среднее время и скорость.</p>
+                <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                        <label><b data-key="input_t_avg">Среднее время (t<sub>ср</sub>, с):</b></label><br>
+                        <input type="text" id="tAvgInput" placeholder="0.00" disabled>
+                    </div>
+                    <div>
+                        <label><b data-key="input_v">Скорость (v, м/с):</b></label><br>
+                        <input type="text" id="vInput" placeholder="0.00" disabled>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button id="checkButton" class="action-button" data-key="btn_check" disabled>Проверить результаты</button>
+                </div>
+                <span id="feedbackMessage" class="result-feedback"></span>
+            </div>
+
+            <div style="text-align: center;">
+                <button id="showAnswersButton" class="action-button" style="background-color: #9b59b6; display: none;" data-key="btn_show">Показать правильный ответ</button>
+            </div>
+
+            <div id="answersReview"></div>
+            <div id="finalResult" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    const translations = {
+        ru: {
+            title_lab: "Интерактивная лабораторная работа",
+            author_info: "<b>Автор:</b> Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            main_heading: "Лабораторная работа: Определение скорости поверхностной волны",
+            goal_title: "Цель работы:",
+            goal_text: "Определение скорости распространения волн на поверхности воды.",
+            instruction_title: "Порядок выполнения работы:",
+            inst_1: "Установите дальность поплавка <i>l</i> с помощью ползунка.",
+            inst_2: "Нажмите кнопку «Бросить шарик» и измерьте время <i>t</i>, за которое волна дойдет до поплавка.",
+            inst_3: "Проделайте опыт 3 раза и занесите результаты в таблицу.",
+            inst_4: "Вычислите среднее значение времени <i>t<sub>ср</sub></i> и скорость волны <i>v</i>.",
+            sim_title: "Резервуар с водой",
+            lbl_dist: "Дальность поплавка (l):",
+            lbl_stopwatch: "Секундомер:",
+            btn_start: "Бросить шарик",
+            tbl_exp: "№ опыта",
+            tbl_t: "Время t, с",
+            tbl_l: "Дальность l, м",
+            calc_hint: "После проведения 3 опытов вычислите среднее время и скорость.",
+            input_t_avg: "Среднее время (t<sub>ср</sub>, с):",
+            input_v: "Скорость (v, м/с):",
+            btn_check: "Проверить результаты",
+            btn_show: "Показать правильный ответ",
+            msg_empty: "Пожалуйста, заполните оба поля!",
+            msg_correct: "Верно! Все вычисления правильные 👍",
+            msg_wrong1: "Неверно. Проверьте расчеты. Осталась 1 попытка ❌",
+            msg_wrong2: "Попытки исчерпаны ❌",
+            review_title: "Разбор решения:",
+            step_avg: "Среднее время: ",
+            step_v: "Скорость волны: ",
+            score_10: "Оценка: 10/10",
+            score_0: "Оценка: 0/10"
+        },
+        kk: {
+            title_lab: "Интерактивті зертханалық жұмыс",
+            author_info: "<b>Авторы:</b> Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ., №8 мектеп-гимназия, Қазақстан",
+            main_heading: "Зертханалық жұмыс: Беттік толқынның жылдамдығын анықтау",
+            goal_title: "Жұмыс мақсаты:",
+            goal_text: "Су бетіндегі толқындардың таралу жылдамдығын анықтау.",
+            instruction_title: "Жұмысты орындау тәртібі:",
+            inst_1: "Сырғытпаның көмегімен қалтқының қашықтығын <i>l</i> орнатыңыз.",
+            inst_2: "«Шарды тастау» түймесін басып, толқынның қалтқыға жету уақытын <i>t</i> өлшеңіз.",
+            inst_3: "Тәжірибені 3 рет қайталап, нәтижелерді кестеге жазыңыз.",
+            inst_4: "Орташа уақытты <i>t<sub>ср</sub></i> және толқын жылдамдығын <i>v</i> есептеңіз.",
+            sim_title: "Суы бар резервуар",
+            lbl_dist: "Қалтқы қашықтығы (l):",
+            lbl_stopwatch: "Секундомер:",
+            btn_start: "Шарды тастау",
+            tbl_exp: "Тәжірибе №",
+            tbl_t: "Уақыт t, с",
+            tbl_l: "Қашықтық l, м",
+            calc_hint: "3 тәжірибеден кейін орташа уақыт пен жылдамдықты есептеңіз.",
+            input_t_avg: "Орташа уақыт (t<sub>ср</sub>, с):",
+            input_v: "Жылдамдық (v, м/с):",
+            btn_check: "Нәтижелерді тексеру",
+            btn_show: "Дұрыс жауапты көрсету",
+            msg_empty: "Барлық өрістерді толтырыңыз!",
+            msg_correct: "Дұрыс! Барлық есептеулер дұрыс 👍",
+            msg_wrong1: "Қате. Есептеулерді тексеріңіз. 1 мүмкіндік қалды ❌",
+            msg_wrong2: "Мүмкіндіктер таусылды ❌",
+            review_title: "Шешу жолын талдау:",
+            step_avg: "Орташа уақыт: ",
+            step_v: "Толқын жылдамдығы: ",
+            score_10: "Баға: 10/10",
+            score_0: "Баға: 0/10"
+        },
+        en: {
+            title_lab: "Interactive Laboratory Work",
+            author_info: "<b>Author:</b> Yuriy Petrovich Gryaznov, Physics Teacher, School-Gymnasium No. 8, Shymkent, Kazakhstan",
+            main_heading: "Lab Work: Determination of Surface Wave Speed",
+            goal_title: "Goal:",
+            goal_text: "Determine the speed of wave propagation on the surface of water.",
+            instruction_title: "Procedure:",
+            inst_1: "Set the float distance <i>l</i> using the slider.",
+            inst_2: "Click 'Drop ball' and measure the time <i>t</i> for the wave to reach the float.",
+            inst_3: "Repeat the experiment 3 times and record the results in the table.",
+            inst_4: "Calculate the average time <i>t<sub>avg</sub></i> and the wave speed <i>v</i>.",
+            sim_title: "Water Tank",
+            lbl_dist: "Float distance (l):",
+            lbl_stopwatch: "Stopwatch:",
+            btn_start: "Drop ball",
+            tbl_exp: "Exp. No.",
+            tbl_t: "Time t, s",
+            tbl_l: "Distance l, m",
+            calc_hint: "After 3 experiments, calculate the average time and speed.",
+            input_t_avg: "Average time (t<sub>avg</sub>, s):",
+            input_v: "Speed (v, m/s):",
+            btn_check: "Check Results",
+            btn_show: "Show Correct Answer",
+            msg_empty: "Please fill in both fields!",
+            msg_correct: "Correct! All calculations are right 👍",
+            msg_wrong1: "Incorrect. Check calculations. 1 attempt left ❌",
+            msg_wrong2: "Attempts exhausted ❌",
+            review_title: "Solution breakdown:",
+            step_avg: "Average time: ",
+            step_v: "Wave speed: ",
+            score_10: "Score: 10/10",
+            score_0: "Score: 0/10"
+        }
+    };
+
+    let currentLang = 'ru';
+    let currentFeedbackKey = '';
+    let currentScoreKey = '';
+    let isScoreCorrect = true;
+
+    const trueSpeed = Math.random() * 0.2 + 0.3;
+    let currentDistance = 0.8;
+    let experiments = [];
+    let isAnimating = false;
+
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    const sliderL = document.getElementById('sliderL');
+    const valL = document.getElementById('valL');
+    const btnStart = document.getElementById('btnStartWave');
+    const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+    const tableBody = document.getElementById('tableBody');
+
+    let waveRadius = 0;
+    let ballY = 20;
+    let ballDropped = false;
+    let startTime = 0;
+    let displayTime = 0;
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.querySelectorAll('[data-key]').forEach(el => {
+            const key = el.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+        if (currentFeedbackKey) {
+            document.getElementById('feedbackMessage').textContent = translations[lang][currentFeedbackKey];
+        }
+        if (currentScoreKey) {
+            document.getElementById('finalResult').innerHTML = `<span class="${isScoreCorrect ? 'correct' : 'incorrect'}">${translations[lang][currentScoreKey]}</span>`;
+        }
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setLanguage(btn.getAttribute('data-lang'));
+        });
+    });
+
+    sliderL.addEventListener('input', (e) => {
+        if (isAnimating) return;
+        currentDistance = parseFloat(e.target.value);
+        valL.innerText = currentDistance.toFixed(1);
+        drawScene();
+    });
+
+    function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#34495e'; ctx.lineWidth = 3;
+        ctx.strokeRect(30, 80, 540, 90);
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.4)';
+        ctx.fillRect(32, 100, 536, 68);
+
+        ctx.fillStyle = '#333';
+        ctx.fillRect(30, 180, 540, 5);
+        for(let i=0; i<=10; i++) {
+            let px = 30 + (i/10)*500;
+            ctx.fillRect(px, 175, 2, 10);
+        }
+
+        let floatX = 30 + (currentDistance / 1.0) * 500;
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(floatX - 5, 85, 10, 20);
+
+        if (waveRadius > 0) {
+            ctx.beginPath();
+            ctx.arc(30, 100, waveRadius, -Math.PI/2, Math.PI/2);
+            ctx.strokeStyle = 'rgba(41, 128, 185, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        if (!ballDropped && !isAnimating) {
+            ctx.beginPath(); ctx.arc(30, 70, 8, 0, Math.PI*2);
+            ctx.fillStyle = '#7f8c8d'; ctx.fill();
+        } else if (ballDropped && ballY <= 100) {
+            ctx.beginPath(); ctx.arc(30, ballY, 8, 0, Math.PI*2);
+            ctx.fillStyle = '#7f8c8d'; ctx.fill();
+        }
+    }
+
+    btnStart.addEventListener('click', () => {
+        if (isAnimating || experiments.length >= 3) return;
+        isAnimating = true;
+        sliderL.disabled = true;
+        btnStart.disabled = true;
+        waveRadius = 0;
+        ballY = 40;
+        ballDropped = true;
+        displayTime = 0;
+        stopwatchDisplay.innerText = "0.00 с";
+        
+        let lastTimestamp = null;
+        
+        function animateDrop(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            ballY += 3;
+            if (ballY >= 100) {
+                ballY = 100;
+                startTime = timestamp;
+                lastTimestamp = timestamp;
+                requestAnimationFrame(animateWave);
+            } else {
+                drawScene();
+                requestAnimationFrame(animateDrop);
+            }
+        }
+
+        function animateWave(timestamp) {
+            let dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            
+            displayTime += dt;
+            stopwatchDisplay.innerText = displayTime.toFixed(2) + " с";
+
+            waveRadius += trueSpeed * 500 * dt; 
+            drawScene();
+
+            let targetRadius = (currentDistance / 1.0) * 500;
+            if (waveRadius >= targetRadius) {
+                isAnimating = false;
+                sliderL.disabled = false;
+                
+                let finalTime = (currentDistance / trueSpeed) + (Math.random() * 0.1 - 0.05);
+                stopwatchDisplay.innerText = finalTime.toFixed(2) + " с";
+                recordExperiment(finalTime);
+
+                if (experiments.length < 3) {
+                    btnStart.disabled = false;
+                } else {
+                    document.getElementById('tAvgInput').disabled = false;
+                    document.getElementById('vInput').disabled = false;
+                    document.getElementById('checkButton').disabled = false;
+                }
+            } else {
+                requestAnimationFrame(animateWave);
+            }
+        }
+
+        requestAnimationFrame(animateDrop);
+    });
+
+    function recordExperiment(time) {
+        experiments.push({ t: time, l: currentDistance });
+        let row = document.createElement('tr');
+        row.innerHTML = `<td>${experiments.length}</td><td>${time.toFixed(2)}</td><td>${currentDistance.toFixed(1)}</td>`;
+        tableBody.appendChild(row);
+    }
+
+    drawScene();
+
+    let attemptsLeft = 2;
+    const checkButton = document.getElementById('checkButton');
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const finalResultDiv = document.getElementById('finalResult');
+
+    checkButton.addEventListener('click', () => {
+        if (experiments.length < 3) return;
+        if (attemptsLeft <= 0) return;
+
+        const tStr = document.getElementById('tAvgInput').value.replace(',', '.');
+        const vStr = document.getElementById('vInput').value.replace(',', '.');
+        const t = translations[currentLang];
+
+        if (tStr.trim() === '' || vStr.trim() === '') {
+            currentFeedbackKey = 'msg_empty';
+            feedbackMessage.textContent = t.msg_empty;
+            feedbackMessage.className = 'result-feedback incorrect';
+            return;
+        }
+
+        let userT = parseFloat(tStr);
+        let userV = parseFloat(vStr);
+
+        let exactT = (experiments[0].t + experiments[1].t + experiments[2].t) / 3;
+        let avgL = (experiments[0].l + experiments[1].l + experiments[2].l) / 3;
+        let exactV = avgL / exactT;
+
+        attemptsLeft--;
+        const isTCorrect = Math.abs(userT - exactT) <= 0.05;
+        const isVCorrect = Math.abs(userV - exactV) <= 0.05;
+
+        if (isTCorrect && isVCorrect) {
+            document.getElementById('tAvgInput').classList.add('correct-input');
+            document.getElementById('vInput').classList.add('correct-input');
+            currentFeedbackKey = 'msg_correct';
+            currentScoreKey = 'score_10';
+            isScoreCorrect = true;
+            feedbackMessage.textContent = t.msg_correct;
+            feedbackMessage.className = 'result-feedback correct';
+            checkButton.disabled = true;
+            finalResultDiv.innerHTML = `<span class="correct">${t.score_10}</span>`;
+        } else {
+            document.getElementById('tAvgInput').classList.add('incorrect-input');
+            document.getElementById('vInput').classList.add('incorrect-input');
+            if (attemptsLeft > 0) {
+                currentFeedbackKey = 'msg_wrong1';
+                feedbackMessage.textContent = t.msg_wrong1;
+                feedbackMessage.className = 'result-feedback incorrect';
+            } else {
+                currentFeedbackKey = 'msg_wrong2';
+                currentScoreKey = 'score_0';
+                isScoreCorrect = false;
+                feedbackMessage.textContent = t.msg_wrong2;
+                feedbackMessage.className = 'result-feedback incorrect';
+                checkButton.disabled = true;
+                showAnswersButton.style.display = 'inline-block';
+                finalResultDiv.innerHTML = `<span class="incorrect">${t.score_0}</span>`;
+            }
+        }
+    });
+
+    function showAnswerContent() {
+        const t = translations[currentLang];
+        if (experiments.length < 3) return;
+        let exactT = (experiments[0].t + experiments[1].t + experiments[2].t) / 3;
+        let avgL = (experiments[0].l + experiments[1].l + experiments[2].l) / 3;
+        let exactV = avgL / exactT;
+
+        let reviewHTML = `<h3>${t.review_title}</h3>`;
+        reviewHTML += `<p>1. ${t.step_avg}<b><i>t<sub>ср</sub></i> = (${experiments[0].t.toFixed(2)} + ${experiments[1].t.toFixed(2)} + ${experiments[2].t.toFixed(2)}) / 3 = ${exactT.toFixed(2)} с</b></p>`;
+        reviewHTML += `<p>2. ${t.step_v}<b><i>v</i> = ${avgL.toFixed(1)} / ${exactT.toFixed(2)} = ${exactV.toFixed(2)} м/с</b></p>`;
+        document.getElementById('answersReview').innerHTML = reviewHTML;
+        document.getElementById('answersReview').style.display = 'block';
+    }
+
+    showAnswersButton.addEventListener('click', () => {
+        showAnswerContent();
+        showAnswersButton.style.display = 'none';
+    });
+});
+</script>
+</body>
+</html>

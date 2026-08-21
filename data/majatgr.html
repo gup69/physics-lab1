@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер: Колебания и Энергия</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 10px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 900px; width: 100%; }
+        h2 { color: #2c3e50; margin: 0 0 10px 0; text-align: center; }
+        
+        .layout { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        
+        .sim-box {
+            position: relative;
+            background: #ecf0f1;
+            border-radius: 8px;
+            height: 350px;
+            border: 2px solid #bdc3c7;
+            display: flex; justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* Пружина и груз */
+        .spring-container {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        #springLine {
+            width: 4px;
+            background: repeating-linear-gradient(45deg, #7f8c8d, #7f8c8d 5px, #95a5a6 5px, #95a5a6 10px);
+            transform-origin: top;
+        }
+        
+        #weight {
+            width: 50px; height: 50px;
+            background: #e74c3c;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: bold; font-size: 12px;
+            z-index: 2;
+        }
+
+        .charts-box { height: 350px; }
+        
+        .controls {
+            margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;
+            display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: white; font-size: 16px;
+        }
+        .btn-start { background: #27ae60; } .btn-start:hover { background: #2ecc71; }
+        .btn-reset { background: #e67e22; } .btn-reset:hover { background: #d35400; }
+        
+        .legend { font-size: 0.9em; margin-top: 10px; color: #7f8c8d; text-align: center;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Колебания и Энергия</h2>
+    
+    <div class="layout">
+        <div class="sim-box">
+            <div style="position: absolute; left: 10px; top: 50px; bottom: 50px; width: 20px; border-right: 1px solid #bdc3c7; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px; color: #7f8c8d; padding-right: 2px;">
+                <span>+A</span><span>0</span><span>-A</span>
+            </div>
+            
+            <div class="spring-container">
+                <div id="springLine" style="height: 100px;"></div>
+                <div id="weight">m</div>
+            </div>
+            
+            <div style="position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; gap: 5px; height: 20px;">
+                <div style="width: 50px; font-size: 12px; line-height: 20px;">Ek:</div>
+                <div id="barEk" style="background: #e74c3c; width: 0%; transition: width 0.05s linear; border-radius: 3px;"></div>
+            </div>
+            <div style="position: absolute; bottom: 35px; left: 10px; right: 10px; display: flex; gap: 5px; height: 20px;">
+                <div style="width: 50px; font-size: 12px; line-height: 20px;">Ep:</div>
+                <div id="barEp" style="background: #3498db; width: 0%; transition: width 0.05s linear; border-radius: 3px;"></div>
+            </div>
+        </div>
+
+        <div class="charts-box">
+            <canvas id="oscChart"></canvas>
+        </div>
+    </div>
+
+    <div class="legend">
+        Синий график = Координата X(t) | Красный график = Кинетическая энергия Ek(t)
+    </div>
+
+    <div class="controls">
+        <button class="btn-start" onclick="toggleSim()" id="btnStart">Старт / Пауза</button>
+        <button class="btn-reset" onclick="resetSim()">Сброс</button>
+        <div>
+            <label>Масса: <span id="mVal">1</span> кг</label>
+            <input type="range" min="0.5" max="2" step="0.1" value="1" oninput="updateParams(this.value, 'm')">
+        </div>
+    </div>
+</div>
+
+<script>
+    // Физические константы
+    const k = 20; // Жесткость пружины
+    let m = 1;    // Масса
+    let w = Math.sqrt(k/m); // Циклическая частота
+    
+    // Параметры симуляции
+    const A = 100; // Амплитуда в пикселях
+    const baseLen = 100; // Длина пружины в равновесии
+    let t = 0;
+    let isRunning = false;
+    let timerId = null;
+    let chart;
+    
+    // Элементы DOM
+    const springLine = document.getElementById('springLine');
+    const weight = document.getElementById('weight');
+    const barEk = document.getElementById('barEk');
+    const barEp = document.getElementById('barEp');
+    
+    function initChart() {
+        const ctx = document.getElementById('oscChart').getContext('2d');
+        if(chart) chart.destroy();
+        
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Координата X (см)',
+                        data: [],
+                        borderColor: '#3498db', // Синий
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Энергия Ek (Дж)',
+                        data: [],
+                        borderColor: '#e74c3c', // Красный
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { 
+                        type: 'linear',
+                        min: 0, max: 5, // Окно в 5 секунд
+                        title: {display: true, text: 'Время (с)'}
+                    },
+                    y: { 
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        min: -1.2, max: 1.2,
+                        grid: { color: '#ecf0f1' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0, max: 1.2, // Энергия положительна
+                        grid: { drawOnChartArea: false } // убрать сетку для второй оси
+                    }
+                },
+                plugins: { legend: { display: true } }
+            }
+        });
+    }
+
+    function step() {
+        if (!isRunning) return;
+        
+        const dt = 0.03; // Шаг времени (с)
+        t += dt;
+        
+        // Физика: x = A * cos(wt)
+        // Нормализуем A = 1 для графика
+        const cosVal = Math.cos(w * t);
+        const sinVal = Math.sin(w * t);
+        
+        // Реальные значения для анимации
+        const x_px = A * cosVal;
+        
+        // Энергии (пропорциональны квадратам)
+        // Ek ~ v^2 ~ sin^2
+        const ek_norm = sinVal * sinVal;
+        // Ep ~ x^2 ~ cos^2
+        const ep_norm = cosVal * cosVal;
+        
+        // 1. Анимация
+        springLine.style.height = (baseLen + x_px) + "px";
+        // Груз двигается вместе с пружиной (он внутри spring-container, который центрирован)
+        // Но нам нужно менять высоту линии, груз под ней
+        // Проще: springLine height changes, weight is below it naturally in flex-col
+        
+        // Бары энергии (максимум 100%)
+        barEk.style.width = (ek_norm * 100) + "%";
+        barEp.style.width = (ep_norm * 100) + "%";
+
+        // 2. График
+        // Добавляем точки
+        chart.data.datasets[0].data.push({x: t, y: cosVal}); // Координата
+        chart.data.datasets[1].data.push({x: t, y: ek_norm}); // Энергия
+        
+        // Сдвиг окна графика (чтобы бежал)
+        if (t > 5) {
+            chart.options.scales.x.min = t - 5;
+            chart.options.scales.x.max = t;
+            // Удаляем старые точки для производительности
+            while(chart.data.datasets[0].data.length > 0 && chart.data.datasets[0].data[0].x < t - 5) {
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+            }
+        }
+        
+        chart.update('none');
+    }
+
+    function toggleSim() {
+        if (isRunning) {
+            clearInterval(timerId);
+            isRunning = false;
+        } else {
+            timerId = setInterval(step, 30);
+            isRunning = true;
+        }
+    }
+
+    function resetSim() {
+        clearInterval(timerId);
+        isRunning = false;
+        t = 0;
+        springLine.style.height = (baseLen + A) + "px"; // Начало: A * cos(0) = A
+        barEk.style.width = "0%";
+        barEp.style.width = "100%";
+        initChart();
+    }
+    
+    function updateParams(val, type) {
+        if(type === 'm') {
+            m = parseFloat(val);
+            document.getElementById('mVal').innerText = m;
+            w = Math.sqrt(k/m);
+            if(t > 0) resetSim(); // Лучше сбросить, чтобы не было скачка фазы
+        }
+    }
+
+    // Старт
+    initChart();
+    // Начальное положение
+    springLine.style.height = (baseLen + A) + "px";
+    barEp.style.width = "100%";
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* CSS стили для оформления страницы */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        /* Стили для шапки */
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header .header-text h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #2c3e50;
+        }
+        .page-header .header-text p {
+            margin: 5px 0 0 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        /* Стили для значка "Все права защищены" */
+        .copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* ----- НОВЫЕ/ИЗМЕНЕННЫЕ СТИЛИ ----- */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #backButton {
+            background-color: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        #backButton:hover {
+            background-color: #5a6268;
+        }
+        .student-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .student-info div {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .student-info label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+            font-weight: normal; 
+        }
+        .student-info input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* ---------------------------------- */
+
+        .lang-switcher {
+            text-align: right;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #bdc3c7;
+            padding: 4px 8px;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        .lang-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .lab-section {
+            margin-bottom: 30px;
+        }
+        .instrument-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Стили для симулятора метода рядов */
+        .rows-method-simulator {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .pea-row-container {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            width: calc(30 * 20px);
+            margin-top: 0;
+        }
+        .pea {
+            width: 20px;
+            height: 20px;
+            background-color: #a3c940;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #7d9a31;
+        }
+        .ruler-visual { 
+            position: relative;
+            height: 30px;
+            background-color: #f3d9a5;
+            border: 1px solid #c8a209;
+            margin-top: 5px;
+            width: calc(150 * 4px); /* 150 мм * 4px/мм = 600px */
+        }
+        .ruler-marks {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-image:
+                repeating-linear-gradient(to right, #888 0, #888 1px, transparent 1px, transparent 4px), /* 1 мм */
+                repeating-linear-gradient(to right, #555 0, #555 1.5px, transparent 1.5px, transparent 20px), /* 5 мм */
+                repeating-linear-gradient(to right, #333 0, #333 2px, transparent 2px, transparent 40px); /* 10 мм (1 см) */
+            background-size: 100% 40%, 100% 60%, 100% 80%;
+            background-position: bottom;
+            background-repeat: no-repeat;
+        }
+        .ruler-numbers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding-left: 2px;
+            padding-right: 2px;
+            top: -15px;
+            font-size: 10px;
+            color: #555;
+            box-sizing: border-box;
+        }
+        .ruler-numbers span {
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%);
+        }
+        .ruler-numbers span:nth-of-type(1) { left: 0px; }
+        .ruler-numbers span:nth-of-type(2) { left: 40px; } /* 1 см */
+        .ruler-numbers span:nth-of-type(3) { left: 80px; } /* 2 см */
+        .ruler-numbers span:nth-of-type(4) { left: 120px; } /* 3 см */
+        .ruler-numbers span:nth-of-type(5) { left: 160px; } /* 4 см */
+        .ruler-numbers span:nth-of-type(6) { left: 200px; } /* 5 см */
+        .ruler-numbers span:nth-of-type(7) { left: 240px; } /* 6 см */
+        .ruler-numbers span:nth-of-type(8) { left: 280px; } /* 7 см */
+        .ruler-numbers span:nth-of-type(9) { left: 320px; } /* 8 см */
+        .ruler-numbers span:nth-of-type(10) { left: 360px; } /* 9 см */
+        .ruler-numbers span:nth-of-type(11) { left: 400px; } /* 10 см */
+        .ruler-numbers span:nth-of-type(12) { left: 440px; } /* 11 см */
+        .ruler-numbers span:nth-of-type(13) { left: 480px; } /* 12 см */
+        .ruler-numbers span:nth-of-type(14) { left: 520px; } /* 13 см */
+        .ruler-numbers span:nth-of-type(15) { left: 560px; } /* 14 см */
+        .ruler-numbers span:nth-of-type(16) { left: 600px; } /* 15 см */
+
+        .slider-control {
+            margin-top: 15px;
+        }
+
+        td input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        td input:disabled {
+            background-color: #eee;
+            color: #777;
+        }
+        
+        .molecule-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+
+        .molecule-input-group input {
+            width: 60px;
+        }
+
+        #molecule_exponent_input {
+            width: 30px;
+            height: 1.5em; /* Делаем поле меньше для степени */
+            font-size: 0.8em;
+            vertical-align: top;
+            padding: 2px;
+            margin-left: 2px;
+            position: relative;
+            top: -0.5em; /* Поднимаем немного вверх */
+            text-align: left;
+        }
+
+        .result-feedback {
+            font-weight: bold;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+            height: 1em;
+            transition: color 0.3s;
+        }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+        .action-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, opacity 0.5s;
+        }
+        .action-button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        #checkButton { background-color: #3498db; }
+        #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #showAnswersButton:hover { background-color: #8e44ad; }
+        #shareToTeacherButton { background-color: #27ae60; display: none; }
+        #shareToTeacherButton:hover { background-color: #219653; }
+
+        #finalResult, #answersReview {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #answersReview {
+            text-align: left;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            border: 1px solid #bdc3c7;
+        }
+        #answersReview ul {
+            list-style-type: none;
+            padding: 0;
+        }
+         #answersReview li {
+            margin-bottom: 10px;
+        }
+        #validationMessage {
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td { background-color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="grade_level">7 класс</h2>
+                <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+        
+        <div class="top-nav">
+            <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="student-info">
+            <div><label for="student_lastname" data-key="student_lastname">Фамилия</label><input type="text" id="student_lastname"></div>
+            <div><label for="student_firstname" data-key="student_firstname">Имя</label><input type="text" id="student_firstname"></div>
+            <div><label for="student_class_number" data-key="student_class_number">Класс (цифра)</label><input type="number" id="student_class_number"></div>
+            <div><label for="student_class_letter" data-key="student_class_letter">Литер</label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+        </div>
+
+        <div id="pdf-part-1">
+            <h1 data-key="main_title">Интерактивная лабораторная работа №2</h1>
+
+            <div class="lab-section" id="main_lab_section">
+                <h2 data-key="lab_topic_title">Тема: Измерение размеров малых тел</h2>
+                <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Освоить метод рядов для косвенного измерения размеров малых тел и применить его для определения диаметра горошины и расчета диаметра молекулы.</span></p>
+
+                <h3 data-key="instructions_title">Инструкция по выполнению:</h3>
+                <ol data-key="instructions_list">
+                    <li>Внесите свои данные в поля «Фамилия», «Имя», «Класс» и «Литер».</li>
+                    <li>В части 1, «Определение диаметра горошины методом рядов», используйте ползунок, чтобы выбрать количество горошин.</li>
+                    <li>Визуально определите длину ряда по линейке. Помните, что линейка измеряет в сантиметрах, а результат нужно записать в миллиметрах. <strong>(1 см = 10 мм)</strong>.</li>
+                    <li>Рассчитайте диаметр одной горошины, разделив общую длину ряда на количество горошин.</li>
+                    <li>Внесите рассчитанное значение в соответствующее поле в таблице.</li>
+                    <li>В части 2, «Расчет диаметра молекулы масла», прочитайте условие задачи, которое генерируется случайным образом.</li>
+                    <li>Рассчитайте диаметр молекулы, используя формулу **d = V / S**, где **d** — диаметр молекулы, **V** — объем капли, **S** — площадь пятна.</li>
+                    <li>Обратите внимание, что единицы измерения объёма (мм³) и площади (см²) разные. Переведите их в единицы СИ (м³) и (м²) соответственно, прежде чем делать расчет.</li>
+                    <li>Запишите полученный диаметр молекулы в стандартном виде (например, 2.5×10⁻¹⁰), используя два отдельных поля: для мантиссы (первое число) и для порядка (степени).</li>
+                    <li>Нажмите кнопку «Проверить». У вас есть две попытки.</li>
+                    </ol>
+
+                <h3 data-key="procedure_title">Ход работы:</h3>
+                
+                <div class="instrument-container">
+                    <h4 data-key="part1_title">Часть 1. Определение диаметра горошины методом рядов</h4>
+                    <p data-key="part1_instruction">С помощью ползунка выберите количество горошин в ряду. Измерьте длину ряда по линейке и, зная количество горошин, рассчитайте диаметр одной. Внесите результат в таблицу.</p>
+                    <div class="rows-method-simulator">
+                        <div class="ruler-visual">
+                            <div class="ruler-marks"></div>
+                            <div class="ruler-numbers">
+                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15 cm</span>
+                            </div>
+                        </div>
+                        <div class="pea-row-container" id="pea-row"></div>
+                        <div class="slider-control">
+                            <label for="peaSlider"><span data-key="pea_count_label">Количество горошин:</span> <span id="peaCount">15</span></label>
+                            <input type="range" id="peaSlider" min="5" max="30" value="15">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instrument-container">
+                    <h4 data-key="part2_title">Часть 2. Расчет диаметра молекулы масла (Расчетная задача)</h4>
+                    <p id="part2-instruction-text" data-key="part2_instruction"></p>
+                </div>
+
+            </div>
+
+            <div class="lab-section" id="results_section">
+                <h3 data-key="results_table_title">Таблица результатов:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-key="th_object">Объект</th>
+                            <th data-key="th_diameter">Рассчитанный диаметр, d</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-key="object_pea">Горошина (мм)</td>
+                            <td>
+                                <input type="text" id="pea_diameter_input">
+                                <span id="pea_diameter_feedback" class="result-feedback"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-key="object_molecule">Молекула масла (м)</td>
+                            <td>
+                                <div class="molecule-input-group">
+                                    <input type="text" id="molecule_mantissa_input">
+                                    <span style="font-size: 1.2em; vertical-align: middle;">×10</span>
+                                    <sup style="vertical-align: super; font-size: 0.8em;">
+                                        <input type="text" id="molecule_exponent_input">
+                                    </sup>
+                                </div>
+                                <span id="molecule_diameter_feedback" class="result-feedback"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="pdf-part-2">
+            <div id="finalResult"></div>
+            <div id="answersReview" style="display: none;"></div>
+            <div class="action-buttons" style="text-align: center;">
+                <button id="checkButton" class="action-button" data-key="check_button"></button>
+                <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать правильные ответы</button>
+            </div>
+            <div id="validationMessage"></div>
+            <div id="telegram-button-container" style="text-align: center;" class="action-buttons">
+                 <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- ВАЖНО: Настройки для Telegram ---
+    const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM';
+    const CHAT_ID = '876026321';
+
+    const translations = {
+        ru: {
+            grade_level: "7 класс",
+            author_prefix: "Автор:",
+            author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            copyright: "© Все права защищены, {year}",
+            back_button: "Назад",
+            student_lastname: "Фамилия",
+            student_firstname: "Имя",
+            student_class_number: "Класс (цифра)", // Изменено
+            student_class_letter: "Литер",
+            report_student: "Ученик(ца):",
+            report_class: "Класс:",
+            report_score: "Итоговая оценка:",
+            validation_message: "Пожалуйста, заполните все выделенные поля!",
+            main_title: "Интерактивная лабораторная работа №2",
+            lab_topic_title: "Тема: Измерение размеров малых тел",
+            lab_goal_title: "Цель:",
+            lab_goal_text: "Освоить метод рядов для косвенного измерения размеров малых тел и применить его для определения диаметра горошины и расчета диаметра молекулы.",
+            instructions_title: "Инструкция по выполнению:",
+            instructions_list: {
+                li1: "Внесите свои данные в поля «Фамилия», «Имя», «Класс» и «Литер».",
+                li2: "В части 1, «Определение диаметра горошины методом рядов», используйте ползунок, чтобы выбрать количество горошин.",
+                li3: "Визуально определите длину ряда по линейке. Помните, что линейка измеряет в сантиметрах, а результат нужно записать в миллиметрах. <strong>(1 см = 10 мм)</strong>.",
+                li4: "Рассчитайте диаметр одной горошины, разделив общую длину ряда на количество горошин.",
+                li5: "Внесите рассчитанное значение в соответствующее поле в таблице.",
+                li6: "В части 2, «Расчет диаметра молекулы масла», прочитайте условие задачи, которое генерируется случайным образом.",
+                li7: "Рассчитайте диаметр молекулы, используя формулу <strong>d = V / S</strong>, где <strong>d</strong> — диаметр молекулы, <strong>V</strong> — объем капли, <strong>S</strong> — площадь пятна.",
+                li8: "Обратите внимание, что единицы измерения объёма (мм³) и площади (см²) разные. Переведите их в единицы СИ (м³) и (м²) соответственно, прежде чем делать расчет.",
+                li9: "Запишите полученный диаметр молекулы в стандартном виде (например, 2.5×10⁻¹⁰), используя два отдельных поля: для мантиссы (первое число) и для порядка (степени).",
+                li10: "Нажмите кнопку «Проверить». У вас есть две попытки.",
+            },
+            procedure_title: "Ход работы:",
+            part1_title: "Часть 1. Определение диаметра горошины методом рядов",
+            part1_instruction: "С помощью ползунка выберите количество горошин в ряду. Измерьте длину ряда по линейке и, зная количество горошин, рассчитайте диаметр одной. Внесите результат в таблицу.",
+            pea_count_label: "Количество горошин:",
+            part2_title: "Часть 2. Расчет диаметра молекулы масла (Расчетная задача)",
+            part2_instruction: "Капля масла объемом V = {volume_mm3} мм³ растеклась по поверхности воды, образовав пятно площадью S = {area_cm2} см². Считая, что толщина пленки равна диаметру одной молекулы, вычислите этот диаметр в метрах. Результат запишите в таблицу в стандартном виде (например, 2.5×10⁻¹⁰).",
+            results_table_title: "Таблица результатов:",
+            th_object: "Объект",
+            th_diameter: "Рассчитанный диаметр, d",
+            object_pea: "Горошина (мм)",
+            object_molecule: "Молекула масла (м)",
+            check_button: "Проверить",
+            attempts_left_1: "попытка",
+            attempts_left_2: "попытки",
+            show_answers_button: "Показать правильные ответы",
+            share_button: "Поделиться с учителем",
+            sending: "Отправка...",
+            send_success: "Отчет успешно отправлен!",
+            send_error: "Ошибка отправки.",
+            feedback_correct: "Верно 👍",
+            feedback_incorrect: "Неверно ❌",
+            final_result_title: "Ваш результат:",
+            out_of_10: "из 10",
+            answers_review_title: "Разбор ответов:",
+            your_answer: "Ваш ответ",
+            correct_answer: "Правильный ответ"
+        },
+        kk: {
+            grade_level: "7 сынып",
+            author_prefix: "Авторы:",
+            author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, №8 гимназия, Шымкент қ., Қазақстан",
+            copyright: "© Барлық құқықтар қорғалған, {year}",
+            back_button: "Артқа",
+            student_lastname: "Тегі",
+            student_firstname: "Аты",
+            student_class_number: "Сынып (сан)", // Изменено
+            student_class_letter: "Литер",
+            report_student: "Оқушы:",
+            report_class: "Сынып:",
+            report_score: "Қорытынды баға:",
+            validation_message: "Барлық бөлектелген өрістерді толтырыңыз!",
+            main_title: "№2 Интерактивті зертханалық жұмыс",
+            lab_topic_title: "Тақырыбы: Кіші денелердің өлшемдерін өлшеу",
+            lab_goal_title: "Мақсаты:",
+            lab_goal_text: "Кіші денелердің өлшемдерін жанама өлшеу үшін қатарлар әдісін меңгеру және оны бұршақ диаметрін анықтау мен молекула диаметрін есептеу үшін қолдану.",
+            instructions_title: "Орындау бойынша нұсқаулық:",
+            instructions_list: {
+                li1: "Аты-жөніңізді, сыныбыңызды және литеріңізді толтырыңыз.",
+                li2: "1-бөлімде, «Бұршақ диаметрін қатарлар әдісімен анықтау» жүгірткісін пайдаланып, бұршақ санын таңдаңыз.",
+                li3: "Сызғыш арқылы қатардың ұзындығын көзбен анықтаңыз. Сызғыш сантиметрмен өлшейтінін және нәтижені миллиметрмен жазу керектігін есте сақтаңыз. (1 см = 10 мм).",
+                li4: "Жалпы қатардың ұзындығын бұршақтар санына бөлу арқылы бір бұршақтың диаметрін есептеңіз.",
+                li5: "Есептелген мәнді кестедегі тиісті жолға енгізіңіз.",
+                li6: "2-бөлімде, «Май молекуласының диаметрін есептеу» бөлімінде, кездейсоқ түрде жасалған есептің шартын оқыңыз.",
+                li7: "Молекуланың диаметрін <strong>d = V / S</strong> формуласы бойынша есептеңіз, мұндағы <strong>d</strong> — молекуланың диаметрі, <strong>V</strong> — тамшының көлемі, <strong>S</strong> — дақтың ауданы.",
+                li8: "Көлем (мм³) мен ауданның (см²) өлшем бірліктері әртүрлі екенін ескеріңіз. Есептеу алдында оларды SI бірліктеріне (м³) және (м²) ауыстырыңыз.",
+                li9: "Алынған молекула диаметрін стандартты түрде (мысалы, 2.5×10⁻¹⁰) екі бөлек өрісті пайдалана отырып жазыңыз: мантисса (бірінші сан) және дәрежесі үшін.",
+                li10: "«Тексеру» батырмасын басыңыз. Сізде екі мүмкіндік бар.",
+            },
+            procedure_title: "Жұмыстың барысы:",
+            part1_title: "1-бөлім. Бұршақ диаметрін қатарлар әдісімен анықтау",
+            part1_instruction: "Жүгірткінің көмегімен қатардағы бұршақ санын таңдаңыз. Сызғыш арқылы қатардың ұзындығын өлшеп, бұршақ санын біле отырып, біреуінің диаметрін есептеңіз. Нәтижені кестеге енгізіңіз.",
+            pea_count_label: "Бұршақ саны:",
+            part2_title: "2-бөлім. Май молекуласының диаметрін есептеу (Есептеу тапсырмасы)",
+            part2_instruction: "Көлемі V = {volume_mm3} мм³ май тамшысы су бетіне жайылып, ауданы S = {area_cm2} см² дақ құрады. Пленканың қалыңдығын бір молекуланың диаметріне тең деп есептеп, осы диаметрді метрмен есептеңіз. Нәтижені стандартты түрде кестеге жазыңыз (мысалы, 2.5×10⁻¹⁰).",
+            results_table_title: "Нәтижелер кестесі:",
+            th_object: "Объект",
+            th_diameter: "Есептелген диаметр, d",
+            object_pea: "Бұршақ (мм)",
+            object_molecule: "Май молекуласы (м)",
+            check_button: "Тексеру",
+            attempts_left_1: "мүмкіндік қалды",
+            attempts_left_2: "мүмкіндік қалды",
+            show_answers_button: "Дұрыс жауаптарды көрсету",
+            share_button: "Мұғаліммен бөлісу",
+            sending: "Жіберілуде...",
+            send_success: "Есеп сәтті жіберілді!",
+            send_error: "Жіберу қатесі.",
+            feedback_correct: "Дұрыс 👍",
+            feedback_incorrect: "Қате ❌",
+            final_result_title: "Сіздің нәтижеңіз:",
+            out_of_10: "/ 10",
+            answers_review_title: "Жауаптарды талдау:",
+            your_answer: "Сіздің жауабыңыз",
+            correct_answer: "Дұрыс жауап"
+        },
+        en: {
+            grade_level: "7th Grade",
+            author_prefix: "Author:",
+            author_details: "Yuriy Gryaznov, Physics teacher, Gymnasium №8, Shymkent, Kazakhstan",
+            copyright: "© All rights reserved, {year}",
+            back_button: "Back",
+            student_lastname: "Last Name",
+            student_firstname: "First Name",
+            student_class_number: "Grade (number)", // Изменено
+            student_class_letter: "Letter",
+            report_student: "Student:",
+            report_class: "Grade:",
+            report_score: "Final Score:",
+            validation_message: "Please fill in all highlighted fields!",
+            main_title: "Interactive Laboratory Work #2",
+            lab_topic_title: "Topic: Measuring the Sizes of Small Bodies",
+            lab_goal_title: "Goal:",
+            lab_goal_text: "To master the method of rows for indirect measurement of small bodies and to apply it to determine the diameter of a pea and calculate the diameter of a molecule.",
+            instructions_title: "Instructions",
+            instructions_list: {
+                li1: "Fill in your details in the 'Last Name', 'First Name', 'Grade', and 'Letter' fields.",
+                li2: "In Part 1, 'Determining the diameter of a pea by the method of rows', use the slider to select the number of peas.",
+                li3: "Visually determine the length of the row using the ruler. Remember that the ruler measures in centimeters, and the result must be recorded in millimeters. (1 cm = 10 mm).",
+                li4: "Calculate the diameter of a single pea by dividing the total length of the row by the number of peas.",
+                li5: "Enter the calculated value into the corresponding field in the table.",
+                li6: "In Part 2, 'Calculating the diameter of an oil molecule', read the problem statement, which is generated randomly.",
+                li7: "Calculate the diameter of the molecule using the formula <strong>d = V / S</strong>, where <strong>d</strong> is the molecule's diameter, <strong>V</strong> is the drop's volume, and <strong>S</strong> is the spot's area.",
+                li8: "Note that the units of volume (mm³) and area (cm²) are different. Convert them to SI units (m³) and (m²) respectively before making the calculation.",
+                li9: "Record the obtained molecule diameter in standard form (e.g., 2.5×10⁻¹⁰), using two separate fields: for the mantissa (the first number) and for the exponent.",
+                li10: "Click the 'Check' button. You have two attempts.",
+            },
+            procedure_title: "Procedure:",
+            part1_title: "Part 1. Determining the diameter of a pea by the method of rows",
+            part1_instruction: "Use the slider to select the number of peas in a row. Measure the length of the row with the ruler and, knowing the number of peas, calculate the diameter of one. Enter the result into the table.",
+            pea_count_label: "Number of peas:",
+            part2_title: "Part 2. Calculating the diameter of an oil molecule (Calculation task)",
+            part2_instruction: "A drop of oil with a volume of V = {volume_mm3} mm³ spread over a water surface, forming a spot with an area of S = {area_cm2} cm². Assuming the film thickness is equal to the diameter of one molecule, calculate this diameter in meters. Record the result in the table in standard form (e.g., 2.5×10⁻¹⁰).",
+            results_table_title: "Results Table:",
+            th_object: "Object",
+            th_diameter: "Calculated Diameter, d",
+            object_pea: "Pea (mm)",
+            object_molecule: "Oil Molecule (m)",
+            check_button: "Check",
+            attempts_left_1: "attempt left",
+            attempts_left_2: "attempts left",
+            show_answers_button: "Show Correct Answers",
+            share_button: "Share with Teacher",
+            sending: "Sending...",
+            send_success: "Report sent successfully!",
+            send_error: "Send error.",
+            feedback_correct: "Correct 👍",
+            feedback_incorrect: "Incorrect ❌",
+            final_result_title: "Your result:",
+            out_of_10: "out of 10",
+            answers_review_title: "Answers Review:",
+            your_answer: "Your answer",
+            correct_answer: "Correct answer"
+        }
+    };
+    let currentLang = 'ru';
+    let attemptsLeft = 2;
+    let finalScoreText = '';
+
+    // Генерируем случайные значения при загрузке
+    let PEA_DIAMETER_MM;
+    let MOLECULE_DIAMETER_M;
+    let initialVolume;
+    let initialArea;
+
+    function generateRandomPeaDiameter() {
+        // Случайный диаметр от 4.5 до 5.5 мм с шагом 0.1
+        return (Math.floor(Math.random() * 11) + 45) / 10;
+    }
+    
+    function generateRandomMoleculeProblem() {
+        const d_m = (Math.random() * (8 - 2) + 2) * Math.pow(10, -11);
+        const v_mm3 = Math.floor(Math.random() * (20 - 5) + 5) / 1000;
+        const v_m3 = v_mm3 * Math.pow(10, -9);
+        const s_m2 = v_m3 / d_m;
+        const s_cm2 = s_m2 * Math.pow(10, 4);
+
+        return {
+            v_mm3: v_mm3,
+            s_cm2: Math.round(s_cm2),
+            d: d_m
+        };
+    }
+
+    function generateNewProblems() {
+        PEA_DIAMETER_MM = generateRandomPeaDiameter();
+        const newMoleculeValues = generateRandomMoleculeProblem();
+        MOLECULE_DIAMETER_M = newMoleculeValues.d;
+        initialVolume = newMoleculeValues.v_mm3;
+        initialArea = newMoleculeValues.s_cm2;
+    }
+    
+    // --- Получаем все DOM-элементы ---
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+    const peaSlider = document.getElementById('peaSlider');
+    const peaCountSpan = document.getElementById('peaCount');
+    const peaRowContainer = document.getElementById('pea-row');
+    const peaDiameterInput = document.getElementById('pea_diameter_input');
+    const peaDiameterFeedback = document.getElementById('pea_diameter_feedback');
+
+    const moleculeMantissaInput = document.getElementById('molecule_mantissa_input');
+    const moleculeExponentInput = document.getElementById('molecule_exponent_input');
+    const moleculeDiameterFeedback = document.getElementById('molecule_diameter_feedback');
+    const part2InstructionText = document.getElementById('part2-instruction-text');
+
+    // Назначаем событие на новую кнопку "Назад"
+    backButton.addEventListener('click', () => {
+        window.history.back();
+    });
+
+    function updatePeaRow(N) {
+        peaRowContainer.innerHTML = '';
+        const PEA_WIDTH_PX = (PEA_DIAMETER_MM / 10) * 40;
+        const totalLengthPx = N * PEA_WIDTH_PX;
+
+        peaRowContainer.style.width = totalLengthPx + 'px';
+        for (let i = 0; i < N; i++) {
+            const pea = document.createElement('div');
+            pea.className = 'pea';
+            pea.style.width = PEA_WIDTH_PX + 'px';
+            pea.style.height = PEA_WIDTH_PX + 'px';
+            peaRowContainer.appendChild(pea);
+        }
+        peaCountSpan.textContent = N;
+    }
+
+    peaSlider.addEventListener('input', (e) => {
+        updatePeaRow(e.target.value);
+    });
+
+    function resetState() {
+        attemptsLeft = 2;
+        finalScoreText = '';
+
+        checkButton.style.display = 'inline-block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = '';
+        answersReviewDiv.style.display = 'none';
+        validationMessageDiv.style.display = 'none';
+
+        document.querySelectorAll('.student-info input, td input').forEach(input => {
+            input.value = '';
+            input.className = '';
+            input.disabled = false;
+        });
+
+        moleculeMantissaInput.value = '';
+        moleculeExponentInput.value = '';
+
+        peaDiameterFeedback.textContent = '';
+        moleculeDiameterFeedback.textContent = '';
+
+        generateNewProblems();
+        updateInstructionText(initialVolume, initialArea);
+        updatePeaRow(peaSlider.value);
+
+        updateCheckButtonText();
+    }
+
+    function updateInstructionText(volume, area) {
+        const trans = translations[currentLang];
+        let instruction = trans.part2_instruction;
+        instruction = instruction.replace('{volume_mm3}', volume);
+        instruction = instruction.replace('{area_cm2}', area);
+        part2InstructionText.innerHTML = instruction;
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang; // Устанавливаем язык для всей страницы
+
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                 if (key === 'instructions_list') {
+                    const ol = document.querySelector('ol[data-key="instructions_list"]');
+                    ol.innerHTML = '';
+                    for (const liKey in translations[lang].instructions_list) {
+                        const li = document.createElement('li');
+                        li.innerHTML = translations[lang].instructions_list[liKey];
+                        ol.appendChild(li);
+                    }
+                } else {
+                    let text = translations[lang][key];
+                    if (key === 'copyright') {
+                        text = text.replace('{year}', new Date().getFullYear());
+                    }
+                    if (element.tagName.toLowerCase() === 'input') {
+                         element.placeholder = text;
+                    } else {
+                         element.innerHTML = text;
+                    }
+                }
+            }
+        });
+        
+        updateCheckButtonText();
+        updateInstructionText(initialVolume, initialArea);
+    }
+
+    const langButtons = document.querySelectorAll('.lang-btn[data-lang]');
+    langButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            langButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            setLanguage(lang);
+        });
+    });
+
+    function updateCheckButtonText() {
+        if (attemptsLeft > 0) {
+            const attemptText = attemptsLeft === 1 ? translations[currentLang].attempts_left_1 : translations[currentLang].attempts_left_2;
+            checkButton.innerHTML = `${translations[currentLang].check_button} (${attemptsLeft} ${attemptText})`;
+        } else {
+            checkButton.innerHTML = translations[currentLang].check_button;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+
+        const studentInputs = document.querySelectorAll('.student-info input');
+        studentInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input');
+                allFieldsValid = false;
+            } else {
+                input.classList.remove('incorrect-input');
+            }
+        });
+
+        if (peaDiameterInput.value.trim() === '') {
+            peaDiameterInput.classList.add('incorrect-input');
+            allFieldsValid = false;
+        } else {
+            peaDiameterInput.classList.remove('incorrect-input');
+        }
+
+        if (moleculeMantissaInput.value.trim() === '' || moleculeExponentInput.value.trim() === '') {
+            moleculeMantissaInput.classList.add('incorrect-input');
+            moleculeExponentInput.classList.add('incorrect-input');
+            allFieldsValid = false;
+        } else {
+            moleculeMantissaInput.classList.remove('incorrect-input');
+            moleculeExponentInput.classList.remove('incorrect-input');
+        }
+
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block';
+            return;
+        }
+
+        attemptsLeft--;
+        let totalScore = 0;
+
+        const userPeaDiameter = parseFloat(peaDiameterInput.value.replace(',', '.'));
+        const isPeaCorrect = Math.abs(userPeaDiameter - PEA_DIAMETER_MM) / PEA_DIAMETER_MM < 0.05;
+        if(isPeaCorrect) totalScore += 4;
+        peaDiameterFeedback.innerHTML = isPeaCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+        peaDiameterFeedback.className = isPeaCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+        peaDiameterInput.className = isPeaCorrect ? 'correct-input' : 'incorrect-input';
+
+        const mantissa = parseFloat(moleculeMantissaInput.value.replace(',', '.'));
+        const exponent = parseInt(moleculeExponentInput.value);
+        const userMoleculeDiameter = mantissa * Math.pow(10, exponent);
+
+        const isMoleculeCorrect = Math.abs(userMoleculeDiameter - MOLECULE_DIAMETER_M) / MOLECULE_DIAMETER_M < 0.05;
+        if(isMoleculeCorrect) totalScore += 6;
+        moleculeDiameterFeedback.innerHTML = isMoleculeCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+        moleculeDiameterFeedback.className = isMoleculeCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+        moleculeMantissaInput.className = isMoleculeCorrect ? 'correct-input' : 'incorrect-input';
+        moleculeExponentInput.className = isMoleculeCorrect ? 'correct-input' : 'incorrect-input';
+
+        updateCheckButtonText();
+
+        if (attemptsLeft === 0 || (isPeaCorrect && isMoleculeCorrect)) {
+            checkButton.disabled = true;
+            showAnswersButton.style.display = 'inline-block';
+
+            finalScoreText = `${totalScore.toFixed(0)} ${translations[currentLang].out_of_10}`;
+
+            finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${totalScore >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></h3>`;
+
+            document.querySelectorAll('td input, .student-info input').forEach(input => {
+                input.disabled = true;
+            });
+            attemptsLeft = 0;
+            updateCheckButtonText();
+        }
+    });
+
+    showAnswersButton.addEventListener('click', () => {
+        const trans = translations[currentLang];
+        
+        // ИЗМЕНЕНО: Получаем значения из новых полей
+        const lastName = document.getElementById('student_lastname').value || '...';
+        const firstName = document.getElementById('student_firstname').value || '...';
+        const studentClass = document.getElementById('student_class_number').value || '...';
+        const studentLetter = document.getElementById('student_class_letter').value || '';
+
+        const correctMoleculeAnswerParts = MOLECULE_DIAMETER_M.toExponential().split('e');
+        const correctMantissa = parseFloat(correctMoleculeAnswerParts[0]).toFixed(1);
+        const correctExponent = parseInt(correctMoleculeAnswerParts[1]);
+        const correctMoleculeAnswer = `${correctMantissa} × 10<sup>${correctExponent}</sup>`;
+
+        let reviewHTML = `<h3>${trans.answers_review_title}</h3>`;
+        reviewHTML += `<p><b>${trans.report_student}</b> ${lastName} ${firstName}</p>`;
+        reviewHTML += `<p><b>${trans.report_class}</b> ${studentClass}"${studentLetter}"</p>`;
+        reviewHTML += `<p><b>${trans.report_score}</b> <span class="${parseFloat(finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></p><hr>`;
+        reviewHTML += '<ul>';
+
+        reviewHTML += `<li><strong>${trans.object_pea}:</strong> ${trans.your_answer} <strong>${peaDiameterInput.value || '...'}</strong>. ${trans.correct_answer}: <strong>${PEA_DIAMETER_MM}</strong></li>`;
+        reviewHTML += `<li><strong>${trans.object_molecule}:</strong> ${trans.your_answer} <strong>${moleculeMantissaInput.value} × 10<sup>${moleculeExponentInput.value}</sup></strong>. ${trans.correct_answer}: <strong>${correctMoleculeAnswer}</strong></li>`;
+
+        reviewHTML += '</ul>';
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+        const mainContainer = document.querySelector('.container');
+        mainContainer.classList.add('pdf-export-mode');
+
+        const canvas = await html2canvas(mainContainer, { scale: 2, useCORS: true, windowWidth: 900 });
+
+        mainContainer.classList.remove('pdf-export-mode');
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 40;
+        const contentWidth = pdfWidth - margin * 2;
+        const ratio = canvas.height / canvas.width;
+        const imgHeight = contentWidth * ratio;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, contentWidth, imgHeight);
+        heightLeft -= (pdfHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position -= (pdfHeight - margin);
+            pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, position + margin, contentWidth, imgHeight);
+            heightLeft -= (pdfHeight - margin * 2);
+        }
+
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async () => {
+        const button = shareToTeacherButton;
+        button.textContent = translations[currentLang].sending;
+        button.disabled = true;
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const lastName = document.getElementById('student_lastname').value || 'student';
+            const firstName = document.getElementById('student_firstname').value || 'report';
+            // ИЗМЕНЕНО: Получаем значения из новых полей
+            const studentClass = document.getElementById('student_class_number').value || '...';
+            const studentLetter = document.getElementById('student_class_letter').value || '';
+            const fileName = `Lab_Report_2_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+            const caption = `Отчет по лабораторной работе №2\nУченик(ца): ${lastName} ${firstName}\nКласс: ${studentClass}${studentLetter}\nОценка: ${finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                button.textContent = translations[currentLang].send_success;
+                button.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description);
+            }
+
+        } catch (error) {
+            console.error('Telegram API Error:', error);
+            button.textContent = translations[currentLang].send_error;
+            button.style.backgroundColor = '#e74c3c';
+            button.disabled = false;
+        }
+    });
+
+
+    // --- Инициализация ---
+    generateNewProblems();
+    updatePeaRow(peaSlider.value);
+    setLanguage('ru');
+    resetState();
+});
+</script>
+</body>
+</html>

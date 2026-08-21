@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный Клуб: Магнитный Шторм</title>
+    
+    <style>
+        /* Все стили (CSS) остаются точно такими же, как в прошлых версиях. */
+        body { background-color: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 1280px; height: 720px; background-color: #000; background-size: cover; background-position: center; border-radius: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
+        #stats-display { position: absolute; top: 20px; left: 20px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 8px; font-size: 22px; z-index: 30; }
+        #stats-display span { margin-right: 20px; }
+        #character-sprite { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); height: 95%; max-width: 800px; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; opacity: 0; z-index: 10; }
+        #dialogue-box { position: absolute; bottom: 20px; left: 5%; width: 90%; min-height: 200px; background-color: rgba(10, 20, 40, 0.9); border: 2px solid #6c91d9; border-radius: 15px; padding: 20px; box-sizing: border-box; z-index: 21; }
+        #dialogue-text.task-text { font-size: 26px; color: #ffc107; text-align: center; }
+        #character-name { font-size: 28px; font-weight: bold; color: #ffc107; margin-bottom: 15px; }
+        #dialogue-text { font-size: 24px; line-height: 1.4; margin: 0; }
+        .term { color: cyan; text-decoration: underline; cursor: pointer; }
+        #choices-container { position: absolute; bottom: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 22; }
+        .choice-button { width: 70%; padding: 18px; font-size: 20px; font-weight: bold; background-color: rgba(40, 80, 150, 0.9); color: #fff; border: 2px solid #a8c1ff; border-radius: 30px; cursor: pointer; text-align: center; transition: background-color 0.2s, transform 0.2s; }
+        .choice-button:hover { background-color: rgba(60, 110, 200, 1); transform: scale(1.02); }
+        #glossary-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 40; color: white; font-size: 1.2em; }
+        .glossary-box { display: flex; position: relative; width: 80%; max-width: 900px; padding: 30px; box-sizing: border-box; border: 2px solid cyan; background-color: rgba(10, 20, 30, 0.95); border-radius: 10px; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        .close-button { position: absolute; top: 10px; right: 20px; color: #ff4500; font-size: 3em; line-height: 1; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-button:hover { color: #ff7733; }
+        #glossary-title { font-size: 2em; color: #ffc107; margin-bottom: 20px; padding-right: 40px; }
+        #glossary-text { font-size: 1.4em; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 T: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Персонаж">
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            chapter5_scene1: {
+                background: 'assets/backgrounds/particle_accelerator_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'Доктор Белова',
+                text: 'Срочно! Пучок протонов в ускорителе отклонился от траектории! Если он коснется стенки, произойдет выброс радиации!',
+                choices: [{ text: 'В чем причина?', nextSceneId: 'chapter5_scene2' }]
+            },
+            chapter5_scene2: {
+                 background: 'assets/backgrounds/particle_accelerator_alarm.jpg', sprite: 'assets/sprites/max_worried.png', character: 'Инженер Орлов',
+                 text: 'Один из корректирующих магнитов вышел из строя. Нам нужно вручную рассчитать индукцию магнитного поля (B), чтобы вернуть пучок на место!',
+                 choices: [{ text: 'Давайте данные!', nextSceneId: 'chapter5_act1_quiz' }]
+            },
+            chapter5_act1_quiz: {
+                background: 'assets/backgrounds/particle_accelerator.jpg', sprite: null, character: 'ЗАДАЧА: СИЛА ЛОРЕНЦА', isTask: true,
+                text: 'Какая <span class="term" data-term="magnetic_field">индукция магнитного поля</span> (B) нужна для создания корректирующей <span class="term" data-term="lorentz">силы Лоренца</span> F = __F__ Н?<br>F = qvB. Заряд протона q ≈ 1.6 &times; 10<sup>-19</sup> Кл, скорость v = __V__ м/с.',
+                choices: 'CHOICES_CH5_ACT1'
+            },
+            chapter5_act1_fail: {
+                background: 'assets/backgrounds/particle_accelerator_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Неверно! Чтобы найти индукцию, выразите B из формулы: B = F / (qv). Будьте внимательны со степенями десяти!',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter5_act1_quiz'}]
+            },
+            chapter5_act1_success: {
+                background: 'assets/backgrounds/particle_accelerator.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Точно! Индукция в __B_CORRECT__ Тесла. Запускаю резервный магнит с этими параметрами... Пучок стабилизирован!',
+                choices: [{ text: 'Первая угроза миновала.', nextSceneId: 'chapter5_act2_scene1'}]
+            },
+            chapter5_act2_scene1: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена (по связи)',
+                text: 'Команда ускорителя, у нас проблема! Ваш скачок напряжения вывел из строя наш аварийный генератор. Мы не можем его запустить!',
+                choices: [{ text: 'Что требуется для запуска?', nextSceneId: 'chapter5_act2_quiz'}]
+            },
+            chapter5_act2_quiz: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: null, character: 'ЗАДАЧА: ЗАКОН ФАРАДЕЯ', isTask: true,
+                text: 'Чтобы запустить генератор, нужно создать <span class="term" data-term="emf">ЭДС индукции</span> в __E__ В. Какая скорость изменения <span class="term" data-term="magnetic_flux">магнитного потока</span> (ΔΦ/Δt) для этого нужна?<br>ε = -N * (ΔΦ/Δt). Катушка имеет N = __N__ витков.',
+                choices: 'CHOICES_CH5_ACT2'
+            },
+            chapter5_act2_fail: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена (по связи)',
+                text: 'Расчет неверный. Скорость изменения потока равна ЭДС, деленной на число витков. Знак "минус" сейчас не так важен, как само значение.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter5_act2_quiz'}]
+            },
+            chapter5_act2_success: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/elena_happy.png', character: 'Елена (по связи)',
+                text: 'Да, __DFDT_CORRECT__ Вебер в секунду! Мы создали такой импульс. Генератор запущен, спасибо!',
+                choices: [{ text: 'Отлично! Возвращаемся к ускорителю.', nextSceneId: 'chapter5_act3_scene1'}]
+            },
+            chapter5_act3_scene1: {
+                background: 'assets/backgrounds/particle_accelerator_alarm.jpg', sprite: 'assets/sprites/alex_smirk.png', character: 'Алекс',
+                text: 'Пока вы играли со светом, главное поле удержания начало ослабевать! Нам нужно срочно увеличить ток в <span class="term" data-term="solenoid">соленоиде</span>.',
+                choices: [{ text: 'Насколько?', nextSceneId: 'chapter5_act3_quiz'}]
+            },
+            chapter5_act3_quiz: {
+                background: 'assets/backgrounds/particle_accelerator.jpg', sprite: null, character: 'ЗАДАЧА: ПОЛЕ СОЛЕНОИДА', isTask: true,
+                text: 'Рассчитайте <span class="term" data-term="current">силу тока</span> (I), необходимую для создания поля B = __B_SOLENOID__ Тл.<br>B = μ₀ * (N/L) * I. N = __N_SOLENOID__ витков, L = __L_SOLENOID__ м, μ₀ ≈ 12.57 &times; 10<sup>-7</sup> Гн/м.',
+                choices: 'CHOICES_CH5_ACT3'
+            },
+            chapter5_act3_fail: {
+                background: 'assets/backgrounds/particle_accelerator_alarm.jpg', sprite: 'assets/sprites/alex_neutral.png', character: 'Алекс',
+                text: 'Не то! Вырази ток из формулы: I = B*L / (μ₀*N). И не забудь про `10 в минус седьмой степени` у μ₀.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter5_act3_quiz'}]
+            },
+            chapter5_act3_success: {
+                background: 'assets/backgrounds/particle_accelerator.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Ток в __I_CORRECT__ Ампер! Устанавливаю значение... Есть! Поле удержания в норме. Вы справились!',
+                choices: [{ text: 'Миссия выполнена!', nextSceneId: 'ending_ch5'}]
+            },
+            ending_ch5: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'ИТОГ',
+                text: 'Поздравляем! Вы укротили "Магнитный Шторм" и освоили основы магнетизма. Все миссии пройдены!',
+                choices: [
+                    { text: 'К списку миссий', href: 'missions.html', onComplete: 'mission5' }
+                ]
+            }
+        };
+
+        const glossary = {
+            lorentz: { title: "Сила Лоренца", text: "Сила, действующая на движущуюся заряженную частицу в магнитном поле. Она всегда перпендикулярна и скорости частицы, и вектору магнитной индукции. Формула: F = qvBsin(α)." },
+            magnetic_field: { title: "Индукция магнитного поля (B)", text: "Векторная величина, являющаяся силовой характеристикой магнитного поля. Определяет, с какой силой поле действует на заряд. Измеряется в Тесла (Тл)." },
+            emf: { title: "ЭДС Индукции (ε)", text: "Электродвижущая сила, возникающая в замкнутом проводящем контуре при изменении магнитного потока через него. Это явление лежит в основе работы всех электрогенераторов. Измеряется в Вольтах (В)." },
+            magnetic_flux: { title: "Магнитный поток (Φ)", text: "Величина, характеризующая 'количество' линий магнитной индукции, пронизывающих некоторую поверхность. Измеряется в Веберах (Вб)." },
+            solenoid: { title: "Соленоид", text: "Катушка из провода, намотанного на цилиндрическую поверхность. При пропускании тока создает внутри себя почти однородное магнитное поле, что используется в электромагнитах и ускорителях." },
+            current: { title: "Сила тока (I)", text: "Направленное движение заряженных частиц. Характеризует количество заряда, проходящего через поперечное сечение проводника за единицу времени. Измеряется в Амперах (А)." }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name');
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {});
+            }
+
+            function formatNumber(value) {
+                if (typeof value !== 'number') return value;
+                if (Math.abs(value) > 1e5 || (Math.abs(value) < 1e-5 && value !== 0)) {
+                    const parts = value.toExponential(1).split('e');
+                    return `${parts[0]} &times; 10<sup>${parts[1]}</sup>`;
+                } 
+                if (!Number.isInteger(value)) {
+                    if (Math.abs(value) < 1) return value.toPrecision(2);
+                    return value.toFixed(2);
+                }
+                return value;
+            }
+
+            function generateProblemData() {
+                const p = {};
+                p.F = (Math.random() * (9 - 5) + 5) * 1e-12;
+                p.V = (Math.random() * (8 - 5) + 5) * 1e7;
+                const q = 1.6e-19;
+                p.B_CORRECT = p.F / (q * p.V);
+                p.B_WRONG1 = p.B_CORRECT * 10;
+                p.B_WRONG2 = p.B_CORRECT / 10;
+                p.CHOICES_CH5_ACT1 = [
+                    { text: `__B_CORRECT__ Тл`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter5_act1_success' },
+                    { text: `__B_WRONG1__ Тл`, isCorrect: false, nextSceneId: 'chapter5_act1_fail' },
+                    { text: `__B_WRONG2__ Тл`, isCorrect: false, nextSceneId: 'chapter5_act1_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                p.E = 100 + Math.floor(Math.random() * 51);
+                p.N = 500 + Math.floor(Math.random() * 201);
+                p.DFDT_CORRECT = p.E / p.N;
+                p.DFDT_WRONG1 = p.DFDT_CORRECT * p.N;
+                p.DFDT_WRONG2 = 1 / p.DFDT_CORRECT;
+                p.CHOICES_CH5_ACT2 = [
+                    { text: `__DFDT_CORRECT__ Вб/с`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter5_act2_success' },
+                    { text: `__DFDT_WRONG1__ Вб/с`, isCorrect: false, nextSceneId: 'chapter5_act2_fail' },
+                    { text: `__DFDT_WRONG2__ Вб/с`, isCorrect: false, nextSceneId: 'chapter5_act2_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                const mu0 = 12.57e-7;
+                p.B_SOLENOID = (Math.random() * (5 - 2) + 2);
+                p.N_SOLENOID = 10000 + Math.floor(Math.random() * 5001);
+                p.L_SOLENOID = (Math.random() * (10 - 5) + 5);
+                p.I_CORRECT = (p.B_SOLENOID * p.L_SOLENOID) / (mu0 * p.N_SOLENOID);
+                p.CHOICES_CH5_ACT3 = [
+                    { text: `__I_CORRECT__ A`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter5_act3_success' },
+                    { text: `${Math.round(p.I_CORRECT * 1.5)} A`, isCorrect: false, nextSceneId: 'chapter5_act3_fail' },
+                    { text: `${Math.round(p.I_CORRECT * 0.5)} A`, isCorrect: false, nextSceneId: 'chapter5_act3_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'chapter5_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object') {
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    let choiceText = choice.text;
+                    for (const key in gameState.problemData) {
+                        if (typeof gameState.problemData[key] !== 'object') {
+                             choiceText = choiceText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                        }
+                    }
+                    const button = document.createElement('button');
+                    button.innerHTML = choiceText;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play().catch(e => {});
+                    audioMusic.play().catch(e => {});
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

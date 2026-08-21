@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ғылыми Клуб: Миссиялар тізімі</title>
+    <style>
+        body {
+            background-image: url('assets/backgrounds/123.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #1a1a1a;
+            
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #ffc107;
+            font-size: 3em;
+            text-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+            background-color: rgba(10, 20, 40, 0.85);
+            padding: 20px 40px;
+            border: 2px solid #6c91d9;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6);
+            margin-top: 20px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .mission-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 800px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+            box-sizing: border-box;
+        }
+        .mission-card {
+            background-color: rgba(10, 20, 40, 0.9);
+            border: 2px solid #6c91d9;
+            border-radius: 15px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .mission-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        .mission-info {
+            flex-grow: 1;
+        }
+        .mission-info h2 {
+            color: #a8c1ff;
+            margin: 0 0 10px 0;
+            font-size: 1.8em;
+        }
+        .mission-info p {
+            margin: 0;
+            font-size: 1.1em;
+            color: #bbb;
+        }
+        .mission-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            min-width: 320px;
+            justify-content: flex-end;
+        }
+        .mission-status {
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 1em;
+            text-transform: uppercase;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .status-not-started { background-color: #f0ad4e; color: #333; }
+        .status-completed { background-color: #5cb85c; color: #333; }
+        .status-locked { background-color: #888; color: #eee; }
+
+        .start-button {
+            background-color: rgba(40, 80, 150, 0.9);
+            color: #fff;
+            border: 2px solid #a8c1ff;
+            border-radius: 30px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s, transform 0.2s, border-color 0.2s;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .start-button:hover {
+            background-color: rgba(60, 110, 200, 1);
+            transform: scale(1.02);
+            border-color: #d0e0ff;
+        }
+        .start-button.disabled {
+            background-color: rgba(70, 70, 70, 0.7);
+            border-color: #555;
+            color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+        }
+        .start-button.disabled:hover {
+            background-color: rgba(70, 70, 70, 0.7);
+            border-color: #555;
+            transform: none;
+        }
+        
+        .reset-container {
+            margin-top: 40px;
+        }
+        #reset-progress-button {
+            background-color: #d9534f;
+            color: white;
+            border: 2px solid #d43f3a;
+            padding: 10px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #reset-progress-button:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ғылыми Клуб: Миссиялар тізімі</h1>
+
+    <div class="mission-list">
+        <div id="mission-card-1" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 1: ИКАР Жобасы</h2>
+                <p>Механика заңдарын қолданып, дронды құлаудан сақтаңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission1"></span>
+                <a href="mission1_kz.html" class="start-button" data-mission-id="mission1">Бастау</a>
+            </div>
+        </div>
+
+        <div id="mission-card-2" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 2: Қызып кету қаупі</h2>
+                <p>Термодинамика принциптерін қолданып, реакторды тұрақтандырыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission2"></span>
+                <a href="mission2_kz.html" class="start-button" data-mission-id="mission2">Бастау</a>
+            </div>
+        </div>
+        
+        <div id="mission-card-3" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 3: Энергетикалық дағдарыс</h2>
+                <p>Электр станциясының тұрақты жұмысын қалпына келтіріңіз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission3"></span>
+                <a href="mission3_kz.html" class="start-button" data-mission-id="mission3">Бастау</a>
+            </div>
+        </div>
+
+        <div id="mission-card-4" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 4: Үнсіз саботаж</h2>
+                <p>Толқын қасиеттерін зерттей отырып, спутникпен байланысты қалпына келтіріңіз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission4"></span>
+                <a href="mission4_kz.html" class="start-button" data-mission-id="mission4">Бастау</a>
+            </div>
+        </div>
+
+        <div id="mission-card-5" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 5: Магниттік дауыл</h2>
+                <p>Бөлшектер үдеткішіндегі магнит өрістерін бақылауға алыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission5"></span>
+                <a href="mission5_kz.html" class="start-button" data-mission-id="mission5">Бастау</a>
+            </div>
+        </div>
+
+        <div id="mission-card-6" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 6: Кристалды күйреу</h2>
+                <p>Бірегей кристалды бұзылудан сақтап қалыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission6"></span>
+                <a href="mission6_kz.html" class="start-button" data-mission-id="mission6">Бастау</a>
+            </div>
+        </div>
+
+        <div id="mission-card-7" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 7: Өріс ақауы</h2>
+                <p>Зертханадағы қауіпті статикалық өрісті бейтараптандырыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission7"></span>
+                <a href="mission7_kz.html" class="start-button" data-mission-id="mission7">Бастау</a>
+            </div>
+        </div>
+        
+        <div id="mission-card-8" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 8: Иондық дауыл</h2>
+                <p>Металдарда, сұйықтықтарда және газдарда токтың өтуін зерттеңіз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission8"></span>
+                <a href="mission8_kz.html" class="start-button" data-mission-id="mission8">Бастау</a>
+            </div>
+        </div>
+        
+        <div id="mission-card-9" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 9: Резонанстық коллапс</h2>
+                <p>Қауіпті механикалық және электрлік тербелістерді басыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission9"></span>
+                <a href="mission9_kz.html" class="start-button" data-mission-id="mission9">Начать</a>
+            </div>
+        </div>
+
+        <div id="mission-card-10" class="mission-card">
+            <div class="mission-info">
+                <h2>Миссия 10: Мөлдір қауіп</h2>
+                <p>Оптика заңдарының көмегімен көрінбейтін дронды тауып, залалсыздандырыңыз.</p>
+            </div>
+            <div class="mission-controls">
+                <span class="mission-status" data-mission-id="mission10"></span>
+                <a href="mission10_kz.html" class="start-button" data-mission-id="mission10">Начать</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="reset-container">
+        <button id="reset-progress-button">Прогресті ысыру</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const missionsData = [
+                { id: 'mission1', file: 'mission1_kz.html' },
+                { id: 'mission2', file: 'mission2_kz.html', dependsOn: 'mission1' },
+                { id: 'mission3', file: 'mission3_kz.html', dependsOn: 'mission2' },
+                { id: 'mission4', file: 'mission4_kz.html', dependsOn: 'mission3' },
+                { id: 'mission5', file: 'mission5_kz.html', dependsOn: 'mission4' },
+                { id: 'mission6', file: 'mission6_kz.html', dependsOn: 'mission5' },
+                { id: 'mission7', file: 'mission7_kz.html', dependsOn: 'mission6' },
+                { id: 'mission8', file: 'mission8_kz.html', dependsOn: 'mission7' },
+                { id: 'mission9', file: 'mission9_kz.html', dependsOn: 'mission8' },
+                { id: 'mission10', file: 'mission10_kz.html', dependsOn: 'mission9' }
+            ];
+
+            const resetButton = document.getElementById('reset-progress-button');
+
+            function loadMissionProgress() {
+                missionsData.forEach(mission => {
+                    const status = localStorage.getItem(`${mission.id}_status`) || 'not-started';
+                    const missionStatusSpan = document.querySelector(`.mission-status[data-mission-id="${mission.id}"]`);
+                    const missionButton = document.querySelector(`.start-button[data-mission-id="${mission.id}"]`);
+
+                    if (!missionStatusSpan || !missionButton) return;
+
+                    let isMissionAvailable = true;
+                    if (mission.dependsOn) {
+                        const dependencyStatus = localStorage.getItem(`${mission.dependsOn}_status`);
+                        if (dependencyStatus !== 'completed') {
+                            isMissionAvailable = false;
+                        }
+                    }
+
+                    if (isMissionAvailable) {
+                        missionStatusSpan.textContent = getStatusText(status);
+                        missionStatusSpan.className = `mission-status status-${status}`;
+                        missionButton.href = mission.file;
+                        missionButton.classList.remove('disabled');
+                        missionButton.textContent = (status === 'completed') ? 'Қайталау' : 'Бастау';
+                    } else {
+                        missionStatusSpan.textContent = 'Бұғатталған';
+                        missionStatusSpan.className = 'mission-status status-locked';
+                        missionButton.classList.add('disabled');
+                        missionButton.removeAttribute('href');
+                    }
+                });
+            }
+
+            function getStatusText(status) {
+                switch (status) {
+                    case 'not-started': return 'Басталмаған';
+                    case 'completed': return 'Аяқталды';
+                    default: return '';
+                }
+            }
+            
+            resetButton.addEventListener('click', () => {
+                const isConfirmed = confirm('Сіз барлық прогресті ысырғыңыз келетініне сенімдісіз бе? Бұл әрекетті болдырмау мүмкін емес.');
+                
+                if (isConfirmed) {
+                    missionsData.forEach(mission => {
+                        localStorage.removeItem(`${mission.id}_status`);
+                    });
+                    
+                    location.reload();
+                }
+            });
+
+            loadMissionProgress();
+
+            document.querySelectorAll('.start-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    if (button.classList.contains('disabled')) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

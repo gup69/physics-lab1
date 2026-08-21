@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-й Закон Термодинамики - Тепловой Двигатель</title>
+    <style>
+        :root {
+            --hot-color: #e74c3c;
+            --cold-color: #3498db;
+            --work-color: #2ecc71;
+            --text-color: #2c3e50;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 5px; }
+        p { margin-top: 0; color: #7f8c8d; }
+
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ecf0f1;
+            border-radius: 10px;
+            position: relative;
+            min-width: 320px;
+        }
+
+        canvas {
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-box {
+            background: #fff;
+            border: 1px solid #bdc3c7;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .control-box.hot { border-left: 5px solid var(--hot-color); }
+        .control-box.cold { border-left: 5px solid var(--cold-color); }
+
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        .formula-display {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .stat-item { text-align: center; }
+        .value { font-size: 1.4em; font-weight: bold; display: block;}
+        
+        .efficiency-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .efficiency-bar-fill {
+            height: 100%;
+            background: var(--work-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .warning {
+            color: var(--hot-color);
+            font-weight: bold;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Тепловой Двигатель</h1>
+    <p>Визуализация КПД и Второго закона термодинамики</p>
+
+    <div class="main-container">
+        
+        <div class="canvas-container">
+            <canvas id="engineCanvas" width="350" height="450"></canvas>
+        </div>
+
+        <div class="controls">
+            
+            <div class="formula-display">
+                &eta; = (T<sub>1</sub> - T<sub>2</sub>) / T<sub>1</sub>
+            </div>
+
+            <div class="control-box hot">
+                <label>Температура Нагревателя (T<sub>1</sub>)</label>
+                <input type="range" id="tHot" min="300" max="1000" value="600">
+                <div class="stats">
+                    <span class="stat-item">T<sub>1</sub>: <span id="val-tHot" class="value">600</span> К</span>
+                </div>
+            </div>
+
+            <div class="control-box cold">
+                <label>Температура Холодильника (T<sub>2</sub>)</label>
+                <input type="range" id="tCold" min="100" max="800" value="300">
+                <div class="stats">
+                    <span class="stat-item">T<sub>2</sub>: <span id="val-tCold" class="value">300</span> К</span>
+                </div>
+            </div>
+
+            <div class="control-box">
+                <label>Результаты (Идеальный цикл Карно)</label>
+                <div class="stats">
+                    <span class="stat-item">Макс. КПД:<br><span id="val-eff" class="value" style="color:var(--work-color)">50%</span></span>
+                    <span class="stat-item">Потери:<br><span id="val-loss" class="value" style="color:var(--cold-color)">50%</span></span>
+                </div>
+                <div class="efficiency-bar-bg">
+                    <div id="eff-bar" class="efficiency-bar-fill"></div>
+                </div>
+                <p id="warning-msg" class="warning">Невозможно! T<sub>хол</sub> &ge; T<sub>нагр</sub></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('engineCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Элементы UI
+        const sliderHot = document.getElementById('tHot');
+        const sliderCold = document.getElementById('tCold');
+        const dispHot = document.getElementById('val-tHot');
+        const dispCold = document.getElementById('val-tCold');
+        const dispEff = document.getElementById('val-eff');
+        const dispLoss = document.getElementById('val-loss');
+        const effBar = document.getElementById('eff-bar');
+        const warningMsg = document.getElementById('warning-msg');
+
+        // Состояние
+        let T1 = 600;
+        let T2 = 300;
+        let efficiency = 0.5;
+        let particles = [];
+        let isValid = true;
+
+        // Настройка объектов отрисовки
+        const engineBox = { x: 100, y: 180, w: 150, h: 100 };
+        const sourceBox = { x: 100, y: 20, w: 150, h: 60 };
+        const sinkBox =   { x: 100, y: 370, w: 150, h: 60 };
+
+        class EnergyParticle {
+            constructor() {
+                this.reset();
+                // Начинаем со случайной позиции по Y, чтобы не было "залпов" при старте
+                this.y = Math.random() * 150 + 30; 
+            }
+
+            reset() {
+                this.x = sourceBox.x + Math.random() * sourceBox.w;
+                this.y = sourceBox.y + sourceBox.h;
+                this.radius = 4 + Math.random() * 2;
+                this.speed = 2 + Math.random();
+                this.type = 'hot'; // hot, work, waste
+                this.opacity = 1;
+            }
+
+            update() {
+                if (!isValid) return; // Если параметры неверные, замираем
+
+                if (this.type === 'hot') {
+                    this.y += this.speed;
+                    // Попадание в двигатель
+                    if (this.y > engineBox.y + engineBox.h / 2) {
+                        // В центре двигателя решаем судьбу частицы
+                        if (Math.random() < efficiency) {
+                            this.type = 'work';
+                        } else {
+                            this.type = 'waste';
+                        }
+                    }
+                } else if (this.type === 'work') {
+                    // Работа уходит вправо (полезная энергия)
+                    this.x += this.speed * 1.5;
+                    // Исчезает за краем
+                    if (this.x > canvas.width + 10) this.reset();
+                } else if (this.type === 'waste') {
+                    // Отходы уходят вниз к холодильнику
+                    this.y += this.speed;
+                    if (this.y > sinkBox.y) {
+                        // Исчезает в холодильнике
+                        this.opacity -= 0.05;
+                        if (this.opacity <= 0) this.reset();
+                    }
+                }
+            }
+
+            draw() {
+                if (this.opacity <= 0) return;
+                
+                ctx.globalAlpha = this.opacity;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                
+                if (this.type === 'hot') ctx.fillStyle = '#e74c3c'; // Красный
+                else if (this.type === 'work') ctx.fillStyle = '#2ecc71'; // Зеленый
+                else ctx.fillStyle = '#3498db'; // Синий
+                
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Создаем пул частиц
+        for(let i=0; i<60; i++) {
+            particles.push(new EnergyParticle());
+        }
+
+        function calculatePhysics() {
+            T1 = parseInt(sliderHot.value);
+            T2 = parseInt(sliderCold.value);
+
+            dispHot.innerText = T1;
+            dispCold.innerText = T2;
+
+            if (T2 >= T1) {
+                isValid = false;
+                efficiency = 0;
+                warningMsg.style.opacity = 1;
+                dispEff.innerText = "0%";
+                dispLoss.innerText = "100%";
+                effBar.style.width = "0%";
+            } else {
+                isValid = true;
+                warningMsg.style.opacity = 0;
+                // Формула Карно
+                efficiency = (T1 - T2) / T1;
+                
+                let effPercent = Math.round(efficiency * 100);
+                dispEff.innerText = effPercent + "%";
+                dispLoss.innerText = (100 - effPercent) + "%";
+                effBar.style.width = effPercent + "%";
+            }
+        }
+
+        function drawSchematics() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Рисуем блоки
+            // Нагреватель
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(sourceBox.x, sourceBox.y, sourceBox.w, sourceBox.h);
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Нагреватель (${T1}K)`, sourceBox.x + 15, sourceBox.y + 35);
+
+            // Двигатель
+            ctx.fillStyle = '#95a5a6';
+            ctx.fillRect(engineBox.x, engineBox.y, engineBox.w, engineBox.h);
+            ctx.fillStyle = 'white';
+            ctx.fillText("Тепловой двигатель", engineBox.x + 5, engineBox.y + 55);
+
+            // Холодильник
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(sinkBox.x, sinkBox.y, sinkBox.w, sinkBox.h);
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Холодильник (${T2}K)`, sinkBox.x + 10, sinkBox.y + 35);
+
+            // Стрелка работы (выход)
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.moveTo(engineBox.x + engineBox.w, engineBox.y + 30);
+            ctx.lineTo(canvas.width - 20, engineBox.y + 30);
+            ctx.lineTo(canvas.width - 20, engineBox.y + 70);
+            ctx.lineTo(engineBox.x + engineBox.w, engineBox.y + 70);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.fillText("Работа (A)", engineBox.x + engineBox.w + 10, engineBox.y + 55);
+        }
+
+        function animate() {
+            drawSchematics();
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Слушатели событий
+        sliderHot.addEventListener('input', calculatePhysics);
+        sliderCold.addEventListener('input', calculatePhysics);
+
+        // Старт
+        calculatePhysics();
+        animate();
+
+    </script>
+</body>
+</html>

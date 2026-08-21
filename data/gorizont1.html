@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моделирование движения тела</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5em;
+        }
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .canvas-container {
+            border: 2px solid #ccc;
+            background-color: #e0e0e0;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-top: 20px;
+            width: 95%;
+            max-width: 1500px;
+        }
+        canvas {
+            background-color: #fff;
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        #results {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 5px 0;
+            border-bottom: 1px dashed #ccc;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        #buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .action-button {
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            flex-grow: 1;
+        }
+        #startButton { background-color: #28a745; }
+        #startButton:hover { background-color: #218838; }
+        #stopButton { background-color: #dc3545; }
+        #stopButton:hover { background-color: #c82333; }
+        #formulasButton { background-color: #007bff; }
+        #formulasButton:hover { background-color: #0069d9; }
+        #clearResultsButton { background-color: #6c757d; }
+        #clearResultsButton:hover { background-color: #5a6268; }
+        #formulas {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            display: none;
+            width: 95%;
+            max-width: 600px;
+        }
+        .formula-group { margin-bottom: 15px; }
+        .formula-group h4 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .formula-img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        @media (min-width: 768px) {
+            #controls {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 id="pageTitle">Моделирование движения тела</h1>
+    <div id="controls">
+        <div class="control-group">
+            <label for="language">Язык:</label>
+            <select id="language">
+                <option value="ru">Русский</option>
+                <option value="kk">Қазақ</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="speed" id="speedLabel">Начальная скорость (м/с):</label>
+            <input type="range" id="speed" min="10" max="100" value="50">
+            <span id="speedValue">50</span> м/с
+        </div>
+        <div class="control-group">
+            <label for="angle" id="angleLabel">Угол броска (градусы):</label>
+            <input type="range" id="angle" min="0" max="90" value="45">
+            <span id="angleValue">45</span>°
+        </div>
+        <div class="control-group">
+            <label for="height" id="heightLabel">Начальная высота (м):</label>
+            <input type="range" id="height" min="0" max="100" value="0">
+            <span id="heightValue">0</span> м
+        </div>
+        <div class="control-group">
+            <label for="planet" id="planetLabel">Планета:</label>
+            <select id="planet">
+                <option value="9.8" id="earthOption">Земля</option>
+                <option value="1.62" id="moonOption">Луна</option>
+                <option value="3.71" id="marsOption">Марс</option>
+                <option value="24.79" id="jupiterOption">Юпитер</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="vetSpeed" id="vetSpeedLabel">Скорость ветра (м/с):</label>
+            <input type="range" id="vetSpeed" min="0" max="30" value="0">
+            <span id="vetSpeedValue">0</span> м/с
+        </div>
+        <div class="control-group">
+            <label for="vetAngle" id="vetAngleLabel">Угол ветра (градусы):</label>
+            <input type="range" id="vetAngle" min="0" max="360" value="0">
+            <span id="vetAngleValue">0</span>°
+        </div>
+        <div id="buttons">
+            <button id="startButton" class="action-button">Запустить</button>
+            <button id="stopButton" class="action-button">Остановить</button>
+            <button id="formulasButton" class="action-button">Показать формулы</button>
+        </div>
+    </div>
+    <div class="canvas-container">
+        <h3 id="canvasTitle">Траектория (Вид сбоку)</h3>
+        <canvas id="profileCanvas" width="600" height="400"></canvas>
+    </div>
+    <div id="results">
+        <h3 id="resultsTitle">Результаты последних симуляций</h3>
+        <div id="resultsList"></div>
+        <button id="clearResultsButton" class="action-button">Очистить результаты</button>
+    </div>
+    <div id="formulas">
+        <div class="formula-group">
+            <h4 id="maxHeightFormulaTitle">Расчет максимальной высоты:</h4>
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?Y_{\max} = h + \frac{(V_{0} \cdot \sin(\alpha))^{2}}{2g}" alt="Формула максимальной высоты">
+        </div>
+        <div class="formula-group">
+            <h4 id="flightTimeFormulaTitle">Расчет времени полета (квадратное уравнение):</h4>
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?0 = h + V_{0y} \cdot T - 0.5 \cdot g \cdot T^2" alt="Квадратное уравнение для времени полета">
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?T = \frac{-V_{0y} - \sqrt{V_{0y}^2 + 2gh}}{-g}" alt="Решение квадратного уравнения для времени полета">
+        </div>
+        <div class="formula-group">
+            <h4 id="maxDistanceFormulaTitle">Расчет дальности полета:</h4>
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?X_{\max} = V_{0x} \cdot T + 0.5 \cdot a_{x} \cdot T^2" alt="Формула дальности полета">
+        </div>
+        <div class="formula-group">
+            <h4 id="positionFormulaTitle">Положение тела в любой момент времени t:</h4>
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?X(t) = V_{0x} \cdot t + 0.5 \cdot a_{x} \cdot t^2" alt="Формула положения X">
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?Y(t) = h + V_{0y} \cdot t - 0.5 \cdot g \cdot t^2" alt="Формула положения Y">
+        </div>
+        <div class="formula-group">
+            <h4 id="windFormulaTitle">Поправка на ветер:</h4>
+            <img class="formula-img" src="https://latex.codecogs.com/svg.latex?a_{x} = V_{\text{vet}} \cdot \cos(\alpha_{\text{vet}})" alt="Формула ускорения ветра">
+        </div>
+    </div>
+    <script>
+        const profileCanvas = document.getElementById('profileCanvas');
+        const profileCtx = profileCanvas.getContext('2d');
+        const languageSelect = document.getElementById('language');
+        const speedInput = document.getElementById('speed');
+        const angleInput = document.getElementById('angle');
+        const heightInput = document.getElementById('height');
+        const planetSelect = document.getElementById('planet');
+        const vetSpeedInput = document.getElementById('vetSpeed');
+        const vetAngleInput = document.getElementById('vetAngle');
+        const speedValueSpan = document.getElementById('speedValue');
+        const angleValueSpan = document.getElementById('angleValue');
+        const heightValueSpan = document.getElementById('heightValue');
+        const vetSpeedValueSpan = document.getElementById('vetSpeedValue');
+        const vetAngleValueSpan = document.getElementById('vetAngleValue');
+        const resultsListDiv = document.getElementById('resultsList');
+        const clearResultsButton = document.getElementById('clearResultsButton');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const formulasButton = document.getElementById('formulasButton');
+        const formulasDiv = document.getElementById('formulas');
+        let animationFrameId = null;
+        let t = 0;
+        const dt = 0.05;
+        let scale = 1;
+        const MAX_CANVAS_WIDTH = 600;
+        const MAX_CANVAS_HEIGHT = 400;
+        let trajectories = [];
+        let pastResults = [];
+        const translations = {
+            ru: {
+                pageTitle: 'Моделирование движения тела',
+                languageLabel: 'Язык:',
+                speedLabel: 'Начальная скорость (м/с):',
+                angleLabel: 'Угол броска (градусы):',
+                heightLabel: 'Начальная высота (м):',
+                planetLabel: 'Планета:',
+                vetSpeedLabel: 'Скорость ветра (м/с):',
+                vetAngleLabel: 'Угол ветра (градусы):',
+                startButton: 'Запустить',
+                stopButton: 'Остановить',
+                formulasButton: 'Показать формулы',
+                canvasTitle: 'Траектория (Вид сбоку)',
+                maxHeightFormulaTitle: 'Расчет максимальной высоты:',
+                flightTimeFormulaTitle: 'Расчет времени полета (квадратное уравнение):',
+                maxDistanceFormulaTitle: 'Расчет дальности полета:',
+                positionFormulaTitle: 'Положение тела в любой момент времени t:',
+                windFormulaTitle: 'Поправка на ветер:',
+                earthOption: 'Земля',
+                moonOption: 'Луна',
+                marsOption: 'Марс',
+                jupiterOption: 'Юпитер',
+                maxHeightText: 'Макс. высота:',
+                maxDistanceText: 'Дальность:',
+                angleText: 'Угол',
+                heightText: 'Высота',
+                resultsTitle: 'Результаты последних симуляций',
+                clearResultsButton: 'Очистить результаты'
+            },
+            kk: {
+                pageTitle: 'Дене қозғалысын модельдеу',
+                languageLabel: 'Тіл:',
+                speedLabel: 'Бастапқы жылдамдық (м/с):',
+                angleLabel: 'Лақтыру бұрышы (градус):',
+                heightLabel: 'Бастапқы биіктік (м):',
+                planetLabel: 'Ғаламшар:',
+                vetSpeedLabel: 'Жел жылдамдығы (м/с):',
+                vetAngleLabel: 'Жел бұрышы (градус):',
+                startButton: 'Іске қосу',
+                stopButton: 'Тоқтату',
+                formulasButton: 'Формулаларды көрсету',
+                canvasTitle: 'Траектория (бүйірден көрініс)',
+                maxHeightFormulaTitle: 'Максималды биіктікті есептеу:',
+                flightTimeFormulaTitle: 'Ұшу уақытын есептеу (квадраттық теңдеу):',
+                maxDistanceFormulaTitle: 'Ұшу қашықтығын есептеу:',
+                positionFormulaTitle: 'Дененің кез келген уақыттағы орны t:',
+                windFormulaTitle: 'Желге түзету:',
+                earthOption: 'Жер',
+                moonOption: 'Ай',
+                marsOption: 'Марс',
+                jupiterOption: 'Юпитер',
+                maxHeightText: 'Макс. биіктік:',
+                maxDistanceText: 'Қашықтық:',
+                angleText: 'Бұрыш',
+                heightText: 'Биіктік',
+                resultsTitle: 'Соңғы модельдеу нәтижелері',
+                clearResultsButton: 'Нәтижелерді тазалау'
+            },
+            en: {
+                pageTitle: 'Body Motion Simulation',
+                languageLabel: 'Language:',
+                speedLabel: 'Initial velocity (m/s):',
+                angleLabel: 'Launch angle (degrees):',
+                heightLabel: 'Initial height (m):',
+                planetLabel: 'Planet:',
+                vetSpeedLabel: 'Wind speed (m/s):',
+                vetAngleLabel: 'Wind angle (degrees):',
+                startButton: 'Launch',
+                stopButton: 'Stop',
+                formulasButton: 'Show Formulas',
+                canvasTitle: 'Trajectory (Side view)',
+                maxHeightFormulaTitle: 'Calculation of max height:',
+                flightTimeFormulaTitle: 'Calculation of flight time (quadratic equation):',
+                maxDistanceFormulaTitle: 'Calculation of range:',
+                positionFormulaTitle: 'Position of the body at any time t:',
+                windFormulaTitle: 'Wind correction:',
+                earthOption: 'Earth',
+                moonOption: 'Moon',
+                marsOption: 'Mars',
+                jupiterOption: 'Jupiter',
+                maxHeightText: 'Max height:',
+                maxDistanceText: 'Range:',
+                angleText: 'Angle',
+                heightText: 'Height',
+                resultsTitle: 'Recent Simulation Results',
+                clearResultsButton: 'Clear Results'
+            }
+        };
+        function updateLanguage(lang) {
+            const elements = {
+                pageTitle: document.getElementById('pageTitle'),
+                speedLabel: document.getElementById('speedLabel'),
+                angleLabel: document.getElementById('angleLabel'),
+                heightLabel: document.getElementById('heightLabel'),
+                planetLabel: document.getElementById('planetLabel'),
+                vetSpeedLabel: document.getElementById('vetSpeedLabel'),
+                vetAngleLabel: document.getElementById('vetAngleLabel'),
+                startButton: document.getElementById('startButton'),
+                stopButton: document.getElementById('stopButton'),
+                formulasButton: document.getElementById('formulasButton'),
+                canvasTitle: document.getElementById('canvasTitle'),
+                maxHeightFormulaTitle: document.getElementById('maxHeightFormulaTitle'),
+                flightTimeFormulaTitle: document.getElementById('flightTimeFormulaTitle'),
+                maxDistanceFormulaTitle: document.getElementById('maxDistanceFormulaTitle'),
+                positionFormulaTitle: document.getElementById('positionFormulaTitle'),
+                windFormulaTitle: document.getElementById('windFormulaTitle'),
+                earthOption: document.getElementById('earthOption'),
+                moonOption: document.getElementById('moonOption'),
+                marsOption: document.getElementById('marsOption'),
+                jupiterOption: document.getElementById('jupiterOption'),
+                resultsTitle: document.getElementById('resultsTitle'),
+                clearResultsButton: document.getElementById('clearResultsButton')
+            };
+            for (const key in elements) {
+                if (elements[key]) {
+                    elements[key].textContent = translations[lang][key];
+                }
+            }
+            updateResultsDisplay();
+            drawAll();
+        }
+        languageSelect.addEventListener('change', (event) => {
+            updateLanguage(event.target.value);
+        });
+        function updateValues() {
+            speedValueSpan.textContent = speedInput.value;
+            angleValueSpan.textContent = angleInput.value;
+            heightValueSpan.textContent = heightInput.value;
+            vetSpeedValueSpan.textContent = vetSpeedInput.value;
+            vetAngleValueSpan.textContent = vetAngleInput.value;
+        }
+        speedInput.addEventListener('input', updateValues);
+        angleInput.addEventListener('input', () => {
+            updateValues();
+            drawAll();
+        });
+        heightInput.addEventListener('input', () => {
+            updateValues();
+            drawAll();
+        });
+        vetSpeedInput.addEventListener('input', updateValues);
+        vetAngleInput.addEventListener('input', updateValues);
+        function drawAll() {
+            profileCtx.clearRect(0, 0, profileCanvas.width, profileCanvas.height);
+            drawAxis();
+            drawCannon(parseFloat(angleInput.value) * Math.PI / 180, parseFloat(heightInput.value));
+            drawAllTrajectories();
+        }
+        function drawAxis() {
+            profileCtx.strokeStyle = '#333';
+            profileCtx.lineWidth = 1;
+            profileCtx.beginPath();
+            profileCtx.moveTo(0, profileCanvas.height - 1);
+            profileCtx.lineTo(profileCanvas.width, profileCanvas.height - 1);
+            profileCtx.moveTo(1, 0);
+            profileCtx.lineTo(1, profileCanvas.height);
+            profileCtx.stroke();
+        }
+        function drawCannon(angle, height) {
+            const cannonLength = 30;
+            const cannonWidth = 10;
+            const scaledHeight = height * scale;
+            profileCtx.save();
+            profileCtx.translate(0, profileCanvas.height - 1 - scaledHeight);
+            profileCtx.rotate(-angle);
+            profileCtx.fillStyle = '#666';
+            profileCtx.fillRect(0, -cannonWidth / 2, cannonLength, cannonWidth);
+            profileCtx.fillStyle = '#444';
+            profileCtx.beginPath();
+            profileCtx.arc(0, 0, 15, 0, Math.PI * 2);
+            profileCtx.fill();
+            profileCtx.restore();
+            profileCtx.save();
+            profileCtx.translate(0, profileCanvas.height - 1 - scaledHeight);
+            profileCtx.font = '16px Arial';
+            profileCtx.fillStyle = 'blue';
+            profileCtx.textAlign = 'left';
+            const lang = languageSelect.value;
+            profileCtx.fillText(`${translations[lang].angleText}: ${parseFloat(angleInput.value)}°`, 10, -10);
+            profileCtx.fillText(`${translations[lang].heightText}: ${parseFloat(heightInput.value)} м`, 10, -30);
+            profileCtx.restore();
+        }
+        function drawBall(x, y, speed) {
+            profileCtx.fillStyle = 'red';
+            profileCtx.beginPath();
+            profileCtx.arc(x, y, 5, 0, Math.PI * 2);
+            profileCtx.fill();
+            profileCtx.fillStyle = '#333';
+            profileCtx.font = '12px Arial';
+            profileCtx.textAlign = 'center';
+            profileCtx.fillText(speed.toFixed(1) + ' м/с', x, y - 15);
+        }
+        function drawAllTrajectories() {
+            trajectories.forEach(trajectory => {
+                profileCtx.strokeStyle = trajectory.color;
+                profileCtx.lineWidth = 2;
+                profileCtx.beginPath();
+                profileCtx.moveTo(trajectory.points[0].x * trajectory.scale, profileCanvas.height - 1 - trajectory.points[0].y * trajectory.scale);
+                for (let i = 1; i < trajectory.points.length; i++) {
+                    const point = trajectory.points[i];
+                    profileCtx.lineTo(point.x * trajectory.scale, profileCanvas.height - 1 - point.y * trajectory.scale);
+                }
+                profileCtx.stroke();
+            });
+        }
+        function drawMaxHeightLine(maxHeight, scaledMaxHeight) {
+            profileCtx.strokeStyle = 'green';
+            profileCtx.lineWidth = 2;
+            profileCtx.setLineDash([5, 5]);
+            profileCtx.beginPath();
+            profileCtx.moveTo(1, profileCanvas.height - 1 - scaledMaxHeight);
+            profileCtx.lineTo(profileCanvas.width, profileCanvas.height - 1 - scaledMaxHeight);
+            profileCtx.stroke();
+            profileCtx.setLineDash([]);
+            profileCtx.fillStyle = 'green';
+            profileCtx.font = '16px Arial';
+            profileCtx.textAlign = 'left';
+            const lang = languageSelect.value;
+            profileCtx.fillText(`${translations[lang].maxHeightText} ${maxHeight.toFixed(2)} м`, 10, profileCanvas.height - 1 - scaledMaxHeight - 10);
+        }
+        function drawMaxDistanceLine(maxDistance, scaledMaxDistance) {
+            profileCtx.strokeStyle = 'purple';
+            profileCtx.lineWidth = 2;
+            profileCtx.setLineDash([5, 5]);
+            profileCtx.beginPath();
+            profileCtx.moveTo(scaledMaxDistance, profileCanvas.height - 1);
+            profileCtx.lineTo(scaledMaxDistance, 0);
+            profileCtx.stroke();
+            profileCtx.setLineDash([]);
+            profileCtx.fillStyle = 'purple';
+            profileCtx.font = '16px Arial';
+            profileCtx.textAlign = 'center';
+            const lang = languageSelect.value;
+            profileCtx.fillText(`${translations[lang].maxDistanceText} ${Math.abs(maxDistance).toFixed(2)} м`, scaledMaxDistance, profileCanvas.height - 20);
+        }
+        function stopAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+        function updateResultsDisplay() {
+            resultsListDiv.innerHTML = '';
+            const lang = languageSelect.value;
+            pastResults.forEach((result, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
+                    <span>Симуляция ${index + 1}:</span>
+                    <span>${translations[lang].maxHeightText} ${result.height.toFixed(2)} м | ${translations[lang].maxDistanceText} ${result.distance.toFixed(2)} м</span>
+                `;
+                resultsListDiv.insertBefore(item, resultsListDiv.firstChild);
+            });
+        }
+        function startAnimation() {
+            stopAnimation();
+            const v0 = parseFloat(speedInput.value);
+            const alpha = parseFloat(angleInput.value) * Math.PI / 180;
+            const h = parseFloat(heightInput.value);
+            const g = parseFloat(planetSelect.value);
+            const vetSpeed = parseFloat(vetSpeedInput.value);
+            const vetAngle = parseFloat(vetAngleInput.value) * Math.PI / 180;
+            const vetAx = vetSpeed * Math.cos(vetAngle);
+            const v0x = v0 * Math.cos(alpha);
+            const v0y = v0 * Math.sin(alpha);
+            t = 0;
+            const currentTrajectoryPoints = [{x: 0, y: h}];
+            const A = -0.5 * g;
+            const B = v0y;
+            const C = h;
+            const discriminant = B * B - 4 * A * C;
+            let flightTime = 0;
+            if (discriminant >= 0) {
+                const T1 = (-B + Math.sqrt(discriminant)) / (2 * A);
+                const T2 = (-B - Math.sqrt(discriminant)) / (2 * A);
+                flightTime = Math.max(T1, T2);
+            }
+            const maxHeightFromGround = h + (v0y > 0 ? (v0y * v0y) / (2 * g) : 0);
+            const maxDistance = v0x * flightTime + 0.5 * vetAx * flightTime * flightTime;
+            const horizontalPadding = 50;
+            const verticalPadding = 50;
+            const requiredWidth = Math.abs(maxDistance) + horizontalPadding;
+            const requiredHeight = maxHeightFromGround + verticalPadding;
+            
+            // **УЛУЧШЕННЫЙ КОД: Добавлена проверка для предотвращения ошибок**
+            if (!isFinite(requiredWidth) || !isFinite(requiredHeight) || requiredWidth <= 0 || requiredHeight <= 0) {
+                scale = 1; // Устанавливаем масштаб по умолчанию, если расчеты не удались
+            } else {
+                scale = Math.min(MAX_CANVAS_WIDTH / requiredWidth, MAX_CANVAS_HEIGHT / requiredHeight);
+            }
+
+            profileCanvas.width = MAX_CANVAS_WIDTH;
+            profileCanvas.height = MAX_CANVAS_HEIGHT;
+
+            function animate() {
+                let x = v0x * t + 0.5 * vetAx * t * t;
+                let y = h + v0y * t - 0.5 * g * t * t;
+
+                // **УЛУЧШЕННЫЙ КОД: Проверка координат перед отрисовкой**
+                if (!isFinite(x) || !isFinite(y)) {
+                    stopAnimation(); // Останавливаем анимацию при некорректных координатах
+                    return;
+                }
+
+                profileCtx.clearRect(0, 0, profileCanvas.width, profileCanvas.height);
+                drawAxis();
+                drawCannon(alpha, h);
+                drawAllTrajectories();
+                currentTrajectoryPoints.push({x: x, y: y});
+                profileCtx.strokeStyle = 'blue';
+                profileCtx.lineWidth = 2;
+                profileCtx.beginPath();
+                profileCtx.moveTo(currentTrajectoryPoints[0].x * scale, profileCanvas.height - 1 - currentTrajectoryPoints[0].y * scale);
+                for (let i = 1; i < currentTrajectoryPoints.length; i++) {
+                    const point = currentTrajectoryPoints[i];
+                    profileCtx.lineTo(point.x * scale, profileCanvas.height - 1 - point.y * scale);
+                }
+                profileCtx.stroke();
+                if (y < 0) {
+                    stopAnimation();
+                    const finalX = v0x * flightTime + 0.5 * vetAx * flightTime * flightTime;
+                    const finalY = 0;
+                    const newTrajectory = {
+                        points: [],
+                        color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                        scale: scale,
+                        initialHeight: h
+                    };
+                    for (let traceT = 0; traceT <= flightTime; traceT += dt) {
+                        const traceX = v0x * traceT + 0.5 * vetAx * traceT * traceT;
+                        const traceY = h + v0y * traceT - 0.5 * g * traceT * traceT;
+                        newTrajectory.points.push({x: traceX, y: traceY});
+                    }
+                    trajectories.push(newTrajectory);
+                    if (trajectories.length > 5) {
+                        trajectories.shift();
+                    }
+                    pastResults.push({
+                        height: maxHeightFromGround,
+                        distance: maxDistance
+                    });
+                    if (pastResults.length > 5) {
+                        pastResults.shift();
+                    }
+                    updateResultsDisplay();
+                    profileCtx.clearRect(0, 0, profileCanvas.width, profileCanvas.height);
+                    drawAxis();
+                    drawCannon(alpha, h);
+                    drawAllTrajectories();
+                    drawBall(finalX * scale, profileCanvas.height - 1 - finalY * scale, 0);
+                    drawMaxHeightLine(maxHeightFromGround, maxHeightFromGround * scale);
+                    drawMaxDistanceLine(maxDistance, finalX * scale);
+                    return;
+                }
+                const vx = v0x + vetAx * t;
+                const vy = v0y - g * t;
+                const currentSpeed = Math.sqrt(vx * vx + vy * vy);
+                const currentProfileX = x * scale;
+                const currentProfileY = profileCanvas.height - 1 - y * scale;
+                drawBall(currentProfileX, currentProfileY, currentSpeed);
+                t += dt;
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        startButton.addEventListener('click', startAnimation);
+        stopButton.addEventListener('click', stopAnimation);
+        formulasButton.addEventListener('click', () => {
+            formulasDiv.style.display = formulasDiv.style.display === 'block' ? 'none' : 'block';
+        });
+        clearResultsButton.addEventListener('click', () => {
+            pastResults = [];
+            updateResultsDisplay();
+        });
+        window.onload = function() {
+            updateValues();
+            updateLanguage('ru');
+            drawAll();
+        };
+    </script>
+</body>
+</html>

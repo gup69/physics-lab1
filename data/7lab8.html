@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №8</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .simulation-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; padding: 15px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; min-height: 450px; }
+        .simulation-area {
+            position: relative; width: 400px; height: 400px;
+            background-color: white;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 10px 10px, 10px 10px, 50px 50px, 50px 50px;
+            border: 1px solid #333;
+        }
+        .object-controls { width: 250px; }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .control-group button, .control-group select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 1em; box-sizing: border-box; }
+        .control-group button { background-color: #3498db; color: white; cursor: pointer; border: none; }
+        .control-group button:hover { background-color: #2980b9; }
+        .control-group button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #shape { fill: #f39c1277; stroke: #c0392bff; stroke-width: 2; transition: transform 0.8s ease-in-out; }
+        .pivot-point { fill: white; stroke: #2980b9; stroke-width: 2; cursor: pointer; }
+        .pivot-point:hover { fill: #aed6f1; }
+        .pivot-point.active { fill: #e74c3c; }
+        .plumb-line { stroke: #2c3e50; stroke-width: 1.5; stroke-dasharray: 4 4; }
+        .plumb-weight { fill: #7f8c8d; }
+        .drawn-line { stroke: #27ae60; stroke-width: 2; opacity: 0.7; pointer-events: none; }
+        #pencil-tip { position: absolute; width: 20px; height: 30px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><polygon points="50,0 0,100 100,100" style="fill:%23f39c12;"/><polygon points="50,0 50,100 0,100" style="fill:%23e67e22;"/><rect x="0" y="100" width="100" height="20" style="fill:%23bdc3c7;"/><polygon points="50,120 0,150 100,150" style="fill:%2334495e;"/><polygon points="50,120 50,150 0,150" style="fill:%232c3e50;"/></svg>'); background-size: contain; background-repeat: no-repeat; transform: translate(-50%, -100%); transition: opacity 0.5s; opacity: 0; pointer-events: none; }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-weight: normal; font-size: 0.9em; color: #555; }
+        .input-group input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton { background-color: #3498db; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 10px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    
+    <div class="page-header" id="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level"></h2>
+            <p><span data-key="author_prefix"></span> <span data-key="author_details"></span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright"></div>
+
+    <div class="top-nav" id="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button"></button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info" id="student-info">
+        <div><label for="student_lastname" data-key="student_lastname"></label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname"></label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number"></label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter"></label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title"></h1>
+    <h2 data-key="lab_topic_title"></h2>
+    <p><strong data-key="lab_goal_title"></strong> <span data-key="lab_goal_text"></span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title"></h4>
+        <ol>
+             <li data-key="instruction_step1"></li><li data-key="instruction_step2"></li>
+             <li data-key="instruction_step3"></li><li data-key="instruction_step4"></li>
+             <li data-key="instruction_step5"></li><li data-key="instruction_step6"></li>
+             <li data-key="instruction_step7"></li>
+        </ol>
+    </div>
+    
+    <h3 data-key="procedure_title"></h3>
+    <div class="simulation-container">
+        <div class="simulation-area" id="simulation-area">
+           <svg id="svg-canvas" width="400" height="400" style="user-select: none;">
+    <g id="grid-group"></g>
+    <g id="drawn-lines-container"></g> <g id="shape-group">
+        <polygon id="shape" points=""></polygon>
+        <g id="pivots-group"></g>
+    </g>
+    <g id="plumb-group" style="visibility: hidden;">
+                    <line class="plumb-line" x1="0" y1="0" x2="0" y2="380"></line>
+                    <polygon class="plumb-weight" points="0,380 -10,360 10,360"></polygon>
+                </g>
+            </svg>
+            <div id="pencil-tip"></div>
+        </div>
+        <div class="object-controls">
+            <div class="control-group">
+                <label for="shape-select" data-key="shape_select_label"></label>
+                <select id="shape-select">
+                    <option value="shape1" data-key="shape1_name"></option>
+                    <option value="shape2" data-key="shape2_name"></option>
+                    <option value="shape3" data-key="shape3_name"></option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label data-key="action_label_1"></label>
+                <button id="draw-line-btn" disabled data-key="draw_line_btn"></button>
+            </div>
+             <div class="control-group">
+                <label data-key="action_label_2"></label>
+                <button id="balance-btn" data-key="balance_btn"></button>
+            </div>
+            <div class="control-group">
+                <label data-key="reset_label"></label>
+                <button id="reset-lines-btn" data-key="reset_lines_btn"></button>
+            </div>
+        </div>
+    </div>
+    
+    <h3 data-key="results_table_title"></h3>
+    <p data-key="results_instruction"></p>
+    <div class="results-grid">
+        <div class="input-group">
+            <label for="cm-x-shape1" data-key="shape1_cm"></label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="cm-x-shape1" placeholder="X"><input type="number" id="cm-y-shape1" placeholder="Y">
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="cm-x-shape2" data-key="shape2_cm"></label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="cm-x-shape2" placeholder="X"><input type="number" id="cm-y-shape2" placeholder="Y">
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="cm-x-shape3" data-key="shape3_cm"></label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="cm-x-shape3" placeholder="X"><input type="number" id="cm-y-shape3" placeholder="Y">
+            </div>
+        </div>
+    </div>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button"></button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button"></button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button"></button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const BOT_TOKEN = 'СЮДА_ВСТАВЬТЕ_ВАШ_ТОКЕН';
+    const CHAT_ID = 'СЮДА_ВСТАВЬТЕ_ВАШ_CHAT_ID';
+
+    const shapeElement = document.getElementById('shape');
+    const shapeGroup = document.getElementById('shape-group');
+    const pivotsGroup = document.getElementById('pivots-group');
+    const plumbGroup = document.getElementById('plumb-group');
+    const linesGroup = document.getElementById('lines-group');
+    const gridGroup = document.getElementById('grid-group');
+    const shapeSelect = document.getElementById('shape-select');
+    const drawLineBtn = document.getElementById('draw-line-btn');
+    const balanceBtn = document.getElementById('balance-btn');
+    const resetLinesBtn = document.getElementById('reset-lines-btn');
+    const pencilTip = document.getElementById('pencil-tip');
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+const drawnLinesContainer = document.getElementById('drawn-lines-container'); // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
+    
+    const RAW_SHAPES = {
+        shape1: { points: "100,100 250,100 250,150 150,150 150,250 100,250", pivots: [{x: 100, y: 100}, {x: 250, y: 125}, {x: 125, y: 250}] },
+        shape2: { points: "100,100 250,100 250,150 190,150 190,250 160,250 160,150 100,150", pivots: [{x: 100, y: 125}, {x: 250, y: 125}, {x: 175, y: 250}] },
+        shape3: { points: "100,150 150,100 250,120 280,200 200,280 120,250", pivots: [{x: 100, y: 150}, {x: 250, y: 120}, {x: 200, y: 280}] }
+    };
+    
+    const SHAPES = {};
+
+    function getCentroid(pointsStr) {
+        let pts = pointsStr.split(' ').map(p => p.split(',').map(Number));
+        if (pts.some(p => isNaN(p[0]) || isNaN(p[1]))) return {x: 200, y: 200};
+        let area = 0, cx = 0, cy = 0;
+        for (let i = 0; i < pts.length; i++) {
+            let p1 = pts[i]; let p2 = pts[(i + 1) % pts.length];
+            let crossProduct = (p1[0] * p2[1] - p2[0] * p1[1]);
+            area += crossProduct; cx += (p1[0] + p2[0]) * crossProduct; cy += (p1[1] + p2[1]) * crossProduct;
+        }
+        area /= 2;
+        if (Math.abs(area) < 1e-6) return {x: 200, y: 200};
+        cx /= (6 * area);
+        cy /= (6 * area);
+        return { x: cx, y: cy };
+    }
+
+    function processShapes(rawShapes, scale, canvasCenter) {
+        for (const key in rawShapes) {
+            const raw = rawShapes[key];
+            const points = raw.points.split(' ').map(p => p.split(',').map(Number));
+            
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            points.forEach(p => { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
+            const geoCenterX = minX + (maxX - minX) / 2;
+            const geoCenterY = minY + (maxY - minY) / 2;
+
+            const transform = (p) => {
+                const translatedX = (p[0] || p.x) - geoCenterX;
+                const translatedY = (p[1] || p.y) - geoCenterY;
+                const scaledX = translatedX * scale;
+                const scaledY = translatedY * scale;
+                return { x: scaledX + canvasCenter.x, y: scaledY + canvasCenter.y };
+            };
+            const newPoints = points.map(p => { const np = transform(p); return `${np.x},${np.y}`; }).join(' ');
+            const newPivots = raw.pivots.map(p => transform(p));
+            
+            SHAPES[key] = {
+                points: newPoints,
+                pivots: newPivots,
+                cm: getCentroid(newPoints) // ✅ ИСПРАВЛЕНИЕ: Вычисляем центр масс для масштабированной фигуры
+            };
+        }
+    }
+
+    processShapes(RAW_SHAPES, 0.75, {x: 200, y: 200});
+    
+    let state = { activeShape: 'shape1', activePivot: null, drawnLines: {}, attemptsLeft: 2, finalScoreText: '' };
+    
+    function loadShape(shapeKey) {
+        state.activeShape = shapeKey;
+        resetLines();
+        const shapeData = SHAPES[shapeKey];
+        shapeElement.setAttribute('points', shapeData.points);
+        
+        pivotsGroup.innerHTML = '';
+        shapeData.pivots.forEach((p, index) => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y);
+            circle.setAttribute('r', 8); circle.classList.add('pivot-point');
+            circle.dataset.index = index;
+            pivotsGroup.appendChild(circle);
+        });
+    }
+
+    shapeGroup.addEventListener('click', (e) => {
+        if (e.target.classList.contains('pivot-point')) {
+            const pivotIndex = e.target.dataset.index;
+            const pivot = SHAPES[state.activeShape].pivots[pivotIndex];
+            state.activePivot = pivot;
+            
+            pivotsGroup.querySelectorAll('.pivot-point').forEach(p => p.classList.remove('active'));
+            e.target.classList.add('active');
+
+            const cm = SHAPES[state.activeShape].cm;
+            const angleRad = Math.atan2(cm.y - pivot.y, cm.x - pivot.x);
+            const angleDeg = 90 - (angleRad * (180 / Math.PI));
+            
+            const suspensionPoint = {x: 200, y: 100};
+            const translateX = suspensionPoint.x - pivot.x;
+            const translateY = suspensionPoint.y - pivot.y; 
+            // ✅ ИСПРАВЛЕНИЕ: Убран лишний минус для правильного направления вращения
+            const transform = `translate(${translateX}, ${translateY}) rotate(${angleDeg} ${pivot.x} ${pivot.y})`;
+            shapeGroup.setAttribute('transform', transform);
+            
+            plumbGroup.setAttribute('transform', `translate(${suspensionPoint.x}, ${suspensionPoint.y})`);
+            plumbGroup.style.visibility = 'visible';
+            updateControls();
+        }
+    });
+
+    drawLineBtn.addEventListener('click', () => {
+    if (!state.activePivot) return;
+    const suspensionPoint = {x: 200, y: 100};
+
+    // Линия теперь всегда рисуется в глобальных координатах, как простой вертикальный отрезок
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', suspensionPoint.x);
+    line.setAttribute('y1', suspensionPoint.y);
+    line.setAttribute('x2', suspensionPoint.x);
+    line.setAttribute('y2', 400);
+    line.classList.add('drawn-line');
+
+    // Добавляем линию в новый, независимый контейнер
+    drawnLinesContainer.appendChild(line);
+
+    if (!state.drawnLines[state.activeShape]) { state.drawnLines[state.activeShape] = 0; }
+    state.drawnLines[state.activeShape]++;
+    // updateControls() больше не нужна здесь, т.к. кнопка всегда активна при выборе точки
+});
+
+    balanceBtn.addEventListener('click', () => {
+        // ✅ ИСПРАВЛЕНИЕ: Кнопка теперь не проверяет ввод, а показывает правильный баланс
+        const correctCm = SHAPES[state.activeShape].cm;
+        
+        plumbGroup.style.visibility = 'hidden'; // Скрываем отвес
+        
+        // Показываем карандаш-опору точно в центре масс
+        pencilTip.style.left = `${correctCm.x}px`;
+        pencilTip.style.top = `${correctCm.y}px`;
+        pencilTip.style.opacity = '1';
+        
+        // Плавно перемещаем фигуру на опору и выравниваем её
+        const transform = `translate(${200 - correctCm.x}, ${200 - correctCm.y}) rotate(0 ${correctCm.x} ${correctCm.y})`;
+        shapeGroup.setAttribute('transform', transform);
+
+        setTimeout(() => { pencilTip.style.opacity = '0'; }, 2500);
+    });
+    
+    function resetLines() {
+    drawnLinesContainer.innerHTML = ''; // Очищаем новый контейнер
+    state.drawnLines[state.activeShape] = 0;
+        shapeGroup.setAttribute('transform', 'translate(0, 0) rotate(0)');
+        plumbGroup.style.visibility = 'hidden';
+        state.activePivot = null;
+        pivotsGroup.querySelectorAll('.pivot-point').forEach(p => p.classList.remove('active'));
+        updateControls();
+    }
+    
+    function updateControls() {
+        drawLineBtn.disabled = !state.activePivot;
+    }
+
+    function setupGrid() {
+        gridGroup.innerHTML = '';
+        const size = 400, step = 50;
+        const createText = (x, y, text, anchor, baseline) => {
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', x); label.setAttribute('y', y);
+            label.textContent = text;
+            label.setAttribute('font-size', '12');
+            label.setAttribute('fill', 'black');
+            label.setAttribute('text-anchor', anchor || 'middle');
+            label.setAttribute('dominant-baseline', baseline || 'hanging');
+            gridGroup.appendChild(label);
+        };
+        for (let i = step; i <= size; i += step) {
+            createText(i, size - 15, i);
+            if (i < size) createText(15, size - i, i, 'start');
+        }
+        createText(10, size - 15, '0');
+    }
+
+    shapeSelect.addEventListener('change', (e) => loadShape(e.target.value));
+    resetLinesBtn.addEventListener('click', resetLines);
+    backButton.addEventListener('click', () => window.history.back());
+    
+    const translations = {
+        ru: {
+            grade_level: "7 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Интерактивная лабораторная работа №8", lab_topic_title: "Тема: Нахождение центра масс плоской фигуры", lab_goal_title: "Цель:", lab_goal_text: "Определить центр масс плоской фигуры экспериментально методом подвеса.", instruction_title: "Инструкция по выполнению", instruction_step1: "Выберите одну из фигур для исследования.", instruction_step2: "Нажмите на одну из точек подвеса (белые кружки) на краю фигуры. Фигура повернется под действием силы тяжести.", instruction_step3: "Нажмите кнопку \"Провести линию\", чтобы нарисовать линию отвеса.", instruction_step4: "Выберите другую точку подвеса и повторите шаги 2 и 3.", instruction_step5: "Определите координаты (X, Y) точки пересечения линий, используя координатную сетку, и введите их в таблицу.", instruction_step6: "Нажмите \"Проверить баланс\", чтобы визуально убедиться, что вы нашли центр масс верно.", instruction_step7: "После успешной проверки баланса заполните таблицу для остальных фигур и нажмите \"Проверить\".", procedure_title: "Ход работы", shape_select_label: "1. Выберите фигуру:", shape1_name: "L-образная фигура", shape2_name: "Т-образная фигура", shape3_name: "Неправильный многоугольник", action_label_1: "2. Проведите линии:", draw_line_btn: "Провести линию", action_label_2: "3. Проверка:", balance_btn: "Проверить баланс", reset_label: "Сброс:", reset_lines_btn: "Сбросить линии", results_table_title: "Таблица результатов", results_instruction: "Определите и запишите координаты центра масс (X, Y) для каждой фигуры с точностью до 5 единиц.", shape1_cm: "Центр масс L-фигуры (X, Y)", shape2_cm: "Центр масс Т-фигуры (X, Y)", shape3_cm: "Центр масс многоугольника (X, Y)", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля ученика и таблицы.", enter_coords_message: "Пожалуйста, введите координаты X и Y для проверки баланса.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", your_answer: "Ваш ответ:", correct_answer: "Правильный ответ:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:"
+        },
+        kk: {
+            grade_level: "7 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ. №8 гимназия, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№8 Интерактивті зертханалық жұмыс", lab_topic_title: "Тақырыбы: Жалпақ фигураның массалар центрін табу", lab_goal_title: "Мақсаты:", lab_goal_text: "Ілу әдісі арқылы жалпақ фигураның массалар центрін тәжірибе жүзінде анықтау.", instruction_title: "Орындау нұсқаулығы", instruction_step1: "Зерттеу үшін фигуралардың бірін таңдаңыз.", instruction_step2: "Фигураның шетіндегі ілу нүктелерінің (ақ дөңгелектер) бірін басыңыз. Фигура ауырлық күшінің әсерінен бұрылады.", instruction_step3: "Тіктеуіш сызығын сызу үшін \"Сызық сызу\" түймесін басыңыз.", instruction_step4: "Басқа ілу нүктесін таңдап, 2 және 3 қадамдарды қайталаңыз.", instruction_step5: "Координаттық торды пайдаланып, сызықтардың қиылысу нүктесінің координаттарын (X, Y) анықтап, оларды кестеге енгізіңіз.", instruction_step6: "Массалар центрін дұрыс тапқаныңызға көз жеткізу үшін \"Тепе-теңдікті тексеру\" түймесін басыңыз.", instruction_step7: "Тепе-теңдікті сәтті тексергеннен кейін, қалған фигуралар үшін кестені толтырып, \"Тексеру\" түймесін басыңыз.", procedure_title: "Жұмыс барысы", shape_select_label: "1. Фигураны таңдаңыз:", shape1_name: "L-тәрізді фигура", shape2_name: "Т-тәрізді фигура", shape3_name: "Дұрыс емес көпбұрыш", action_label_1: "2. Сызықтарды сызыңыз:", draw_line_btn: "Сызық сызу", action_label_2: "3. Тексеру:", balance_btn: "Тепе-теңдікті тексеру", reset_label: "Қалпына келтіру:", reset_lines_btn: "Сызықтарды өшіру", results_table_title: "Нәтижелер кестесі", results_instruction: "Әр фигура үшін массалар центрінің координаттарын (X, Y) 5 бірлікке дейінгі дәлдікпен анықтап, жазыңыз.", shape1_cm: "L-фигураның массалар центрі (X, Y)", shape2_cm: "Т-фигураның массалар центрі (X, Y)", shape3_cm: "Көпбұрыштың массалар центрі (X, Y)", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Литер", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберу...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Оқушы деректері мен кестенің барлық өрістерін толтырыңыз.", enter_coords_message: "Тепе-теңдікті тексеру үшін X және Y координаттарын енгізіңіз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", your_answer: "Сіздің жауабыңыз:", correct_answer: "Дұрыс жауап:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:"
+        },
+        en: {
+            grade_level: "7th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium No. 8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Interactive Lab Work #8", lab_topic_title: "Topic: Finding the Center of Mass of a Flat Shape", lab_goal_title: "Objective:", lab_goal_text: "To experimentally determine the center of mass of a flat shape using the suspension method.", instruction_title: "Instructions", instruction_step1: "Select one of the shapes to study.", instruction_step2: "Click on one of the suspension points (white circles) on the edge of the shape. The shape will rotate under the force of gravity.", instruction_step3: "Click the \"Draw Line\" button to draw the plumb line.", instruction_step4: "Select another suspension point and repeat steps 2 and 3.", instruction_step5: "Determine the coordinates (X, Y) of the intersection point of the lines using the coordinate grid and enter them into the table.", instruction_step6: "Click \"Check Balance\" to visually verify that you have found the center of mass correctly.", instruction_step7: "After a successful balance check, fill in the table for the remaining shapes and click \"Check\".", procedure_title: "Procedure", shape_select_label: "1. Select shape:", shape1_name: "L-shaped figure", shape2_name: "T-shaped figure", shape3_name: "Irregular polygon", action_label_1: "2. Draw lines:", draw_line_btn: "Draw Line", action_label_2: "3. Verification:", balance_btn: "Check Balance", reset_label: "Reset:", reset_lines_btn: "Reset Lines", results_table_title: "Results Table", results_instruction: "Determine and record the coordinates of the center of mass (X, Y) for each shape, with an accuracy of 5 units.", shape1_cm: "Center of Mass of L-shape (X, Y)", shape2_cm: "Center of Mass of T-shape (X, Y)", shape3_cm: "Center of Mass of polygon (X, Y)", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Class (Number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report sent successfully!", send_error: "Send error.", validation_message: "Please fill in all student and table fields.", enter_coords_message: "Please enter X and Y coordinates to check the balance.", final_result_title: "Your Final Result:", out_of_10: "out of 10", answers_review_title: "Answers Review:", your_answer: "Your answer:", correct_answer: "Correct answer:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:"
+        }
+    };
+    let currentLang = 'ru';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.querySelector('html').setAttribute('lang', lang);
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') { text = text.replace('{year}', new Date().getFullYear()); }
+                element.innerHTML = text;
+            }
+        });
+        updateCheckButtonText();
+    }
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (btn.classList.contains('active')) return;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active'); setLanguage(e.target.dataset.lang);
+        });
+    });
+    
+    function updateCheckButtonText() {
+        if (state.attemptsLeft > 0) {
+            const attemptText = translations[currentLang][state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2'];
+            checkButton.innerHTML = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (state.attemptsLeft <= 0) return;
+
+        const studentInfo = {
+            lastname: document.getElementById('student_lastname').value,
+            firstname: document.getElementById('student_firstname').value,
+            classNum: document.getElementById('student_class_number').value,
+            classLetter: document.getElementById('student_class_letter').value
+        };
+
+        let allStudentFieldsFilled = Object.values(studentInfo).every(val => val.trim() !== '');
+        let allAnswerFieldsFilled = true;
+        
+        let score = 0;
+        const totalQuestions = 3;
+        const tolerance = 10; // Погрешность в 10 пикселей
+
+        answersReviewDiv.innerHTML = `<h4>${translations[currentLang].answers_review_title}</h4>`;
+        
+        ['shape1', 'shape2', 'shape3'].forEach(shapeKey => {
+            const userXInput = document.getElementById(`cm-x-${shapeKey}`);
+            const userYInput = document.getElementById(`cm-y-${shapeKey}`);
+            userXInput.classList.remove('correct-input', 'incorrect-input');
+            userYInput.classList.remove('correct-input', 'incorrect-input');
+            
+            const userX = parseFloat(userXInput.value);
+            const userY = parseFloat(userYInput.value);
+
+            if (isNaN(userX) || isNaN(userY)) {
+                allAnswerFieldsFilled = false;
+            }
+
+            const correctCm = SHAPES[shapeKey].cm;
+            const correctGridY = 400 - correctCm.y;
+
+            const distance = Math.sqrt(Math.pow(userX - correctCm.x, 2) + Math.pow(userY - correctGridY, 2));
+            const isCorrect = distance < tolerance;
+
+            let reviewHtml = `<p><strong>${translations[currentLang][shapeKey + '_cm']}</strong><br>`;
+            reviewHtml += `${translations[currentLang].your_answer} X=${userX || '?'}, Y=${userY || '?'}<br>`;
+            
+            if(isCorrect) {
+                score++;
+                userXInput.classList.add('correct-input');
+                userYInput.classList.add('correct-input');
+                reviewHtml += `<span class="correct">${translations[currentLang].correct_answer} X=${Math.round(correctCm.x)}, Y=${Math.round(correctGridY)}</span></p>`;
+            } else {
+                userXInput.classList.add('incorrect-input');
+                userYInput.classList.add('incorrect-input');
+                reviewHtml += `<span class="incorrect">${translations[currentLang].correct_answer} X=${Math.round(correctCm.x)}, Y=${Math.round(correctGridY)}</span></p>`;
+            }
+            answersReviewDiv.innerHTML += reviewHtml;
+        });
+
+        if (!allStudentFieldsFilled || !allAnswerFieldsFilled) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            return;
+        }
+        validationMessageDiv.textContent = '';
+        
+        state.attemptsLeft--;
+        updateCheckButtonText();
+
+        const finalScore = Math.round((score / totalQuestions) * 10);
+        state.finalScoreText = `${finalScore} ${translations[currentLang].out_of_10}`;
+        finalResultDiv.innerHTML = `<h4>${translations[currentLang].final_result_title}</h4><p>${state.finalScoreText}</p>`;
+        
+        answersReviewDiv.style.display = 'block';
+
+        if (state.attemptsLeft <= 0) {
+            checkButton.disabled = true;
+            checkButton.textContent = translations[currentLang].check_button;
+            showAnswersButton.style.display = 'inline-block';
+            shareToTeacherButton.style.display = 'inline-block';
+        }
+    });
+
+    showAnswersButton.addEventListener('click', () => {
+        ['shape1', 'shape2', 'shape3'].forEach(shapeKey => {
+            const correctCm = SHAPES[shapeKey].cm;
+            document.getElementById(`cm-x-${shapeKey}`).value = Math.round(correctCm.x);
+            document.getElementById(`cm-y-${shapeKey}`).value = Math.round(400 - correctCm.y);
+        });
+    });
+    
+    setupGrid();
+    loadShape('shape1');
+    setLanguage('ru');
+});
+</script>
+</body>
+</html>

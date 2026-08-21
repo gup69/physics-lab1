@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-Cosmos: Math & Physics Core</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700&display=swap">
+    <style>
+        :root { --primary: #4e73df; --accent: #1cc88a; --danger: #e74a3b; --bg: #0b0d17; --panel: rgba(20, 25, 40, 0.95); }
+        body {
+            font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #d0d6f9;
+            display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; min-height: 100vh; overflow: hidden;
+        }
+        h1 { margin: 5px 0 10px 0; font-weight: 300; font-size: 1.4em; z-index: 2;}
+        h1 b { font-weight: 700; color: var(--primary); }
+
+        .main-layout { display: flex; gap: 15px; z-index: 2; position: relative; justify-content: center;}
+
+        /* Симуляция */
+        .sim-wrapper { position: relative; border-radius: 12px; border: 1px solid #3e4c6b; box-shadow: 0 0 40px rgba(0,0,0,0.6); overflow: hidden;}
+        canvas { display: block; }
+        
+        /* Сайдбар */
+        .sidebar { width: 280px; display: flex; flex-direction: column; gap: 10px; }
+        .panel { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid #3e4c6b; backdrop-filter: blur(4px); font-size: 0.9em;}
+        
+        /* Кнопки и инпуты */
+        input[type="range"] { width: 100%; margin: 5px 0; cursor: pointer; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; transition: 0.2s; }
+        .btn-launch { background: linear-gradient(90deg, #4e73df, #224abe); color: #fff; }
+        .btn-launch:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(78,115,223,0.4); }
+        .btn-theory { background: rgba(28, 200, 138, 0.15); border: 1px solid var(--accent); color: var(--accent); }
+        .btn-theory:hover { background: var(--accent); color: #000; }
+        .btn-reset { background: transparent; border: 1px solid #3e4c6b; color: #888; }
+        .btn-reset:hover { border-color: #fff; color: #fff; }
+
+        /* Энергетические бары */
+        .energy-monitor { position: absolute; top: 10px; left: 10px; width: 120px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 6px; pointer-events: none; }
+        .bar-container { height: 5px; background: #333; margin-top: 2px; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.1s linear; }
+        .label-e { font-size: 0.7em; display: flex; justify-content: space-between; margin-top: 5px; color: #aaa;}
+
+        /* Фон */
+        .bg-stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); }
+
+        /* --- МОДАЛЬНОЕ ОКНО ТЕОРИИ --- */
+        #theoryModal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 50; display: none;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1a1f2e; padding: 0; border-radius: 12px; width: 95%; max-width: 600px;
+            border: 1px solid #3e4c6b; box-shadow: 0 0 40px rgba(0,0,0,0.8); overflow: hidden; display: flex; flex-direction: column;
+        }
+        .modal-header { padding: 15px; background: #131722; border-bottom: 1px solid #3e4c6b; display: flex; justify-content: space-between; align-items: center;}
+        .close-btn { cursor: pointer; font-size: 1.5em; color: #aaa; }
+        
+        /* Вкладки */
+        .tabs { display: flex; background: #0f121b; }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; color: #888; font-size: 0.9em; transition: 0.3s; }
+        .tab:hover { background: #1a1f2e; color: #fff; }
+        .tab.active { border-bottom: 2px solid var(--accent); color: var(--accent); background: #1a1f2e; font-weight: bold;}
+
+        /* Контент вкладок */
+        .tab-content { display: none; padding: 20px; font-family: 'Roboto Mono', monospace; font-size: 0.9em; color: #d0d6f9; min-height: 250px;}
+        .tab-content.active { display: block; }
+
+        /* Стиль формул */
+        .math-block { 
+            background: #0b0d17; padding: 15px; border-radius: 6px; border-left: 3px solid var(--primary); 
+            margin-bottom: 15px; line-height: 1.6;
+        }
+        .var { color: #f6c23e; } /* Переменные - желтый */
+        .op { color: #fff; } /* Операторы - белый */
+        .val { color: var(--accent); font-weight: bold; } /* Значения - зеленый */
+        .comment { color: #666; font-size: 0.8em; font-family: 'Segoe UI', sans-serif; display: block; margin-top: 5px;}
+        
+        .warn-box { background: rgba(231, 74, 59, 0.1); border: 1px solid #e74a3b; padding: 10px; border-radius: 5px; font-family: 'Segoe UI', sans-serif; color: #ffadad; font-size: 0.9em;}
+    </style>
+</head>
+<body>
+
+    <div class="bg-stars"></div>
+
+    <h1>Web-Cosmos <b>Math</b>Core</h1>
+
+    <div class="main-layout">
+        <div class="sim-wrapper">
+            
+            <div id="theoryModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 style="margin:0; color:#fff">📘 Инженерный блокнот</h3>
+                        <span class="close-btn" onclick="toggleTheory()">×</span>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('tab1', this)">1. Идеал (Вакуум)</div>
+                        <div class="tab" onclick="switchTab('tab2', this)">2. Атмосфера</div>
+                        <div class="tab" onclick="switchTab('tab3', this)">3. Ветер</div>
+                    </div>
+                    
+                    <div id="tab1" class="tab-content active">
+                        <div class="math-block">
+                            <span class="comment">Формула дальности полета (9-10 класс):</span>
+                            L = (<span class="var">v₀</span>² · sin(2<span class="var">α</span>)) / <span class="var">g</span>
+                        </div>
+                        <div class="math-block">
+                            <span class="comment">Подставляем ваши значения:</span>
+                            L = (<span class="val" id="t1_v">60</span>² · sin(<span class="val" id="t1_a">90</span>°)) / <span class="val" id="t1_g">3.71</span><br>
+                            <span class="op">⟹</span> Расчетная дальность: <span class="val" style="font-size:1.2em" id="t1_res">0</span> м
+                        </div>
+                        <p style="font-size:0.85em; color:#aaa; font-family:'Segoe UI'">* Эта формула работает только на Луне. На Земле и Марсе она даст ошибку, так как не учитывает воздух.</p>
+                    </div>
+
+                    <div id="tab2" class="tab-content">
+                        <div class="math-block">
+                            <span class="comment">Сила сопротивления воздуха (11 класс):</span>
+                            <span class="var">F</span>drag = -<span class="var">k</span> · <span class="var">v</span>²
+                        </div>
+                        <div class="math-block">
+                            <span class="comment">Второй закон Ньютона в проекциях:</span>
+                            <span class="var">a</span>x = -(<span class="var">k</span>/<span class="var">m</span>) · <span class="var">v</span> · <span class="var">v</span>x<br>
+                            <span class="var">a</span>y = -<span class="var">g</span> - (<span class="var">k</span>/<span class="var">m</span>) · <span class="var">v</span> · <span class="var">v</span>y
+                        </div>
+                        <div class="warn-box">
+                            ⚠️ <b>Внимание:</b> Для этих уравнений НЕТ простой школьной формулы дальности L. 
+                            <br>Поэтому наш ИИ использует <b>метод численного интегрирования</b> (шаг 0.02 сек), чтобы построить траекторию.
+                        </div>
+                    </div>
+
+                    <div id="tab3" class="tab-content">
+                        <div class="math-block">
+                            <span class="comment">Векторное сложение скоростей (Olympiad Level):</span>
+                            <span class="var">v</span>rel = <span class="var">v</span>obj - <span class="var">v</span>wind
+                        </div>
+                        <div class="math-block">
+                            <span class="comment">Сила сопротивления с учетом ветра:</span>
+                            <span class="var">F</span>x ~ (<span class="var">v</span>x - <span class="val" id="t3_w">0</span>)²
+                        </div>
+                        <p style="font-size:0.85em; color:#aaa; font-family:'Segoe UI'">
+                            Если ветер встречный (знак минус), относительная скорость растет, и сила сопротивления резко увеличивается. Снаряд "упирается" в стену воздуха.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="energy-monitor">
+                <div class="label-e"><span>Кинетическая (Ek)</span></div>
+                <div class="bar-container"><div class="bar-fill" id="barEk" style="background:#e74a3b"></div></div>
+                <div class="label-e"><span>Потенциальная (Ep)</span></div>
+                <div class="bar-container"><div class="bar-fill" id="barEp" style="background:#4e73df"></div></div>
+                <div class="label-e" style="margin-top:8px; border-top:1px solid #444; padding-top:2px;"><span>Полная (Total)</span></div>
+                <div class="bar-container"><div class="bar-fill" id="barEt" style="background:#1cc88a"></div></div>
+            </div>
+
+            <canvas id="simCanvas" width="750" height="450"></canvas>
+            
+            <div id="feedback" style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.9); padding:20px; border:1px solid #fff; border-radius:10px; display:none; text-align:center;">
+                <h3 id="fbTitle" style="margin:0 0 10px 0;">Res</h3>
+                <p id="fbText">txt</p>
+                <button onclick="document.getElementById('feedback').style.display='none'" style="width:auto; padding:5px 15px;">OK</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Планета:</span> <b id="uiPlanet" style="color:#e74a3b">Марс</b></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>g:</span> <b id="uiG">3.71</b></div>
+                <div style="display:flex; justify-content:space-between;"><span>Ветер:</span> <b id="uiWind">0 m/s</b></div>
+                <hr style="opacity:0.2; margin:10px 0;">
+                <div style="text-align:center; font-size:1.1em;">Цель: <b style="color:#1cc88a" id="uiDist">100</b> м</div>
+            </div>
+
+            <div class="panel">
+                <label>V₀ (Скорость): <b id="valV" style="color:#4e73df">60</b> м/с</label>
+                <input type="range" id="inV" min="10" max="150" value="60" oninput="updateUI()">
+                
+                <label>α (Угол): <b id="valA" style="color:#4e73df">45</b>°</label>
+                <input type="range" id="inA" min="10" max="85" value="45" oninput="updateUI()">
+                
+                <button class="btn-launch" onclick="launch()">ПУСК 🚀</button>
+                <button class="btn-theory" onclick="toggleTheory()">📐 ТЕОРИЯ (Формулы)</button>
+                <button class="btn-reset" onclick="newMission()">🔄 Новая миссия</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- ДВИЖОК ---
+    const cvs = document.getElementById('simCanvas');
+    const ctx = cvs.getContext('2d');
+    const scale = 3.5; 
+
+    const planets = [
+        { name: "Земля", g: 9.81, air: 0.015, color: "#4e73df", grad: ["#0f2027", "#203a43", "#2c5364"] },
+        { name: "Марс", g: 3.71, air: 0.005, color: "#e74a3b", grad: ["#1a0b0b", "#4a1212", "#872a2a"] },
+        { name: "Луна", g: 1.62, air: 0.0, color: "#aaa", grad: ["#000", "#111", "#222"] },
+        { name: "Титан", g: 1.35, air: 0.04, color: "#f6c23e", grad: ["#1a1a00", "#4d4d00", "#8f7e26"] }
+    ];
+
+    let planet = planets[0];
+    let target = 100;
+    let wind = 0;
+    let animId;
+    let particles = [];
+
+    // --- UI ЛОГИКА ---
+    function updateUI() {
+        const v = document.getElementById('inV').value;
+        const a = document.getElementById('inA').value;
+        document.getElementById('valV').innerText = v;
+        document.getElementById('valA').innerText = a;
+        
+        // Обновляем числа в теории
+        document.getElementById('t1_v').innerText = v;
+        document.getElementById('t1_a').innerText = 2 * a; // для sin(2a)
+        document.getElementById('t1_g').innerText = planet.g;
+        document.getElementById('t3_w').innerText = wind;
+
+        // Расчет идеальной дальности
+        const rad = a * Math.PI / 180;
+        const L = (v*v * Math.sin(2*rad)) / planet.g;
+        document.getElementById('t1_res').innerText = L.toFixed(1);
+    }
+
+    function toggleTheory() {
+        const m = document.getElementById('theoryModal');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        updateUI();
+    }
+
+    function switchTab(tabId, tabElem) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        tabElem.classList.add('active');
+    }
+
+    function newMission() {
+        planet = planets[Math.floor(Math.random() * planets.length)];
+        target = 60 + Math.floor(Math.random() * 100);
+        wind = (planet.name === "Луна") ? 0 : (Math.random() * 16 - 8).toFixed(1);
+        
+        document.getElementById('uiPlanet').innerText = planet.name;
+        document.getElementById('uiPlanet').style.color = planet.color;
+        document.getElementById('uiG').innerText = planet.g;
+        document.getElementById('uiWind').innerText = wind + " м/с";
+        document.getElementById('uiDist').innerText = target;
+        document.getElementById('feedback').style.display = 'none';
+        
+        initParticles();
+        draw(0, 0, false);
+        updateUI();
+    }
+
+    // --- ФИЗИКА И РИСОВАНИЕ ---
+    function initParticles() {
+        particles = [];
+        for(let i=0; i<40; i++) particles.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height*0.8, s: Math.random()*2+0.5});
+    }
+
+    function draw(rx, ry, flying, path=[]) {
+        // Фон
+        const gr = ctx.createLinearGradient(0,0,0,cvs.height);
+        gr.addColorStop(0, planet.grad[0]); gr.addColorStop(1, planet.grad[2]);
+        ctx.fillStyle = gr; ctx.fillRect(0,0,cvs.width, cvs.height);
+
+        // Ветер
+        if(planet.air > 0) {
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            particles.forEach(p => {
+                p.x += Number(wind) * 0.5 + 0.1; 
+                if(p.x > cvs.width) p.x=0; if(p.x < 0) p.x=cvs.width;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        // Земля и Цель
+        ctx.fillStyle = "#111"; ctx.fillRect(0, cvs.height-20, cvs.width, 20);
+        const tx = 20 + target*scale;
+        ctx.fillStyle = "rgba(28, 200, 138, 0.3)"; ctx.fillRect(tx-15, cvs.height-25, 30, 5);
+        ctx.fillStyle = "#fff"; ctx.fillRect(tx, cvs.height-50, 2, 30);
+        ctx.fillStyle = planet.color; ctx.fillRect(tx, cvs.height-50, 15, 10);
+
+        // Траектория
+        ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth=2;
+        path.forEach((p,i) => (i==0)?ctx.moveTo(20+p.x*scale, cvs.height-20-p.y*scale):ctx.lineTo(20+p.x*scale, cvs.height-20-p.y*scale));
+        ctx.stroke();
+
+        // Ракета
+        const cx = 20 + rx*scale, cy = cvs.height-20-ry*scale;
+        if(flying) {
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+            // Огонь
+            ctx.fillStyle = "orange"; ctx.beginPath(); ctx.arc(cx, cy+5, 3+Math.random()*3, 0, Math.PI*2); ctx.fill();
+        } else {
+            ctx.fillStyle = "#aaa"; ctx.beginPath(); ctx.arc(20, cvs.height-20, 8, 0, Math.PI*2); ctx.fill();
+        }
+    }
+
+    function launch() {
+        if(animId) cancelAnimationFrame(animId);
+        document.getElementById('feedback').style.display='none';
+        
+        let v0 = Number(document.getElementById('inV').value);
+        let ang = Number(document.getElementById('inA').value) * Math.PI/180;
+        let vx = v0 * Math.cos(ang), vy = v0 * Math.sin(ang);
+        let x=0, y=0.5, dt=0.03, path=[];
+        
+        function step() {
+            // Силы
+            const vSq = vx*vx + vy*vy;
+            const vMag = Math.sqrt(vSq);
+            
+            // Сопротивление F = -k*v^2 (с учетом ветра для X)
+            const w = Number(wind);
+            let Fx_drag = 0, Fy_drag = 0;
+            
+            if(planet.air > 0) {
+                // Относительная скорость по X
+                const v_rel_x = vx - w;
+                const v_rel_sq = v_rel_x*v_rel_x + vy*vy;
+                const v_rel_mag = Math.sqrt(v_rel_sq);
+                
+                const F_drag = planet.air * v_rel_sq;
+                
+                // Проекции силы против относительной скорости
+                if(v_rel_mag > 0) {
+                    Fx_drag = -F_drag * (v_rel_x / v_rel_mag);
+                    Fy_drag = -F_drag * (vy / v_rel_mag);
+                }
+            }
+
+            const ax = Fx_drag;
+            const ay = -planet.g + Fy_drag;
+
+            vx += ax*dt; vy += ay*dt;
+            x += vx*dt; y += vy*dt;
+            path.push({x,y});
+
+            // Энергия (Total = Ek + Ep)
+            const Ek = 0.5 * (vx*vx + vy*vy);
+            const Ep = planet.g * y;
+            const max = 4000; // условный предел
+            document.getElementById('barEk').style.width = Math.min(100, Ek/max*100)+"%";
+            document.getElementById('barEp').style.width = Math.min(100, Ep/max*100)+"%";
+            document.getElementById('barEt').style.width = Math.min(100, (Ek+Ep)/max*100)+"%";
+
+            draw(x, y, true, path);
+
+            if(y<=0 || x*scale > cvs.width+50) {
+                const dist = Math.abs(x-target);
+                const fb = document.getElementById('feedback');
+                fb.style.display='block';
+                if(dist<5 && y<=0) {
+                    document.getElementById('fbTitle').innerText = "🎉 ПОБЕДА!";
+                    document.getElementById('fbTitle').style.color = "#1cc88a";
+                    document.getElementById('fbText').innerHTML = `Идеальный расчет ветра и гравитации.`;
+                } else {
+                    document.getElementById('fbTitle').innerText = "💥 ПРОМАХ";
+                    document.getElementById('fbTitle').style.color = "#e74a3b";
+                    document.getElementById('fbText').innerText = `Отклонение: ${dist.toFixed(1)} м.`;
+                }
+                return;
+            }
+            animId = requestAnimationFrame(step);
+        }
+        step();
+    }
+
+    newMission();
+</script>
+</body>
+</html>

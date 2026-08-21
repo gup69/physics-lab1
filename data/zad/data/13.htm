@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v16.0 (Электрические колебания)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                    </div>
+                    <p id="mission-question">...</p>
+                </div>
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- (НОВЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (ЭЛЕКТРИЧЕСКИЕ КОЛЕБАНИЯ) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Формула Томсона (Период)", scenario: "Идеальный колебательный контур состоит из катушки L и конденсатора C. Рассчитайте период свободных электромагнитных колебаний.", data: { L: "Индуктивность (мГн)", C: "Емкость (мкФ)" }, question: "Задача: Введите период (T) в миллисекундах (мс)." },
+                    { title: "Миссия 2: Формула Томсона (Частота)", scenario: "Идеальный колебательный контур состоит из катушки L и конденсатора C. Рассчитайте собственную частоту колебаний.", data: { L: "Индуктивность (мкГн)", C: "Емкость (пФ)" }, question: "Задача: Введите частоту (ν) в мегагерцах (МГц)." },
+                    { title: "Миссия 3: Циклическая частота", scenario: "Собственная частота колебаний в контуре равна ν. Рассчитайте циклическую (угловую) частоту.", data: { nu: "Частота (кГц)" }, question: "Задача: Введите циклическую частоту (ω) в рад/с." },
+                    { title: "Миссия 4: Расчет Емкости", scenario: "Колебательный контур с индуктивностью L имеет период колебаний T. Рассчитайте емкость конденсатора.", data: { L: "Индуктивность (мГн)", T: "Период (мс)" }, question: "Задача: Введите емкость (C) в микрофарадах (мкФ)." },
+                    { title: "Миссия 5: Расчет Индуктивности", scenario: "Колебательный контур с емкостью C имеет циклическую частоту ω. Рассчитайте индуктивность катушки.", data: { C: "Емкость (мкФ)", omega: "Цикл. частота (рад/с)" }, question: "Задача: Введите индуктивность (L) в миллигенри (мГн)." },
+                    { title: "Миссия 6: Амплитуда тока", scenario: "В колебательном контуре амплитуда заряда на конденсаторе равна qₘₐₓ, циклическая частота ω. Рассчитайте амплитуду силы тока.", data: { q_max: "Амп. заряда (мкКл)", omega: "Цикл. частота (рад/с)" }, question: "Задача: Введите амплитуду тока (Iₘₐₓ) в Амперах (А)." },
+                    { title: "Миссия 7: Энергия (Магнитное поле)", scenario: "Рассчитайте максимальную энергию магнитного поля в контуре, если индуктивность L, а амплитуда тока Iₘₐₓ.", data: { L: "Индуктивность (мГн)", I_max: "Амп. тока (А)" }, question: "Задача: Введите энергию (W) в миллиджоулях (мДж)." },
+                    { title: "Миссия 8: Энергия (Электрическое поле)", scenario: "Рассчитайте максимальную энергию электрического поля в контуре, если емкость C, а амплитуда напряжения Uₘₐₓ.", data: { C: "Емкость (мкФ)", U_max: "Амп. напряжения (В)" }, question: "Задача: Введите энергию (W) в Джоулях (Дж)." },
+                    { title: "Миссия 9: Амплитуда напряжения", scenario: "В контуре L, C амплитуда тока равна Iₘₐₓ. Рассчитайте амплитуду напряжения на конденсаторе (используя закон сохр. энергии).", data: { L: "Индуктивность (мГн)", C: "Емкость (пФ)", I_max: "Амп. тока (мА)" }, question: "Задача: Введите амплитуду напряжения (Uₘₐₓ) в Вольтах (В)." },
+                    { title: "Миссия 10: Мгновенный ток", scenario: "Ток в контуре меняется по закону i(t) = Iₘₐₓ · cos(ωt). Рассчитайте мгновенное значение тока в момент времени t.", data: { I_max: "Амп. тока (А)", omega: "Цикл. частота (рад/с)", t: "Время (мс)" }, question: "Задача: Введите мгновенный ток (i) в Амперах (А)." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Томсон формуласы (Период)", scenario: "Идеал тербелмелі контур L катушкадан және C конденсатордан тұрады. Еркін электромагниттік тербелістердің периодын есептеңіз.", data: { L: "Индуктивтілік (мГн)", C: "Сыйымдылық (мкФ)" }, question: "Тапсырма: Периодты (T) миллисекундпен (мс) енгізіңіз." },
+                    { title: "Миссия 2: Томсон формуласы (Жиілік)", scenario: "Идеал тербелмелі контур L катушкадан және C конденсатордан тұрады. Тербелістердің меншікті жиілігін есептеңіз.", data: { L: "Индуктивтілік (мкГн)", C: "Сыйымдылық (пФ)" }, question: "Тапсырма: Жиілікті (ν) мегагерцпен (МГц) енгізіңіз." },
+                    { title: "Миссия 3: Циклдік жиілік", scenario: "Контурдағы тербелістердің меншікті жиілігі ν-ге тең. Циклдік (бұрыштық) жиілікті есептеңіз.", data: { nu: "Жиілік (кГц)" }, question: "Тапсырма: Циклдік жиілікті (ω) рад/с-пен енгізіңіз." },
+                    { title: "Миссия 4: Сыйымдылықты есептеу", scenario: "Индуктивтілігі L тербелмелі контурдың тербеліс периоды T. Конденсатордың сыйымдылығын есептеңіз.", data: { L: "Индуктивтілік (мГн)", T: "Период (мс)" }, question: "Тапсырма: Сыйымдылықты (C) микрофарадпен (мкФ) енгізіңіз." },
+                    { title: "Миссия 5: Индуктивтілікті есептеу", scenario: "Сыйымдылығы C тербелмелі контурдың циклдік жиілігі ω. Катушканың индуктивтілігін есептеңіз.", data: { C: "Сыйымдылық (мкФ)", omega: "Цикл. жиілік (рад/с)" }, question: "Тапсырма: Индуктивтілікті (L) миллигенримен (мГн) енгізіңіз." },
+                    { title: "Миссия 6: Ток амплитудасы", scenario: "Тербелмелі контурдағы конденсатордағы заряд амплитудасы qₘₐₓ, циклдік жиілік ω. Ток күшінің амплитудасын есептеңіз.", data: { q_max: "Заряд амп. (мкКл)", omega: "Цикл. жиілік (рад/с)" }, question: "Тапсырма: Ток амплитудасын (Iₘₐₓ) Ампермен (А) енгізіңіз." },
+                    { title: "Миссия 7: Энергия (Магнит өрісі)", scenario: "Егер индуктивтілік L, ал ток амплитудасы Iₘₐₓ болса, контурдағы магнит өрісінің максималды энергиясын есептеңіз.", data: { L: "Индуктивтілік (мГн)", I_max: "Ток амп. (А)" }, question: "Тапсырма: Энергияны (W) миллиджоульмен (мДж) енгізіңіз." },
+                    { title: "Миссия 8: Энергия (Электр өрісі)", scenario: "Егер сыйымдылық C, ал кернеу амплитудасы Uₘₐₓ болса, контурдағы электр өрісінің максималды энергиясын есептеңіз.", data: { C: "Сыйымдылық (мкФ)", U_max: "Кернеу амп. (В)" }, question: "Тапсырма: Энергияны (W) Джоульмен (Дж) енгізіңіз." },
+                    { title: "Миссия 9: Кернеу амплитудасы", scenario: "L, C контурында ток амплитудасы Iₘₐₓ-ке тең. Конденсатордағы кернеу амплитудасын есептеңіз (энергия сақталу заңын қолданыңыз).", data: { L: "Индуктивтілік (мГн)", C: "Сыйымдылық (пФ)", I_max: "Ток амп. (мА)" }, question: "Тапсырма: Кернеу амплитудасын (Uₘₐₓ) Вольтпен (В) енгізіңіз." },
+                    { title: "Миссия 10: Лездік ток", scenario: "Контурдағы ток i(t) = Iₘₐₓ · cos(ωt) заңы бойынша өзгереді. t уақыт мезетіндегі токтың лездік мәнін есептеңіз.", data: { I_max: "Ток амп. (А)", omega: "Цикл. жиілік (рад/с)", t: "Уақыт (мс)" }, question: "Тапсырма: Лездік токты (i) Ампермен (А) енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct Answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Thomson's Formula (Period)", scenario: "An ideal resonant circuit consists of an inductor L and a capacitor C. Calculate the period of free electromagnetic oscillations.", data: { L: "Inductance (mH)", C: "Capacitance (μF)" }, question: "Task: Enter the period (T) in milliseconds (ms)." },
+                    { title: "Mission 2: Thomson's Formula (Frequency)", scenario: "An ideal resonant circuit consists of an inductor L and a capacitor C. Calculate the natural frequency of oscillations.", data: { L: "Inductance (μH)", C: "Capacitance (pF)" }, question: "Task: Enter the frequency (ν) in megahertz (MHz)." },
+                    { title: "Mission 3: Angular Frequency", scenario: "The natural frequency of oscillations in a circuit is ν. Calculate the angular frequency.", data: { nu: "Frequency (kHz)" }, question: "Task: Enter the angular frequency (ω) in rad/s." },
+                    { title: "Mission 4: Calculate Capacitance", scenario: "A resonant circuit with inductance L has an oscillation period T. Calculate the capacitance of the capacitor.", data: { L: "Inductance (mH)", T: "Period (ms)" }, question: "Task: Enter the capacitance (C) in microfarads (μF)." },
+                    { title: "Mission 5: Calculate Inductance", scenario: "A resonant circuit with capacitance C has an angular frequency ω. Calculate the inductance of the coil.", data: { C: "Capacitance (μF)", omega: "Angular freq. (rad/s)" }, question: "Task: Enter the inductance (L) in millihenries (mH)." },
+                    { title: "Mission 6: Current Amplitude", scenario: "In a resonant circuit, the charge amplitude on the capacitor is qₘₐₓ, and the angular frequency is ω. Calculate the current amplitude.", data: { q_max: "Charge amp. (μC)", omega: "Angular freq. (rad/s)" }, question: "Task: Enter the current amplitude (Iₘₐₓ) in Amperes (A)." },
+                    { title: "Mission 7: Energy (Magnetic Field)", scenario: "Calculate the maximum energy of the magnetic field in a circuit if the inductance is L and the current amplitude is Iₘₐₓ.", data: { L: "Inductance (mH)", I_max: "Current amp. (A)" }, question: "Task: Enter the energy (W) in millijoules (mJ)." },
+                    { title: "Mission 8: Energy (Electric Field)", scenario: "Calculate the maximum energy of the electric field in a circuit if the capacitance is C and the voltage amplitude is Uₘₐₓ.", data: { C: "Capacitance (μF)", U_max: "Voltage amp. (V)" }, question: "Task: Enter the energy (W) in Joules (J)." },
+                    { title: "Mission 9: Voltage Amplitude", scenario: "In an L-C circuit, the current amplitude is Iₘₐₓ. Calculate the voltage amplitude across the capacitor (use conservation of energy).", data: { L: "Inductance (mH)", C: "Capacitance (pF)", I_max: "Current amp. (mA)" }, question: "Task: Enter the voltage amplitude (Uₘₐₓ) in Volts (V)." },
+                    { title: "Mission 10: Instantaneous Current", scenario: "The current in a circuit varies according to i(t) = Iₘₐₓ · cos(ωt). Calculate the instantaneous current at time t.", data: { I_max: "Current amp. (A)", omega: "Angular freq. (rad/s)", t: "Time (ms)" }, question: "Task: Enter the instantaneous current (i) in Amperes (A)." }
+                ]
+            }
+        };
+
+
+        // --- (НОВЫЕ) Глобальные Константы и Состояние ---
+        // Для этой темы не требуется отдельных констант, Math.PI будет использоваться напрямую.
+
+        const TOLERANCE = 0.03; // Погрешность (3%)
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        let missionTitle, missionScenario, missionData, missionQuestion,
+            userAnswerInput, submitButton, newDataButton, feedbackMessage,
+            navButtons, progressList, langButtons, progressTitle, inputLabel;
+
+
+        // --- Утилиты (Без изменений) ---
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов (Без изменений) ---
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+
+            const t = translations[currentLang];
+            if (!t) {
+                console.error("Переводы для языка не найдены:", lang);
+                return;
+            }
+
+            if (t.ui) {
+                submitButton.textContent = t.ui.submit;
+                newDataButton.textContent = t.ui.newData;
+                inputLabel.textContent = t.ui.inputLabel;
+                userAnswerInput.placeholder = t.ui.placeholder;
+            } else {
+                 console.error("Секция 'ui' в переводах отсутствует для:", lang);
+            }
+
+            if (t.progress) {
+                 updateProgressWindow();
+            } else {
+                console.error("Секция 'progress' в переводах отсутствует для:", lang);
+            }
+           
+            if (t.missions && missionLoaders[currentMissionId]) {
+                missionLoaders[currentMissionId]();
+            } else {
+                 if (missionLoaders.length > 0) {
+                    console.error("Секция 'missions' в переводах отсутствует или загрузчик миссии не найден для:", lang, currentMissionId);
+                 }
+            }
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            
+            const t = translations[currentLang].progress;
+            if (!t) {
+                console.error("Переводы 'progress' не найдены для:", currentLang);
+                return;
+            }
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress || !missionProgress[i]) {
+                    console.error("Объект прогресса отсутствует для миссии:", i);
+                    continue; 
+                }
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                    <span class="correct">${progress.correct} ✔</span> /
+                                    <span class="incorrect">${progress.incorrect} ❌</span>
+                                </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    console.error("Кнопка не найдена для миссии:", i);
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (НОВЫЕ) Загрузчики Миссий (Электрические колебания) ---
+
+        function loadMission1() { // Период Томсона: T = 2π * sqrt(L*C)
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const L_mH = getRandom(1, 10, 1); // мГн
+            const L_H = L_mH / 1000.0;       // Гн
+            const C_muF = getRandom(1, 10, 1); // мкФ
+            const C_F = C_muF / 1e6;         // Ф
+            
+            const T_s = 2 * Math.PI * Math.sqrt(L_H * C_F);
+            currentCorrectAnswer = T_s * 1000.0; // Ответ в мс
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_mH} мГн</p><p>${t.data.C}: ${C_muF} мкФ</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() { // Частота Томсона: ν = 1 / (2π * sqrt(L*C))
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const L_muH = getRandom(1, 10, 1); // мкГн
+            const L_H = L_muH / 1e6;         // Гн
+            const C_pF = getRandom(10, 100, 0); // пФ
+            const C_F = C_pF / 1e12;          // Ф
+            
+            const nu_Hz = 1.0 / (2 * Math.PI * Math.sqrt(L_H * C_F));
+            currentCorrectAnswer = nu_Hz / 1e6; // Ответ в МГц
+
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_muH} мкГн</p><p>${t.data.C}: ${C_pF} пФ</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() { // Циклическая частота: ω = 2π * ν
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const nu_kHz = getRandom(10, 100, 0); // кГц
+            const nu_Hz = nu_kHz * 1000.0;      // Гц
+            
+            currentCorrectAnswer = 2 * Math.PI * nu_Hz; // Ответ в рад/с
+
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.nu}: ${nu_kHz} кГц</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() { // Расчет Емкости: C = T² / (4π² * L)
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const L_mH = getRandom(1, 10, 1); // мГн
+            const L_H = L_mH / 1000.0;      // Гн
+            const T_ms = getRandom(1, 5, 2);  // мс
+            const T_s = T_ms / 1000.0;        // с
+            
+            const C_F = (T_s * T_s) / (4 * Math.PI * Math.PI * L_H);
+            currentCorrectAnswer = C_F * 1e6; // Ответ в мкФ
+
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_mH} мГн</p><p>${t.data.T}: ${T_ms} мс</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() { // Расчет Индуктивности: L = 1 / (ω² * C)
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const C_muF = getRandom(1, 10, 1);  // мкФ
+            const C_F = C_muF / 1e6;          // Ф
+            const omega = getRandom(100, 1000, 0); // рад/с
+            
+            const L_H = 1.0 / (omega * omega * C_F);
+            currentCorrectAnswer = L_H * 1000.0; // Ответ в мГн
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.C}: ${C_muF} мкФ</p><p>${t.data.omega}: ${omega} рад/с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() { // Амплитуда тока: I_max = q_max * ω
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const q_max_muC = getRandom(1, 10, 1); // мкКл
+            const q_max_C = q_max_muC / 1e6;     // Кл
+            const omega = getRandom(1000, 5000, 0); // рад/с
+            
+            currentCorrectAnswer = q_max_C * omega; // Ответ в А
+
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.q_max}: ${q_max_muC} мкКл</p><p>${t.data.omega}: ${omega} рад/с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() { // Энергия магн. поля: W_L = (L * I_max²) / 2
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const L_mH = getRandom(10, 50, 0); // мГн
+            const L_H = L_mH / 1000.0;       // Гн
+            const I_max = getRandom(0.5, 3, 2); // А
+            
+            const W_J = (L_H * I_max * I_max) / 2.0;
+            currentCorrectAnswer = W_J * 1000.0; // Ответ в мДж
+
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_mH} мГн</p><p>${t.data.I_max}: ${I_max} А</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() { // Энергия электр. поля: W_C = (C * U_max²) / 2
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const C_muF = getRandom(10, 100, 0); // мкФ
+            const C_F = C_muF / 1e6;           // Ф
+            const U_max = getRandom(5, 50, 0);  // В
+            
+            currentCorrectAnswer = (C_F * U_max * U_max) / 2.0; // Ответ в Дж
+
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.C}: ${C_muF} мкФ</p><p>${t.data.U_max}: ${U_max} В</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() { // Амплитуда напряжения: W_L = W_C => U_max = I_max * sqrt(L/C)
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const L_mH = getRandom(1, 10, 1);  // мГн
+            const L_H = L_mH / 1000.0;       // Гн
+            const C_pF = getRandom(100, 1000, 0); // пФ
+            const C_F = C_pF / 1e12;           // Ф
+            const I_max_mA = getRandom(10, 50, 0); // мА
+            const I_max_A = I_max_mA / 1000.0;   // А
+            
+            currentCorrectAnswer = I_max_A * Math.sqrt(L_H / C_F); // Ответ в В
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_mH} мГн</p><p>${t.data.C}: ${C_pF} пФ</p><p>${t.data.I_max}: ${I_max_mA} мА</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() { // Мгновенный ток: i(t) = I_max * cos(ω*t)
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const I_max = getRandom(1, 5, 2);      // А
+            const omega = getRandom(100, 500, 0); // рад/с
+            const t_ms = getRandom(1, 10, 1);      // мс
+            const t_s = t_ms / 1000.0;             // с
+            
+            currentCorrectAnswer = I_max * Math.cos(omega * t_s); // Ответ в А
+
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.I_max}: ${I_max} А</p><p>${t.data.omega}: ${omega} рад/с</p><p>${t.data.t}: ${t_ms} мс</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+
+        // --- Обработчик Проверки (Без изменений) ---
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                missionProgress[currentMissionId].incorrect++;
+                const t_feedback = translations[currentLang].feedback;
+                feedbackMessage.textContent = `${t_feedback.incorrect} (${t_feedback.correctAnswer}: ${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+
+        // --- Инициализация Игры (Исправлено в v15.1, без изменений) ---
+        function initializeGame() {
+            
+            // Назначаем DOM-элементы
+            missionTitle = document.getElementById('mission-title');
+            missionScenario = document.getElementById('mission-scenario');
+            missionData = document.getElementById('mission-data');
+            missionQuestion = document.getElementById('mission-question');
+            userAnswerInput = document.getElementById('user-answer');
+            submitButton = document.getElementById('submit-button');
+            newDataButton = document.getElementById('new-data-button');
+            feedbackMessage = document.getElementById('feedback-message');
+            navButtons = document.querySelectorAll('.mission-nav button');
+            progressList = document.getElementById('progress-list');
+            langButtons = document.querySelectorAll('.lang-btn');
+            progressTitle = document.getElementById('progress-title');
+            inputLabel = document.getElementById('input-label');
+            
+            // (ИЗМЕНЕНО) Заполняем массив НОВЫМИ загрузчиками миссий
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            // (Без изменений) Инициализируем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true 
+                };
+            }
+
+            // (Без изменений) Назначаем слушателей
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Загрузчик миссии не найден для ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                if (missionLoaders[currentMissionId]) {
+                    missionLoaders[currentMissionId](); 
+                }
+            });
+            
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // (Без изменений) Запускаем игру с языком по умолчанию
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

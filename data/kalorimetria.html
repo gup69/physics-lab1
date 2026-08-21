@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Термодинамика: Калориметрия</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ff5722; /* Orange for Heat */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1300px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-group { margin-bottom: 15px; }
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 10px; 
+            background: #000; border: 1px solid #444; 
+            color: white; border-radius: 4px; box-sizing: border-box;
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button.action-btn:hover { opacity: 0.9; transform: scale(1.01); }
+        button.action-btn:disabled { background: #555; cursor: not-allowed; }
+        
+        button.secondary { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        button.secondary:hover { background: rgba(255, 87, 34, 0.1); }
+
+        /* Locked state */
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 500px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Overlay Info */
+        .thermometer-readout {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); border: 2px solid #fff;
+            padding: 15px; border-radius: 8px; text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+        .temp-val { font-size: 2.5em; color: var(--accent); font-weight: bold; }
+        
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 500px;
+            text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 20px 0; font-weight: bold; }
+        .modal-details { text-align: left; margin: 15px 0; color: #ccc; }
+        .modal-details strong { float: right; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Термодинамика: Калориметрия</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headSettings">2. Установка</div>
+            
+            <div class="control-group">
+                <label data-lang="lblMaterial">Материал цилиндра:</label>
+                <select id="material-select">
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНЫЙ ***</option>
+                </select>
+                <div style="font-size:0.8em; color:#777; margin-top:5px;" data-lang="hintTask">Цилиндр нагрет до 100°C</div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblMassWater">Масса воды (m_в):</span> <span class="val"><span id="mw-val">0.100</span> кг</span></label>
+                <input type="range" id="mw-slider" min="0.05" max="0.3" step="0.01" value="0.10">
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblTempWater">Нач. температура воды (t1):</span> <span class="val"><span id="tw-val">20.0</span> °C</span></label>
+                <input type="range" id="tw-slider" min="10" max="30" step="0.5" value="20.0">
+            </div>
+            
+            <div class="control-group">
+                <label><span data-lang="lblMassBody">Масса цилиндра (m_т):</span> <span class="val"><span id="mb-val">0.050</span> кг</span></label>
+                <input type="range" id="mb-slider" min="0.02" max="0.2" step="0.01" value="0.05">
+            </div>
+
+            <button class="action-btn" id="drop-btn" data-lang="btnDrop">ОПУСТИТЬ ТЕЛО</button>
+            <button class="action-btn secondary" id="reset-btn" style="margin-top:10px;" data-lang="btnReset">НОВЫЙ ОПЫТ</button>
+
+            <div class="control-header" data-lang="headTask">3. Ответ</div>
+            
+            <div class="control-group">
+                <label data-lang="lblIdent">Какой это металл?</label>
+                <select id="answer-select">
+                    <option value="none" data-lang="optSelect">-- Выберите --</option>
+                    <option value="Al" data-lang="matAl">Алюминий (920 Дж/кг·°C)</option>
+                    <option value="Fe" data-lang="matFe">Железо (460 Дж/кг·°C)</option>
+                    <option value="Cu" data-lang="matCu">Медь (380 Дж/кг·°C)</option>
+                    <option value="Pb" data-lang="matPb">Свинец (130 Дж/кг·°C)</option>
+                    <option value="Sn" data-lang="matSn">Олово (230 Дж/кг·°C)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label data-lang="lblCalc">Рассчитайте С (Дж/кг·°C):</label>
+                <input type="text" id="ans-input" placeholder="...">
+                <button class="action-btn" id="check-btn" style="margin-top:5px; background:var(--success);" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="font-size:0.9em; text-align:center; color:#aaa; margin-top:5px;"></div>
+                <div id="check-res" style="margin-top:5px; font-weight:bold; text-align:center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="visualizer">
+        <canvas id="calorimeter-canvas" width="800" height="500"></canvas>
+        <div class="thermometer-readout">
+            <div style="font-size:0.9em; color:#aaa;" data-lang="lblTherm">Термометр</div>
+            <div class="temp-val"><span id="temp-display">20.0</span> °C</div>
+            <div id="status-text" style="font-size:0.8em; color:#00C851; margin-top:5px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div class="modal-details">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+            <div><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></div>
+            <hr style="border-color:#444">
+            <div><span data-lang="resTrueMat">Материал:</span> <strong id="res-true-mat"></strong></div>
+            <div><span data-lang="resTrueC">Истинная С:</span> <strong id="res-true-c"></strong></div>
+        </div>
+        <p data-lang="resScoreLabel">Оценка:</p>
+        <div class="modal-score" id="res-score-val">10</div>
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАВЕРШИТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Данные ===
+    const MATERIALS = {
+        'Al': { name: 'Aluminum', c: 920, color: '#D1D5DB' }, // Light Gray
+        'Fe': { name: 'Iron', c: 460, color: '#546E7A' },     // Dark Gray/Blue
+        'Cu': { name: 'Copper', c: 380, color: '#B87333' },   // Copper
+        'Pb': { name: 'Lead', c: 130, color: '#37474F' },     // Very Dark Gray
+        'Sn': { name: 'Tin', c: 230, color: '#90A4AE' }       // Silverish
+    };
+    const UNKNOWN_KEYS = ['Al', 'Fe', 'Cu', 'Pb', 'Sn'];
+    const C_WATER = 4200;
+
+    // === 2. Языки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Термодинамика: Калориметрия",
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headSettings: "2. Установка", lblMaterial: "Материал цилиндра:", optUnknown: "*** НЕИЗВЕСТНЫЙ ***", hintTask: "Цилиндр нагрет до 100°C (в кипятке)",
+            lblMassWater: "Масса воды (m_в):", lblTempWater: "Нач. температура воды (t1):", lblMassBody: "Масса цилиндра (m_т):",
+            btnDrop: "ОПУСТИТЬ ТЕЛО В ВОДУ", btnReset: "НОВЫЙ ОПЫТ",
+            headTask: "3. Ответ", lblIdent: "Какой это металл?", optSelect: "-- Выберите --",
+            matAl: "Алюминий (920)", matFe: "Железо (460)", matCu: "Медь (380)", matPb: "Свинец (130)", matSn: "Олово (230)",
+            lblCalc: "Рассчитайте С (Дж/кг·°C):", btnCheck: "ПРОВЕРИТЬ",
+            lblTherm: "Термометр", statusHeat: "Равновесие...", statusDone: "Температура установилась!",
+            alertName: "Введите имя и класс!", alertRunning: "Сначала завершите опыт!",
+            txtAttempts: "Попытки: {used} / 3", resCorrect: "ВЕРНО!", resWrong: "ОШИБКА",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resAttempts: "Использовано:", 
+            resTrueMat: "Материал:", resTrueC: "Истинная С:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ"
+        },
+        kz: {
+            mainTitle: "Термодинамика: Калориметрия",
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headSettings: "2. Қондырғы", lblMaterial: "Цилиндр материалы:", optUnknown: "*** БЕЛГІСІЗ ***", hintTask: "Цилиндр 100°C дейін қыздырылған",
+            lblMassWater: "Су массасы (m_с):", lblTempWater: "Судың баст. темп. (t1):", lblMassBody: "Дене массасы (m_д):",
+            btnDrop: "ДЕНЕНІ СУҒА САЛУ", btnReset: "ЖАҢА ТӘЖІРИБЕ",
+            headTask: "3. Жауап", lblIdent: "Бұл қандай металл?", optSelect: "-- Таңдаңыз --",
+            matAl: "Алюминий (920)", matFe: "Темір (460)", matCu: "Мыс (380)", matPb: "Қорғасын (130)", matSn: "Қалайы (230)",
+            lblCalc: "С есептеңіз (Дж/кг·°C):", btnCheck: "ТЕКСЕРУ",
+            lblTherm: "Термометр", statusHeat: "Тепе-теңдік...", statusDone: "Температура тұрақталды!",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertRunning: "Алдымен тәжірибені аяқтаңыз!",
+            txtAttempts: "Мүмкіндіктер: {used} / 3", resCorrect: "ДҰРЫС!", resWrong: "ҚАТЕ",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resAttempts: "Қолданылды:", 
+            resTrueMat: "Материал:", resTrueC: "Дұрыс С:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ"
+        },
+        en: {
+            mainTitle: "Thermodynamics: Calorimetry",
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headSettings: "2. Setup", lblMaterial: "Cylinder Material:", optUnknown: "*** UNKNOWN ***", hintTask: "Cylinder is heated to 100°C",
+            lblMassWater: "Water Mass (m_w):", lblTempWater: "Water Init. Temp (t1):", lblMassBody: "Body Mass (m_b):",
+            btnDrop: "DROP BODY", btnReset: "NEW TRIAL",
+            headTask: "3. Answer", lblIdent: "Identify Metal:", optSelect: "-- Select --",
+            matAl: "Aluminum (920)", matFe: "Iron (460)", matCu: "Copper (380)", matPb: "Lead (130)", matSn: "Tin (230)",
+            lblCalc: "Calculate C (J/kg·°C):", btnCheck: "CHECK",
+            lblTherm: "Thermometer", statusHeat: "Equilibrating...", statusDone: "Equilibrium Reached!",
+            alertName: "Enter Name and Class!", alertRunning: "Finish simulation first!",
+            txtAttempts: "Attempts: {used} / 3", resCorrect: "CORRECT!", resWrong: "WRONG",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resAttempts: "Used:", 
+            resTrueMat: "Material:", resTrueC: "True C:", resScoreLabel: "Score:", btnRestart: "FINISH"
+        }
+    };
+
+    // State
+    let currentLang = 'ru';
+    let attemptsUsed = 0;
+    let isDropped = false;
+    
+    const state = {
+        matKey: 'Al', // Hidden
+        mw: 0.100,
+        tw: 20.0,
+        mb: 0.050,
+        tb: 100.0,
+        
+        currentTemp: 20.0,
+        targetTemp: 20.0,
+        
+        animY: 50 // Body Y position (50 = air, 300 = water)
+    };
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        // Update Options
+        const sel = document.getElementById('answer-select');
+        const opts = ['optSelect','matAl','matFe','matCu','matPb','matSn'];
+        for(let i=0; i<sel.options.length; i++) {
+            if(t[opts[i]]) sel.options[i].text = t[opts[i]];
+        }
+    }
+
+    function setRandomMaterial() {
+        const randIndex = Math.floor(Math.random() * UNKNOWN_KEYS.length);
+        state.matKey = UNKNOWN_KEYS[randIndex];
+        console.log("Teacher Info: Material = " + state.matKey);
+    }
+
+    function calculatePhysics() {
+        // Q_lost = Q_gain
+        // cb * mb * (100 - theta) = cw * mw * (theta - tw)
+        // cb*mb*100 - cb*mb*theta = cw*mw*theta - cw*mw*tw
+        // cb*mb*100 + cw*mw*tw = theta * (cw*mw + cb*mb)
+        // theta = (cb*mb*100 + cw*mw*tw) / (cw*mw + cb*mb)
+        
+        const cb = MATERIALS[state.matKey].c;
+        const mb = state.mb;
+        const tb = 100;
+        const cw = C_WATER;
+        const mw = state.mw;
+        const tw = state.tw;
+
+        const theta = (cb*mb*tb + cw*mw*tw) / (cw*mw + cb*mb);
+        
+        // Add tiny noise
+        const noise = (Math.random() - 0.5) * 0.1; 
+        return theta + noise;
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('calorimeter-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        
+        // Table
+        ctx.fillStyle = '#444';
+        ctx.fillRect(0, 400, cvs.width, 100);
+
+        // Calorimeter Outer
+        const cx = cvs.width/2;
+        const cy = 400;
+        const w = 200;
+        const h = 250;
+
+        // Insulation
+        ctx.fillStyle = '#555';
+        ctx.fillRect(cx - w/2 - 10, cy - h, w + 20, h);
+        
+        // Inner Cup
+        ctx.fillStyle = '#ddd';
+        ctx.fillRect(cx - w/2, cy - h + 10, w, h - 10);
+
+        // Water
+        // Level depends on mass (approx)
+        const waterH = 100 + state.mw * 400; // 0.1kg -> 140px, 0.3kg -> 220px
+        ctx.fillStyle = 'rgba(33, 150, 243, 0.6)';
+        ctx.fillRect(cx - w/2, cy - waterH, w, waterH);
+        
+        // Thermometer
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx + 60, cy - h - 50, 10, h + 40);
+        // Red liquid
+        const tHeight = (state.currentTemp / 100) * (h); 
+        ctx.fillStyle = 'red';
+        ctx.fillRect(cx + 62, cy - 10 - tHeight, 6, tHeight);
+        // Bulb
+        ctx.beginPath(); ctx.arc(cx+65, cy-10, 10, 0, Math.PI*2); ctx.fill();
+
+        // Body (Cylinder)
+        const bodyColor = MATERIALS[state.matKey].color;
+        const bx = cx - 30;
+        const by = state.animY; 
+        
+        // String
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(bx + 25, 0); ctx.lineTo(bx + 25, by); ctx.stroke();
+
+        // Cylinder
+        ctx.fillStyle = bodyColor;
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1;
+        const bw = 50;
+        const bh = 50 + state.mb * 200; // scaling size
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeRect(bx, by, bw, bh);
+        ctx.fillStyle = 'black';
+        ctx.font = "bold 14px Arial";
+        ctx.fillText("100°C", bx+5, by+20);
+        
+        // Animation Logic
+        if (isDropped) {
+            if (state.animY < (cy - waterH + bh/2)) {
+                state.animY += 5; // Falling
+            } else {
+                // Heat exchange animation
+                if (Math.abs(state.currentTemp - state.targetTemp) > 0.05) {
+                    state.currentTemp += (state.targetTemp - state.currentTemp) * 0.05;
+                    document.getElementById('status-text').innerText = LANG[currentLang].statusHeat;
+                } else {
+                    state.currentTemp = state.targetTemp;
+                    document.getElementById('status-text').innerText = LANG[currentLang].statusDone;
+                    document.getElementById('check-btn').disabled = false;
+                }
+            }
+        } else {
+            state.currentTemp = state.tw;
+            document.getElementById('status-text').innerText = "";
+        }
+
+        document.getElementById('temp-display').innerText = state.currentTemp.toFixed(1);
+
+        requestAnimationFrame(draw);
+    }
+
+    // --- Actions ---
+    function dropBody() {
+        if(isDropped) return;
+        isDropped = true;
+        
+        // Lock controls
+        document.getElementById('mw-slider').disabled = true;
+        document.getElementById('tw-slider').disabled = true;
+        document.getElementById('mb-slider').disabled = true;
+        document.getElementById('drop-btn').disabled = true;
+
+        state.targetTemp = calculatePhysics();
+    }
+
+    function resetSim() {
+        isDropped = false;
+        state.animY = 50;
+        state.currentTemp = state.tw;
+        setRandomMaterial();
+        
+        document.getElementById('mw-slider').disabled = false;
+        document.getElementById('tw-slider').disabled = false;
+        document.getElementById('mb-slider').disabled = false;
+        document.getElementById('drop-btn').disabled = false;
+        
+        document.getElementById('check-res').innerText = "";
+        document.getElementById('check-btn').disabled = true; // Wait for equilibrium
+        
+        // Reset attempts
+        attemptsUsed = 0;
+        document.getElementById('ans-input').value = "";
+        document.getElementById('answer-select').value = "none";
+        if(document.getElementById('attempts-display')) 
+             document.getElementById('attempts-display').innerText = "";
+    }
+
+    function showFinalResult(score, correct) {
+        const modal = document.getElementById('result-modal');
+        const t = LANG[currentLang];
+        
+        const mat = MATERIALS[state.matKey];
+        const matName = (currentLang === 'ru' ? t['mat'+state.matKey] : mat.name);
+
+        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+        document.getElementById('res-attempts').innerText = attemptsUsed;
+        document.getElementById('res-score-val').innerText = score + " / 10";
+        document.getElementById('res-score-val').style.color = (score > 0) ? "var(--success)" : "var(--danger)";
+        
+        document.getElementById('res-true-mat').innerText = correct ? "---" : matName;
+        document.getElementById('res-true-c').innerText = correct ? "---" : mat.c + " Дж/кг·°C";
+
+        modal.style.display = 'flex';
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        setRandomMaterial();
+        updateLanguage('ru');
+        draw();
+
+        // Events
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+
+        document.getElementById('mw-slider').oninput = (e) => { state.mw = parseFloat(e.target.value); document.getElementById('mw-val').innerText = state.mw.toFixed(3); };
+        document.getElementById('tw-slider').oninput = (e) => { state.tw = parseFloat(e.target.value); state.currentTemp = state.tw; document.getElementById('tw-val').innerText = state.tw.toFixed(1); };
+        document.getElementById('mb-slider').oninput = (e) => { state.mb = parseFloat(e.target.value); document.getElementById('mb-val').innerText = state.mb.toFixed(3); };
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+        };
+
+        document.getElementById('drop-btn').onclick = dropBody;
+        document.getElementById('reset-btn').onclick = resetSim;
+
+        // CHECK
+        document.getElementById('check-btn').onclick = () => {
+            const userC = parseFloat(document.getElementById('ans-input').value.replace(',','.'));
+            const userMat = document.getElementById('answer-select').value;
+            
+            if(isNaN(userC) || userMat === 'none') { alert("Введите число C и выберите металл!"); return; }
+
+            attemptsUsed++;
+            document.getElementById('attempts-display').innerText = LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed);
+
+            const trueC = MATERIALS[state.matKey].c;
+            const t = LANG[currentLang];
+            const resDiv = document.getElementById('check-res');
+
+            // Check logic: C must be close (10%) AND Material must match
+            const err = Math.abs(userC - trueC) / trueC;
+            const isMatCorrect = (userMat === state.matKey);
+
+            if (err < 0.15 && isMatCorrect) {
+                // SUCCESS
+                let score = 0;
+                if(attemptsUsed === 1) score = 10;
+                else if(attemptsUsed === 2) score = 8;
+                else score = 7;
+
+                resDiv.innerHTML = `<span style="color:var(--success)">${t.resCorrect}</span>`;
+                setTimeout(() => showFinalResult(score, true), 1000);
+                document.getElementById('check-btn').disabled = true;
+            } else {
+                // FAIL
+                let left = 3 - attemptsUsed;
+                if(left > 0) {
+                    resDiv.innerHTML = `<span style="color:var(--danger)">${t.resWrong}</span>`;
+                } else {
+                    showFinalResult(0, false);
+                    document.getElementById('check-btn').disabled = true;
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

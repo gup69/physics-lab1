@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Юрий Грязнов | Цифровая лаборатория</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1E293B; 
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bg-animation {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: -1;
+      background: #F0F4FF; 
+      overflow: hidden;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.6; 
+      animation: float 20s infinite alternate ease-in-out;
+    }
+    .blob-1 { width: 700px; height: 700px; background: #3B82F6; top: -10%; left: -10%; }
+    .blob-2 { width: 800px; height: 800px; background: #8B5CF6; bottom: -20%; right: -10%; animation-delay: -5s; }
+    .blob-3 { width: 600px; height: 600px; background: #06B6D4; top: 40%; left: 50%; animation-delay: -10s; }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(100px, 150px) scale(1.1); }
+    }
+
+    .container { max-width: 1200px; width: 100%; z-index: 1; }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+    }
+
+    .lang-switcher {
+      display: flex; gap: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      padding: 4px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+    .lang-btn {
+      background: transparent; border: none;
+      color: #475569; padding: 6px 12px;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .lang-btn:hover { color: #4F46E5; }
+    .lang-btn.active { background: #FFFFFF; color: #4F46E5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .profile-card {
+      border-radius: 32px; padding: 40px; margin-bottom: 25px;
+      display: flex; gap: 30px;
+      justify-content: space-between; align-items: center;
+    }
+    
+    .profile-main {
+      display: flex; align-items: center; gap: 24px; flex: 1; min-width: 0;
+    }
+
+    .profile-photo {
+      width: 130px; height: 130px; border-radius: 50%;
+      box-shadow: 0 10px 25px rgba(31, 38, 135, 0.15); 
+      overflow: hidden; flex-shrink: 0; background: transparent;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .profile-title { font-size: 2.3rem; font-weight: 800; line-height: 1.1; color: #0F172A; letter-spacing: -1px; }
+    .profile-subtitle { color: #4F46E5; font-weight: 600; font-size: 1.1rem; margin-top: 8px;}
+    
+    .profile-side { 
+      display: flex; flex-direction: column; align-items: flex-end; gap: 16px; 
+      flex-shrink: 0; 
+    }
+    .profile-info { text-align: right; color: #475569; font-size: 1.05rem; line-height: 1.6; }
+    .profile-info b { color: #0F172A; font-weight: 700; }
+
+    /* 5 ВКЛАДОК НА ВСЮ ШИРИНУ */
+    .main-tabs { 
+      display: grid; 
+      grid-template-columns: repeat(5, 1fr); 
+      gap: 10px; 
+      margin-bottom: 25px; 
+      width: 100%;
+    }
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      color: #475569; 
+      padding: 14px 8px; 
+      border-radius: 16px;
+      cursor: pointer; 
+      font-size: 0.9rem; 
+      font-weight: 700; 
+      transition: all 0.3s;
+      text-align: center;
+      width: 100%;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.9); color: #0F172A; }
+    .tab-btn.active { background: #4F46E5; color: #FFFFFF; border-color: #4F46E5; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .controls-panel { border-radius: 24px; padding: 20px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 16px; }
+
+    .search-wrapper { position: relative; width: 100%; }
+    .search-input {
+      width: 100%; background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      color: #1E293B; padding: 14px 20px; font-size: 1rem;
+      border-radius: 16px; outline: none; transition: all 0.3s;
+    }
+    .search-input:focus { background: #FFFFFF; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5); border-color: #8B5CF6; }
+    .search-input::placeholder { color: #64748B; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      color: #475569; padding: 8px 16px; border-radius: 12px;
+      cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.3s;
+    }
+    .filter-btn:hover { background: rgba(255, 255, 255, 0.9); color: #0F172A; }
+    .filter-btn.active { background: #FFFFFF; color: #4F46E5; border-color: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+    .bento-grid {
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+      gap: 20px;
+      grid-auto-flow: dense;
+    }
+
+    .card {
+      border-radius: 24px; 
+      padding: 24px; 
+      cursor: pointer; 
+      text-decoration: none; 
+      color: inherit;
+      display: flex; 
+      flex-direction: column; 
+      height: 100%; 
+      min-height: 210px; 
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      will-change: transform;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      background: rgba(255, 255, 255, 0.8);
+      border-color: #FFFFFF;
+      box-shadow: 0 15px 35px rgba(31, 38, 135, 0.15);
+    }
+    .card.hidden { display: none; }
+    
+    .card h3 { font-size: 1.15rem; margin-bottom: 8px; color: #0F172A; font-weight: 700; line-height: 1.3;}
+    .card p { color: #475569; font-size: 0.9rem; flex-grow: 1; margin-bottom: 20px; line-height: 1.5; }
+    
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag { background: rgba(255, 255, 255, 0.7); color: #334155; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; transition: all 0.3s; }
+    .card:hover .tag { background: #FFFFFF; color: #4F46E5; }
+    
+    .card.featured { 
+      grid-column: span 2; 
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid #FFFFFF;
+    }
+    .card.featured h3 { font-size: 1.5rem; color: #4F46E5; }
+    
+    .no-results {
+      grid-column: 1 / -1; text-align: center; padding: 40px; color: #475569; font-size: 1.1rem;
+      display: none; border-radius: 24px;
+    }
+    .no-results.visible { display: block; }
+
+    .guidelines-grid {
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
+      gap: 20px; 
+    }
+    .guide-card {
+      border-radius: 24px; 
+      padding: 24px; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: flex-start;
+      background: rgba(255, 255, 255, 0.7); 
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      height: 100%;
+    }
+    .guide-card h3 { font-size: 1.2rem; color: #0F172A; margin-bottom: 12px; font-weight: 700; border-bottom: 2px solid #38BDF8; padding-bottom: 6px; }
+    .guide-card p { color: #334155; font-size: 0.95rem; margin-bottom: 15px; margin-top: 0; line-height: 1.8; overflow-x: auto; }
+    .formula-line {
+      white-space: nowrap;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .guide-actions { display: flex; gap: 10px; margin-top: auto; }
+    .guide-btn {
+      flex: 1; padding: 10px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 0.9rem; text-decoration: none; cursor: pointer; transition: 0.2s;
+    }
+    .btn-view { background: #38BDF8; color: #0F172A; }
+    .btn-view:hover { background: #0284C7; color: #fff; }
+
+    @media (max-width: 1024px) {
+      .main-tabs { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .profile-card { flex-direction: column; align-items: flex-start; text-align: left; }
+      .profile-main { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .profile-side { align-items: flex-start; width: 100%; gap: 16px; }
+      .profile-info { text-align: left; }
+      .lang-switcher { align-self: flex-start; order: -1; }
+      .main-tabs { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .card.featured { grid-column: span 1; }
+      .profile-title { font-size: 1.8rem; }
+      .profile-photo { width: 100px; height: 100px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-animation">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="container">
+    
+    <div class="profile-card glass">
+      <div class="profile-main">
+        <div class="profile-photo">
+          <img src="pic/im.jpeg" alt="Юрий Петрович Грязнов">
+        </div>
+        <div>
+          <h1 class="profile-title" data-ru="Цифровая образовательная среда по физике" data-kk="Физика бойынша цифрлық білім беру ортасы" data-en="Digital Educational Environment for Physics">Цифровая образовательная среда по физике</h1>
+          <div class="profile-subtitle" data-ru="Автор: Юрий Петрович Грязнов" data-kk="Авторы: Юрий Петрович Грязнов" data-en="Author: Yuriy Petrovich Gryaznov">Автор: Юрий Петрович Грязнов</div>
+        </div>
+      </div>
+
+      <div class="profile-side">
+        <div class="lang-switcher">
+          <button class="lang-btn active" data-lang="ru">РУС</button>
+          <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+          <button class="lang-btn" data-lang="en">ENG</button>
+        </div>
+        <div class="profile-info">
+          <p><b data-ru="Специализированная гимназия №8 им. М.Х. Дулати" data-kk="М.Х. Дулати атындағы №8 мамандандырылған гимназия" data-en="Specialized Gymnasium No. 8 named after M.Kh. Dulati">Специализированная гимназия №8 им. М.Х. Дулати</b></p>
+          <p data-ru="г. Шымкент, Казахстан" data-kk="Шымкент қ., Қазақстан" data-en="Shymkent, Kazakhstan">г. Шымкент, Казахстан</p>
+          <p style="margin-top: 5px;"><b data-ru="50+" data-kk="50+" data-en="50+">50+</b> <span data-ru="интерактивных модулей" data-kk="интерактивті модульдер" data-en="interactive modules">интерактивных модулей</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 ВКЛАДОК НАВИГАЦИИ -->
+    <div class="main-tabs">
+      <button class="tab-btn active" onclick="switchTab('simulators')" data-ru="🧪 Симуляторы" data-kk="🧪 Симуляторлар" data-en="🧪 Simulators">🧪 Симуляторы</button>
+      <button class="tab-btn" onclick="switchTab('guidelines')" data-ru="📚 Методички" data-kk="📚 Әдістемеліктер" data-en="📚 Guidelines">📚 Методички</button>
+      <button class="tab-btn" onclick="switchTab('control')" data-ru="📝 Контроль 7-11" data-kk="📝 Бақылау 7-11" data-en="📝 Control 7-11">📝 Контроль 7-11</button>
+      <button class="tab-btn" onclick="switchTab('reference')" data-ru="📖 Справочник формул" data-kk="📖 Формулалар" data-en="📖 Formulas">📖 Справочник формул</button>
+      <button class="tab-btn" onclick="switchTab('assistant')" data-ru="🤖 Помощник учителя" data-kk="🤖 Мұғалім көмекшісі" data-en="🤖 Teacher Assistant">🤖 Помощник учителя</button>
+    </div>
+
+    <!-- ВКЛАДКА 1: СИМУЛЯТОРЫ -->
+    <div id="tab-simulators" class="tab-content active">
+      <div class="controls-panel glass">
+        <div class="search-wrapper">
+          <input type="text" id="search-input" class="search-input" 
+                 data-ru="Поиск (например: кинематика, Лоренц, УЗИ, Резонанс, КПД, Электролиз, Волна)..." 
+                 data-kk="Іздеу (мысалы: кинематика, Лоренц, УДЗ, Резонанс, ПӘК, Электролиз, Толқын)..." 
+                 data-en="Search (e.g., kinematics, Lorentz, Ultrasound, Resonance, Efficiency, Electrolysis, Wave)..." 
+                 placeholder="Поиск (например: кинематика, Лоренц, УЗИ, Резонанс, КПД, Электролиз, Волна)..." autocomplete="off">
+        </div>
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all" data-ru="Все проекты" data-kk="Барлық жобалар" data-en="All projects">Все проекты</button>
+          <button class="filter-btn" data-filter="gamified" data-ru="STEM & Игры" data-kk="STEM & Ойындар" data-en="STEM & Games">STEM & Игры</button>
+          <button class="filter-btn" data-filter="nuclear" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</button>
+          <button class="filter-btn" data-filter="quantum" data-ru="Квантовая физика" data-kk="Кванттық физика" data-en="Quantum Physics">Квантовая физика</button>
+          <button class="filter-btn" data-filter="thermo" data-ru="Термодинамика" data-kk="Термодинамика" data-en="Thermodynamics">Термодинамика</button>
+          <button class="filter-btn" data-filter="mechanics" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</button>
+          <button class="filter-btn" data-filter="electro" data-ru="Электродинамика" data-kk="Электродинамика" data-en="Electrodynamics">Электродинамика</button>
+          <button class="filter-btn" data-filter="optics" data-ru="Оптика и Волны" data-kk="Оптика және Толқындар" data-en="Optics & Waves">Оптика и Волны</button>
+          <button class="filter-btn" data-filter="collections" data-ru="Тренажеры" data-kk="Тренажерлер" data-en="Simulators">Тренажеры</button>
+        </div>
+      </div>
+
+      <div class="bento-grid" id="projects-grid">
+        
+        <div id="no-results" class="no-results glass" data-ru="По вашему запросу ничего не найдено." data-kk="Сіздің сұрауыңыз бойынша ештеңе табылмады." data-en="No results found for your query.">По вашему запросу ничего не найдено.</div>
+
+        <!-- ================= НОВЫЕ ЛАБОРАТОРНЫЕ РАБОТЫ ================= -->
+        <a href="data/elastic_work.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Сравнение работы силы упругости с изменением кинетической энергии" data-kk="Серпімділік күшінің жұмысын дененің кинетикалық энергиясының өзгеруімен салыстыру" data-en="Comparison of Elastic Force Work with Kinetic Energy Change">Сравнение работы силы упругости с изменением кинетической энергии</h3>
+          <p data-ru="Лабораторная работа: Экспериментальная проверка теоремы о кинетической энергии (A = ΔWₖ). Расчет работы силы упругости и изменения энергии." data-kk="Зертханалық жұмыс: Кинетикалық энергия туралы теореманы эксперименталды тексеру (A = ΔWₖ)." data-en="Laboratory work: Experimental verification of the work-energy theorem (A = ΔWₖ).">Лабораторная работа: Экспериментальная проверка теоремы о кинетической энергии (A = ΔWₖ). Расчет работы силы упругости и изменения энергии.</p>
+          <div class="tags"><span class="tag" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</span><span class="tag" data-ru="Лабораторная работа" data-kk="Зертханалық жұмыс" data-en="Laboratory work">Лабораторная работа</span></div>
+        </a>
+
+        <a href="data/acceleration.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Определение ускорения тела" data-kk="Дененің үдеуін анықтау" data-en="Determination of Body Acceleration">Определение ускорения тела</h3>
+          <p data-ru="Лабораторная работа: Измерение времени скатывания шарика по наклонному желобу, расчет ускорения и погрешности." data-kk="Зертханалық жұмыс: Көлбеу науа бойынша шардың сырғанау уақытын өлшеу, үдеу мен қателікті есептеу." data-en="Laboratory work: Measuring ball rolling time on an inclined groove, calculating acceleration and error.">Лабораторная работа: Измерение времени скатывания шарика по наклонному желобу, расчет ускорения и погрешности.</p>
+          <div class="tags"><span class="tag" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</span><span class="tag" data-ru="Лабораторная работа" data-kk="Зертханалық жұмыс" data-en="Laboratory work">Лабораторная работа</span></div>
+        </a>
+
+        <a href="data/horizontal_throw.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Движение тела, брошенного горизонтально" data-kk="Көлденең лақтырылған дененің қозғалысы" data-en="Motion of a Body Thrown Horizontally">Движение тела, брошенного горизонтально</h3>
+          <p data-ru="Лабораторная работа: Определение начальной скорости тела по высоте и дальности полета с оценкой погрешностей." data-kk="Зертханалық жұмыс: Биіктік пен ұшу қашықтығы бойынша дененің бастапқы жылдамдығын анықтау." data-en="Laboratory work: Determining initial velocity by height and flight range with error estimation.">Лабораторная работа: Определение начальной скорости тела по высоте и дальности полета с оценкой погрешностей.</p>
+          <div class="tags"><span class="tag" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</span><span class="tag" data-ru="Лабораторная работа" data-kk="Зертханалық жұмыс" data-en="Laboratory work">Лабораторная работа</span></div>
+        </a>
+
+        <a href="data/resistivity.html" class="card glass" data-category="electro">
+          <h3 data-ru="Удельное сопротивление проводника" data-kk="Өткізгіштің меншікті кедергісі" data-en="Conductor Resistivity">Удельное сопротивление проводника</h3>
+          <p data-ru="Лабораторная работа: Измерение удельного сопротивления материала с помощью амперметра и вольтметра." data-kk="Зертханалық жұмыс: Амперметр және вольтметр көмегімен материалдың меншікті кедергісін өлшеу." data-en="Laboratory work: Measuring material resistivity using an ammeter and voltmeter.">Лабораторная работа: Измерение удельного сопротивления материала с помощью амперметра и вольтметра.</p>
+          <div class="tags"><span class="tag" data-ru="Электродинамика" data-kk="Электродинамика" data-en="Electrodynamics">Электродинамика</span><span class="tag" data-ru="Лабораторная работа" data-kk="Зертханалық жұмыс" data-en="Laboratory work">Лабораторная работа</span></div>
+        </a>
+
+        <a href="data/young_modulus.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Измерение модуля Юнга резины" data-kk="Резинаның Юнг модулін өлшеу" data-en="Measurement of Rubber Young's Modulus">Измерение модуля Юнга резины</h3>
+          <p data-ru="Лабораторная работа: Определение модуля Юнга резинового шнура при растяжении грузами в МПа." data-kk="Зертханалық жұмыс: Жүктермен созған кезде резина шнурдың Юнг модулін МПа-да анықтау." data-en="Laboratory work: Determining Young's modulus of a rubber cord under load tension in MPa.">Лабораторная работа: Определение модуля Юнга резинового шнура при растяжении грузами в МПа.</p>
+          <div class="tags"><span class="tag" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</span><span class="tag" data-ru="Лабораторная работа" data-kk="Зертханалық жұмыс" data-en="Laboratory work">Лабораторная работа</span></div>
+        </a>
+
+        <!-- ================= СИМУЛЯТОРЫ ================= -->
+        <a href="data/electrolysis.html" class="card glass" data-category="electro">
+          <h3 data-ru="Электролиз. Первый закон Фарадея" data-kk="Электролиз. Фарадейдің бірінші заңы" data-en="Electrolysis. Faraday's First Law">Электролиз. Первый закон Фарадея</h3>
+          <p data-ru="Интерактивная лабораторная работа. Расчет массы вещества по первому закону Фарадея с анимацией и случайной генерацией вариантов." data-kk="Интерактивті зертханалық жұмыс. Фарадейдің бірінші заңы бойынша зат массасын анимациямен және нұсқаларды кездейсоқ генерациялаумен есептеу." data-en="Interactive laboratory work. Calculation of substance mass using Faraday's first law with animation and random variant generation.">Интерактивная лабораторная работа. Расчет массы вещества по первому закону Фарадея с анимацией и случайной генерацией вариантов.</p>
+          <div class="tags"><span class="tag" data-ru="Электродинамика" data-kk="Электродинамика" data-en="Electrodynamics">Электродинамика</span><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span></div>
+        </a>
+
+        <!-- ВАРИАНТ 1 (surface_wave.html) -->
+        <a href="data/surface_wave.html" class="card glass" data-category="optics">
+          <h3 data-ru="Скорость поверхностной волны (Базовый)" data-kk="Беттік толқынның жылдамдығы (Базалық)" data-en="Surface Wave Speed (Base)">Скорость поверхностной волны (Базовый)</h3>
+          <p data-ru="Лабораторная работа: Определение скорости волн на воде с помощью виртуальной кюветы и расчетом погрешностей." data-kk="Зертханалық жұмыс: Виртуалды кювета көмегімен су бетіндегі толқындар жылдамдығын анықтау." data-en="Laboratory work: Determining wave speed on water using a virtual cuvette and error calculations.">Лабораторная работа: Определение скорости волн на воде с помощью виртуальной кюветы и расчетом погрешностей.</p>
+          <div class="tags"><span class="tag" data-ru="Волны" data-kk="Толқындар" data-en="Waves">Волны</span><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span></div>
+        </a>
+
+        <!-- ВАРИАНТ 2 (surface_wave1.html) -->
+        <a href="data/surface_wave1.html" class="card glass" data-category="optics">
+          <h3 data-ru="Скорость поверхностной волны (Альтернативный)" data-kk="Беттік толқынның жылдамдығы (Альтернативті)" data-en="Surface Wave Speed (Alternative)">Скорость поверхностной волны (Альтернативный)</h3>
+          <p data-ru="Альтернативный симулятор: Наблюдение круговых волн от поплавка в кювете с трехъязычным интерфейсом." data-kk="Альтернативті симулятор: Кюветадағы қалқымадан шығатын дөңгелек толқындарды бақылау." data-en="Alternative simulator: Observing circular waves from a float in a cuvette with a trilingual interface.">Альтернативный симулятор: Наблюдение круговых волн от поплавка в кювете с трехъязычным интерфейсом.</p>
+          <div class="tags"><span class="tag" data-ru="Волны" data-kk="Толқындар" data-en="Waves">Волны</span><span class="tag" data-ru="Интерактив" data-kk="Интерактив" data-en="Interactive">Интерактив</span></div>
+        </a>
+
+        <a href="data/med_doppler.html" class="card glass" data-category="quantum">
+          <h3 data-ru="УЗИ-Диагностика: Эффект Доплера" data-kk="УДЗ-Диагностика: Доплер эффектісі" data-en="Ultrasound Diagnostics: Doppler Effect">УЗИ-Диагностика: Эффект Доплера</h3>
+          <p data-ru="Биофизический симулятор. Определение скорости кровотока, учет угла датчика и диагностика сосудов с ИИ-анализом." data-kk="Биофизикалық симулятор. Қан айналымы жылдамдығын анықтау, датчик бұрышын есепке алу және ЖИ талдауымен тамырларды диагностикалау." data-en="Biophysical simulator. Determining blood flow velocity, sensor angle adjustment, and vessel diagnostics with AI analysis.">Биофизический симулятор. Определение скорости кровотока, учет угла датчика и диагностика сосудов с ИИ-анализом.</p>
+          <div class="tags"><span class="tag" data-ru="Биофизика" data-kk="Биофизика" data-en="Biophysics">Биофизика</span><span class="tag" data-ru="Медицина" data-kk="Медицина" data-en="Medicine">Медицина</span></div>
+        </a>
+        <a href="data/bubble_chamber.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Пузырьковая камера: Треки частиц" data-kk="Көпіршікті камера: Бөлшектер тректері" data-en="Bubble Chamber: Particle Tracks">Пузырьковая камера: Треки частиц</h3>
+          <p data-ru="Ядерная физика. Анализ искривления треков в магнитном поле, расчет радиуса кривизны и импульса протона." data-kk="Ядролық физика. Магнит өрісіндегі тректердің қисаюын талдау, қисықтық радиусы мен протон импульсін есептеу." data-en="Nuclear physics. Analysis of track curvature in a magnetic field, calculation of curvature radius and proton momentum.">Ядерная физика. Анализ искривления треков в магнитном поле, расчет радиуса кривизны и импульса протона.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Сила Лоренца" data-kk="Лоренц күші" data-en="Lorentz Force">Сила Лоренца</span></div>
+        </a>
+        <a href="data/rlc_resonance.html" class="card glass" data-category="electro">
+          <h3 data-ru="Резонанс в цепи RLC" data-kk="RLC тізбегіндегі резонанс" data-en="RLC Circuit Resonance">Резонанс в цепи RLC</h3>
+          <p data-ru="Электромагнитные колебания. Исследование амплитудно-частотной характеристики (АЧХ) и резонансной частоты ν₀." data-kk="Электромагниттік тербелістер. Амплитудалық-жиіліктік сипаттаманы (АЖХ) және ν₀ резонанстық жиілігін зерттеу." data-en="Electromagnetic oscillations. Investigating frequency response (AIF) and resonant frequency ν₀.">Электромагнитные колебания. Исследование амплитудно-частотной характеристики (АЧХ) и резонансной частоты ν₀.</p>
+          <div class="tags"><span class="tag" data-ru="Электродинамика" data-kk="Электродинамика" data-en="Electrodynamics">Электродинамика</span><span class="tag" data-ru="Резонанс" data-kk="Резонанс" data-en="Resonance">Резонанс</span></div>
+        </a>
+        <a href="data/kpd1.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Визуализация КПД и цикла Карно" data-kk="ӘИК және Карно циклін визуализациялау" data-en="Efficiency & Carnot Cycle Visualization">Визуализация КПД и цикла Карно</h3>
+          <p data-ru="Динамическая модель теплового двигателя. Расчет работы, тепла, фактического КПД и предела Карно по температурам." data-kk="Жылу қозғалтқышының динамикалық моделі. Температуралар бойынша жұмысты, жылуды, нақты ӘИК пен Карно шегін есептеу." data-en="Dynamic heat engine model. Calculating work, heat, actual efficiency, and Carnot limit based on temperatures.">Динамическая модель теплового двигателя. Расчет работы, тепла, фактического КПД и предела Карно по температурам.</p>
+          <div class="tags"><span class="tag" data-ru="Термодинамика" data-kk="Термодинамика" data-en="Thermodynamics">Термодинамика</span><span class="tag" data-ru="Цикл Карно" data-kk="Карно циклі" data-en="Carnot Cycle">Цикл Карно</span></div>
+        </a>
+
+        <!-- ================= STEM И КВЕСТЫ ================= -->
+        <a href="data/mars15.html" class="card featured glass" data-category="gamified">
+          <h3 data-ru="Симулятор марсианской базы (MARS-15)" data-kk="Марс базасының симуляторы (MARS-15)" data-en="Martian Base Simulator (MARS-15)">Симулятор марсианской базы (MARS-15)</h3>
+          <p data-ru="Управление ресурсами базы, анализ гео-данных с марсохода, проведение исследований (физика, математика, химия, биология) и ремонт систем." data-kk="База ресурстарын басқару, марсоходтан гео-деректерді талдау, зерттеулер жүргізу (физика, математика, химия, биология) және жүйелерді жөндеу." data-en="Base resource management, geo-data analysis from the rover, conducting research (physics, math, chemistry, biology), and system repairs.">Управление ресурсами базы, анализ гео-данных с марсохода, проведение исследований (физика, математика, химия, биология) и ремонт систем.</p>
+          <div class="tags"><span class="tag" data-ru="STEM" data-kk="STEM" data-en="STEM">STEM</span><span class="tag" data-ru="Геймификация" data-kk="Геймификация" data-en="Gamification">Геймификация</span></div>
+        </a>
+        <a href="data/komiksy/missions.html" class="card glass" data-category="gamified">
+          <h3 data-ru="Обучающая визуальная новелла" data-kk="Оқыту визуалды новелласы" data-en="Educational Visual Novel">Обучающая визуальная новелла</h3>
+          <p data-ru="10 миссий по разделам физики. Решение проблем с оборудованием через выполнение заданий в формате комикса." data-kk="Физика бөлімдері бойынша 10 миссия. Комикс форматындағы тапсырмаларды орындау арқылы жабдықтағы ақауларды шешу." data-en="10 missions across physics branches. Solving equipment issues by completing tasks in comic format.">10 миссий по разделам физики. Решение проблем с оборудованием через выполнение заданий в формате комикса.</p>
+          <div class="tags"><span class="tag" data-ru="Квесты" data-kk="Квесттер" data-en="Quests">Квесты</span><span class="tag" data-ru="Межпредметность" data-kk="Пәнаралық байланыс" data-en="Cross-disciplinary">Межпредметность</span></div>
+        </a>
+        <a href="data/vremja.html" class="card glass" data-category="gamified">
+          <h3 data-ru="Квест «Инженер времени»" data-kk="«Уақыт инженері» квесті" data-en="'Time Engineer' Quest">Квест «Инженер времени»</h3>
+          <p data-ru="Стабилизируйте дестабилизированное ядро машины времени, решая физические задачи до исчерпания временной энергии." data-kk="Уақыт энергиясы таусылғанша физикалық есептерді шешу арқылы уақыт машинасының тұрақсызданған ядросын тұрақтандырыңыз." data-en="Stabilize the destabilized time machine core by solving physics problems before time energy runs out.">Стабилизируйте дестабилизированное ядро машины времени, решая физические задачи до исчерпания временной энергии.</p>
+          <div class="tags"><span class="tag" data-ru="Геймификация" data-kk="Геймификация" data-en="Gamification">Геймификация</span><span class="tag" data-ru="Задачи" data-kk="Есептер" data-en="Problems">Задачи</span></div>
+        </a>
+        <a href="data/zasitnic.html" class="card glass" data-category="gamified">
+          <h3 data-ru="ORBITSHIELD AI" data-kk="ORBITSHIELD AI" data-en="ORBITSHIELD AI">ORBITSHIELD AI</h3>
+          <p data-ru="Физический симулятор (Телеметрия). Использование законов сохранения энергии и импульса для орбитальной защиты." data-kk="Физикалық симулятор (Телеметрия). Орбиталық қорғаныс үшін энергия және импульстің сақталу заңдарын қолдану." data-en="Physical simulator (Telemetry). Applying energy and momentum conservation laws for orbital defense.">Физический симулятор (Телеметрия). Использование законов сохранения энергии и импульса для орбитальной защиты.</p>
+          <div class="tags"><span class="tag" data-ru="Симулятор" data-kk="Симулятор" data-en="Simulator">Симулятор</span><span class="tag" data-ru="Законы сохранения" data-kk="Сақталу заңдары" data-en="Conservation Laws">Законы сохранения</span></div>
+        </a>
+
+        <!-- ================= ЯДЕРНАЯ ФИЗИКА ================= -->
+        <a href="data/simulator.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Ядерные превращения" data-kk="Ядролық түрленулер" data-en="Nuclear Transformations">Ядерные превращения</h3>
+          <p data-ru="Содержит теорию, виртуальную модель реакций, контрольные вопросы и задачи." data-kk="Теория, реакциялардың виртуалды моделі, бақылау сұрақтары мен есептерді қамтиды." data-en="Contains theory, virtual model of reactions, control questions, and problems.">Содержит теорию, виртуальную модель реакций, контрольные вопросы и задачи.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="11 класс" data-kk="11 сынып" data-en="11th Grade">11 класс</span></div>
+        </a>
+        <a href="data/11-1.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Энергия и дефект масс" data-kk="Энергия және массалар ақауы" data-en="Energy and Mass Defect">Энергия и дефект масс</h3>
+          <p data-ru="Расчет энергии связи и дефекта масс атомных ядер." data-kk="Атом ядроларының байланыс энергиясы мен массалар ақауын есептеу." data-en="Calculation of binding energy and mass defect of atomic nuclei.">Расчет энергии связи и дефекта масс атомных ядер.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="11 класс" data-kk="11 сынып" data-en="11th Grade">11 класс</span></div>
+        </a>
+        <a href="data/alpha.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Длина пробега альфа-частицы" data-kk="Альфа-бөлшектің жүру ұзындығы" data-en="Alpha Particle Range">Длина пробега альфа-частицы</h3>
+          <p data-ru="Определение неизвестного источника через измерение длины пробега его частиц в воздухе." data-kk="Белгісіз көзді оның бөлшектерінің ауадағы жүру ұзындығын өлшеу арқылы анықтау." data-en="Identifying the unknown source by measuring its particles' range in the air.">Определение неизвестного источника через измерение длины пробега его частиц в воздухе.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Альфа-распад" data-kk="Альфа-ыдырау" data-en="Alpha Decay">Альфа-распад</span></div>
+        </a>
+        <a href="data/beta.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Поглощение бета-излучения" data-kk="Бета-сәулеленудің жұтылуы" data-en="Beta Radiation Absorption">Поглощение бета-излучения</h3>
+          <p data-ru="Исследование влияния энергии частиц и толщины поглотителя на проникающую способность." data-kk="Бөлшектер энергиясы мен жұтқыш қалыңдығының өту қабілетіне әсерін зерттеу." data-en="Investigating the effect of particle energy and absorber thickness on penetrating power.">Исследование влияния энергии частиц и толщины поглотителя на проникающую способность.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Бета-распад" data-kk="Бета-ыдырау" data-en="Beta Decay">Бета-распад</span></div>
+        </a>
+        <a href="data/gamma.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Гамма-радиоактивные элементы" data-kk="Гамма-радиоактивті элементтер" data-en="Gamma-Radioactive Elements">Гамма-радиоактивные элементы</h3>
+          <p data-ru="Определение периода полураспада образца и его идентификация путем сравнения с эталонами." data-kk="Үлгінің жартылай ыдырау периодын анықтау және оны эталондармен салыстыру арқылы сәйкестендіру." data-en="Determining the sample's half-life and identifying it by comparing with standards.">Определение периода полураспада образца и его идентификация путем сравнения с эталонами.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Радиоактивность" data-kk="Радиоактивтілік" data-en="Radioactivity">Радиоактивность</span></div>
+        </a>
+        <a href="data/raspad.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Закон радиоактивного распада" data-kk="Радиоактивті ыдырау заңы" data-en="Law of Radioactive Decay">Закон радиоактивного распада</h3>
+          <p data-ru="Визуализация статистических закономерностей процесса уменьшения числа радиоактивных ядер." data-kk="Радиоактивті ядролар санының азаю процесінің статистикалық заңдылықтарын визуализациялау." data-en="Visualizing the statistical patterns of the decreasing number of radioactive nuclei.">Визуализация статистических закономерностей процесса уменьшения числа радиоактивных ядер.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="11 класс" data-kk="11 сынып" data-en="11th Grade">11 класс</span></div>
+        </a>
+        <a href="data/schetchik.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Сцинтилляционный счетчик" data-kk="Сцинтилляциялық санағыш" data-en="Scintillation Counter">Сцинтилляционный счетчик</h3>
+          <p data-ru="Откалибруйте детектор и идентифицируйте неизвестный радиоактивный источник." data-kk="Детекторды калибрлеп, белгісіз радиоактивті көзді анықтаңыз." data-en="Calibrate the detector and identify the unknown radioactive source.">Откалибруйте детектор и идентифицируйте неизвестный радиоактивный источник.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Анализ" data-kk="Талдау" data-en="Analysis">Анализ</span></div>
+        </a>
+        <a href="data/kosmluchi.html" class="card glass" data-category="nuclear">
+          <h3 data-ru="Изучение космических лучей" data-kk="Ғарыш сәулелерін зерттеу" data-en="Study of Cosmic Rays">Изучение космических лучей</h3>
+          <p data-ru="Определение неизвестного материала через вычисление его линейного коэффициента поглощения." data-kk="Белгісіз материалды оның сызықтық жұтылу коэффициентін есептеу арқылы анықтау." data-en="Determining the unknown material by calculating its linear absorption coefficient.">Определение неизвестного материала через вычисление его линейного коэффициента поглощения.</p>
+          <div class="tags"><span class="tag" data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</span><span class="tag" data-ru="Астрофизика" data-kk="Астрофизика" data-en="Astrophysics">Астрофизика</span></div>
+        </a>
+
+        <!-- ================= ТЕРМОДИНАМИКА ================= -->
+        <a href="data/kpd.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Визуализация КПД" data-kk="ПӘК визуализациясы" data-en="Efficiency Visualization">Визуализация КПД</h3>
+          <p data-ru="Интерактивная модель второго закона термодинамики и расчета эффективности тепловых машин." data-kk="Термодинамиканың екінші заңының және жылу машиналарының тиімділігін есептеудің интерактивті моделі." data-en="Interactive model of the second law of thermodynamics and heat engine efficiency calculation.">Интерактивная модель второго закона термодинамики и расчета эффективности тепловых машин.</p>
+          <div class="tags"><span class="tag" data-ru="Термодинамика" data-kk="Термодинамика" data-en="Thermodynamics">Термодинамика</span><span class="tag" data-ru="10 класс" data-kk="10 сынып" data-en="10th Grade">10 класс</span></div>
+        </a>
+        <a href="data/teplomash.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Тепловые машины" data-kk="Жылу машиналары" data-en="Heat Engines">Тепловые машины</h3>
+          <p data-ru="Визуализация процессов работы тепловых двигателей, КПД и второго закона термодинамики." data-kk="Жылу қозғалтқыштарының жұмыс процестерін, ПӘК және термодинамиканың екінші заңын визуализациялау." data-en="Visualization of heat engine workflows, efficiency, and the second law of thermodynamics.">Визуализация процессов работы тепловых двигателей, КПД и второго закона термодинамики.</p>
+          <div class="tags"><span class="tag" data-ru="Визуализация" data-kk="Визуализация" data-en="Visualization">Визуализация</span><span class="tag" data-ru="10 класс" data-kk="10 сынып" data-en="10th Grade">10 класс</span></div>
+        </a>
+        <a href="data/gazzaci1.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Газовые законы в термодинамике" data-kk="Термодинамикадағы газ заңдары" data-en="Gas Laws in Thermodynamics">Газовые законы в термодинамике</h3>
+          <p data-ru="Применение изопроцессов к первому закону термодинамики. Акцент на превращение энергии." data-kk="Изопроцестерді термодинамиканың бірінші заңына қолдану. Энергияның түрленуіне баса назар аудару." data-en="Applying isoprocesses to the first law of thermodynamics. Focus on energy transformation.">Применение изопроцессов к первому закону термодинамики. Акцент на превращение энергии.</p>
+          <div class="tags"><span class="tag" data-ru="Энергия" data-kk="Энергия" data-en="Energy">Энергия</span><span class="tag" data-ru="Изопроцессы" data-kk="Изопроцестер" data-en="Isoprocesses">Изопроцессы</span></div>
+        </a>
+        <a href="data/gazzak.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Исследование газовых законов" data-kk="Газ заңдарын зерттеу" data-en="Investigation of Gas Laws">Исследование газовых законов</h3>
+          <p data-ru="Виртуальная установка для эмпирического изучения свойств идеального газа." data-kk="Идеал газдың қасиеттерін эмпирикалық зерттеуге арналған виртуалды қондырғы." data-en="Virtual setup for the empirical study of ideal gas properties.">Виртуальная установка для эмпирического изучения свойств идеального газа.</p>
+          <div class="tags"><span class="tag" data-ru="МКТ" data-kk="МКТ" data-en="KMT">МКТ</span><span class="tag" data-ru="10 класс" data-kk="10 сынып" data-en="10th Grade">10 класс</span></div>
+        </a>
+        <a href="data/kalorimetria.html" class="card glass" data-category="thermo">
+          <h3 data-ru="Определение металла (Калориметрия)" data-kk="Металды анықтау (Калориметрия)" data-en="Identifying Metal (Calorimetry)">Определение металла (Калориметрия)</h3>
+          <p data-ru="Лабораторная работа по определению неизвестного металла при опускании его в воду." data-kk="Белгісіз металды суға батыру арқылы оны анықтау бойынша зертханалық жұмыс." data-en="Lab work on identifying an unknown metal by immersing it in water.">Лабораторная работа по определению неизвестного металла при опускании его в воду.</p>
+          <div class="tags"><span class="tag" data-ru="Теплоемкость" data-kk="Жылу сыйымдылығы" data-en="Heat Capacity">Теплоемкость</span><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span></div>
+        </a>
+
+        <!-- ================= МЕХАНИКА И КОЛЕБАНИЯ ================= -->
+        <a href="data/7-1.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Расчет тормозного пути" data-kk="Тежелу жолын есептеу" data-en="Braking Distance Calculation">Расчет тормозного пути</h3>
+          <p data-ru="Строгие вычисления кинематики. Время реакции водителя полностью исключено из расчетов, остается только физика." data-kk="Кинематиканы қатаң есептеу. Жүргізушінің реакция уақыты есептеулерден толығымен алынып тасталды, тек физика қалды." data-en="Strict kinematic calculations. Driver's reaction time is completely excluded, leaving only pure physics.">Строгие вычисления кинематики. Время реакции водителя полностью исключено из расчетов, остается только физика.</p>
+          <div class="tags"><span class="tag" data-ru="Кинематика" data-kk="Кинематика" data-en="Kinematics">Кинематика</span><span class="tag" data-ru="9 класс" data-kk="9 сынып" data-en="9th Grade">9 класс</span></div>
+        </a>
+        <a href="data/gorizont1.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Баллистическое движение (Моделирование)" data-kk="Баллистикалық қозғалыс (Модельдеу)" data-en="Ballistic Motion (Modeling)">Баллистическое движение (Моделирование)</h3>
+          <p data-ru="Моделирование движения тела, брошенного горизонтально и под углом к горизонту." data-kk="Көкжиекке бұрыш жасай және көлденең лақтырылған дененің қозғалысын модельдеу." data-en="Modeling the motion of a body thrown horizontally and at an angle to the horizon.">Моделирование движения тела, брошенного горизонтально и под углом к горизонту.</p>
+          <div class="tags"><span class="tag" data-ru="Кинематика" data-kk="Кинематика" data-en="Kinematics">Кинематика</span><span class="tag" data-ru="Траектория" data-kk="Траектория" data-en="Trajectory">Траектория</span></div>
+        </a>
+        <a href="data/lab.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Баллистическая лаборатория" data-kk="Баллистическая лаборатория" data-en="Ballistics Laboratory">Баллистическая лаборатория</h3>
+          <p data-ru="Попадание в цель на разных планетах (учет атмосферы и ветра). Визуализация кинетической и потенциальной энергий." data-kk="Түрлі ғаламшарларда нысанаға тигізу (атмосфера мен желді ескере отырып). Кинетикалық және потенциалдық энергияны визуализациялау." data-en="Hitting a target on different planets (accounting for atmosphere and wind). Visualization of kinetic and potential energies.">Попадание в цель на разных планетах (учет атмосферы и ветра). Визуализация кинетической и потенциальной энергий.</p>
+          <div class="tags"><span class="tag" data-ru="Динамика" data-kk="Динамика" data-en="Dynamics">Динамика</span><span class="tag" data-ru="Энергия" data-kk="Энергия" data-en="Energy">Энергия</span></div>
+        </a>
+        <a href="data/zakonysohr.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Сохранение импульса" data-kk="Импульстің сақталуы" data-en="Momentum Conservation">Сохранение импульса</h3>
+          <p data-ru="Изучение закона сохранения импульса при упругих и неупругих соударениях." data-kk="Серпімді және серпімсіз соқтығысулар кезіндегі импульстің сақталу заңын зерттеу." data-en="Studying the law of conservation of momentum in elastic and inelastic collisions.">Изучение закона сохранения импульса при упругих и неупругих соударениях.</p>
+          <div class="tags"><span class="tag" data-ru="Импульс" data-kk="Импульс" data-en="Momentum">Импульс</span><span class="tag" data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</span></div>
+        </a>
+        <a href="data/arhimed.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Сила Архимеда" data-kk="Архимед күші" data-en="Archimedes' Principle">Сила Архимеда</h3>
+          <p data-ru="Определение выталкивающей силы, действующей на погруженное в жидкость тело." data-kk="Сұйықтыққа батырылған денеге әсер ететін ығыстырушы күшті анықтау." data-en="Determining the buoyant force acting on a body immersed in a liquid.">Определение выталкивающей силы, действующей на погруженное в жидкость тело.</p>
+          <div class="tags"><span class="tag" data-ru="Гидростатика" data-kk="Гидростатика" data-en="Hydrostatics">Гидростатика</span><span class="tag" data-ru="7 класс" data-kk="7 сынып" data-en="7th Grade">7 класс</span></div>
+        </a>
+        <a href="data/majatgr.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Графики колебаний" data-kk="Тербелістер графиктері" data-en="Oscillation Graphs">Графики колебаний</h3>
+          <p data-ru="Изучение колебаний нитяного маятника по графикам энергии и амплитуды." data-kk="Жіптік маятниктің тербелістерін энергия және амплитуда графиктері бойынша зерттеу." data-en="Studying pendulum oscillations using energy and amplitude graphs.">Изучение колебаний нитяного маятника по графикам энергии и амплитуды.</p>
+          <div class="tags"><span class="tag" data-ru="Колебания" data-kk="Тербелістер" data-en="Oscillations">Колебания</span><span class="tag" data-ru="Графики" data-kk="Графиктер" data-en="Graphs">Графики</span></div>
+        </a>
+        <a href="data/majatniki.html" class="card glass" data-category="mechanics">
+          <h3 data-ru="Анализ маятников" data-kk="Маятниктерді талдау" data-en="Pendulum Analysis">Анализ маятников</h3>
+          <p data-ru="Определение гравитации на неизвестной планете. Расчет жесткости и массы маятника." data-kk="Белгісіз ғаламшардағы гравитацияны анықтау. Маятниктің қатаңдығы мен массасын есептеу." data-en="Determining gravity on an unknown planet. Calculating the stiffness and mass of a pendulum.">Определение гравитации на неизвестной планете. Расчет жесткости и массы маятника.</p>
+          <div class="tags"><span class="tag" data-ru="Маятники" data-kk="Маятниктер" data-en="Pendulums">Маятники</span><span class="tag" data-ru="Гравитация" data-kk="Гравитация" data-en="Gravity">Гравитация</span></div>
+        </a>
+
+        <!-- ================= ЭЛЕКТРОДИНАМИКА И МАГНЕТИЗМ ================= -->
+        <a href="data/magnpole1.html" class="card glass" data-category="electro">
+          <h3 data-ru="Кольцевой трубопровод" data-kk="Сақиналы құбыр" data-en="Ring Pipeline">Кольцевой трубопровод</h3>
+          <p data-ru="Исследование силы Лоренца с помощью модели кольцевого трубопровода." data-kk="Сақиналы құбыр моделі арқылы Лоренц күшін зерттеу." data-en="Investigating the Lorentz force using a ring pipeline model.">Исследование силы Лоренца с помощью модели кольцевого трубопровода.</p>
+          <div class="tags"><span class="tag" data-ru="Магнитное поле" data-kk="Магнит өрісі" data-en="Magnetic Field">Магнитное поле</span><span class="tag" data-ru="Сила Лоренца" data-kk="Лоренц күші" data-en="Lorentz Force">Сила Лоренца</span></div>
+        </a>
+        <a href="data/magnpole2.html" class="card glass" data-category="electro">
+          <h3 data-ru="Навигация частицы (Сила Лоренца)" data-kk="Бөлшек навигациясы (Лоренц күші)" data-en="Particle Navigation (Lorentz Force)">Навигация частицы (Сила Лоренца)</h3>
+          <p data-ru="Доставьте частицу к приемнику, правильно рассчитав ее траекторию движения в магнитном поле." data-kk="Магнит өрісіндегі қозғалыс траекториясын дұрыс есептеп, бөлшекті қабылдағышқа жеткізіңіз." data-en="Deliver the particle to the receiver by correctly calculating its trajectory in a magnetic field.">Доставьте частицу к приемнику, правильно рассчитав ее траекторию движения в магнитном поле.</p>
+          <div class="tags"><span class="tag" data-ru="Тренажер" data-kk="Тренажер" data-en="Simulator">Тренажер</span><span class="tag" data-ru="Магнетизм" data-kk="Магнетизм" data-en="Magnetism">Магнетизм</span></div>
+        </a>
+        <a href="data/magnpole3.html" class="card glass" data-category="electro">
+          <h3 data-ru="Спиральная траектория" data-kk="Спиральды траектория" data-en="Spiral Trajectory">Спиральная траектория</h3>
+          <p data-ru="Изучение сложного движения заряженной частицы в магнитном поле по спирали." data-kk="Зарядталған бөлшектің магнит өрісіндегі спираль бойымен күрделі қозғалысын зерттеу." data-en="Studying the complex motion of a charged particle along a spiral in a magnetic field.">Изучение сложного движения заряженной частицы в магнитном поле по спирали.</p>
+          <div class="tags"><span class="tag" data-ru="Визуализация" data-kk="Визуализация" data-en="Visualization">Визуализация</span><span class="tag" data-ru="Магнитное поле" data-kk="Магнит өрісі" data-en="Magnetic Field">Магнитное поле</span></div>
+        </a>
+        <a href="data/silaloren.html" class="card glass" data-category="electro">
+          <h3 data-ru="Изучение силы Лоренца" data-kk="Лоренц күшін зерттеу" data-en="Study of the Lorentz Force">Изучение силы Лоренца</h3>
+          <p data-ru="Лабораторная работа по исследованию действия магнитного поля на движущийся заряд." data-kk="Магнит өрісінің қозғалыстағы зарядқа әсерін зерттеу бойынша зертханалық жұмыс." data-en="Laboratory work on investigating the effect of a magnetic field on a moving charge.">Лабораторная работа по исследованию действия магнитного поля на движущийся заряд.</p>
+          <div class="tags"><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span><span class="tag" data-ru="Магнетизм" data-kk="Магнетизм" data-en="Magnetism">Магнетизм</span></div>
+        </a>
+        <a href="data/silaampera.html" class="card glass" data-category="electro">
+          <h3 data-ru="Изучение силы Ампера" data-kk="Ампер күшін зерттеу" data-en="Study of the Ampere Force">Изучение силы Ампера</h3>
+          <p data-ru="Лабораторная работа по исследованию силы, действующей на проводник с током." data-kk="Тогы бар өткізгішке әсер ететін күшті зерттеу бойынша зертханалық жұмыс." data-en="Lab work on investigating the force acting on a current-carrying conductor.">Лабораторная работа по исследованию силы, действующей на проводник с током.</p>
+          <div class="tags"><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span><span class="tag" data-ru="Ток" data-kk="Ток" data-en="Current">Ток</span></div>
+        </a>
+        <a href="data/poslipar.html" class="card glass" data-category="electro">
+          <h3 data-ru="Соединение проводников" data-kk="Өткізгіштерді жалғау" data-en="Connection of Conductors">Соединение проводников</h3>
+          <p data-ru="Изучение закономерностей последовательного и параллельного соединения элементов цепи." data-kk="Тізбек элементтерін тізбектей және параллель жалғау заңдылықтарын зерттеу." data-en="Studying the laws of series and parallel connections of circuit elements.">Изучение закономерностей последовательного и параллельного соединения элементов цепи.</p>
+          <div class="tags"><span class="tag" data-ru="Цепи" data-kk="Тізбектер" data-en="Circuits">Цепи</span><span class="tag" data-ru="Постоянный ток" data-kk="Тұрақты ток" data-en="Direct Current">Постоянный ток</span></div>
+        </a>
+        <a href="data/elmind.html" class="card glass" data-category="electro">
+          <h3 data-ru="Электромагнитная индукция" data-kk="Электромагниттік индукция" data-en="Electromagnetic Induction">Электромагнитная индукция</h3>
+          <p data-ru="Лабораторная работа по изучению явления возникновения индукционного тока." data-kk="Индукциялық токтың пайда болу құбылысын зерттеу бойынша зертханалық жұмыс." data-en="Lab work on studying the phenomenon of induction current generation.">Лабораторная работа по изучению явления возникновения индукционного тока.</p>
+          <div class="tags"><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span><span class="tag" data-ru="Индукция" data-kk="Индукция" data-en="Induction">Индукция</span></div>
+        </a>
+
+        <!-- ================= ОПТИКА И ВОЛНЫ ================= -->
+        <a href="data/9-1.html" class="card glass" data-category="optics">
+          <h3 data-ru="Акустика и шумозащита" data-kk="Акустика және шудан қорғау" data-en="Acoustics and Noise Protection">Акустика и шумозащита</h3>
+          <p data-ru="Расчет длины звуковой волны и проектирование параметров эффективной шумозащиты." data-kk="Дыбыс толқынының ұзындығын есептеу және тиімді шудан қорғау параметрлерін жобалау." data-en="Calculating sound wavelength and designing effective noise protection parameters.">Расчет длины звуковой волны и проектирование параметров эффективной шумозащиты.</p>
+          <div class="tags"><span class="tag" data-ru="Акустика" data-kk="Акустика" data-en="Acoustics">Акустика</span><span class="tag" data-ru="Волны" data-kk="Толқындар" data-en="Waves">Волны</span></div>
+        </a>
+        <a href="data/intidif.html" class="card glass" data-category="optics">
+          <h3 data-ru="Волновая оптика" data-kk="Толқындық оптика" data-en="Wave Optics">Волновая оптика</h3>
+          <p data-ru="Симулятор для визуального исследования явлений интерференции и дифракции света." data-kk="Жарықтың интерференциясы мен дифракциясы құбылыстарын визуалды зерттеуге арналған симулятор." data-en="Simulator for the visual study of light interference and diffraction phenomena.">Симулятор для визуального исследования явлений интерференции и дифракции света.</p>
+          <div class="tags"><span class="tag" data-ru="Оптика" data-kk="Оптика" data-en="Optics">Оптика</span><span class="tag" data-ru="11 класс" data-kk="11 сынып" data-en="11th Grade">11 класс</span></div>
+        </a>
+        <a href="data/difrresh.html" class="card glass" data-category="optics">
+          <h3 data-ru="Дифракционная решетка" data-kk="Дифракциялық тор" data-en="Diffraction Grating">Дифракционная решетка</h3>
+          <p data-ru="Определение длины световой волны с помощью дифракционной решетки." data-kk="Дифракциялық тордың көмегімен жарық толқынының ұзындығын анықтау." data-en="Determining the light wavelength using a diffraction grating.">Определение длины световой волны с помощью дифракционной решетки.</p>
+          <div class="tags"><span class="tag" data-ru="Лабораторная" data-kk="Зертханалық" data-en="Laboratory">Лабораторная</span><span class="tag" data-ru="Спектр" data-kk="Спектр" data-en="Spectrum">Спектр</span></div>
+        </a>
+        <a href="data/linzy.html" class="card glass" data-category="optics">
+          <h3 data-ru="Исследование линз" data-kk="Линзаларды зерттеу" data-en="Investigating Lenses">Исследование линз</h3>
+          <p data-ru="Виртуальная среда для изучения законов геометрической оптики и свойств линз." data-kk="Геометриялық оптика заңдарын және линзалардың қасиеттерін зерттеуге арналған виртуалды орта." data-en="Virtual environment for studying the laws of geometric optics and properties of lenses.">Виртуальная среда для изучения законов геометрической оптики и свойств линз.</p>
+          <div class="tags"><span class="tag" data-ru="Оптика" data-kk="Оптика" data-en="Optics">Оптика</span><span class="tag" data-ru="Геометрия" data-kk="Геометрия" data-en="Geometry">Геометрия</span></div>
+        </a>
+        <a href="data/optikalinz.html" class="card glass" data-category="optics">
+          <h3 data-ru="Изображения в линзах" data-kk="Линзалардағы кескіндер" data-en="Images in Lenses">Изображения в линзах</h3>
+          <p data-ru="Построение и детальное изучение изображений, даваемых тонкими линзами." data-kk="Жұқа линзалар беретін кескіндерді тұрғызу және егжей-тегжейлі зерттеу." data-en="Construction and detailed study of images produced by thin lenses.">Построение и детальное изучение изображений, даваемых тонкими линзами.</p>
+          <div class="tags"><span class="tag" data-ru="Визуализация" data-kk="Визуализация" data-en="Visualization">Визуализация</span><span class="tag" data-ru="8 класс" data-kk="8 сынып" data-en="8th Grade">8 класс</span></div>
+        </a>
+
+        <!-- ================= ТРЕНАЖЕРЫ И СБОРНИКИ ================= -->
+        <a href="data/zad/problems.htm" class="card glass" data-category="collections">
+          <h3 data-ru="Сборник задач по физике" data-kk="Физика есептерінің жинағы" data-en="Physics Problem Book">Сборник задач по физике</h3>
+          <p data-ru="Универсальный тренажер по всем разделам. Включает точные ответы для разности потенциалов без нулевых значений (например, 1,8 * 10^-6 Дж)." data-kk="Барлық бөлімдер бойынша әмбебап тренажер. Потенциалдар айырымы үшін нөлдік мәндерсіз дәл жауаптарды қамтиды (мысалы, 1,8 * 10^-6 Дж)." data-en="Universal simulator for all sections. Includes accurate answers for potential difference without zero values (e.g., 1.8 * 10^-6 J).">Универсальный тренажер по всем разделам. Включает точные ответы для разности потенциалов без нулевых значений (например, 1,8 * 10^-6 Дж).</p>
+          <div class="tags"><span class="tag" data-ru="Задачник" data-kk="Есептер жинағы" data-en="Problem Book">Задачник</span><span class="tag" data-ru="Все разделы" data-kk="Барлық бөлімдер" data-en="All Sections">Все разделы</span></div>
+        </a>
+        <a href="data/zadachi.html" class="card glass" data-category="collections">
+          <h3 data-ru="Интенсив по кинематике" data-kk="Кинематикадан интенсив" data-en="Kinematics Intensive">Интенсив по кинематике</h3>
+          <p data-ru="Специализированный тренажер, содержащий 100 задач по кинематике для глубокой отработки." data-kk="Бөлімді терең меңгеруге арналған 100 тапсырманы қамтитын мамандандырылған тренажер." data-en="Specialized simulator containing 100 kinematics problems for deep practice.">Специализированный тренажер, содержащий 100 задач по кинематике для глубокой отработки.</p>
+          <div class="tags"><span class="tag" data-ru="Тренажер" data-kk="Тренажер" data-en="Simulator">Тренажер</span><span class="tag" data-ru="100 задач" data-kk="100 есеп" data-en="100 Problems">100 задач</span></div>
+        </a>
+        <a href="data/lab7.html" class="card glass" data-category="collections">
+          <h3 data-ru="Практикум 7 класса" data-kk="7 сынып практикумы" data-en="7th Grade Practicum">Практикум 7 класса</h3>
+          <p data-ru="Сборник из 10 базовых лабораторных работ за весь курс физики для 7 класса." data-kk="7 сыныпқа арналған физика курсы бойынша 10 базалық зертханалық жұмыс жинағы." data-en="A collection of 10 basic physics laboratory works for the 7th grade.">Сборник из 10 базовых лабораторных работ за весь курс физики для 7 класса.</p>
+          <div class="tags"><span class="tag" data-ru="Сборник" data-kk="Жинақ" data-en="Collection">Сборник</span><span class="tag" data-ru="7 класс" data-kk="7 сынып" data-en="7th Grade">7 класс</span></div>
+        </a>
+        <a href="data/grafiki.html" class="card glass" data-category="collections">
+          <h3 data-ru="Анализ графиков" data-kk="Графиктерді талдау" data-en="Analysis of Graphs">Анализ графиков</h3>
+          <p data-ru="Изучение соединения проводников, кинематики и термодинамики по графикам." data-kk="Графиктер бойынша өткізгіштерді жалғауды, кинематиканы және термодинамикуны зерттеу." data-en="Studying conductor connections, kinematics, and thermodynamics using graphs.">Изучение соединения проводников, кинематики и термодинамики по графикам.</p>
+          <div class="tags"><span class="tag" data-ru="Графики" data-kk="Графиктер" data-en="Graphs">Графики</span><span class="tag" data-ru="Аналитика" data-kk="Аналитика" data-en="Analytics">Аналитика</span></div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА 2: МЕТОДИЧЕСКИЕ РУКОВОДСТВА -->
+    <div id="tab-guidelines" class="tab-content">
+      <div class="guidelines-grid">
+        
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="УЗИ-Диагностика: Эффект Доплера" data-kk="УДЗ-Диагностика: Доплер эффектісі" data-en="Ultrasound Diagnostics: Doppler Effect">УЗИ-Диагностика: Эффект Доплера</h3>
+            <p data-ru="Методика проведения виртуальной лабораторной работы по биофизике с расчетом скорости кровотока через сдвиг частоты ν₀." data-kk="Жиілік ығысуы ν₀ арқылы қан айналымы жылдамдығын есептей отырып, биофизика бойынша виртуалды зертханалық жұмысты жүргізу әдістемесі." data-en="Methodology for conducting a virtual biophysical lab work calculating blood flow velocity via frequency shift ν₀.">Методика проведения виртуальной лабораторной работы по биофизике с расчетом скорости кровотока через сдвиг частоты ν₀.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/doc/UZI.docx" target="_blank" class="guide-btn btn-view" data-ru="Открыть" data-kk="Ашу" data-en="Open">Открыть</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Пузырьковая камера: Треки частиц" data-kk="Көпіршікті камера: Бөлшектер тректері" data-en="Bubble Chamber: Particle Tracks">Пузырьковая камера: Треки частиц</h3>
+            <p data-ru="Руководство по анализу кривизны треков заряженных частиц в магнитном поле и расчету импульса протона." data-kk="Магнит өрісіндегі зарядталған бөлшектердің тректерінің қисаюын талдау және протон импульсін есептеу бойынша нұсқаулық." data-en="Guide on analyzing charged particle track curvature in a magnetic field and calculating proton momentum.">Руководство по анализу кривизны треков заряженных частиц в магнитном поле и расчету импульса протона.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/bubble_chamber.html" target="_blank" class="guide-btn btn-view" data-ru="Открыть" data-kk="Ашу" data-en="Open">Открыть</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Резонанс в цепи RLC" data-kk="RLC тізбегіндегі резонанс" data-en="RLC Circuit Resonance">Резонанс в цепи RLC</h3>
+            <p data-ru="Методические материалы по исследованию АЧХ колебательного контура и применению формулы Томсона для частоты ν₀." data-kk="Тербелмелі контурдың АЖХ зерттеу және ν₀ жиілігі үшін Томсон формуласын қолдану бойынша әдістемелік материалдар." data-en="Methodological materials on investigating oscillating circuit AIF and applying Thomson's formula for frequency ν₀.">Методические материалы по исследованию АЧХ колебательного контура и применению формулы Томсона для частоты ν₀.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/rlc_resonance.html" target="_blank" class="guide-btn btn-view" data-ru="Открыть" data-kk="Ашу" data-en="Open">Открыть</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="КПД и Второй закон термодинамики" data-kk="ПӘК және Термодинамиканың екінші заңы" data-en="Efficiency & Second Law of Thermodynamics">КПД и Второй закон термодинамики</h3>
+            <p data-ru="Руководство по расчету КПД тепловой машины и предельного коэффициента полезного действия цикла Карно." data-kk="Жылу машинасының ПӘК-ін және Карно циклінің шекті тиімділік коэффициентін есептеу бойынша нұсқаулық." data-en="Guide on calculating heat engine efficiency and the Carnot cycle efficiency limit.">Руководство по расчету КПД тепловой машины и предельного коэффициента полезного действия цикла Карно.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/kpd1.html" target="_blank" class="guide-btn btn-view" data-ru="Открыть" data-kk="Ашу" data-en="Open">Открыть</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА 3: КОНТРОЛЬ 7-11 -->
+    <div id="tab-control" class="tab-content">
+      <div class="guidelines-grid">
+        
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Тематический контроль по физике 7 класса" data-kk="7 сынып физика курсы бойынша тақырыптық бақылау" data-en="Grade 7 Topic-Based Control">Тематический контроль по физике 7 класса</h3>
+            <p data-ru="Комплекс заданий по темам: что изучает физика, кинематика, гидростатика и архимедова сила, работа, мощность и простые механизмы (тесты, задачи, соответствия, контексты)." data-kk="Тақырыптар бойынша тапсырмалар кешені: физика нені зерттейді, кинематика, гидростатика және архимед күші, жұмыс, қуат және қарапайым механизмдер (тесттер, есептер, сәйкестендіру, контексттер)." data-en="Topic-based task complex: what physics studies, kinematics, hydrostatics and Archimedes' principle, work, power, and simple machines (tests, problems, matching, contexts).">Комплекс заданий по темам: что изучает физика, кинематика, гидростатика и архимедова сила, работа, мощность и простые механизмы (тесты, задачи, соответствия, контексты).</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/control/7/index7.html" class="guide-btn btn-view" data-ru="Открыть контроль" data-kk="Бақылауды ашу" data-en="Open Control">Открыть контроль</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Тематический контроль по физике 8 класса" data-kk="8 сынып физика курсы бойынша тақырыптық бақылау" data-en="Grade 8 Topic-Based Control">Тематический контроль по физике 8 класса</h3>
+            <p data-ru="Комплекс заданий по темам: тепловые явления, закон Ома для участка цепи, последовательное и параллельное соединение, магнитное поле, геометрическая оптика." data-kk="Тақырыптар бойынша тапсырмалар кешені: жылу құбылыстары, тізбек бөлігі үшін Ом заңы, тізбектей және параллель жалғау, магнит өрісі, геометриялық оптика." data-en="Topic-based task complex: thermal phenomena, Ohm's law, series and parallel circuits, magnetic field, geometric optics.">Комплекс заданий по темам: тепловые явления, закон Ома для участка цепи, последовательное и параллельное соединение, магнитное поле, геометрическая оптика.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/control/8/index8.html" class="guide-btn btn-view" data-ru="Открыть контроль" data-kk="Бақылауды ашу" data-en="Open Control">Открыть контроль</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Тематический контроль по физике 9 класса" data-kk="9 сынып физика курсы бойынша тақырыптық бақылау" data-en="Grade 9 Topic-Based Control">Тематический контроль по физике 9 класса</h3>
+            <p data-ru="Комплекс заданий по темам: законы Ньютона, законы сохранения импульса и механической энергии, механические колебания и волны, звук." data-kk="Тақырыптар бойынша тапсырмалар кешені: Ньютон заңдары, импульс пен механикалық энергияның сақталу заңдары, механикалық тербелістер мен толқындар, дыбыс." data-en="Topic-based task complex: Newton's laws, conservation of momentum and mechanical energy, mechanical oscillations and waves, sound.">Комплекс заданий по темам: законы Ньютона, законы сохранения импульса и механической энергии, механические колебания и волны, звук.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/control/9/index9.html" class="guide-btn btn-view" data-ru="Открыть контроль" data-kk="Бақылауды ашу" data-en="Open Control">Открыть контроль</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Тематический контроль по физике 10 класса" data-kk="10 сынып физика курсы бойынша тақырыптық бақылау" data-en="Grade 10 Topic-Based Control">Тематический контроль по физике 10 класса</h3>
+            <p data-ru="Комплекс заданий по темам: молекулярно-кинетическая теория (МКТ), основы термодинамики, электростатика, законы постоянного тока." data-kk="Тақырыптар бойынша тапсырмалар кешені: молекулярлы-кинетикалық теория (МКТ), термодинамика негіздері, электростатика, тұрақты ток заңдары." data-en="Topic-based task complex: molecular-kinetic theory (MKT), thermodynamics fundamentals, electrostatics, direct current laws.">Комплекс заданий по темам: молекулярно-кинетическая теория (МКТ), основы термодинамики, электростатика, законы постоянного тока.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/control/10/index10.html" class="guide-btn btn-view" data-ru="Открыть контроль" data-kk="Бақылауды ашу" data-en="Open Control">Открыть контроль</a>
+          </div>
+        </div>
+
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Тематический контроль по физике 11 класса" data-kk="11 сынып физика курсы бойынша тақырыптық бақылау" data-en="Grade 11 Topic-Based Control">Тематический контроль по физике 11 класса</h3>
+            <p data-ru="Комплекс заданий по темам: электромагнитная индукция, волновая и квантовая оптика, элементы теории относительности, ядерная физика." data-kk="Тақырыптар бойынша тапсырмалар кешені: электромагниттік индукция, толқындық және кванттық оптика, салыстырмалық теориясының элементтері, ядролық физика." data-en="Topic-based task complex: electromagnetic induction, wave and quantum optics, elements of relativity, nuclear physics.">Комплекс заданий по темам: электромагнитная индукция, волновая и квантовая оптика, элементы теории относительности, ядерная физика.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="data/control/11/index11.html" class="guide-btn btn-view" data-ru="Открыть контроль" data-kk="Бақылауды ашу" data-en="Open Control">Открыть контроль</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА 4: СПРАВОЧНИК ФОРМУЛ -->
+    <div id="tab-reference" class="tab-content">
+      <div class="guidelines-grid">
+        <div class="guide-card glass">
+          <h3 data-ru="Механика" data-kk="Механика" data-en="Mechanics">Механика</h3>
+          <p>
+            • <span data-ru="Равноускоренное движение:" data-kk="Үдемелі қозғалыс:" data-en="Accelerated motion:">Равноускоренное движение:</span> <span class="formula-line">s = v<sub>0</sub>t + (at<sup>2</sup>)/2</span><br>
+            • <span data-ru="Скорость при ускорении:" data-kk="Үдеу кезіндегі жылдамдық:" data-en="Velocity with acceleration:">Скорость при ускорении:</span> <span class="formula-line">v = v<sub>0</sub> + at</span><br>
+            • <span data-ru="Второй закон Ньютона:" data-kk="Ньютонның екінші заңы:" data-en="Newton's second law:">Второй закон Ньютона:</span> <span class="formula-line">F = m · a</span><br>
+            • <span data-ru="Закон всемирного тяготения:" data-kk="Бүкіләлемдік тартылыс заңы:" data-en="Universal gravitation:">Закон всемирного тяготения:</span> <span class="formula-line">F = G · (m<sub>1</sub> · m<sub>2</sub>) / r<sup>2</sup></span><br>
+            • <span data-ru="Импульс тела:" data-kk="Дененің импульсі:" data-en="Momentum:">Импульс тела:</span> <span class="formula-line">p = m · v</span><br>
+            • <span data-ru="Механическая работа:" data-kk="Механикалық жұмыс:" data-en="Mechanical work:">Механическая работа:</span> <span class="formula-line">A = F · s · cos(α)</span><br>
+            • <span data-ru="Кинетическая энергия:" data-kk="Кинетикалық энергия:" data-en="Kinetic energy:">Кинетическая энергия:</span> <span class="formula-line">E<sub>k</sub> = (m · v<sup>2</sup>) / 2</span><br>
+            • <span data-ru="Потенциальная энергия:" data-kk="Потенциалдық энергия:" data-en="Potential energy:">Потенциальная энергия:</span> <span class="formula-line">E<sub>p</sub> = m · g · h</span>
+          </p>
+        </div>
+        <div class="guide-card glass">
+          <h3 data-ru="Термодинамика и МКТ" data-kk="Термодинамика және МКТ" data-en="Thermodynamics & KMT">Термодинамика и МКТ</h3>
+          <p>
+            • <span data-ru="Уравнение Менделеева — Клапейрона:" data-kk="Менделеев — Клапейрон теңдеуі:" data-en="Clapeyron equation:">Уравнение Менделеева — Клапейрона:</span> <span class="formula-line">P · V = (m / M) · R · T</span><br>
+            • <span data-ru="Основное уравнение МКТ:" data-kk="МКТ негізгі теңдеуі:" data-en="Basic KMT equation:">Основное уравнение МКТ:</span> <span class="formula-line">P = (1/3) · n · m<sub>0</sub> · v<sup>2</sup></span><br>
+            • <span data-ru="Средняя кинетическая энергия:" data-kk="Орташа кинетикалық энергия:" data-en="Average kinetic energy:">Средняя кинетическая энергия:</span> <span class="formula-line">E<sub>k</sub> = (3/2) · k · T</span><br>
+            • <span data-ru="Первый закон термодинамики:" data-kk="Термодинамиканың бірінші заңы:" data-en="First law of thermodynamics:">Первый закон термодинамики:</span> <span class="formula-line">Q = ΔU + A</span><br>
+            • <span data-ru="Работа в термодинамике:" data-kk="Термодинамикадағы жұмыс:" data-en="Work in thermodynamics:">Работа в термодинамике:</span> <span class="formula-line">A = P · ΔV</span><br>
+            • <span data-ru="Количество теплоты:" data-kk="Жылу мөлшері:" data-en="Amount of heat:">Количество теплоты:</span> <span class="formula-line">Q = c · m · ΔT + λ · m + L · m</span><br>
+            • <span data-ru="КПД тепловой машины:" data-kk="Жылу машинасының ӘИК:" data-en="Heat engine efficiency:">КПД тепловой машины:</span> <span class="formula-line">η = A / Q<sub>1</sub> = (T<sub>1</sub> - T<sub>2</sub>) / T<sub>1</sub></span>
+          </p>
+        </div>
+        <div class="guide-card glass">
+          <h3 data-ru="Электродинамика" data-kk="Электродинамика" data-en="Electrodynamics">Электродинамика</h3>
+          <p>
+            • <span data-ru="Закон Кулона:" data-kk="Кулон заңы:" data-en="Coulomb's law:">Закон Кулона:</span> <span class="formula-line">F = k · (|q<sub>1</sub>| · |q<sub>2</sub>|) / r<sup>2</sup></span><br>
+            • <span data-ru="Напряженность поля:" data-kk="Өріс кернеулігі:" data-en="Field intensity:">Напряженность поля:</span> <span class="formula-line">E = F / q</span><br>
+            • <span data-ru="Закон Ома для участка цепи:" data-kk="Тізбек бөлігі үшін Ом заңы:" data-en="Ohm's law:">Закон Ома для участка цепи:</span> <span class="formula-line">I = U / R</span><br>
+            • <span data-ru="Закон Ома для полной цепи:" data-kk="Толық тізбек үшін Ом заңы:" data-en="Ohm's law for complete circuit:">Закон Ома для полной цепи:</span> <span class="formula-line">I = ε / (R + r)</span><br>
+            • <span data-ru="Мощность электрического тока:" data-kk="Электр тогының қуаты:" data-en="Electric power:">Мощность электрического тока:</span> <span class="formula-line">P = U · I = I<sup>2</sup> · R</span><br>
+            • <span data-ru="Сила Ампера:" data-kk="Ампер күші:" data-en="Ampere force:">Сила Ампера:</span> <span class="formula-line">F<sub>A</sub> = I · B · l · sin(α)</span><br>
+            • <span data-ru="Сила Лоренца:" data-kk="Лоренц күші:" data-en="Lorentz force:">Сила Лоренца:</span> <span class="formula-line">F<sub>L</sub> = q · v · B · sin(α)</span>
+          </p>
+        </div>
+        <div class="guide-card glass">
+          <h3 data-ru="Оптика и Волны" data-kk="Оптика және Толқындар" data-en="Optics & Waves">Оптика и Волны</h3>
+          <p>
+            • <span data-ru="Закон преломления света:" data-kk="Жарықтың сыну заңы:" data-en="Law of refraction:">Закон преломления света:</span> <span class="formula-line">n<sub>2</sub> / n<sub>1</sub> = sin(α) / sin(β)</span><br>
+            • <span data-ru="Формула тонкой линзы:" data-kk="Жұқа линза формуласы:" data-en="Thin lens formula:">Формула тонкой линзы:</span> <span class="formula-line">1 / F = 1 / d + 1 / f</span><br>
+            • <span data-ru="Оптическая сила линзы:" data-kk="Линзаның оптикалық күші:" data-en="Optical power:">Оптическая сила линзы:</span> <span class="formula-line">D = 1 / F</span><br>
+            • <span data-ru="Дифракционная решетка:" data-kk="Дифракциялық тор:" data-en="Diffraction grating:">Дифракционная решетка:</span> <span class="formula-line">d · sin(φ) = k · λ</span><br>
+            • <span data-ru="Длина волны:" data-kk="Толқын ұзындығы:" data-en="Wavelength:">Длина волны:</span> <span class="formula-line">λ = v · T = v / ν</span>
+          </p>
+        </div>
+        <div class="guide-card glass">
+          <h3 data-ru="Ядерная физика" data-kk="Ядролық физика" data-en="Nuclear Physics">Ядерная физика</h3>
+          <p>
+            • <span data-ru="Дефект масс:" data-kk="Массалар ақауы:" data-en="Mass defect:">Дефект масс:</span> <span class="formula-line">Δm = [Z·m<sub>p</sub> + (A - Z)·m<sub>n</sub>] - M<sub>ядра</sub></span><br>
+            • <span data-ru="Энергия связи ядра:" data-kk="Ядроның байланыс энергиясы:" data-en="Binding energy:">Энергия связи ядра:</span> <span class="formula-line">E<sub>связ</sub> = Δm · c<sup>2</sup></span><br>
+            • <span data-ru="Закон радиоактивного распада:" data-kk="Радиоактивті ыдырау заңы:" data-en="Radioactive decay law:">Закон радиоактивного распада:</span> <span class="formula-line">N(t) = N<sub>0</sub> · 2<sup>-t / T<sub>1/2</sub></sup></span><br>
+            • <span data-ru="Альфа-распад:" data-kk="Альфа-ыдырау:" data-en="Alpha decay:">Альфа-распад:</span> <span class="formula-line"><sup>A</sup><sub>Z</sub>X → <sup>A-4</sup><sub>Z-2</sub>Y + <sup>4</sup><sub>2</sub>He</span><br>
+            • <span data-ru="Бета-минус распад:" data-kk="Бета-минус ыдырау:" data-en="Beta-minus decay:">Бета-минус распад:</span> <span class="formula-line"><sup>A</sup><sub>Z</sub>X → <sup>A+1</sup><sub>Z+1</sub>Y + e<sup>-</sup> + ṽ</span>
+          </p>
+        </div>
+        <div class="guide-card glass">
+          <h3 data-ru="Квантовая физика и Константы" data-kk="Кванттық физика және Тұрақтылар" data-en="Quantum Physics & Constants">Квантовая физика и Константы</h3>
+          <p>
+            • <span data-ru="Энергия фотона:" data-kk="Фотон энергиясы:" data-en="Photon energy:">Энергия фотона:</span> <span class="formula-line">E = h · ν = (h · c) / λ</span><br>
+            • <span data-ru="Уравнение Эйнштейна:" data-kk="Эйнштейн теңдеуі:" data-en="Einstein equation:">Уравнение Эйнштейна:</span> <span class="formula-line">h · ν = A<sub>вых</sub> + (m · v<sup>2</sup>) / 2</span><br>
+            • <span data-ru="Скорость света (c):" data-kk="Жарық жылдамдығы (c):" data-en="Speed of light (c):">Скорость света (c):</span> <span class="formula-line">3 · 10<sup>8</sup> м/с</span><br>
+            • <span data-ru="Постоянная Планка (h):" data-kk="Планк тұрақтысы (h):" data-en="Planck constant (h):">Постоянная Планка (h):</span> <span class="formula-line">6.63 · 10<sup>-34</sup> Дж·с</span><br>
+            • <span data-ru="Масса электрона (m<sub>e</sub>):" data-kk="Электрон массасы (m<sub>e</sub>):" data-en="Electron mass (m<sub>e</sub>):">Масса электрона (m<sub>e</sub>):</span> <span class="formula-line">9.11 · 10<sup>-31</sup> кг</span><br>
+            • <span data-ru="Заряд электрона (e):" data-kk="Электрон заряды (e):" data-en="Electron charge (e):">Заряд электрона (e):</span> <span class="formula-line">1.6 · 10<sup>-19</sup> Кл</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА 5: ПОМОЩНИК УЧИТЕЛЯ -->
+    <div id="tab-assistant" class="tab-content">
+      <div class="guidelines-grid">
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="Джем-бот: ИИ-ассистент преподавателя" data-kk="Джем-бот: Оқытушының ЖИ-ассистенті" data-en="Gem-Bot: AI Teaching Assistant">Джем-бот: ИИ-ассистент преподавателя</h3>
+            <p data-ru="Интерактивный ИИ-помощник для генерации физических задач, объяснения сложных концепций и создания планов уроков в режиме реального времени." data-kk="Физикалық есептерді генерациялау, күрделі ұғымдарды түсіндіру және нақты уақыт режимінде сабақ жоспарларын құруға арналған интерактивті ЖИ-көмекші." data-en="Interactive AI assistant for generating physics problems, explaining complex concepts, and creating real-time lesson plans.">Интерактивный ИИ-помощник для генерации физических задач, объяснения сложных концепций и создания планов уроков в режиме реального времени.</p>
+          </div>
+          <div class="guide-actions">
+            <a href="https://gemini.google.com/gem/1TkXm4pMH8AwxdSnixOsU57WWC_PikMNc?usp=sharing" target="_blank" class="guide-btn btn-view" data-ru="Открыть бота" data-kk="Ботты ашу" data-en="Open Bot">Открыть бота</a>
+          </div>
+        </div>
+        
+        <div class="guide-card glass">
+          <div>
+            <h3 data-ru="💡 Инструкция по активации" data-kk="💡 Белсендіру нұсқаулығы" data-en="💡 Activation Guide">💡 Инструкция по активации</h3>
+            <p data-ru="1. Перейдите по ссылке и отправьте <b>любое первое сообщение</b> (например: «Привет»).<br><br>2. Закройте чат или перезайдите по ссылке <b>повторно</b> — после этого ИИ-ассистент полностью активируется и начнет полноценную работу." 
+               data-kk="1. Сілтеме бойынша өтіп, **кез келген алғашқы хабарламаны** жіберіңіз (мысалы: «Сәлем»).<br><br>2. Чатты жауып, сілтемеге **қайта кіріңіз** — осыдан кейін ЖИ-ассистент толығымен іске қосылып, жұмысын бастайды." 
+               data-en="1. Open the link and send <b>any first message</b> (e.g., 'Hello').<br><br>2. Close the chat or reopen the link <b>again</b> — after this, the AI assistant will be fully activated and ready to work.">
+              1. Перейдите по ссылке и отправьте <b>любое первое сообщение</b> (например: «Привет»).<br><br>2. Закройте чат или перезайдите по ссылке <b>повторно</b> — после этого ИИ-ассистент полностью активируется и начнет полноценную работу.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // 2. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ЯЗЫКА С СОХРАНЕНИЕМ В localStorage
+    const langBtns = document.querySelectorAll('.lang-btn');
+    
+    function switchLanguage(lang) {
+      localStorage.setItem('preferredLang', lang); // Сохраняем выбор
+      document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+        if (el.tagName === 'INPUT') {
+          el.placeholder = el.getAttribute(`data-${lang}`);
+        } else {
+          el.innerHTML = el.getAttribute(`data-${lang}`);
+        }
+      });
+      applyFilters();
+    }
+
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const selectedLang = btn.getAttribute('data-lang');
+        switchLanguage(selectedLang);
+      });
+    });
+
+    // Автоматическая загрузка сохраненного языка при старте главной страницы
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('preferredLang') || 'ru';
+      const targetBtn = document.querySelector(`.lang-btn[data-lang="${savedLang}"]`);
+      if (targetBtn) {
+        langBtns.forEach(b => b.classList.remove('active'));
+        targetBtn.classList.add('active');
+        switchLanguage(savedLang);
+      }
+    });
+
+    // 3. ЛОГИКА ФИЛЬТРАЦИИ И ПОИСКА
+    const searchInput = document.getElementById('search-input');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('#projects-grid .card');
+    const noResultsMsg = document.getElementById('no-results');
+    let currentFilter = 'all';
+
+    function applyFilters() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      let visibleCardsCount = 0;
+
+      cards.forEach(card => {
+        const category = card.getAttribute('data-category');
+        const textContent = card.innerText.toLowerCase();
+
+        const matchesCategory = (currentFilter === 'all' || category === currentFilter);
+        const matchesSearch = textContent.includes(searchTerm);
+
+        if (matchesCategory && matchesSearch) {
+          card.classList.remove('hidden');
+          visibleCardsCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      if (visibleCardsCount === 0) {
+        noResultsMsg.classList.add('visible');
+      } else {
+        noResultsMsg.classList.remove('visible');
+      }
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', applyFilters);
+    }
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.getAttribute('data-filter');
+        applyFilters();
+      });
+    });
+  </script>
+</body>
+</html>

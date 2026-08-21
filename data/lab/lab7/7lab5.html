@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №5</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* CSS стили для оформления страницы */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header .header-text h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #2c3e50;
+        }
+        .page-header .header-text p {
+            margin: 5px 0 0 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .student-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .student-info div {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .student-info label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        .student-info input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .student-info input[name="class_letter"] {
+            max-width: 60px;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .lab-section {
+            margin-bottom: 30px;
+        }
+        .instrument-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Стили для симулятора */
+        .friction-sim {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 10px;
+        }
+        .friction-area {
+            width: 100%;
+            height: 150px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #7f8c8d;
+        }
+        .surface {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            border-radius: 5px;
+        }
+        .surface.wood { background-color: #d2b48c; }
+        .surface.sandpaper { background: #e0cda2 url('data:image/svg+xml;utf8,<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="%23d2b48c"/><circle cx="1" cy="1" r="1" fill="%23ab8f62"/><circle cx="5" cy="5" r="1" fill="%23ab8f62"/><circle cx="9" cy="9" r="1" fill="%23ab8f62"/></svg>'); }
+
+        .dynamometer-and-block {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            bottom: 50px;
+            left: 20px;
+            transition: left 0.5s ease-out;
+        }
+        .dynamometer {
+            width: 180px;
+            height: 40px;
+            background: #f8f9fa;
+            border: 1px solid #34495e;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .dynamometer-scale {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .dynamometer-scale .tick {
+            width: 1px;
+            height: 5px;
+            background-color: #34495e;
+            position: absolute;
+            top: 5px;
+        }
+        .dynamometer-scale .tick.major { height: 10px; }
+        .dynamometer-scale span {
+            position: absolute;
+            bottom: 5px;
+            font-size: 10px;
+            transform: translateX(-50%);
+        }
+        #dynamometer_pointer {
+            height: 100%;
+            width: 3px;
+            background-color: #e74c3c;
+            position: absolute;
+            left: 20px;
+            transition: left 0.3s ease;
+            border-right: 1px solid rgba(0,0,0,0.2);
+        }
+        #dynamometer_value {
+            position: absolute;
+            bottom: 2px;
+            font-size: 10px;
+            color: #fff;
+            background: #e74c3c;
+            padding: 1px 4px;
+            border-radius: 3px;
+            left: 20px;
+            transform: translateX(-50%);
+            transition: left 0.3s ease;
+        }
+
+        .block-container {
+            position: relative;
+            width: 100px;
+            height: 50px;
+            margin-left: -2px;
+        }
+        .block {
+            width: 100%;
+            height: 100%;
+            background: #8b5a2b;
+            position: absolute;
+            bottom: 0;
+            border: 1px solid #5a3a1b;
+        }
+        .weight-on-block {
+            position: absolute;
+            width: 30px;
+            height: 15px;
+            background-color: #c0392b;
+            border: 1px solid #a03022;
+            border-radius: 2px;
+            color: white;
+            font-size: 0.6em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .weight-1 { left: 10%; }
+        .weight-2 { left: 50%; transform: translateX(-50%); }
+        .weight-3 { right: 10%; }
+        
+        .sim-controls {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .surface-switcher button {
+            background: #fff;
+            border: 1px solid #bdc3c7;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .surface-switcher button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .instruction-block, .formulas-block {
+            background-color: #eaf5ff;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .formulas-block p { margin: 5px 0; font-size: 1.1em; }
+        
+        td input {
+            width: 80px; padding: 5px; border: 1px solid #ccc;
+            border-radius: 3px; text-align: center;
+        }
+        td input:disabled { background-color: #eee; color: #777; }
+        .result-feedback {
+            font-weight: bold; display: block; width: 100%; text-align: center;
+            margin-top: 4px; height: 1em; transition: color 0.3s;
+        }
+        .delete-row-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .delete-row-btn:hover { background: #c0392b; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+        .action-button {
+            display: inline-block; margin: 20px 10px 0; padding: 10px 25px;
+            font-size: 16px; cursor: pointer; color: white; border: none;
+            border-radius: 5px; transition: background-color 0.3s, opacity 0.5s;
+        }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #recordButton { background-color: #27ae60; }
+        #recordButton:hover { background-color: #229954; }
+        #checkButton { background-color: #3498db; display: none; }
+        #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #showAnswersButton:hover { background-color: #8e44ad; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #shareToTeacherButton:hover { background-color: #2980b9; }
+
+        #finalResult, #answersReview, #penaltyMessage { text-align: center; margin-top: 20px; }
+        #answersReview {
+            text-align: left; padding: 15px; background-color: #ecf0f1;
+            border-radius: 5px; border: 1px solid #bdc3c7;
+        }
+        #answersReview ul { list-style-type: none; padding: 0; }
+        #answersReview li { margin-bottom: 10px; }
+        .lang-switcher { text-align: right; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 5px 10px;
+            margin-left: 5px; cursor: pointer; border-radius: 4px;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton {
+            background-color: #6c757d; color: white; border-color: #6c757d;
+        }
+        #backButton:hover { background-color: #5a6268; }
+
+        #validationMessage {
+            color: #e74c3c; font-weight: bold; text-align: center;
+            margin-top: 15px; display: none;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td { background-color: #ecf0f1; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="grade_level">7 класс</h2>
+                <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+
+        <div class="top-nav">
+            <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="student-info">
+            <div>
+                <label for="student_lastname" data-key="student_lastname">Фамилия</label>
+                <input type="text" id="student_lastname" name="student_lastname" >
+            </div>
+            <div>
+                <label for="student_firstname" data-key="student_firstname">Имя</label>
+                <input type="text" id="student_firstname" name="student_firstname" >
+            </div>
+            <div>
+                <label for="student_class" data-key="student_class">Класс</label>
+                <input type="text" id="student_class" name="student_class" >
+            </div>
+            <div>
+                <label for="student_class_letter" data-key="student_class_letter">Литер</label>
+                <input type="text" id="student_class_letter" name="student_class_letter" maxlength="1" >
+            </div>
+        </div>
+
+        <h1 data-key="main_title">Интерактивная лабораторная работа №5</h1>
+
+        <div class="lab-section" id="main_lab_section">
+            <h2 data-key="lab_topic_title">Тема: Исследование силы трения скольжения</h2>
+            <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Экспериментально исследовать зависимость силы трения от силы нормальной реакции опоры и рода поверхностей.</span></p>
+
+            <div class="formulas-block">
+                <h4 data-key="formulas_title">Основные формулы</h4>
+                <p><b data-key="formula_normal_force">Сила норм. реакции:</b> N = m · g &nbsp; (g ≈ 9.8 Н/кг)</p>
+                <p><b data-key="formula_friction">Сила трения:</b> F<sub>тр</sub> = μ · N</p>
+            </div>
+
+            <div class="instruction-block">
+                <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+                <ol>
+                    <li data-key="instruction_step1">Используйте симулятор для проведения серии опытов. Масса бруска равна <b id="block_mass_info"></b> г.</li>
+                    <li data-key="instruction_step2">Изменяйте количество грузов и тип поверхности. Нажмите "Зафиксировать показания", чтобы добавить строку в таблицу.</li>
+                    <li data-key="instruction_step3">**Важно:** Для получения максимальной оценки необходимо провести **не менее трех опытов для каждой поверхности** (дерево и наждачная бумага).</li>
+                    <li data-key="instruction_step4">После добавления строки, самостоятельно рассчитайте и впишите в нее значения Силы нормальной реакции, Силы трения и Коэффициента трения.</li>
+                    <li data-key="instruction_step5">Когда все поля будут заполнены, нажмите кнопку "Проверить".</li>
+                </ol>
+            </div>
+
+            <h3 data-key="procedure_title">Ход работы:</h3>
+            <div class="instrument-container">
+                <div class="friction-sim">
+                    <div class="friction-area">
+                        <div class="surface wood" id="surface"></div>
+                        <div class="dynamometer-and-block" id="dynamometer_and_block">
+                            <div class="dynamometer">
+                                <div class="dynamometer-scale" id="dynamometer_scale"></div>
+                                <div id="dynamometer_pointer"></div>
+                                <div id="dynamometer_value">0.00 Н</div>
+                            </div>
+                            <div class="block-container" id="block_container">
+                                <div class="block" id="block"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sim-controls">
+                        <div>
+                            <label for="weightsSlider"><span data-key="weights_count_label">Количество грузов (по 100 г):</span> <span id="weightsCount">0</span></label>
+                            <input type="range" id="weightsSlider" min="0" max="3" value="0" step="1">
+                        </div>
+                        <div class="surface-switcher">
+                            <label><span data-key="surface_type_label">Тип поверхности:</span></label><br>
+                            <button class="active" id="surface_wood" data-surface="wood" data-key="surface_wood">Дерево</button>
+                            <button id="surface_sandpaper" data-surface="sandpaper" data-key="surface_sandpaper">Наждачная бумага</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lab-section" id="results_section">
+                <div style="text-align:center;">
+                    <button id="recordButton" class="action-button" data-key="record_button">Зафиксировать показания</button>
+                </div>
+                <h3 data-key="results_table_title">Таблица результатов:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-key="th_trial">Опыт №</th>
+                            <th data-key="th_surface">Поверхность</th>
+                            <th data-key="th_normal_force">Сила норм. реакции, N (Н)</th>
+                            <th data-key="th_friction_force">Сила трения, Fтр (Н)</th>
+                            <th data-key="th_mu">Коэфф. трения, μ</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="results_body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="pdf-part-2">
+            <div id="finalResult"></div>
+            <div id="penaltyMessage" class="incorrect"></div>
+            <div id="answersReview" style="display: none;"></div>
+            <div id="telegram-button-container" style="text-align: center;">
+                 <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+            </div>
+        </div>
+        
+        <div class="action-buttons" style="text-align: center;">
+            <button id="checkButton" class="action-button" data-key="check_button"></button>
+            <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать правильные ответы</button>
+            <div id="validationMessage"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- ВАЖНО: Настройки для Telegram ---
+    const BOT_TOKEN = 'СЮДА_ВСТАВЬТЕ_ВАШ_ТОКЕН'; // Замените на токен вашего бота
+    const CHAT_ID = 'СЮДА_ВСТАВЬТЕ_ВАШ_CHAT_ID';   // Замените на ваш ID чата
+
+    const translations = {
+        ru: {
+            grade_level: "7 класс",
+            author_prefix: "Автор:",
+            author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            copyright: "© Все права защищены, {year}",
+            back_button: "Назад",
+            student_lastname: "Фамилия",
+            student_firstname: "Имя",
+            student_class: "Класс",
+            student_class_letter: "Литер",
+            report_student: "Ученик(ца):",
+            report_class: "Класс:",
+            report_score: "Итоговая оценка:",
+            validation_message: "Пожалуйста, заполните все выделенные поля!",
+            penalty_message_2: "Оценка снижена на 2 балла из-за недостаточного количества опытов (нужно минимум по 3 для каждой поверхности).",
+            penalty_message_4: "Оценка снижена на 4 балла из-за недостаточного количества опытов (нужно минимум по 3 для каждой поверхности).",
+            main_title: "Интерактивная лабораторная работа №5",
+            lab_topic_title: "Тема: Исследование силы трения скольжения",
+            lab_goal_title: "Цель:",
+            lab_goal_text: "Экспериментально исследовать зависимость силы трения от силы нормальной реакции опоры и рода поверхностей.",
+            formulas_title: "Основные формулы",
+            formula_normal_force: "Сила норм. реакции:",
+            formula_friction: "Сила трения:",
+            procedure_title: "Ход работы:",
+            instruction_main: "Используйте симулятор для проведения серии опытов. Масса бруска равна <b>{mass}</b> г. Изменяйте количество грузов и тип поверхности. Нажмите кнопку \"Зафиксировать показания\" для добавления строки в таблицу, а затем заполните ее.",
+            instruction_step3: "**Важно:** Для получения максимальной оценки необходимо провести **не менее трех опытов для каждой поверхности** (дерево и наждачная бумага).",
+            weights_count_label: "Количество грузов (по 100 г):",
+            surface_type_label: "Тип поверхности:",
+            surface_wood: "Дерево",
+            surface_sandpaper: "Наждачная бумага",
+            record_button: "Зафиксировать показания",
+            results_table_title: "Таблица результатов:",
+            th_trial: "Опыт №",
+            th_surface: "Поверхность",
+            th_normal_force: "Сила норм. реакции, N (Н)",
+            th_friction_force: "Сила трения, Fтр (Н)",
+            th_mu: "Коэфф. трения, μ",
+            check_button: "Проверить",
+            attempts_left_1: "попытка",
+            attempts_left_2: "попытки",
+            show_answers_button: "Показать правильные ответы",
+            share_button: "Поделиться с учителем",
+            sending: "Отправка...",
+            send_success: "Отчет успешно отправлен!",
+            send_error: "Ошибка отправки.",
+            feedback_correct: "Верно 👍",
+            feedback_incorrect: "Неверно ❌",
+            final_result_title: "Ваш результат:",
+            out_of_10: "из 10",
+            answers_review_title: "Разбор ответов:",
+            your_answer: "Ваш ответ",
+            correct_answer: "Правильный ответ"
+        },
+        kk: {
+            grade_level: "7 сынып",
+            author_prefix: "Авторы:",
+            author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, №8 гимназия, Шымкент қ., Қазақстан",
+            copyright: "© Барлық құқықтар қорғалған, {year}",
+            back_button: "Артқа",
+            student_lastname: "Тегі",
+            student_firstname: "Аты",
+            student_class: "Сынып",
+            student_class_letter: "Литер",
+            report_student: "Оқушы:",
+            report_class: "Сынып:",
+            report_score: "Қорытынды баға:",
+            validation_message: "Барлық бөлектелген өрістерді толтырыңыз!",
+            penalty_message_2: "Тәжірибелер саны жеткіліксіз болғандықтан баға 2 ұпайға төмендетілді (әр беткей үшін кемінде 3-тен қажет).",
+            penalty_message_4: "Тәжірибелер саны жеткіліксіз болғандықтан баға 4 ұпайға төмендетілді (әр беткей үшін кемінде 3-тен қажет).",
+            main_title: "№5 Интерактивті зертханалық жұмыс",
+            lab_topic_title: "Тақырыбы: Сырғанау үйкеліс күшін зерттеу",
+            lab_goal_title: "Мақсаты:",
+            lab_goal_text: "Үйкеліс күшінің тіреуіштің қалыпты реакция күшіне және жанасатын беттердің түріне тәуелділігін тәжірибе жүзінде зерттеу.",
+            formulas_title: "Негізгі формулалар",
+            formula_normal_force: "Қалыпты реакция күші:",
+            formula_friction: "Үйкеліс күші:",
+            procedure_title: "Жұмыс барысы:",
+            instruction_main: "Тәжірибелер сериясын жүргізу үшін симуляторды пайдаланыңыз. Кесектің массасы <b>{mass}</b> г тең. Кесек үстіндегі жүктердің санын және беттің түрін өзгертіңіз. Деректерді кестеге жазу үшін \"Көрсеткіштерді тіркеу\" түймесін басыңыз.",
+            instruction_step3: "**Маңызды:** Максималды баға алу үшін **әр беткей үшін кемінде үш тәжірибе** өткізу қажет (ағаш және егеу қағаз).",
+            weights_count_label: "Жүктер саны (әрқайсысы 100 г):",
+            surface_type_label: "Беттің түрі:",
+            surface_wood: "Ағаш",
+            surface_sandpaper: "Егеу қағаз",
+            record_button: "Көрсеткіштерді тіркеу",
+            results_table_title: "Нәтижелер кестесі:",
+            th_trial: "Тәжірибе №",
+            th_surface: "Беті",
+            th_normal_force: "Қалыпты реакция күші, N (Н)",
+            th_friction_force: "Үйкеліс күші, Fүйк (Н)",
+            th_mu: "Үйкеліс коэф., μ",
+            check_button: "Тексеру",
+            attempts_left_1: "мүмкіндік қалды",
+            attempts_left_2: "мүмкіндік қалды",
+            show_answers_button: "Дұрыс жауаптарды көрсету",
+            share_button: "Мұғаліммен бөлісу",
+            sending: "Жіберілуде...",
+            send_success: "Есеп сәтті жіберілді!",
+            send_error: "Жіберу қатесі.",
+            feedback_correct: "Дұрыс 👍",
+            feedback_incorrect: "Қате ❌",
+            final_result_title: "Сіздің нәтижеңіз:",
+            out_of_10: "/ 10",
+            answers_review_title: "Жауаптарды талдау:",
+            your_answer: "Сіздің жауабыңыз",
+            correct_answer: "Дұрыс жауап"
+        },
+        en: {
+            grade_level: "7th Grade",
+            author_prefix: "Author:",
+            author_details: "Yuriy Gryaznov, Physics teacher, Gymnasium №8, Shymkent, Kazakhstan",
+            copyright: "© All rights reserved, {year}",
+            back_button: "Back",
+            student_lastname: "Last Name",
+            student_firstname: "First Name",
+            student_class: "Grade",
+            student_class_letter: "Letter",
+            report_student: "Student:",
+            report_class: "Grade:",
+            report_score: "Final Score:",
+            validation_message: "Please fill in all highlighted fields!",
+            penalty_message_2: "Score reduced by 2 points due to an insufficient number of trials (at least 3 for each surface are required).",
+            penalty_message_4: "Score reduced by 4 points due to an insufficient number of trials (at least 3 for each surface are required).",
+            main_title: "Interactive Laboratory Work #5",
+            lab_topic_title: "Topic: Investigation of Sliding Friction Force",
+            lab_goal_title: "Goal:",
+            lab_goal_text: "To experimentally investigate the dependence of friction force on the normal reaction force and the nature of the contacting surfaces.",
+            formulas_title: "Key Formulas",
+            formula_normal_force: "Normal Force:",
+            formula_friction: "Friction Force:",
+            procedure_title: "Procedure:",
+            instruction_main: "Use the simulator to conduct a series of experiments. The mass of the block is <b>{mass}</b> g. Change the number of weights on the block and the surface type. Press the \"Record Reading\" button to add a row to the table, and then fill it out.",
+            instruction_step3: "**Important:** To get the maximum score, you must perform **at least three trials for each surface** (wood and sandpaper).",
+            weights_count_label: "Number of weights (100g each):",
+            surface_type_label: "Surface Type:",
+            surface_wood: "Wood",
+            surface_sandpaper: "Sandpaper",
+            record_button: "Record Reading",
+            results_table_title: "Results Table:",
+            th_trial: "Trial №",
+            th_surface: "Surface",
+            th_normal_force: "Normal Force, N (N)",
+            th_friction_force: "Friction Force, Ffr (N)",
+            th_mu: "Friction Coeff., μ",
+            check_button: "Check",
+            attempts_left_1: "attempt left",
+            attempts_left_2: "attempts left",
+            show_answers_button: "Show Correct Answers",
+            share_button: "Share with Teacher",
+            sending: "Sending...",
+            send_success: "Report sent successfully!",
+            send_error: "Send error.",
+            feedback_correct: "Correct 👍",
+            feedback_incorrect: "Incorrect ❌",
+            final_result_title: "Your result:",
+            out_of_10: "out of 10",
+            answers_review_title: "Answers Review:",
+            your_answer: "Your answer",
+            correct_answer: "Correct answer"
+        }
+    };
+
+    let currentLang = 'ru';
+    let attemptsLeft = 2;
+    let finalScoreText = '';
+    let trialNumber = 1;
+    let recordedData = [];
+    
+    // --- Получаем все DOM-элементы ---
+    const backButton = document.getElementById('backButton');
+    const recordButton = document.getElementById('recordButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+    const penaltyMessageDiv = document.getElementById('penaltyMessage');
+    
+    // Элементы симулятора
+    const dynamometerValue = document.getElementById('dynamometer_value');
+    const blockContainer = document.getElementById('block_container');
+    const surface = document.getElementById('surface');
+    const weightsSlider = document.getElementById('weightsSlider');
+    const weightsCountSpan = document.getElementById('weightsCount');
+    const surfaceWoodBtn = document.getElementById('surface_wood');
+    const surfaceSandpaperBtn = document.getElementById('surface_sandpaper');
+    const dynamometerPointer = document.getElementById('dynamometer_pointer');
+    const dynamometerScale = document.getElementById('dynamometer_scale');
+    const dynamometerAndBlock = document.getElementById('dynamometer_and_block');
+    const resultsBody = document.getElementById('results_body');
+    const blockMassInfo = document.getElementById('block_mass_info');
+
+    // --- Параметры симуляции ---
+    const G = 9.8;
+    const WEIGHT_MASS_KG = 0.1; // 100 г
+    const MU = {
+        wood: 0.25,
+        sandpaper: 0.6
+    };
+    const DYNAMOMETER_MAX_N = 5.0;
+    let currentSurface = 'wood';
+    let weightsCount = 0;
+    let BLOCK_MASS_KG = 0.2;
+
+    function updateSimulation() {
+        weightsCount = parseInt(weightsSlider.value);
+        weightsCountSpan.textContent = weightsCount;
+
+        blockContainer.querySelectorAll('.weight-on-block').forEach(w => w.remove());
+        for (let i = 0; i < weightsCount; i++) {
+            const weight = document.createElement('div');
+            weight.className = 'weight-on-block';
+            weight.style.bottom = `${50 + i * 15}px`;
+            blockContainer.appendChild(weight);
+        }
+
+        const totalMass = BLOCK_MASS_KG + (weightsCount * WEIGHT_MASS_KG);
+        const normalForce = totalMass * G;
+        const frictionForce = normalForce * MU[currentSurface];
+        
+        dynamometerValue.textContent = `${frictionForce.toFixed(2)} Н`;
+        
+        const dynamometerWidth = dynamometerPointer.parentElement.offsetWidth;
+        const pointerPos = (frictionForce / DYNAMOMETER_MAX_N) * (dynamometerWidth - 20) + 10;
+        dynamometerPointer.style.left = `${pointerPos}px`;
+        dynamometerValue.style.left = `${pointerPos}px`;
+
+        setTimeout(() => {
+            dynamometerAndBlock.style.left = '150px';
+        }, 100);
+
+        surface.className = `surface ${currentSurface}`;
+    }
+
+    function resetSimulation() {
+        dynamometerAndBlock.style.transition = 'none';
+        dynamometerAndBlock.style.left = '50px';
+        setTimeout(() => {
+            dynamometerAndBlock.style.transition = 'left 0.5s ease-out';
+        }, 50);
+    }
+    
+    weightsSlider.addEventListener('input', () => {
+        resetSimulation();
+        updateSimulation();
+    });
+
+    surfaceWoodBtn.addEventListener('click', () => {
+        currentSurface = 'wood';
+        surfaceWoodBtn.classList.add('active');
+        surfaceSandpaperBtn.classList.remove('active');
+        resetSimulation();
+        updateSimulation();
+    });
+
+    surfaceSandpaperBtn.addEventListener('click', () => {
+        currentSurface = 'sandpaper';
+        surfaceSandpaperBtn.classList.add('active');
+        surfaceWoodBtn.classList.remove('active');
+        resetSimulation();
+        updateSimulation();
+    });
+
+    recordButton.addEventListener('click', () => {
+        const totalMass = BLOCK_MASS_KG + (weightsCount * WEIGHT_MASS_KG);
+        const normalForce = totalMass * G;
+        const frictionForce = normalForce * MU[currentSurface];
+        const mu = frictionForce / normalForce;
+        const surfaceText = currentSurface === 'wood' ? translations[currentLang].surface_wood : translations[currentLang].surface_sandpaper;
+
+        const currentTrial = trialNumber; 
+        recordedData.push({
+            trial: currentTrial,
+            surface: translations['ru'][`surface_${currentSurface}`], // Используем ключ ru для постоянства в логике
+            normalForce: normalForce.toFixed(2),
+            frictionForce: frictionForce.toFixed(2),
+            mu: mu.toFixed(2)
+        });
+
+        const row = document.createElement('tr');
+        row.id = `trial-row-${currentTrial}`;
+        row.innerHTML = `
+            <td>${currentTrial}</td>
+            <td>${surfaceText}</td>
+            <td><input type="text" id="n_input_${currentTrial}"><span id="n_feedback_${currentTrial}" class="result-feedback"></span></td>
+            <td><input type="text" id="f_input_${currentTrial}"><span id="f_feedback_${currentTrial}" class="result-feedback"></span></td>
+            <td><input type="text" id="mu_input_${currentTrial}"><span id="mu_feedback_${currentTrial}" class="result-feedback"></span></td>
+            <td><button class="delete-row-btn" data-trial="${currentTrial}">×</button></td>
+        `;
+        resultsBody.appendChild(row);
+        trialNumber++;
+        checkButton.style.display = 'inline-block';
+
+        row.querySelector('.delete-row-btn').addEventListener('click', (e) => {
+            const trialToDelete = parseInt(e.target.getAttribute('data-trial'));
+            
+            document.getElementById(`trial-row-${trialToDelete}`).remove();
+            
+            recordedData = recordedData.filter(d => d.trial !== trialToDelete);
+
+            if(recordedData.length === 0) {
+                 checkButton.style.display = 'none';
+            }
+        });
+    });
+
+    function resetState() {
+        attemptsLeft = 2;
+        trialNumber = 1;
+        recordedData = [];
+        finalScoreText = '';
+        
+        recordButton.style.display = 'inline-block';
+        checkButton.style.display = 'none';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = '';
+        answersReviewDiv.style.display = 'none';
+        validationMessageDiv.style.display = 'none';
+        penaltyMessageDiv.style.display = 'none';
+        resultsBody.innerHTML = '';
+        
+        document.querySelectorAll('.student-info input').forEach(input => {
+            input.value = '';
+            input.className = '';
+            input.disabled = false;
+        });
+        
+        weightsSlider.value = 0;
+        BLOCK_MASS_KG = parseFloat((Math.random() * 0.1 + 0.15).toFixed(2));
+        setLanguage(currentLang); // Чтобы обновить массу в инструкции
+        updateSimulation();
+        updateCheckButtonText();
+    }
+
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') {
+                    text = text.replace('{year}', new Date().getFullYear());
+                }
+                if (key === 'instruction_main') {
+                    text = text.replace('{mass}', (BLOCK_MASS_KG * 1000).toFixed(0));
+                }
+                element.innerHTML = text; 
+            }
+        });
+        document.querySelector('html').setAttribute('lang', lang);
+        if (checkButton.style.display !== 'none') {
+            updateCheckButtonText();
+        }
+    }
+    
+    const langSwitchButtons = document.querySelectorAll('.lang-switcher .lang-btn');
+    langSwitchButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            if(lang) {
+                setLanguage(lang);
+                langSwitchButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            }
+        });
+    });
+
+    backButton.addEventListener('click', () => {
+        history.back();
+    });
+
+
+    function updateCheckButtonText() {
+        if (attemptsLeft > 0) {
+            const attemptText = attemptsLeft === 1 ? translations[currentLang].attempts_left_1 : translations[currentLang].attempts_left_2;
+            checkButton.textContent = `${translations[currentLang].check_button} (${attemptsLeft} ${attemptText})`;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+        penaltyMessageDiv.style.display = 'none';
+        const allInputs = document.querySelectorAll('.student-info input, td input');
+        
+        allInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input');
+                allFieldsValid = false;
+            } else {
+                input.classList.remove('incorrect-input');
+            }
+        });
+
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block';
+            return;
+        }
+
+        attemptsLeft--;
+        let correctPoints = 0;
+        const totalPoints = recordedData.length * 3;
+
+        recordedData.forEach((data) => {
+            const trial = data.trial;
+            const nInput = document.getElementById(`n_input_${trial}`);
+            const fInput = document.getElementById(`f_input_${trial}`);
+            const muInput = document.getElementById(`mu_input_${trial}`);
+
+            const nFeedback = document.getElementById(`n_feedback_${trial}`);
+            const fFeedback = document.getElementById(`f_feedback_${trial}`);
+            const muFeedback = document.getElementById(`mu_feedback_${trial}`);
+
+            const provideFeedback = (input, correctVal, feedback, tolerance) => {
+                const userVal = parseFloat(input.value.replace(',', '.'));
+                const isCorrect = !isNaN(userVal) && Math.abs(userVal - correctVal) < tolerance;
+                if(isCorrect) correctPoints++;
+
+                input.className = isCorrect ? 'correct-input' : 'incorrect-input';
+                feedback.textContent = isCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+                feedback.className = isCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+            };
+
+            provideFeedback(nInput, parseFloat(data.normalForce), nFeedback, 0.1);
+            provideFeedback(fInput, parseFloat(data.frictionForce), fFeedback, 0.1);
+            provideFeedback(muInput, parseFloat(data.mu), muFeedback, 0.05);
+        });
+
+        updateCheckButtonText();
+
+        if (attemptsLeft === 0) {
+            checkButton.style.display = 'none';
+            showAnswersButton.style.display = 'inline-block';
+            recordButton.disabled = true;
+            
+            let score = totalPoints > 0 ? (correctPoints / totalPoints * 10) : 10;
+            
+            const woodTrials = recordedData.filter(d => d.surface === translations.ru.surface_wood).length;
+            const sandpaperTrials = recordedData.filter(d => d.surface === translations.ru.surface_sandpaper).length;
+            let penalty = 0;
+
+            if ((woodTrials > 0 && woodTrials < 3) || (sandpaperTrials > 0 && sandpaperTrials < 3)) {
+                if (woodTrials === 1 || sandpaperTrials === 1) {
+                    penalty = 4;
+                    penaltyMessageDiv.textContent = translations[currentLang].penalty_message_4;
+                } else if (woodTrials === 2 || sandpaperTrials === 2) {
+                    penalty = 2;
+                    penaltyMessageDiv.textContent = translations[currentLang].penalty_message_2;
+                }
+            }
+            
+            if (penalty > 0) {
+                score = Math.max(0, score - penalty);
+                penaltyMessageDiv.style.display = 'block';
+            }
+            
+            const resultText = translations[currentLang].final_result_title;
+            const outOfText = translations[currentLang].out_of_10;
+            finalScoreText = `${score.toFixed(1)} ${outOfText}`;
+
+            finalResultDiv.innerHTML = `<h3>${resultText} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></h3>`;
+
+            document.querySelectorAll('td input, .student-info input, .delete-row-btn').forEach(input => {
+                input.disabled = true;
+            });
+        }
+    });
+    
+    showAnswersButton.addEventListener('click', () => {
+        const trans = translations[currentLang];
+        
+        const lastName = document.getElementById('student_lastname').value || '...';
+        const firstName = document.getElementById('student_firstname').value || '...';
+        const studentClass = document.getElementById('student_class').value || '...';
+        const studentLetter = document.getElementById('student_class_letter').value || '...';
+
+        let reviewHTML = `<h3>${trans.answers_review_title}</h3>`;
+        reviewHTML += `<p><b>${trans.report_student}</b> ${lastName} ${firstName}</p>`;
+        reviewHTML += `<p><b>${trans.report_class}</b> ${studentClass} "${studentLetter}"</p>`;
+        reviewHTML += `<p><b>${trans.report_score}</b> <span class="${parseFloat(finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></p><hr>`;
+        reviewHTML += '<ul>';
+        
+        recordedData.forEach((data) => {
+            const trial = data.trial;
+            reviewHTML += `<li><strong>${trans.th_trial} ${trial} (${data.surface}):</strong><ul>`;
+            const n_input = document.getElementById(`n_input_${trial}`).value || '...';
+            const f_input = document.getElementById(`f_input_${trial}`).value || '...';
+            const mu_input = document.getElementById(`mu_input_${trial}`).value || '...';
+
+            reviewHTML += `<li>${trans.th_normal_force}: ${trans.your_answer} <strong>${n_input}</strong>. ${trans.correct_answer}: <strong>${data.normalForce}</strong></li>`;
+            reviewHTML += `<li>${trans.th_friction_force}: ${trans.your_answer} <strong>${f_input}</strong>. ${trans.correct_answer}: <strong>${data.frictionForce}</strong></li>`;
+            reviewHTML += `<li>${trans.th_mu}: ${trans.your_answer} <strong>${mu_input}</strong>. ${trans.correct_answer}: <strong>${data.mu}</strong></li>`;
+
+            reviewHTML += `</ul></li>`;
+        });
+
+        reviewHTML += '</ul>';
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+       const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        
+        mainContainer.classList.add('pdf-export-mode');
+
+        const canvas = await html2canvas(mainContainer, { scale: 2, useCORS: true, windowWidth: 900 });
+        
+        mainContainer.classList.remove('pdf-export-mode');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 40;
+        const contentWidth = pdfWidth - margin * 2;
+        const ratio = canvas.height / canvas.width;
+        const imgHeight = contentWidth * ratio;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+        heightLeft -= (pdfHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position -= (pdfHeight - margin);
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
+            heightLeft -= (pdfHeight - margin * 2);
+        }
+        
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async () => {
+        const button = shareToTeacherButton;
+        button.textContent = translations[currentLang].sending;
+        button.disabled = true;
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const lastName = document.getElementById('student_lastname').value || 'student';
+            const firstName = document.getElementById('student_firstname').value || 'report';
+            const studentClass = document.getElementById('student_class').value || '...';
+            const studentLetter = document.getElementById('student_class_letter').value || '';
+            const fileName = `Lab_Report_5_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+            const caption = `Отчет по лабораторной работе N5\nУченик(ца): ${lastName} ${firstName}\nКласс: ${studentClass}${studentLetter}\nОценка: ${finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                button.textContent = translations[currentLang].send_success;
+                button.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description);
+            }
+
+        } catch (error) {
+            console.error('Telegram API Error:', error);
+            button.textContent = translations[currentLang].send_error;
+            button.style.backgroundColor = '#e74c3c';
+            button.disabled = false;
+            alert(`${translations[currentLang].send_error}\n\nТехническая информация: ${error.message}`);
+        }
+    });
+
+
+    // --- Инициализация ---
+    BLOCK_MASS_KG = parseFloat((Math.random() * 0.1 + 0.15).toFixed(2));
+    updateSimulation();
+    setLanguage('ru');
+});
+</script>
+
+</body>
+</html>

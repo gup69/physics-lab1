@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* CSS стили для оформления страницы */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px; /* Добавлен padding для body */
+            background: #f4f7f9; /* Изменен фон для соответствия */
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto; /* Центрирование контейнера */
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px; /* Уменьшен радиус */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Изменена тень */
+        }
+        /* Стили для шапки с логотипом */
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px; /* Уменьшен отступ */
+        }
+        
+        .page-header .header-text h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #2c3e50;
+        }
+        .page-header .header-text p {
+            margin: 5px 0 0 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        /* Стили для значка "Все права защищены" */
+        .copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee; /* Более светлая линия */
+        }
+
+        /* ----- НОВЫЕ/ИЗМЕНЕННЫЕ СТИЛИ ----- */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #backButton {
+            background-color: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        #backButton:hover {
+            background-color: #5a6268;
+        }
+        .student-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .student-info div {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .student-info label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+            font-weight: normal; /* Убран жирный шрифт у label по умолчанию */
+        }
+        .student-info input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* ---------------------------------- */
+
+        .lang-switcher {
+            text-align: right;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #bdc3c7;
+            padding: 4px 8px; /* Уменьшены padding'и */
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8em; /* Уменьшен шрифт */
+        }
+        .lang-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .simulation-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .lab-section {
+            margin-bottom: 30px;
+        }
+        .instrument-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .horizontal-container {
+             margin-bottom: 20px;
+        }
+        .instrument-visual {
+            position: relative;
+            background-color: #e9ecef;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .ruler-visual { height: 60px; overflow: visible; }
+        .ruler-marks, .ruler-numbers { position: absolute; width: 100%; height: 100%; }
+        .ruler-tick { position: absolute; background-color: #555; width: 1.5px; }
+        .ruler-numbers span { position: absolute; top: 35px; transform: translateX(-50%); }
+        .object-to-measure { position: absolute; height: 25px; background-color: #f1c40f; top: 5px; left: 0; border: 1px solid #c8a209; text-align: center; line-height: 25px; font-weight: bold; color: #555; transition: width 0.1s ease; }
+        .vertical-instrument-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 48%;
+            min-width: 250px;
+        }
+        .menzurka-wrapper {
+            display: flex;
+            flex-direction: row;
+            height: 300px;
+            margin-top: 5px;
+        }
+        .menzurka-scale {
+            position: relative;
+            height: 100%;
+            width: 40px;
+        }
+        .menzurka-tick { position: absolute; background-color: #555; height: 1.5px; right: 0; }
+        .menzurka-visual {
+            position: relative;
+            width: 60px;
+            height: 100%;
+            border: 2px solid #888;
+            border-top: none;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+        #waterLevel {
+            width: 100%;
+            background-color: #3498db;
+            transition: height 0.1s ease;
+        }
+        .thermometer-wrapper {
+             width: 100%;
+             padding-top: 30px;
+             padding-bottom: 20px;
+        }
+        .thermometer-visual {
+            height: 40px;
+            background: linear-gradient(to right, #e74c3c, #f1c40f, #3498db);
+            overflow: visible;
+        }
+        .indicator { position: absolute; height: 100%; width: 3px; background-color: #e74c3c; left: 50%; transform: translateX(-50%); transition: left 0.1s ease; }
+        .thermo-marks, .thermo-numbers { position: absolute; width: 100%; height: 100%; }
+        .instruction-block {
+            background-color: #eaf5ff;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .instruction-block ol {
+            padding-left: 20px;
+            margin: 0;
+        }
+        td input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        td input:disabled {
+            background-color: #eee;
+            color: #777;
+        }
+        .result-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .result-feedback {
+            font-weight: bold;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+            height: 1em;
+            transition: color 0.3s;
+        }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+        .action-button {
+            display: inline-block;
+            margin: 5px; /* Уменьшен отступ */
+            padding: 10px 20px;
+            font-size: 1em; /* Стандартный размер шрифта */
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .action-button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        #checkButton { background-color: #3498db; }
+        #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #showAnswersButton:hover { background-color: #8e44ad; }
+        #shareToTeacherButton { background-color: #27ae60; display: none; } /* Цвет изменен для соответствия */
+        #shareToTeacherButton:hover { background-color: #219653; }
+
+        #finalResult, #answersReview {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #answersReview {
+            text-align: left;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            border: 1px solid #bdc3c7;
+        }
+        #answersReview ul {
+            list-style-type: none;
+            padding: 0;
+        }
+         #answersReview li {
+            margin-bottom: 10px;
+        }
+        #validationMessage {
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td { background-color: #fff; } /* Убран серый фон ячеек */
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        
+        <div class="page-header">
+            
+            <div class="header-text">
+                <h2 data-key="grade_level">7 класс</h2>
+                <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+        
+        <div class="top-nav">
+            <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="student-info">
+            <div><label for="student_lastname" data-key="student_lastname">Фамилия</label><input type="text" id="student_lastname"></div>
+            <div><label for="student_firstname" data-key="student_firstname">Имя</label><input type="text" id="student_firstname"></div>
+            <div><label for="student_class_number" data-key="student_class_number">Класс (цифра)</label><input type="number" id="student_class_number"></div>
+            <div><label for="student_class_letter" data-key="student_class_letter">Литер</label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+        </div>
+
+
+        <div id="pdf-part-1">
+            <h1>Интерактивная лабораторная работа №1</h1>
+
+            <div class="lab-section" id="main_lab_section">
+                <h2 data-key="lab_topic_title">Тема: Определение цены деления измерительного прибора</h2>
+                <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Научиться определять цену деления различных измерительных приборов и измерять физические величины с учётом погрешности.</span></p>
+
+                <div class="instruction-block">
+                    <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+                    <ol>
+                        <li data-key="instruction_step1">Для каждого из трех приборов внимательно изучите шкалу. При каждой перезагрузке страницы шкала генерируется случайным образом.</li>
+                        <li data-key="instruction_step2">Вычислите цену деления для каждого прибора и запишите результат в соответствующую ячейку таблицы.</li>
+                        <li data-key="instruction_step3">Используя ползунки, установите случайное значение для каждого прибора.</li>
+                        <li data-key="instruction_step4">Определите показания прибора и его погрешность (равную половине цены деления). Запишите результат в таблицу.</li>
+                        <li data-key="instruction_step5">Когда все поля будут заполнены, нажмите кнопку "Проверить". У вас есть две попытки.</li>
+                    </ol>
+                </div>
+
+                <h3 data-key="procedure_title">Ход работы:</h3>
+                
+                <div class="instrument-container horizontal-container">
+                    <h4 data-key="ruler_title">1. Измерение длины ластика линейкой</h4>
+                    <p data-key="ruler_instruction">Перемещайте ползунок, чтобы изменить длину ластика. Определите цену деления и результат измерения, после чего впишите их в таблицу.</p>
+                    <div class="instrument-visual ruler-visual">
+                        <div id="rulerMarks" class="ruler-marks"></div>
+                        <div id="rulerNumbers" class="ruler-numbers"></div>
+                        <div id="rulerObject" class="object-to-measure" data-key="eraser">Ластик</div>
+                    </div>
+                    <input type="range" id="rulerSlider" min="1" max="100" value="50">
+                </div>
+
+                <div class="simulation-grid">
+                    <div class="instrument-container vertical-instrument-box">
+                        <h4 data-key="menzurka_title">2. Измерение объема жидкости</h4>
+                        <p data-key="menzurka_instruction">Перемещайте ползунок, чтобы "налить" воду. Определите цену деления и объем, после чего впишите их в таблицу.</p>
+                        <div class="menzurka-wrapper">
+                            <div id="menzurkaScale" class="menzurka-scale"></div>
+                            <div class="instrument-visual menzurka-visual">
+                                <div id="waterLevel"></div>
+                            </div>
+                        </div>
+                        <input type="range" id="menzurkaSlider" min="0" max="100" value="50" style="margin-top: 15px;">
+                    </div>
+                    <div class="instrument-container vertical-instrument-box">
+                         <h4 data-key="thermo_title">3. Измерение температуры</h4>
+                         <p data-key="thermo_instruction">Перемещайте ползунок, чтобы изменить температуру. Определите цену деления и показания, после чего впишите их в таблицу.</p>
+                         <div class="thermometer-wrapper">
+                              <div class="instrument-visual thermometer-visual">
+                                   <div id="thermoMarks" class="thermo-marks"></div>
+                                   <div id="thermoNumbers" class="thermo-numbers"></div>
+                                   <div id="thermoIndicator" class="indicator"></div>
+                              </div>
+                         </div>
+                         <input type="range" id="thermoSlider" min="0" max="50" value="25">
+                    </div>
+                </div>
+            </div>
+
+            <div class="lab-section" id="results_section">
+                <h3 data-key="results_table_title">Таблица результатов:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-key="th_instrument">Измерительный прибор</th>
+                            <th data-key="th_price_division">Цена деления (впишите число)</th>
+                            <th data-key="th_measurement">Результат измерения</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-key="instrument_ruler">Линейка</td>
+                            <td>
+                                <input type="text" id="rulerCD_input">
+                                <span id="rulerCD_feedback" class="result-feedback"></span>
+                            </td>
+                            <td>
+                                <div class="result-cell">
+                                    <input type="text" id="rulerValue_input"> ± <input type="text" id="rulerError_input">
+                                </div>
+                                <span id="rulerResult_feedback" class="result-feedback"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-key="instrument_menzurka">Мензурка</td>
+                            <td>
+                                <input type="text" id="menzurkaCD_input">
+                                <span id="menzurkaCD_feedback" class="result-feedback"></span>
+                            </td>
+                            <td>
+                                <div class="result-cell">
+                                    <input type="text" id="menzurkaValue_input"> ± <input type="text" id="menzurkaError_input">
+                                </div>
+                                 <span id="menzurkaResult_feedback" class="result-feedback"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-key="instrument_thermo">Термометр</td>
+                            <td>
+                                <input type="text" id="thermoCD_input">
+                                <span id="thermoCD_feedback" class="result-feedback"></span>
+                            </td>
+                            <td>
+                                <div class="result-cell">
+                                    <input type="text" id="thermoValue_input"> ± <input type="text" id="thermoError_input">
+                                </div>
+                                <span id="thermoResult_feedback" class="result-feedback"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="action-buttons" style="text-align: center;">
+                    <button id="checkButton" class="action-button" data-key="check_button"></button>
+                    <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать правильные ответы</button>
+                </div>
+                <div id="validationMessage"></div>
+                <div id="finalResult"></div>
+            </div>
+        </div>
+
+        <div id="pdf-part-2">
+            <div id="answersReview" style="display: none;">
+                </div>
+            <div id="telegram-button-container" style="text-align: center;" class="action-buttons">
+                <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- ВАЖНО: Настройки для Telegram ---
+    const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM';
+    const CHAT_ID = '876026321';
+
+    const translations = {
+        ru: {
+            grade_level: "7 класс",
+            author_prefix: "Автор:",
+            author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            copyright: "© Все права защищены, {year}",
+            back_button: "Назад",
+            student_lastname: "Фамилия",
+            student_firstname: "Имя",
+            student_class_number: "Класс (цифра)", // Изменено
+            student_class_letter: "Литер",
+            report_student: "Ученик(ца):",
+            report_class: "Класс:",
+            report_score: "Итоговая оценка:",
+            validation_message: "Пожалуйста, заполните все выделенные поля!",
+            main_title: "Интерактивная лабораторная работа №1",
+            lab_topic_title: "Тема: Определение цены деления измерительного прибора",
+            lab_goal_title: "Цель:",
+            lab_goal_text: "Научиться определять цену деления различных измерительных приборов и измерять физические величины с учётом погрешности.",
+            instruction_title: "Инструкция по выполнению",
+            instruction_step1: "Для каждого из трех приборов внимательно изучите шкалу. При каждой перезагрузке страницы шкала генерируется случайным образом.",
+            instruction_step2: "Вычислите цену деления для каждого прибора и запишите результат в соответствующую ячейку таблицы.",
+            instruction_step3: "Используя ползунки, установите случайное значение для каждого прибора.",
+            instruction_step4: "Определите показания прибора и его погрешность (равную половине цены деления). Запишите результат в таблицу.",
+            instruction_step5: "Когда все поля будут заполнены, нажмите кнопку \"Проверить\". У вас есть две попытки.",
+            procedure_title: "Ход работы:",
+            ruler_title: "1. Измерение длины ластика линейкой",
+            ruler_instruction: "Перемещайте ползунок, чтобы изменить длину ластика. Определите цену деления и результат измерения, после чего впишите их в таблицу.",
+            eraser: "Ластик",
+            menzurka_title: "2. Измерение объема жидкости",
+            menzurka_instruction: "Перемещайте ползунок, чтобы \"налить\" воду. Определите цену деления и объем, после чего впишите их в таблицу.",
+            thermo_title: "3. Измерение температуры",
+            thermo_instruction: "Перемещайте ползунок, чтобы изменить температуру. Определите цену деления и показания, после чего впишите их в таблицу.",
+            results_table_title: "Таблица результатов:",
+            th_instrument: "Измерительный прибор",
+            th_price_division: "Цена деления (впишите число)",
+            th_measurement: "Результат измерения",
+            instrument_ruler: "Линейка",
+            instrument_menzurka: "Мензурка",
+            instrument_thermo: "Термометр",
+            check_button: "Проверить",
+            attempts_left_1: "попытка",
+            attempts_left_2: "попытки",
+            show_answers_button: "Показать правильные ответы",
+            share_button: "Поделиться с учителем",
+            sending: "Отправка...",
+            send_success: "Отчет успешно отправлен!",
+            send_error: "Ошибка отправки.",
+            feedback_correct: "Верно 👍",
+            feedback_incorrect: "Неверно ❌",
+            final_result_title: "Ваш результат:",
+            out_of_10: "из 10",
+            answers_review_title: "Разбор ответов:",
+            your_answer: "Ваш ответ",
+            correct_answer: "Правильный ответ",
+            price_division: "Цена деления"
+        },
+        kk: {
+            grade_level: "7 сынып",
+            author_prefix: "Авторы:",
+            author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, №8 гимназия, Шымкент қ., Қазақстан",
+            copyright: "© Барлық құқықтар қорғалған, {year}",
+            back_button: "Артқа",
+            student_lastname: "Тегі",
+            student_firstname: "Аты",
+            student_class_number: "Сынып (сан)", // Изменено
+            student_class_letter: "Литер",
+            report_student: "Оқушы:",
+            report_class: "Сынып:",
+            report_score: "Қорытынды баға:",
+            validation_message: "Барлық бөлектелген өрістерді толтырыңыз!",
+            main_title: "№1 Интерактивті зертханалық жұмыс",
+            lab_topic_title: "Тақырыбы: Өлшеуіш аспаптың бөлік құнын анықтау",
+            lab_goal_title: "Мақсаты:",
+            lab_goal_text: "Түрлі өлшеуіш аспаптардың бөлік құнын анықтауды және қателікті ескере отырып, физикалық шамаларды өлшеуді үйрену.",
+            instruction_title: "Орындау нұсқаулығы",
+            instruction_step1: "Үш аспаптың әрқайсысы үшін шкаланы мұқият зерттеңіз. Бетті әрбір қайта жүктегенде, шкала кездейсоқ түрде жасалады.",
+            instruction_step2: "Әрбір аспап үшін бөлік құнын есептеп, нәтижені кестенің тиісті ұяшығына жазыңыз.",
+            instruction_step3: "Жүгірткілерді пайдаланып, әрбір аспап үшін кездейсоқ мәнді орнатыңыз.",
+            instruction_step4: "Аспаптың көрсеткіштерін және оның қателігін (бөлік құнының жартысына тең) анықтаңыз. Нәтижені кестеге жазыңыз.",
+            instruction_step5: "Барлық өрістер толтырылған кезде, \"Тексеру\" батырмасын басыңыз. Сізде екі мүмкіндік бар.",
+            procedure_title: "Жұмыстың барысы:",
+            ruler_title: "1. Сызғышпен өшіргіштің ұзындығын өлшеу",
+            ruler_instruction: "Өшіргіштің ұзындығын өзгерту үшін жүгірткіні жылжытыңыз. Бөлік құнын және өлшеу нәтижесін анықтап, кестеге жазыңыз.",
+            eraser: "Өшіргіш",
+            menzurka_title: "2. Сұйықтық көлемін өлшеу",
+            menzurka_instruction: "Суды \"құю\" үшін жүгірткіні жылжытыңыз. Бөлік құнын және көлемді анықтап, кестеге жазыңыз.",
+            thermo_title: "3. Температураны өлшеу",
+            thermo_instruction: "Температураны өзгерту үшін жүгірткіні жылжытыңыз. Бөлік құнын және көрсеткішті анықтап, кестеге жазыңыз.",
+            results_table_title: "Нәтижелер кестесі:",
+            th_instrument: "Өлшеуіш аспап",
+            th_price_division: "Бөлік құны (санды енгізіңіз)",
+            th_measurement: "Өлшеу нәтижесі",
+            instrument_ruler: "Сызғыш",
+            instrument_menzurka: "Мензурка",
+            instrument_thermo: "Термометр",
+            check_button: "Тексеру",
+            attempts_left_1: "мүмкіндік қалды",
+            attempts_left_2: "мүмкіндік қалды",
+            show_answers_button: "Дұрыс жауаптарды көрсету",
+            share_button: "Мұғаліммен бөлісу",
+            sending: "Жіберілуде...",
+            send_success: "Есеп сәтті жіберілді!",
+            send_error: "Жіберу қатесі.",
+            feedback_correct: "Дұрыс 👍",
+            feedback_incorrect: "Қате ❌",
+            final_result_title: "Сіздің нәтижеңіз:",
+            out_of_10: "/ 10",
+            answers_review_title: "Жауаптарды талдау:",
+            your_answer: "Сіздің жауабыңыз",
+            correct_answer: "Дұрыс жауап",
+            price_division: "Бөлік құны"
+        },
+        en: {
+            grade_level: "7th Grade",
+            author_prefix: "Author:",
+            author_details: "Yuriy Gryaznov, Physics teacher, Gymnasium №8, Shymkent, Kazakhstan",
+            copyright: "© All rights reserved, {year}",
+            back_button: "Back",
+            student_lastname: "Last Name",
+            student_firstname: "First Name",
+            student_class_number: "Grade (number)", // Изменено
+            student_class_letter: "Letter",
+            report_student: "Student:",
+            report_class: "Grade:",
+            report_score: "Final Score:",
+            validation_message: "Please fill in all highlighted fields!",
+            main_title: "Interactive Laboratory Work #1",
+            lab_topic_title: "Topic: Determining the Price Division of a Measuring Instrument",
+            lab_goal_title: "Goal:",
+            lab_goal_text: "To learn how to determine the price division of various measuring instruments and to measure physical quantities considering the error.",
+            instruction_title: "Instructions",
+            instruction_step1: "For each of the three instruments, carefully examine the scale. The scale is randomly generated each time the page is reloaded.",
+            instruction_step2: "Calculate the price division for each instrument and write the result in the corresponding cell of the table.",
+            instruction_step3: "Using the sliders, set a random value for each instrument.",
+            instruction_step4: "Determine the instrument's reading and its error (equal to half the price division). Record the result in the table.",
+            instruction_step5: "When all fields are filled, click the \"Check\" button. You have two attempts.",
+            procedure_title: "Procedure:",
+            ruler_title: "1. Measuring the length of an eraser with a ruler",
+            ruler_instruction: "Move the slider to change the eraser's length. Determine the price division and the measurement result, then enter them into the table.",
+            eraser: "Eraser",
+            menzurka_title: "2. Measuring the volume of a liquid",
+            menzurka_instruction: "Move the slider to \"pour\" water. Determine the price division and the volume, then enter them into the table.",
+            thermo_title: "3. Measuring the temperature",
+            thermo_instruction: "Move the slider to change the temperature. Determine the price division and the reading, then enter them into the table.",
+            results_table_title: "Results Table:",
+            th_instrument: "Measuring Instrument",
+            th_price_division: "Price Division (enter a number)",
+            th_measurement: "Measurement Result",
+            instrument_ruler: "Ruler",
+            instrument_menzurka: "Beaker",
+            instrument_thermo: "Thermometer",
+            check_button: "Check",
+            attempts_left_1: "attempt left",
+            attempts_left_2: "attempts left",
+            show_answers_button: "Show Correct Answers",
+            share_button: "Share with Teacher",
+            sending: "Sending...",
+            send_success: "Report sent successfully!",
+            send_error: "Send error.",
+            feedback_correct: "Correct 👍",
+            feedback_incorrect: "Incorrect ❌",
+            final_result_title: "Your result:",
+            out_of_10: "out of 10",
+            answers_review_title: "Answers Review:",
+            your_answer: "Your answer",
+            correct_answer: "Correct answer",
+            price_division: "Price division"
+        }
+    };
+    let currentLang = 'ru';
+    let attemptsLeft = 2;
+    let finalScoreText = '';
+
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+
+    // Назначаем событие на новую кнопку "Назад"
+    backButton.addEventListener('click', () => {
+        window.history.back();
+    });
+
+    function resetState() {
+        attemptsLeft = 2;
+        finalScoreText = '';
+
+        checkButton.disabled = false; // Разблокируем кнопку
+        checkButton.style.display = 'inline-block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = '';
+        answersReviewDiv.style.display = 'none';
+        validationMessageDiv.style.display = 'none';
+
+        document.querySelectorAll('.student-info input').forEach(input => {
+            input.value = '';
+            input.classList.remove('incorrect-input', 'correct-input');
+        });
+
+        for (const name in instruments) {
+            const inst = instruments[name];
+            inst.cdInput.value = '';
+            inst.valueInput.value = '';
+            inst.errorInput.value = '';
+
+            inst.cdInput.disabled = false;
+            inst.valueInput.disabled = false;
+            inst.errorInput.disabled = false;
+
+            inst.cdInput.classList.remove('incorrect-input', 'correct-input');
+            inst.valueInput.classList.remove('incorrect-input', 'correct-input');
+            inst.errorInput.classList.remove('incorrect-input', 'correct-input');
+
+            inst.cdFeedback.textContent = '';
+            inst.resultFeedback.textContent = '';
+        }
+
+        updateCheckButtonText();
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang; // Устанавливаем язык для всей страницы
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') {
+                    text = text.replace('{year}', new Date().getFullYear());
+                }
+                // Проверяем, является ли элемент input
+                if (element.tagName.toLowerCase() === 'input') {
+                    element.placeholder = text;
+                } else {
+                    element.innerHTML = text; // Используем innerHTML для поддержки тегов
+                }
+            }
+        });
+        updateCheckButtonText();
+    }
+
+    const langButtons = document.querySelectorAll('.lang-btn[data-lang]');
+    langButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            langButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            setLanguage(lang);
+        });
+    });
+
+    // --- Генерация шкал (код без изменений) ---
+    const rulerPossibleDivs = [2, 4, 5, 10];
+    const randomNRuler = rulerPossibleDivs[Math.floor(Math.random() * rulerPossibleDivs.length)];
+    function generateRulerScale(N) {
+        const container = document.getElementById('rulerMarks');
+        const numbers = document.getElementById('rulerNumbers');
+        container.innerHTML = ''; numbers.innerHTML = '';
+        const totalCm = 10;
+        for (let i = 0; i <= totalCm; i++) {
+            const majorTick = document.createElement('div');
+            majorTick.className = 'ruler-tick';
+            majorTick.style.top = '0';
+            majorTick.style.left = `${i * 10}%`;
+            majorTick.style.height = '40%';
+            container.appendChild(majorTick);
+
+            const num = document.createElement('span');
+            num.textContent = i === totalCm ? `${i} cm` : i;
+            num.style.left = `${i * 10}%`;
+            numbers.appendChild(num);
+
+            if (i === totalCm) continue;
+            for (let j = 1; j < N; j++) {
+                const minorTick = document.createElement('div');
+                minorTick.className = 'ruler-tick';
+                minorTick.style.top = '0';
+                minorTick.style.left = `${(i + j / N) * 10}%`;
+                minorTick.style.height = '25%';
+                container.appendChild(minorTick);
+            }
+        }
+    }
+    generateRulerScale(randomNRuler);
+
+    const menzurkaPossibleDivs = [2, 4, 5, 10];
+    const randomNMenzurka = menzurkaPossibleDivs[Math.floor(Math.random() * menzurkaPossibleDivs.length)];
+    function generateMenzurkaScale(N) {
+        const container = document.getElementById('menzurkaScale');
+        container.innerHTML = '';
+        const maxMl = 100, majorStep = 20;
+        for (let i = 0; i <= maxMl; i += majorStep) {
+            const majorTick = document.createElement('div');
+            majorTick.className = 'menzurka-tick';
+            majorTick.style.bottom = `${i}%`;
+            majorTick.style.width = '20px';
+            container.appendChild(majorTick);
+            const num = document.createElement('span');
+            num.textContent = i;
+            num.style.position = 'absolute';
+            num.style.right = '25px';
+            num.style.fontSize = '12px';
+            num.style.transform = 'translateY(50%)';
+            num.style.bottom = `${i}%`;
+            container.appendChild(num);
+            if (i === maxMl) continue;
+            for (let j = 1; j < N; j++) {
+                const minorTick = document.createElement('div');
+                minorTick.className = 'menzurka-tick';
+                minorTick.style.bottom = `${i + (j * majorStep / N)}%`;
+                minorTick.style.width = '10px';
+                container.appendChild(minorTick);
+            }
+        }
+    }
+    generateMenzurkaScale(randomNMenzurka);
+
+    const thermoPossibleDivs = [2, 5, 10];
+    const randomNThermo = thermoPossibleDivs[Math.floor(Math.random() * thermoPossibleDivs.length)];
+    function generateThermometerScale(N) {
+        const container = document.getElementById('thermoMarks');
+        const numbers = document.getElementById('thermoNumbers');
+        container.innerHTML = ''; numbers.innerHTML = '';
+        const maxT = 50, majorStep = 10;
+        for (let i = 0; i <= maxT; i += majorStep) {
+            const posPercent = i / maxT * 100;
+            const majorTick = document.createElement('div');
+            majorTick.className = 'ruler-tick';
+            majorTick.style.top = '0';
+            majorTick.style.left = `${posPercent}%`;
+            majorTick.style.height = '100%';
+            container.appendChild(majorTick);
+            const num = document.createElement('span');
+            num.textContent = i === maxT ? `${i}°C` : i;
+            num.style.position = 'absolute';
+            num.style.top = '-20px';
+            num.style.transform = 'translateX(-50%)';
+            num.style.left = `${posPercent}%`;
+            numbers.appendChild(num);
+            if (i === maxT) continue;
+            for (let j = 1; j < N; j++) {
+                const minorTick = document.createElement('div');
+                minorTick.className = 'ruler-tick';
+                const minorPosPercent = (i + (j * majorStep / N)) / maxT * 100;
+                minorTick.style.top = '0';
+                minorTick.style.left = `${minorPosPercent}%`;
+                minorTick.style.height = '60%';
+                container.appendChild(minorTick);
+            }
+        }
+    }
+    generateThermometerScale(randomNThermo);
+
+    const instruments = {
+        ruler: {
+            name: { ru: "Линейка", kk: "Сызғыш", en: "Ruler" },
+            slider: document.getElementById('rulerSlider'),
+            objectVisual: document.getElementById('rulerObject'),
+            cdInput: document.getElementById('rulerCD_input'),
+            cdFeedback: document.getElementById('rulerCD_feedback'),
+            valueInput: document.getElementById('rulerValue_input'),
+            errorInput: document.getElementById('rulerError_input'),
+            resultFeedback: document.getElementById('rulerResult_feedback'),
+            calculateCD: () => (1 / randomNRuler),
+            unit: 'см', maxVal: 10, decimals: 2
+        },
+        menzurka: {
+            name: { ru: "Мензурка", kk: "Мензурка", en: "Beaker" },
+            slider: document.getElementById('menzurkaSlider'),
+            objectVisual: document.getElementById('waterLevel'),
+            cdInput: document.getElementById('menzurkaCD_input'),
+            cdFeedback: document.getElementById('menzurkaCD_feedback'),
+            valueInput: document.getElementById('menzurkaValue_input'),
+            errorInput: document.getElementById('menzurkaError_input'),
+            resultFeedback: document.getElementById('menzurkaResult_feedback'),
+            calculateCD: () => 20 / randomNMenzurka,
+            unit: 'мл', maxVal: 100, decimals: 0
+        },
+        thermometer: {
+            name: { ru: "Термометр", kk: "Термометр", en: "Thermometer" },
+            slider: document.getElementById('thermoSlider'),
+            objectVisual: document.getElementById('thermoIndicator'),
+            cdInput: document.getElementById('thermoCD_input'),
+            cdFeedback: document.getElementById('thermoCD_feedback'),
+            valueInput: document.getElementById('thermoValue_input'),
+            errorInput: document.getElementById('thermoError_input'),
+            resultFeedback: document.getElementById('thermoResult_feedback'),
+            calculateCD: () => 10 / randomNThermo,
+            unit: '°C', maxVal: 50, decimals: 1
+        }
+    };
+
+    function updateInstrument(name) {
+        const inst = instruments[name];
+        const sliderValue = parseFloat(inst.slider.value);
+        let measurement;
+        
+        if (name === 'ruler') {
+             measurement = (sliderValue / inst.slider.max * inst.maxVal);
+        } else {
+             measurement = parseFloat(sliderValue);
+        }
+
+        const cd = inst.calculateCD();
+        inst.correctCD = parseFloat(cd.toFixed(inst.decimals + 2));
+        inst.correctMeasurement = parseFloat(measurement.toFixed(inst.decimals));
+        inst.correctError = parseFloat((cd/2).toFixed(inst.decimals + 2));
+
+        if (name === 'ruler') {
+            inst.objectVisual.style.width = (measurement / inst.maxVal * 100) + '%';
+        } else if (name === 'menzurka') {
+            inst.objectVisual.style.height = measurement + '%';
+        } else if (name === 'thermometer') {
+            inst.objectVisual.style.left = (measurement / inst.maxVal * 100) + '%';
+        }
+    }
+
+    function updateCheckButtonText() {
+        if (attemptsLeft > 0) {
+            const attemptText = attemptsLeft === 1 ? translations[currentLang].attempts_left_1 : translations[currentLang].attempts_left_2;
+            checkButton.innerHTML = `${translations[currentLang].check_button} (${attemptsLeft} ${attemptText})`;
+        } else {
+            checkButton.innerHTML = translations[currentLang].check_button;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+        const allInputs = document.querySelectorAll('.student-info input, td input');
+
+        allInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input');
+                allFieldsValid = false;
+            } else {
+                input.classList.remove('incorrect-input');
+            }
+        });
+
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block';
+            return;
+        }
+
+        attemptsLeft--;
+        let correctAnswers = 0;
+        const totalAnswers = 6;
+
+        for (const name in instruments) {
+            const inst = instruments[name];
+
+            inst.cdInput.classList.remove('incorrect-input');
+            const userCD = parseFloat(inst.cdInput.value.replace(',', '.'));
+            const isCDCorrect = Math.abs(userCD - inst.correctCD) < 0.01;
+            if (isCDCorrect) {
+                correctAnswers++;
+            }
+            inst.cdFeedback.innerHTML = isCDCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+            inst.cdFeedback.className = isCDCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+            inst.cdInput.className = isCDCorrect ? 'correct-input' : 'incorrect-input';
+
+            inst.valueInput.classList.remove('incorrect-input');
+            inst.errorInput.classList.remove('incorrect-input');
+            const userMeasurement = parseFloat(inst.valueInput.value.replace(',', '.'));
+            const userError = parseFloat(inst.errorInput.value.replace(',', '.'));
+            const isMeasurementCorrect = Math.abs(userMeasurement - inst.correctMeasurement) <= inst.correctError;
+            const isErrorCorrect = Math.abs(userError - inst.correctError) < 0.01;
+            const isResultCorrect = isMeasurementCorrect && isErrorCorrect;
+
+            if (isResultCorrect) {
+                correctAnswers++;
+            }
+            inst.resultFeedback.innerHTML = isResultCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+            inst.resultFeedback.className = isResultCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+            inst.valueInput.className = isMeasurementCorrect ? 'correct-input' : 'incorrect-input';
+            inst.errorInput.className = isErrorCorrect ? 'correct-input' : 'incorrect-input';
+        }
+
+        updateCheckButtonText();
+
+        if (attemptsLeft === 0 || correctAnswers === totalAnswers) {
+            checkButton.disabled = true;
+            showAnswersButton.style.display = 'inline-block';
+            
+            const score = Math.round((correctAnswers / totalAnswers) * 10);
+            const resultText = translations[currentLang].final_result_title;
+            const outOfText = translations[currentLang].out_of_10;
+            finalScoreText = `${score} ${outOfText}`;
+
+            finalResultDiv.innerHTML = `<h3>${resultText} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></h3>`;
+
+            document.querySelectorAll('td input').forEach(input => {
+                input.disabled = true;
+            });
+            attemptsLeft = 0; // Принудительно обнуляем попытки, если все верно
+            updateCheckButtonText();
+        }
+    });
+
+    showAnswersButton.addEventListener('click', () => {
+        const trans = translations[currentLang];
+        
+        // ИЗМЕНЕНО: Получаем значения из новых полей
+        const lastName = document.getElementById('student_lastname').value || '...';
+        const firstName = document.getElementById('student_firstname').value || '...';
+        const studentClass = document.getElementById('student_class_number').value || '...';
+        const studentLetter = document.getElementById('student_class_letter').value || '...';
+
+        let reviewHTML = `<h3>${trans.answers_review_title}</h3>`;
+        reviewHTML += `<p><b>${trans.report_student}</b> ${lastName} ${firstName}</p>`;
+        reviewHTML += `<p><b>${trans.report_class}</b> ${studentClass} "${studentLetter}"</p>`;
+        reviewHTML += `<p><b>${trans.report_score}</b> <span class="${parseFloat(finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></p><hr>`;
+        reviewHTML += '<ul>';
+
+        for (const name in instruments) {
+            const inst = instruments[name];
+            reviewHTML += `<li><strong>${inst.name[currentLang]}:</strong><ul>`;
+
+            const userCD = inst.cdInput.value || `(${trans.your_answer.toLowerCase()}) ...`;
+            reviewHTML += `<li>${trans.price_division}: ${trans.your_answer} <strong>${userCD}</strong>. ${trans.correct_answer}: <strong>${inst.correctCD}</strong></li>`;
+
+            const userValue = inst.valueInput.value || '...';
+            const userError = inst.errorInput.value || '...';
+            reviewHTML += `<li>${trans.th_measurement}: ${trans.your_answer} <strong>${userValue} ± ${userError}</strong>. ${trans.correct_answer}: <strong>${inst.correctMeasurement} ± ${inst.correctError}</strong></li>`;
+
+            reviewHTML += '</ul></li>';
+        }
+        reviewHTML += '</ul>';
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        const lastName = document.getElementById('student_lastname').value || 'student';
+        const firstName = document.getElementById('student_firstname').value || 'report';
+        const labTitle = document.querySelector('h1').textContent.replace(/ /g, '_').replace('№', 'N');
+        const studentClass = document.getElementById('student_class_number').value || 'class';
+        const studentLetter = document.getElementById('student_class_letter').value || '';
+
+        const fileName = `${labTitle}_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+
+        mainContainer.classList.add('pdf-export-mode');
+        const canvas = await html2canvas(mainContainer, {
+            scale: 2,
+            useCORS: true,
+            windowWidth: 900,
+        });
+        mainContainer.classList.remove('pdf-export-mode');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const margin = 40;
+        const contentWidth = pdfWidth - margin * 2;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasHeight / canvasWidth;
+        const imgHeight = contentWidth * ratio;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+        heightLeft -= (pdfHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position -= (pdfHeight - margin);
+             pdf.addPage();
+            pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
+            heightLeft -= (pdfHeight - margin * 2);
+        }
+
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async () => {
+        const button = shareToTeacherButton;
+        button.textContent = translations[currentLang].sending;
+        button.disabled = true;
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const lastName = document.getElementById('student_lastname').value || 'student';
+            const firstName = document.getElementById('student_firstname').value || 'report';
+            const studentClass = document.getElementById('student_class_number').value || '...';
+            const studentLetter = document.getElementById('student_class_letter').value || '';
+            const fileName = `Lab_Report_1_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+            const caption = `Отчет по лабораторной работе №1\nУченик(ца): ${lastName} ${firstName}\nКласс: ${studentClass}${studentLetter}\nОценка: ${finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                button.textContent = translations[currentLang].send_success;
+                button.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description);
+            }
+
+        } catch (error) {
+            console.error('Telegram API Error:', error);
+            button.textContent = translations[currentLang].send_error;
+            button.style.backgroundColor = '#e74c3c';
+            button.disabled = false;
+        }
+    });
+
+
+    // --- Инициализация ---
+    for (const name in instruments) {
+        if (name !== 'ruler') {
+            instruments[name].slider.max = instruments[name].maxVal;
+        }
+        instruments[name].slider.addEventListener('input', () => updateInstrument(name));
+        updateInstrument(name);
+    }
+    setLanguage('ru');
+    resetState();
+});
+</script>
+</body>
+</html>

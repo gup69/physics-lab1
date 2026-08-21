@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор: Расчет шумозащитного экрана</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .lang-switcher {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            display: flex;
+            gap: 5px;
+        }
+        .lang-btn {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        .lang-btn.active {
+            background: #17a2b8;
+            color: white;
+            border-color: #17a2b8;
+        }
+        h1 {
+            color: #003366;
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+            margin-top: 10px;
+            border-bottom: 2px solid #17a2b8;
+            padding-bottom: 15px;
+            padding-right: 150px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 150px;
+        }
+        .control-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #495057;
+        }
+        .control-group input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        /* Зона симуляции */
+        .simulation-area {
+            position: relative;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px; 
+            min-height: 250px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+        
+        svg {
+            width: 100%;
+            height: 250px;
+            border-radius: 6px;
+            background-color: #e3f2fd;
+        }
+
+        /* Блок проверки знаний */
+        .quiz-section {
+            background: #f1f8e9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #c5e1a5;
+        }
+        .quiz-section h3 {
+            margin-top: 0;
+            color: #33691e;
+        }
+        .quiz-inputs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .quiz-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #2e7d32;
+        }
+        .quiz-input-group input {
+            width: 90px;
+            padding: 8px;
+            border: 1px solid #a5d6a7;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .btn-check {
+            background-color: #43a047;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .btn-check:hover {
+            background-color: #2e7d32;
+        }
+        #feedback {
+            margin-top: 15px;
+            font-size: 16px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            line-height: 1.5;
+        }
+        .feedback-success {
+            background-color: #e8f5e9;
+            color: #1b5e20;
+            border: 1px solid #a5d6a7;
+        }
+        .feedback-error {
+            background-color: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #ef9a9a;
+        }
+        .moral-message {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-weight: bold;
+            color: #0d47a1;
+        }
+
+        /* Анимация волн */
+        .wave {
+            stroke: #1976d2;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0;
+        }
+        .wave.active {
+            animation: propagate 2s linear infinite;
+        }
+        @keyframes propagate {
+            0% { stroke-width: 4; opacity: 1; }
+            100% { stroke-width: 1; opacity: 0; transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="lang-switcher">
+        <button class="lang-btn" onclick="setLang('kk')" id="btn-kk">ҚАЗ</button>
+        <button class="lang-btn active" onclick="setLang('ru')" id="btn-ru">РУС</button>
+        <button class="lang-btn" onclick="setLang('en')" id="btn-en">ENG</button>
+    </div>
+
+    <h1 data-i18n="title">РАСЧЕТ ДЛИНЫ ВОЛНЫ И ШУМОЗАЩИТЫ</h1>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="speed" data-i18n="lblSpeed">Скорость звука v (м/с):</label>
+            <input type="number" id="speed" value="340" min="1" oninput="updateSimulation()">
+        </div>
+        <div class="control-group">
+            <label for="freq" data-i18n="lblFreq">Частота шума ν (Гц):</label>
+            <input type="number" id="freq" value="170" min="1" oninput="updateSimulation()">
+        </div>
+        <div class="control-group">
+            <label for="wallHeight" data-i18n="lblWall">Высота экрана h (м):</label>
+            <input type="number" id="wallHeight" value="1.5" min="0.1" step="0.5" oninput="updateSimulation()">
+        </div>
+    </div>
+
+    <div class="simulation-area">
+        <svg id="simCanvas" viewBox="0 0 800 250">
+            <rect x="0" y="200" width="800" height="50" fill="#78909c" />
+            <rect x="400" y="200" width="400" height="50" fill="#aed581" />
+            
+            <g transform="translate(600, 100)">
+                <rect x="0" y="40" width="80" height="60" fill="#ffcc80" stroke="#ef6c00" stroke-width="2"/>
+                <polygon points="-10,40 40,0 90,40" fill="#ef5350" stroke="#c62828" stroke-width="2"/>
+                <rect x="15" y="60" width="20" height="20" fill="#bbdefb" stroke="#1976d2"/>
+                <rect x="45" y="60" width="20" height="20" fill="#bbdefb" stroke="#1976d2"/>
+                <text x="40" y="-10" font-family="Arial" font-size="14" font-weight="bold" fill="#d32f2f" text-anchor="middle" id="houseLabel">Жилой дом</text>
+            </g>
+
+            <g transform="translate(50, 130)">
+                <rect x="0" y="20" width="70" height="40" fill="#ffb300" rx="4"/>
+                <rect x="75" y="30" width="25" height="30" fill="#ffb300" rx="4"/>
+                <rect x="80" y="35" width="15" height="15" fill="#e3f2fd"/>
+                <circle cx="20" cy="65" r="10" fill="#212529"/>
+                <circle cx="50" cy="65" r="10" fill="#212529"/>
+                <circle cx="85" cy="65" r="10" fill="#212529"/>
+                <text x="50" y="10" font-family="Arial" font-size="14" font-weight="bold" fill="#000" text-anchor="middle" id="truckLabel">Источник шума</text>
+            </g>
+
+            <g id="wavesGroup"></g>
+
+            <g transform="translate(380, 0)">
+                <rect x="0" y="50" width="15" height="150" fill="#4caf50" id="wallRect" rx="2"/>
+                <text x="-30" y="40" font-family="Arial" font-size="14" font-weight="bold" fill="#2e7d32" id="wallText">h = 1.5 м</text>
+            </g>
+
+            <text x="640" y="70" font-family="Arial" font-size="16" font-weight="bold" id="statusText" text-anchor="middle"></text>
+        </svg>
+    </div>
+
+    <div class="quiz-section">
+        <h3 data-i18n="quizTitle">Проверка расчетов</h3>
+        <p data-i18n="quizDesc">Используя формулу скорости распространения волны, рассчитайте длину звуковой волны от грузовика.</p>
+        <div class="quiz-inputs">
+            <div class="quiz-input-group">
+                <label for="ansLambda">λ = </label>
+                <input type="number" id="ansLambda" placeholder="м">
+            </div>
+        </div>
+        <button class="btn-check" data-i18n="btnCheck" onclick="checkAnswers()">Проверить ответ и запустить симуляцию</button>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    // --- СЛОВАРЬ ПЕРЕВОДОВ ---
+    const dict = {
+        ru: {
+            title: "РАСЧЕТ ДЛИНЫ ВОЛНЫ И ШУМОЗАЩИТЫ",
+            lblSpeed: "Скорость звука v (м/с):",
+            lblFreq: "Частота шума ν (Гц):",
+            lblWall: "Высота экрана h (м):",
+            quizTitle: "Проверка расчетов",
+            quizDesc: "Используя формулу скорости распространения волны (v = λ · ν), рассчитайте длину звуковой волны от грузовика.",
+            btnCheck: "Проверить ответ и запустить симуляцию",
+            unitM: "м",
+            house: "Жилой дом",
+            truck: "Источник шума",
+            errFill: "<strong>Ошибка:</strong> Пожалуйста, введите значение длины волны.",
+            msgSuccess: "<strong>✅ Верно!</strong> λ = v / ν. Длина волны рассчитана правильно.",
+            msgError: "<strong>❌ Ошибка в вычислениях.</strong> Чтобы найти длину волны (λ), нужно разделить скорость звука (v) на частоту (ν).",
+            statusDiffraction: "ШУМ ПРОНИКАЕТ!",
+            statusBlocked: "ТИШИНА",
+            analysisTitle: "Анализ санитарных норм (Закон о тишине):",
+            analysisBad: "❌ Высота экрана (h = {H} м) <strong>меньше</strong> длины волны (λ = {L} м). Происходит <strong>дифракция</strong> — звуковая волна огибает препятствие и проникает в жилой квартал. Требования закона не выполнены!",
+            analysisGood: "✔ Высота экрана (h = {H} м) <strong>больше или равна</strong> длине волны (λ = {L} м). Экран эффективно блокирует шум. Закон о тишине соблюден!",
+            moral: "⚖️ Правовое государство начинается с уважения к правам соседей. Законы пишутся с опорой на законы физики!"
+        },
+        kk: {
+            title: "ТОЛҚЫН ҰЗЫНДЫҒЫ МЕН ШУДАН ҚОРҒАУДЫ ЕСЕПТЕУ",
+            lblSpeed: "Дыбыс жылдамдығы v (м/с):",
+            lblFreq: "Шу жиілігі ν (Гц):",
+            lblWall: "Экран биіктігі h (м):",
+            quizTitle: "Есептеулерді тексеру",
+            quizDesc: "Толқынның таралу жылдамдығы формуласын (v = λ · ν) пайдаланып, жүк көлігінен шығатын дыбыс толқынының ұзындығын есептеңіз.",
+            btnCheck: "Жауапты тексеру және симуляцияны бастау",
+            unitM: "м",
+            house: "Тұрғын үй",
+            truck: "Шу көзі",
+            errFill: "<strong>Қате:</strong> Толқын ұзындығының мәнін енгізіңіз.",
+            msgSuccess: "<strong>✅ Дұрыс!</strong> λ = v / ν. Толқын ұзындығы дұрыс есептелді.",
+            msgError: "<strong>❌ Есептеудегі қателік.</strong> Толқын ұзындығын (λ) табу үшін дыбыс жылдамдығын (v) жиілікке (ν) бөлу керек.",
+            statusDiffraction: "ШУ ӨТЕДІ!",
+            statusBlocked: "ТЫНЫШТЫҚ",
+            analysisTitle: "Санитарлық нормаларды талдау (Тыныштық туралы заң):",
+            analysisBad: "❌ Экран биіктігі (h = {H} м) толқын ұзындығынан (λ = {L} м) <strong>кіші</strong>. <strong>Дифракция</strong> құбылысы орын алады — дыбыс толқыны кедергіні айналып өтіп, тұрғын ауданға енеді. Заң талаптары орындалмады!",
+            analysisGood: "✔ Экран биіктігі (h = {H} м) толқын ұзындығынан (λ = {L} м) <strong>үлкен немесе тең</strong>. Экран шуды тиімді блоктайды. Тыныштық туралы заң сақталды!",
+            moral: "⚖️ Құқықтық мемлекет көршілердің құқықтарын құрметтеуден басталады. Заңдар физика заңдарына сүйеніп жазылады!"
+        },
+        en: {
+            title: "WAVELENGTH AND NOISE BARRIER CALCULATION",
+            lblSpeed: "Speed of sound v (m/s):",
+            lblFreq: "Noise frequency ν (Hz):",
+            lblWall: "Barrier height h (m):",
+            quizTitle: "Calculation check",
+            quizDesc: "Using the wave speed formula (v = λ · ν), calculate the wavelength of the sound from the truck.",
+            btnCheck: "Check answer and start simulation",
+            unitM: "m",
+            house: "Residential House",
+            truck: "Noise Source",
+            errFill: "<strong>Error:</strong> Please enter the wavelength value.",
+            msgSuccess: "<strong>✅ Correct!</strong> λ = v / ν. The wavelength is calculated correctly.",
+            msgError: "<strong>❌ Calculation error.</strong> To find the wavelength (λ), you need to divide the speed of sound (v) by the frequency (ν).",
+            statusDiffraction: "NOISE PENETRATES!",
+            statusBlocked: "SILENCE",
+            analysisTitle: "Sanitary Standards Analysis (Noise Law):",
+            analysisBad: "❌ Barrier height (h = {H} m) is <strong>less</strong> than the wavelength (λ = {L} m). <strong>Diffraction</strong> occurs — the sound wave bends around the obstacle and enters the residential area. The law is violated!",
+            analysisGood: "✔ Barrier height (h = {H} m) is <strong>greater than or equal</strong> to the wavelength (λ = {L} m). The barrier effectively blocks the noise. The noise law is upheld!",
+            moral: "⚖️ A legal state begins with respect for neighbors' rights. Laws are written based on the laws of physics!"
+        }
+    };
+
+    let currentLang = 'ru';
+    let currentLambda = 2; // По умолчанию (340 / 170)
+    let currentHeight = 1.5;
+
+    // Функция перевода
+    function setLang(lang) {
+        currentLang = lang;
+        
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btn-' + lang).classList.add('active');
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            let key = el.getAttribute('data-i18n');
+            if (dict[lang][key]) {
+                el.innerHTML = dict[lang][key];
+            }
+        });
+
+        document.getElementById('ansLambda').placeholder = dict[lang].unitM;
+        document.getElementById('houseLabel').textContent = dict[lang].house;
+        document.getElementById('truckLabel').textContent = dict[lang].truck;
+
+        updateSimulation(true);
+        
+        // Если блок ответа уже открыт, обновляем его содержимое на новый язык
+        if (document.getElementById('feedback').style.display === 'block') {
+            checkAnswers();
+        }
+    }
+
+    // Обновление параметров без анимации (режим подготовки)
+    function updateSimulation(isLangChange = false) {
+        let langData = dict[currentLang];
+        
+        let v = parseFloat(document.getElementById('speed').value) || 1;
+        let nu = parseFloat(document.getElementById('freq').value) || 1;
+        currentHeight = parseFloat(document.getElementById('wallHeight').value) || 0.1;
+
+        currentLambda = v / nu;
+
+        // Визуализация высоты стены (масштаб: 1 метр = 20 пикселей)
+        // Если h=2, высота 40px. Основание стены на y=200.
+        let visualHeight = currentHeight * 30; 
+        if (visualHeight > 180) visualHeight = 180; // Ограничитель для SVG
+        
+        let wallY = 200 - visualHeight;
+        let wallRect = document.getElementById('wallRect');
+        wallRect.setAttribute('y', wallY);
+        wallRect.setAttribute('height', visualHeight);
+        
+        document.getElementById('wallText').textContent = `h = ${currentHeight.toFixed(1)} ${langData.unitM}`;
+        document.getElementById('wallText').setAttribute('y', wallY - 10);
+
+        // Очистка при смене параметров (если это не просто смена языка)
+        if (!isLangChange) {
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('ansLambda').value = '';
+            document.getElementById('statusText').textContent = '';
+            document.getElementById('wavesGroup').innerHTML = ''; // Убираем волны
+        }
+    }
+
+    function checkAnswers() {
+        let langData = dict[currentLang];
+        let userLambda = parseFloat(document.getElementById('ansLambda').value);
+        let feedback = document.getElementById('feedback');
+
+        feedback.style.display = 'block';
+
+        // Допуск на округление
+        let isCorrect = Math.abs(userLambda - currentLambda) < 0.1;
+
+        if (isNaN(userLambda)) {
+            feedback.className = 'feedback-error';
+            feedback.innerHTML = langData.errFill;
+            document.getElementById('statusText').textContent = '';
+        } else if (isCorrect) {
+            let analysisText = "";
+            let isDiffraction = currentHeight < currentLambda;
+
+            if (isDiffraction) {
+                analysisText = langData.analysisBad.replace('{H}', currentHeight.toFixed(1)).replace('{L}', currentLambda.toFixed(1));
+                document.getElementById('statusText').textContent = langData.statusDiffraction;
+                document.getElementById('statusText').setAttribute('fill', '#d32f2f');
+            } else {
+                analysisText = langData.analysisGood.replace('{H}', currentHeight.toFixed(1)).replace('{L}', currentLambda.toFixed(1));
+                document.getElementById('statusText').textContent = langData.statusBlocked;
+                document.getElementById('statusText').setAttribute('fill', '#2e7d32');
+            }
+
+            let fullAnalysis = `<br><br><strong>${langData.analysisTitle}</strong><br>${analysisText}<br><div class="moral-message">${langData.moral}</div>`;
+
+            feedback.className = 'feedback-success';
+            feedback.innerHTML = langData.msgSuccess + fullAnalysis;
+            drawWaves(isDiffraction); // Запускаем анимацию
+        } else {
+            feedback.className = 'feedback-error';
+            // Выводим только сообщение об ошибке, без анализа и морали
+            feedback.innerHTML = langData.msgError;
+            // Убираем визуальные элементы правильного ответа
+            document.getElementById('statusText').textContent = '';
+            document.getElementById('wavesGroup').innerHTML = ''; 
+        }
+    }
+
+    function drawWaves(isDiffraction) {
+        let wavesGroup = document.getElementById('wavesGroup');
+        wavesGroup.innerHTML = ''; // Очистка старых волн
+        
+        let cx = 130; // Центр источника (грузовик)
+        let cy = 160;
+        
+        // Масштабируем расстояние между волнами в зависимости от Лямбды
+        // Базовое значение для 2м = 40px
+        let spacing = currentLambda * 20; 
+        if (spacing < 10) spacing = 10;
+        if (spacing > 100) spacing = 100;
+
+        let numWaves = Math.floor(400 / spacing) + 2;
+
+        for (let i = 1; i <= numWaves; i++) {
+            let r = i * spacing;
+            
+            // Волна до экрана
+            let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            // Рисуем дугу (правая половина окружности)
+            let d = `M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx} ${cy + r}`;
+            
+            // Если волна доходит до стены (x = 380)
+            if (cx + r > 380) {
+                if (isDiffraction) {
+                    // Дифракция: волны проходят дальше, но верхняя часть огибает стену
+                    d = `M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx + r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy + r}`;
+                } else {
+                    // Волна блокируется (отражается), не рисуем ее дальше стены
+                    // Математически обрезаем дугу (упрощенно)
+                    continue; 
+                }
+            }
+
+            path.setAttribute("d", d);
+            path.setAttribute("class", "wave active");
+            // Сдвиг анимации для каждой волны
+            path.style.animationDelay = `${i * 0.3}s`;
+            
+            wavesGroup.appendChild(path);
+        }
+
+        // Если дифракция, добавляем вторичные волны (огибающие стену сверху)
+        if (isDiffraction) {
+            let topWallY = document.getElementById('wallRect').getAttribute('y');
+            for (let i = 1; i <= 3; i++) {
+                let r2 = i * (spacing * 0.8);
+                let path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                let d2 = `M 380 ${topWallY - r2} A ${r2} ${r2} 0 0 1 ${380 + r2} ${topWallY} A ${r2} ${r2} 0 0 1 380 ${topWallY + r2}`;
+                
+                path2.setAttribute("d", d2);
+                path2.setAttribute("class", "wave active");
+                path2.setAttribute("stroke", "#ef5350"); // Красный цвет для дифрагированной волны
+                path2.style.animationDelay = `${i * 0.4}s`;
+                
+                wavesGroup.appendChild(path2);
+            }
+        }
+    }
+
+    // Инициализация
+    window.onload = function() {
+        setLang('ru');
+    };
+</script>
+
+</body>
+</html>

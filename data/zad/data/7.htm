@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v10.0 (Свойства Вещества)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px; 
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; 
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch; 
+        }
+
+        .game-area {
+            flex: 2; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; 
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+        
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; } 
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1; 
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc; 
+            min-height: 100%; 
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column; 
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                        </div>
+                    <p id="mission-question">...</p>
+                </div>
+                
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    
+                    <p id="feedback-message"></p>
+                </div>
+            </div> 
+
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                    </ul>
+            </div> 
+        </div> 
+    </div> 
+<script>
+        // --- (ОБНОВЛЕННЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (СВОЙСТВА ВЕЩЕСТВА) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Нагревание", scenario: "Тело нагрели на &Delta;T. Рассчитайте количество теплоты Q, которое для этого потребовалось.", data: { m: "Масса (кг)", c: "Уд. теплоемкость", dT: "Изм. температуры (&Delta;T)" }, question: "Задача: Введите количество теплоты (Q) в кДж (килоджоулях)." },
+                    { title: "Миссия 2: Плавление", scenario: "Чтобы расплавить тело (уже при температуре плавления), ему сообщили Q теплоты. Рассчитайте массу тела.", data: { Q: "Теплота (кДж)", lambda: "Уд. теплота плавления (&lambda;)" }, question: "Задача: Введите массу (m) в кг." },
+                    { title: "Миссия 3: Парообразование", scenario: "Жидкость (уже при температуре кипения) полностью испарили. Рассчитайте количество теплоты Q, которое для этого потребовалось.", data: { m: "Масса (кг)", L: "Уд. теплота парообразования (L)" }, question: "Задача: Введите количество теплоты (Q) в МДж (мегаджоулях)." },
+                    { title: "Миссия 4: Тепловой баланс (Нагрев + Плавление)", scenario: "Лед при 0&deg;C нагрели и полностью расплавили. Рассчитайте *общее* количество теплоты, затраченное на это.", data: { m: "Масса льда (кг)", lambda: "Уд. тепл. плавления (&lambda;)" }, question: "Задача: Введите общее кол-во теплоты (Q<sub>общ</sub>) в кДж." },
+                    { title: "Миссия 5: Линейное Расширение", scenario: "Стержень нагрели на &Delta;T. Рассчитайте его удлинение.", data: { L0: "Начальная длина (м)", alpha: "Коэф. лин. расшир. (&alpha;)", dT: "Изм. температуры (&Delta;T)" }, question: "Задача: Введите удлинение (&Delta;L) в мм (миллиметрах)." },
+                    { title: "Миссия 6: Объемное Расширение", scenario: "Жидкость нагрели на &Delta;T. Рассчитайте изменение ее объема.", data: { V0: "Начальный объем (л)", beta: "Коэф. объемн. расшир. (&beta;)", dT: "Изм. температуры (&Delta;T)" }, question: "Задача: Введите изменение объема (&Delta;V) в мл (миллилитрах)." },
+                    { title: "Миссия 7: Относительная Влажность", scenario: "Известны парциальное давление водяного пара P и давление насыщенного пара P<sub>нас</sub> при данной температуре. Рассчитайте относительную влажность.", data: { P_partial: "Парциальное давление (P)", P_saturated: "Давление нас. пара (P<sub>нас</sub>)" }, question: "Задача: Введите относительную влажность (&phi;) в процентах (%)." },
+                    { title: "Миссия 8: Абсолютная Влажность", scenario: "В помещении объемом V содержится m<sub>v</sub> водяного пара. Рассчитайте абсолютную влажность.", data: { m_vapor: "Масса пара (г)", V_room: "Объем комнаты (м³)" }, question: "Задача: Введите абсолютную влажность (&rho;<sub>a</sub>) в г/м³." },
+                    { title: "Миссия 9: Закон Гука (Удлинение)", scenario: "К стержню приложили силу F. Рассчитайте его абсолютное удлинение.", data: { F: "Сила (кН)", L: "Длина стержня (м)", E: "Модуль Юнга (ГПа)", S: "Площадь сечения (см²)" }, question: "Задача: Введите удлинение (&Delta;L) в мм (миллиметрах)." },
+                    { title: "Миссия 10: Парциальное Давление", scenario: "Известна относительная влажность &phi; и давление насыщенного пара P<sub>нас</sub> при данной температуре. Рассчитайте парциальное давление водяного пара.", data: { phi: "Отн. влажность (&phi;)", P_saturated: "Давление нас. пара (P<sub>нас</sub>)" }, question: "Задача: Введите парциальное давление (P) в кПа." }
+                ]
+            },
+             'kz': { // Переводы для Казахского
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Қыздыру", scenario: "Денені &Delta;T қыздырды. Оған қанша Q жылу мөлшері қажет болғанын есептеңіз.", data: { m: "Масса (кг)", c: "Меншікті жылу сыйымдылығы", dT: "Температура өзгерісі (&Delta;T)" }, question: "Тапсырма: Жылу мөлшерін (Q) кДж (килоджоуль) енгізіңіз." },
+                    { title: "Миссия 2: Балқу", scenario: "Денені балқыту үшін (балқу температурасында) оған Q жылу берілді. Дененің массасын есептеңіз.", data: { Q: "Жылу (кДж)", lambda: "Меншікті балқу жылуы (&lambda;)" }, question: "Тапсырма: Массаны (m) кг енгізіңіз." },
+                    { title: "Миссия 3: Булану", scenario: "Сұйықтық (қайнау температурасында) толығымен буланды. Оған қанша Q жылу мөлшері қажет болғанын есептеңіз.", data: { m: "Масса (кг)", L: "Меншікті булану жылуы (L)" }, question: "Тапсырма: Жылу мөлшерін (Q) МДж (мегаджоуль) енгізіңіз." },
+                    { title: "Миссия 4: Жылу балансы (Қыздыру + Балқу)", scenario: "0&deg;C температурадағы мұзды қыздырып, толығымен балқытты. Осыған жұмсалған *жалпы* жылу мөлшерін есептеңіз.", data: { m: "Мұз массасы (кг)", lambda: "Менш. балқу жылуы (&lambda;)" }, question: "Тапсырма: Жалпы жылу мөлшерін (Q<sub>жалпы</sub>) кДж енгізіңіз." },
+                    { title: "Миссия 5: Сызықтық Ұлғаю", scenario: "Шыбықты &Delta;T қыздырды. Оның ұзаруын есептеңіз.", data: { L0: "Бастапқы ұзындық (м)", alpha: "Сызықтық ұлғаю коэф. (&alpha;)", dT: "Температура өзгерісі (&Delta;T)" }, question: "Тапсырма: Ұзаруды (&Delta;L) мм (миллиметр) енгізіңіз." },
+                    { title: "Миссия 6: Көлемдік Ұлғаю", scenario: "Сұйықтықты &Delta;T қыздырды. Оның көлемінің өзгеруін есептеңіз.", data: { V0: "Бастапқы көлем (л)", beta: "Көлемдік ұлғаю коэф. (&beta;)", dT: "Температура өзгерісі (&Delta;T)" }, question: "Тапсырма: Көлем өзгерісін (&Delta;V) мл (миллилитр) енгізіңіз." },
+                    { title: "Миссия 7: Салыстырмалы Ылғалдылық", scenario: "Су буының парциалды қысымы P және берілген температурадағы қаныққан бу қысымы P<sub>қан</sub> белгілі. Салыстырмалы ылғалдылықты есептеңіз.", data: { P_partial: "Парциалды қысым (P)", P_saturated: "Қаныққан бу қысымы (P<sub>қан</sub>)" }, question: "Тапсырма: Салыстырмалы ылғалдылықты (&phi;) пайызбен (%) енгізіңіз." },
+                    { title: "Миссия 8: Абсолют Ылғалдылық", scenario: "V көлеміндегі бөлмеде m<sub>v</sub> су буы бар. Абсолют ылғалдылықты есептеңіз.", data: { m_vapor: "Бу массасы (г)", V_room: "Бөлме көлемі (м³)" }, question: "Тапсырма: Абсолют ылғалдылықты (&rho;<sub>a</sub>) г/м³ енгізіңіз." },
+                    { title: "Миссия 9: Гук заңы (Ұзару)", scenario: "Шыбыққа F күші түсірілді. Оның абсолют ұзаруын есептеңіз.", data: { F: "Күш (кН)", L: "Шыбық ұзындығы (м)", E: "Юнг модулі (ГПа)", S: "Қима ауданы (см²)" }, question: "Тапсырма: Ұзаруды (&Delta;L) мм (миллиметр) енгізіңіз." },
+                    { title: "Миссия 10: Парциалды Қысым", scenario: "Берілген температурадағы салыстырмалы ылғалдылық &phi; және қаныққан бу қысымы P<sub>қан</sub> белгілі. Су буының парциалды қысымын есептеңіз.", data: { phi: "Салыст. ылғалд. (&phi;)", P_saturated: "Қаныққан бу қысымы (P<sub>қан</sub>)" }, question: "Тапсырма: Парциалды қысымды (P) кПа енгізіңіз." }
+                ]
+            },
+             'en': { // Translations for English
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Heating", scenario: "An object was heated by &Delta;T. Calculate the amount of heat Q required for this.", data: { m: "Mass (kg)", c: "Specific Heat Cap.", dT: "Temp. Change (&Delta;T)" }, question: "Task: Enter the heat (Q) in kJ (kilojoules)." },
+                    { title: "Mission 2: Melting", scenario: "To melt a body (already at melting point), Q heat was supplied. Calculate the mass of the body.", data: { Q: "Heat (kJ)", lambda: "Specific Latent Heat of Fusion (&lambda;)" }, question: "Task: Enter the mass (m) in kg." },
+                    { title: "Mission 3: Vaporization", scenario: "A liquid (already at boiling point) was completely vaporized. Calculate the amount of heat Q required.", data: { m: "Mass (kg)", L: "Specific Latent Heat of Vaporization (L)" }, question: "Task: Enter the heat (Q) in MJ (megajoules)." },
+                    { title: "Mission 4: Heat Balance (Heating + Melting)", scenario: "Ice at 0&deg;C was heated and completely melted. Calculate the *total* heat required.", data: { m: "Mass of Ice (kg)", lambda: "Spec. Heat of Fusion (&lambda;)" }, question: "Task: Enter the total heat (Q<sub>total</sub>) in kJ." },
+                    { title: "Mission 5: Linear Expansion", scenario: "A rod was heated by &Delta;T. Calculate its elongation.", data: { L0: "Initial Length (m)", alpha: "Coeff. of Linear Exp. (&alpha;)", dT: "Temp. Change (&Delta;T)" }, question: "Task: Enter the elongation (&Delta;L) in mm (millimeters)." },
+                    { title: "Mission 6: Volume Expansion", scenario: "A liquid was heated by &Delta;T. Calculate the change in its volume.", data: { V0: "Initial Volume (L)", beta: "Coeff. of Volume Exp. (&beta;)", dT: "Temp. Change (&Delta;T)" }, question: "Task: Enter the volume change (&Delta;V) in mL (milliliters)." },
+                    { title: "Mission 7: Relative Humidity", scenario: "The partial pressure P of water vapor and the saturated vapor pressure P<sub>sat</sub> at a given temperature are known. Calculate the relative humidity.", data: { P_partial: "Partial Pressure (P)", P_saturated: "Saturated Vapor Pressure (P<sub>sat</sub>)" }, question: "Task: Enter the relative humidity (&phi;) in percent (%)." },
+                    { title: "Mission 8: Absolute Humidity", scenario: "A room of volume V contains m<sub>v</sub> of water vapor. Calculate the absolute humidity.", data: { m_vapor: "Mass of vapor (g)", V_room: "Room Volume (m³)" }, question: "Task: Enter the absolute humidity (&rho;<sub>a</sub>) in g/m³." },
+                    { title: "Mission 9: Hooke's Law (Elongation)", scenario: "A force F is applied to a rod. Calculate its absolute elongation.", data: { F: "Force (kN)", L: "Rod Length (m)", E: "Young's Modulus (GPa)", S: "Cross-section Area (cm²)" }, question: "Task: Enter the elongation (&Delta;L) in mm (millimeters)." },
+                    { title: "Mission 10: Partial Pressure", scenario: "The relative humidity &phi; and saturated vapor pressure P<sub>sat</sub> at a given temperature are known. Calculate the partial pressure of water vapor.", data: { phi: "Relative Humidity (&phi;)", P_saturated: "Saturated Vapor Pressure (P<sub>sat</sub>)" }, question: "Task: Enter the partial pressure (P) in kPa." }
+                ]
+            }
+        };
+
+
+        // --- Глобальные Константы и Состояние ---
+        const L_WATER_FUSION = 3.3e5; // J/kg
+        
+        const TOLERANCE = 0.02; // Погрешность
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru'; 
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        const missionTitle = document.getElementById('mission-title');
+        const missionScenario = document.getElementById('mission-scenario');
+        const missionData = document.getElementById('mission-data');
+        const missionQuestion = document.getElementById('mission-question');
+        const userAnswerInput = document.getElementById('user-answer');
+        const submitButton = document.getElementById('submit-button');
+        const newDataButton = document.getElementById('new-data-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const navButtons = document.querySelectorAll('.mission-nav button');
+        const progressList = document.getElementById('progress-list');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const progressTitle = document.getElementById('progress-title');
+        const inputLabel = document.getElementById('input-label');
+
+        // --- Утилиты ---
+
+        // (ИСПРАВЛЕНО) getRandom теперь не округляет по умолчанию
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) { // Применяем toFixed только если decimals указано
+                 num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+        
+        function toPrecision(num, sig) {
+            return parseFloat(num.toPrecision(sig));
+        }
+        
+        function formatScientific(num, decimals = 1) {
+            if (num === 0) return '0';
+            const exponent = Math.floor(Math.log10(Math.abs(num)));
+            const mantissa = num / Math.pow(10, exponent);
+            return `${mantissa.toFixed(decimals)} &times; 10<sup>${exponent}</sup>`;
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов ---
+
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+            const ui = translations[currentLang].ui;
+            submitButton.textContent = ui.submit;
+            newDataButton.textContent = ui.newData;
+            inputLabel.textContent = ui.inputLabel;
+            userAnswerInput.placeholder = ui.placeholder;
+            updateProgressWindow();
+            missionLoaders[currentMissionId]();
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = ''; 
+            const t = translations[currentLang].progress;
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                <span class="correct">${progress.correct} ✔</span> / 
+                                <span class="incorrect">${progress.incorrect} ❌</span>
+                             </span>`;
+                
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                btn.disabled = false;
+                btn.innerHTML = `${t.mission} ${i}`;
+                
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (ОБНОВЛЕННЫЕ) Загрузчики Миссий (Свойства Вещества) ---
+
+        function loadMission1() {
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const m = getRandom(1, 10, 1); // кг
+            const c = getRandom(400, 4200, 0); // Дж/(кг·К)
+            const dT = getRandom(20, 100, 0); // K
+            currentCorrectAnswer = (m * c * dT) / 1000.0; // Ответ в кДж
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m} кг</p><p>${t.data.c}: ${c} Дж/(кг·К)</p><p>${t.data.dT}: ${dT} K</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() {
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const Q_kJ = getRandom(100, 1000, 0); // кДж
+            const Q_J = Q_kJ * 1000; // Дж
+            const lambda = getRandom(1e5, 5e5); // Дж/кг (БЕЗ decimals)
+            currentCorrectAnswer = Q_J / lambda;
+            
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.Q}: ${Q_kJ} кДж</p><p>${t.data.lambda}: ${formatScientific(lambda, 2)} Дж/кг</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() {
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const m = getRandom(0.5, 5, 1); // кг
+            const L = getRandom(2e6, 2.5e6); // Дж/кг (БЕЗ decimals)
+            currentCorrectAnswer = (L * m) / 1e6; // Ответ в МДж
+            
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m} кг</p><p>${t.data.L}: ${formatScientific(L, 2)} Дж/кг</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() {
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const m = getRandom(1, 10, 1); // кг
+            const lambda_ice = L_WATER_FUSION; 
+            currentCorrectAnswer = (lambda_ice * m) / 1000.0; // Ответ в кДж
+            
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m} кг</p><p>${t.data.lambda}: ${formatScientific(lambda_ice, 1)} Дж/кг</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() {
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const L0 = getRandom(1, 10, 1); // м
+            const alpha_val = getRandom(1e-5, 3e-5); // K⁻¹ (БЕЗ decimals)
+            const alpha_str = formatScientific(alpha_val, 1); // Строка для отображения
+            const dT = getRandom(50, 200, 0); // K
+            currentCorrectAnswer = (alpha_val * L0 * dT) * 1000.0; // Ответ в мм
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L0}: ${L0} м</p><p>${t.data.alpha}: ${alpha_str} K⁻¹</p><p>${t.data.dT}: ${dT} K</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() {
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const V0_L = getRandom(1, 10, 1); // литры
+            const V0_m3 = V0_L / 1000.0; // м³
+            const beta_val = getRandom(1e-4, 1e-3); // K⁻¹ (БЕЗ decimals)
+            const beta_str = formatScientific(beta_val, 1); // Строка для отображения
+            const dT = getRandom(20, 80, 0); // K
+            const dV_m3 = beta_val * V0_m3 * dT;
+            currentCorrectAnswer = dV_m3 * 1e6; // м³ -> см³ (мл)
+            
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.V0}: ${V0_L} л</p><p>${t.data.beta}: ${beta_str} K⁻¹</p><p>${t.data.dT}: ${dT} K</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() {
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const P_sat = getRandom(2000, 4000, 0); // Па
+            const P_part = getRandom(500, P_sat - 100, 0); // Па, P < P_sat
+            currentCorrectAnswer = (P_part / P_sat) * 100.0;
+            
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.P_partial}: ${P_part} Па</p><p>${t.data.P_saturated}: ${P_sat} Па</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() {
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const m_vapor_g = getRandom(50, 500, 0); // граммы
+            const V_room_m3 = getRandom(20, 100, 0); // м³
+            currentCorrectAnswer = m_vapor_g / V_room_m3;
+            
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m_vapor}: ${m_vapor_g} г</p><p>${t.data.V_room}: ${V_room_m3} м³</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+        
+        function loadMission9() {
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            
+            const F_kN = getRandom(10, 100, 0); // кН
+            const F_N = F_kN * 1000; // Н
+            const L = getRandom(1, 5, 1); // м
+            const E_GPa = getRandom(100, 210, 0); // ГПа 
+            const E_Pa = E_GPa * 1e9; // Па
+            const S_cm2 = getRandom(1, 10, 1); // см²
+            const S_m2 = S_cm2 / 10000.0; // м²
+            currentCorrectAnswer = (F_N * L) / (E_Pa * S_m2) * 1000.0; // Ответ в мм
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F}: ${F_kN} кН</p><p>${t.data.L}: ${L} м</p><p>${t.data.E}: ${E_GPa} ГПа</p><p>${t.data.S}: ${S_cm2} см²</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() {
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const phi_percent = getRandom(30, 90, 0); // %
+            const phi_decimal = phi_percent / 100.0;
+            const P_sat_kPa = getRandom(2, 4, 1); // кПа 
+            currentCorrectAnswer = phi_decimal * P_sat_kPa; // Ответ в кПа
+            
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.phi}: ${phi_percent} %</p><p>${t.data.P_saturated}: ${P_sat_kPa} кПа</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        // --- Обработчик Проверки ---
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback; 
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                // Правильный ответ
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                // Неправильный ответ
+                missionProgress[currentMissionId].incorrect++;
+                feedbackMessage.textContent = `${t.incorrect} (${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+        // --- Инициализация Игры ---
+
+        function initializeGame() {
+            // 1. Заполняем массив загрузчиков
+            missionLoaders.push(null, 
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10 
+            );
+
+            // 2. Создаем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true // Все миссии разблокированы
+                };
+            }
+
+            // 3. Слушатели на кнопки навигации
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    missionLoaders[id](); 
+                });
+            });
+
+            // 4. Слушатели на кнопки управления
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                missionLoaders[currentMissionId](); 
+            });
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // 5. Слушатели на кнопки языка
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // 6. Первичная отрисовка и запуск
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

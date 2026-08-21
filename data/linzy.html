@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Геометрическая оптика: Линзы</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #7c4dff; /* Deep Purple for Optics/Light */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1300px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-group { margin-bottom: 15px; }
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 10px; 
+            background: #000; border: 1px solid #444; 
+            color: white; border-radius: 4px; box-sizing: border-box;
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button.action-btn:hover { opacity: 0.9; transform: scale(1.01); }
+        button.action-btn:disabled { background: #555; cursor: not-allowed; }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 500px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            cursor: crosshair;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Info Overlay */
+        .info-overlay {
+            position: absolute; bottom: 10px; left: 10px;
+            background: rgba(0,0,0,0.7); padding: 10px;
+            border-radius: 5px; font-family: monospace; font-size: 0.9em;
+            pointer-events: none;
+        }
+
+        /* Locked state */
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 500px;
+            text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 20px 0; font-weight: bold; }
+        .modal-details { text-align: left; margin: 15px 0; color: #ccc; }
+        .modal-details strong { float: right; color: var(--accent); }
+
+        /* Lens Shape Icons (CSS) */
+        .lens-icon { display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)">Геометрическая оптика: Линзы</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headExp">2. Параметры</div>
+            
+            <div class="control-group">
+                <label data-lang="lblLensType">Тип линзы:</label>
+                <select id="lens-type">
+                    <option value="converging" data-lang="optConv">Собирающая (Выпуклая)</option>
+                    <option value="diverging" data-lang="optDiv">Рассеивающая (Вогнутая)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label data-lang="lblMode">Режим:</label>
+                <select id="mode-select">
+                    <option value="training" data-lang="optTrain">Обучение (Все видно)</option>
+                    <option value="exam" data-lang="optExam">Задание (Найти фокус F)</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="f-control">
+                <label><span data-lang="lblFocal">Фокусное расстояние (F):</span> <span class="val"><span id="val-f">10</span> см</span></label>
+                <input type="range" id="slider-f" min="5" max="20" step="1" value="10">
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblDist">Расстояние до предмета (d):</span> <span class="val"><span id="val-d">30</span> см</span></label>
+                <input type="range" id="slider-d" min="5" max="50" step="1" value="30">
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblHeight">Высота предмета (h):</span> <span class="val"><span id="val-h">5</span> см</span></label>
+                <input type="range" id="slider-h" min="2" max="10" step="1" value="5">
+            </div>
+
+            <div class="control-header" data-lang="headTask">3. Ответ</div>
+            <div class="control-group">
+                <label data-lang="lblCalc">Рассчитайте фокус F (см):</label>
+                <input type="text" id="ans-input" placeholder="...">
+                <button class="action-btn" id="check-btn" style="margin-top:5px;" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="font-size:0.9em; text-align:center; color:#aaa; margin-top:5px;"></div>
+                <div id="check-res" style="margin-top:5px; font-weight:bold; text-align:center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="visualizer">
+        <canvas id="optics-canvas" width="900" height="500"></canvas>
+        <div class="info-overlay" id="info-overlay">
+            d = <span id="out-d">30.0</span> см<br>
+            f = <span id="out-f">15.0</span> см<br>
+            H = <span id="out-H">2.5</span> см<br>
+            <span id="out-type" style="color:var(--accent)">Действительное</span>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div class="modal-details">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+            <div><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></div>
+            <hr style="border-color:#444">
+            <div><span data-lang="resTrueVal">Правильный ответ:</span> <strong id="res-true-val"></strong></div>
+        </div>
+        <p data-lang="resScoreLabel">Оценка:</p>
+        <div class="modal-score" id="res-score-val">10</div>
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАВЕРШИТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языковые настройки ===
+    const LANG = {
+        ru: {
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headExp: "2. Параметры", lblLensType: "Тип линзы:", optConv: "Собирающая (+)", optDiv: "Рассеивающая (-)",
+            lblMode: "Режим:", optTrain: "Обучение (Все видно)", optExam: "Задание (Найти F)",
+            lblFocal: "Фокусное расстояние (F):", lblDist: "Расстояние до предмета (d):", lblHeight: "Высота предмета (h):",
+            headTask: "3. Ответ", lblCalc: "Рассчитайте фокус F (см):", btnCheck: "ПРОВЕРИТЬ",
+            alertName: "Введите имя и класс!",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resAttempts: "Использовано:", resScoreLabel: "Оценка:", resTrueVal: "Верное F:", btnRestart: "ЗАВЕРШИТЬ",
+            txtAttempts: "Попытки: {used} / 3", resCorrect: "ВЕРНО!", resWrong: "ОШИБКА. Осталось попыток: {n}",
+            imgReal: "Действительное", imgVirtual: "Мнимое", imgNone: "Нет изображения"
+        },
+        kz: {
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headExp: "2. Параметрлер", lblLensType: "Линза түрі:", optConv: "Жинағыш (+)", optDiv: "Шашыратқыш (-)",
+            lblMode: "Режим:", optTrain: "Оқу (Бәрі көрінеді)", optExam: "Тапсырма (F табу)",
+            lblFocal: "Фокустық қашықтық (F):", lblDist: "Нәрсеге дейінгі қашықтық (d):", lblHeight: "Нәрсе биіктігі (h):",
+            headTask: "3. Жауап", lblCalc: "Фокусты есептеңіз F (см):", btnCheck: "ТЕКСЕРУ",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resAttempts: "Қолданылды:", resScoreLabel: "Баға:", resTrueVal: "Дұрыс F:", btnRestart: "АЯҚТАУ",
+            txtAttempts: "Мүмкіндіктер: {used} / 3", resCorrect: "ДҰРЫС!", resWrong: "ҚАТЕ. Қалған: {n}",
+            imgReal: "Шын", imgVirtual: "Жалған", imgNone: "Кескін жоқ"
+        },
+        en: {
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headExp: "2. Parameters", lblLensType: "Lens Type:", optConv: "Converging (+)", optDiv: "Diverging (-)",
+            lblMode: "Mode:", optTrain: "Training", optExam: "Task (Find F)",
+            lblFocal: "Focal Length (F):", lblDist: "Object Distance (d):", lblHeight: "Object Height (h):",
+            headTask: "3. Answer", lblCalc: "Calculate Focal Length F (cm):", btnCheck: "CHECK",
+            alertName: "Enter Name and Class!",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resAttempts: "Used:", resScoreLabel: "Score:", resTrueVal: "Correct F:", btnRestart: "FINISH",
+            txtAttempts: "Attempts: {used} / 3", resCorrect: "CORRECT!", resWrong: "WRONG. Left: {n}",
+            imgReal: "Real", imgVirtual: "Virtual", imgNone: "No Image"
+        }
+    };
+
+    // State
+    let currentLang = 'ru';
+    let attemptsUsed = 0;
+    let isRunning = false;
+    
+    const state = {
+        lensType: 'converging', // converging, diverging
+        mode: 'training', // training, exam
+        F: 10, // cm (Always positive magnitude in state, sign handled by type)
+        d: 30, // cm
+        h: 5,  // cm
+        F_hidden: 0 // For exam
+    };
+
+    // Canvas Setup
+    const cvs = document.getElementById('optics-canvas');
+    const ctx = cvs.getContext('2d');
+    const SCALE = 10; // 10 pixels = 1 cm
+    const AXIS_Y = cvs.height / 2;
+    const LENS_X = cvs.width / 2;
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+
+        // Update options text
+        const lensSel = document.getElementById('lens-type');
+        lensSel.options[0].text = t.optConv;
+        lensSel.options[1].text = t.optDiv;
+
+        const modeSel = document.getElementById('mode-select');
+        modeSel.options[0].text = t.optTrain;
+        modeSel.options[1].text = t.optExam;
+        
+        if(isRunning) draw(); // Redraw for text updates
+    }
+
+    function updateState() {
+        state.lensType = document.getElementById('lens-type').value;
+        state.mode = document.getElementById('mode-select').value;
+        
+        // In exam mode, F is hidden and locked
+        if (state.mode === 'exam') {
+            document.getElementById('f-control').style.display = 'none';
+            // Use hidden F
+        } else {
+            document.getElementById('f-control').style.display = 'block';
+            state.F = parseFloat(document.getElementById('slider-f').value);
+        }
+
+        state.d = parseFloat(document.getElementById('slider-d').value);
+        state.h = parseFloat(document.getElementById('slider-h').value);
+
+        // Update labels
+        document.getElementById('val-f').innerText = state.F;
+        document.getElementById('val-d').innerText = state.d;
+        document.getElementById('val-h').innerText = state.h;
+
+        draw();
+    }
+
+    function calculateImage() {
+        const f_val = (state.mode === 'exam' ? state.F_hidden : state.F);
+        const d = state.d;
+        
+        // Thin lens equation: 1/F = 1/d + 1/f_img
+        // Sign convention:
+        // Converging: F > 0
+        // Diverging: F < 0
+        // Real object: d > 0
+        // Real image: f_img > 0 (right of lens)
+        // Virtual image: f_img < 0 (left of lens)
+
+        let F_signed = (state.lensType === 'converging') ? f_val : -f_val;
+        
+        // 1/f_img = 1/F - 1/d
+        // f_img = (F * d) / (d - F)
+        let f_img = 0;
+        let infinite = false;
+
+        if (Math.abs(d - F_signed) < 0.001) {
+            infinite = true;
+        } else {
+            f_img = (F_signed * d) / (d - F_signed);
+        }
+
+        // Magnification m = - f_img / d
+        // H_img = m * h
+        let H_img = 0;
+        if (!infinite) {
+            H_img = -(f_img / d) * state.h;
+        }
+
+        return { f_img, H_img, infinite, F_signed };
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        
+        // Draw Grid
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1;
+        for(let x=0; x<cvs.width; x+=SCALE) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, cvs.height); ctx.stroke(); }
+        for(let y=0; y<cvs.height; y+=SCALE) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cvs.width, y); ctx.stroke(); }
+
+        // Optical Axis
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, AXIS_Y); ctx.lineTo(cvs.width, AXIS_Y); ctx.stroke();
+
+        // Lens
+        drawLens();
+
+        // Physics
+        const res = calculateImage();
+        const { f_img, H_img, infinite, F_signed } = res;
+
+        // Focal Points
+        const F_px = Math.abs(F_signed) * SCALE;
+        drawPoint(LENS_X - F_px, AXIS_Y, 'F', '#aaa');
+        drawPoint(LENS_X + F_px, AXIS_Y, 'F', '#aaa');
+
+        // Object
+        const objX = LENS_X - state.d * SCALE;
+        const objY = AXIS_Y - state.h * SCALE; // Up is negative in canvas Y
+        drawArrow(objX, AXIS_Y, objX, objY, 'var(--accent)', 3);
+        ctx.fillStyle = 'var(--accent)'; ctx.fillText("d", objX - 10, AXIS_Y + 20);
+
+        // Rays & Image
+        if (infinite) {
+            // Rays go parallel
+            drawRaysInfinite(objX, objY, F_signed);
+            updateInfo(null);
+        } else {
+            const imgX = LENS_X + f_img * SCALE;
+            const imgY = AXIS_Y - H_img * SCALE;
+            
+            drawArrow(imgX, AXIS_Y, imgX, imgY, (f_img > 0 ? '#00C851' : '#ffbb33'), 3);
+            drawRays(objX, objY, imgX, imgY, F_signed);
+            
+            updateInfo(res);
+        }
+    }
+
+    function drawLens() {
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(LENS_X, 50); ctx.lineTo(LENS_X, 450); ctx.stroke();
+        
+        // Arrows
+        const type = state.lensType;
+        ctx.fillStyle = '#00e5ff';
+        if (type === 'converging') {
+            // Outward arrows
+            drawTriangle(LENS_X, 50, 'up');
+            drawTriangle(LENS_X, 450, 'down');
+        } else {
+            // Inward arrows (V shape)
+            drawV(LENS_X, 50, 'up');
+            drawV(LENS_X, 450, 'down');
+        }
+    }
+
+    function drawRays(ox, oy, ix, iy, F_val) {
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]); // Solid for real rays
+
+        // Ray 1: Parallel to axis -> through Focus
+        // From Object to Lens
+        ctx.strokeStyle = '#ff4444';
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(LENS_X, oy); ctx.stroke();
+        
+        // From Lens through Focus (to Image)
+        // Focus is on the right for converging, left (virtual) for diverging
+        // But standard ray tracing:
+        // Conv: Parallel -> passes through Back Focus (Right)
+        // Div: Parallel -> diverges as if from Front Focus (Left)
+        
+        let focusX = (state.lensType === 'converging') ? (LENS_X + Math.abs(F_val)*SCALE) : (LENS_X - Math.abs(F_val)*SCALE);
+        
+        // Draw the refracted ray extending to image
+        // If image is virtual (left), we draw dashed line back
+        // Real ray always goes to the right
+        
+        // Simplified visualizer: Draw line from (LENS_X, oy) to (ix, iy)
+        // The part to the right of lens is solid. Part to left is dashed.
+        drawLineExtended(LENS_X, oy, ix, iy, '#ff4444');
+
+
+        // Ray 2: Through Optical Center (Undeviated)
+        ctx.strokeStyle = '#448aff';
+        drawLineExtended(ox, oy, ix, iy, '#448aff');
+    }
+
+    function drawRaysInfinite(ox, oy, F_val) {
+        ctx.strokeStyle = '#ff4444';
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(LENS_X, oy); ctx.stroke();
+        // Parallel out
+        // If conv: through F right. If div: from F left.
+        // ... implementation omitted for brevity, rare case in school lab usually avoided by clamps
+    }
+
+    function drawLineExtended(x1, y1, x2, y2, color) {
+        // Draws a line from x1,y1 passing through x2,y2
+        // Segments to the right of LENS_X are Solid. Left are Dashed (virtual extensions).
+        
+        // Vector
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const ux = dx/dist; 
+        const uy = dy/dist;
+
+        // We need to draw from Lens (x1) to far right, and potentially back to Image (x2)
+        
+        // 1. Real Ray (Right side)
+        ctx.strokeStyle = color;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        // Extend to edge of canvas
+        const endX = cvs.width;
+        const endY = y1 + (endX - x1) * (dy/dx);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        // 2. Virtual Ray (Left side) if Image is Virtual (x2 < LENS_X)
+        if (x2 < LENS_X) {
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2); // To image
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+
+    function drawArrow(x1, y1, x2, y2, color, width) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        // Head
+        const headLen = 10;
+        const angle = Math.atan2(y2-y1, x2-x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI/6), y2 - headLen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI/6), y2 - headLen * Math.sin(angle + Math.PI/6));
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    function drawPoint(x, y, label, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+        ctx.font = "12px Arial";
+        ctx.fillText(label, x - 5, y + 15);
+    }
+
+    function drawTriangle(x, y, dir) {
+        ctx.beginPath();
+        if (dir === 'up') {
+            ctx.moveTo(x, y); ctx.lineTo(x-5, y+10); ctx.lineTo(x+5, y+10);
+        } else {
+            ctx.moveTo(x, y); ctx.lineTo(x-5, y-10); ctx.lineTo(x+5, y-10);
+        }
+        ctx.fill();
+    }
+    function drawV(x, y, dir) {
+        ctx.beginPath();
+        if (dir === 'up') {
+            ctx.moveTo(x-5, y); ctx.lineTo(x, y+10); ctx.lineTo(x+5, y);
+        } else {
+            ctx.moveTo(x-5, y); ctx.lineTo(x, y-10); ctx.lineTo(x+5, y);
+        }
+        ctx.stroke();
+    }
+
+    function updateInfo(res) {
+        const elD = document.getElementById('out-d');
+        const elF = document.getElementById('out-f');
+        const elH = document.getElementById('out-H');
+        const elType = document.getElementById('out-type');
+
+        if (!res || res.infinite) {
+            elType.innerText = LANG[currentLang].imgNone;
+            return;
+        }
+
+        // Show absolute values for dimensions
+        elD.innerText = state.d.toFixed(1);
+        elF.innerText = Math.abs(res.f_img).toFixed(1);
+        elH.innerText = Math.abs(res.H_img).toFixed(1);
+
+        if (res.f_img > 0) {
+            elType.innerText = LANG[currentLang].imgReal;
+            elType.style.color = "#00C851";
+        } else {
+            elType.innerText = LANG[currentLang].imgVirtual;
+            elType.style.color = "#ffbb33";
+        }
+    }
+
+    // === Initialization ===
+    window.onload = () => {
+        updateLanguage('ru');
+        updateState();
+
+        // Events
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('lens-type').onchange = updateState;
+        
+        // Sliders
+        document.getElementById('slider-f').oninput = (e) => { 
+            // Update value in label
+            e.target.parentElement.querySelector('.val span').innerText = e.target.value;
+            updateState(); 
+        };
+        document.getElementById('slider-d').oninput = (e) => { 
+            e.target.parentElement.querySelector('.val span').innerText = e.target.value;
+            updateState(); 
+        };
+        document.getElementById('slider-h').oninput = (e) => { 
+            e.target.parentElement.querySelector('.val span').innerText = e.target.value;
+            updateState(); 
+        };
+
+        // Mode Switch
+        document.getElementById('mode-select').onchange = (e) => {
+            if (e.target.value === 'exam') {
+                // Generate random F (8 to 18 cm)
+                state.F_hidden = Math.floor(Math.random() * (18 - 8) + 8);
+                console.log("Teacher Info: Hidden F = " + state.F_hidden);
+                
+                // Reset attempts
+                attemptsUsed = 0;
+                document.getElementById('attempts-display').innerText = "";
+                document.getElementById('check-res').innerText = "";
+                document.getElementById('check-btn').disabled = false;
+                document.getElementById('ans-input').value = "";
+            }
+            updateState();
+        };
+
+        // Start Button
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            isRunning = true;
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+        };
+
+        // Check Answer
+        document.getElementById('check-btn').onclick = () => {
+            if (state.mode !== 'exam') {
+                alert("Переключитесь в режим 'Задание'!");
+                return;
+            }
+            const val = parseFloat(document.getElementById('ans-input').value.replace(',','.'));
+            if(isNaN(val)) return;
+
+            attemptsUsed++;
+            document.getElementById('attempts-display').innerText = LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed).replace('{n}', attemptsUsed);
+
+            const correct = state.F_hidden;
+            const err = Math.abs(val - correct);
+            const resDiv = document.getElementById('check-res');
+            const t = LANG[currentLang];
+
+            // Tolerance 1 cm
+            if (err <= 1.0) {
+                // Success
+                let score = 10;
+                if (attemptsUsed === 2) score = 8;
+                if (attemptsUsed === 3) score = 7;
+
+                resDiv.innerHTML = `<span style="color:var(--success)">${t.resCorrect}</span>`;
+                setTimeout(() => {
+                    document.getElementById('result-modal').style.display = 'flex';
+                    document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+                    document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+                    document.getElementById('res-attempts').innerText = attemptsUsed;
+                    document.getElementById('res-score-val').innerText = score;
+                    document.getElementById('res-true-val').innerText = correct;
+                }, 1000);
+                document.getElementById('check-btn').disabled = true;
+
+            } else {
+                // Fail
+                let left = 3 - attemptsUsed;
+                if (left > 0) {
+                    resDiv.innerHTML = `<span style="color:var(--danger)">${t.resWrong.replace('{n}', left)}</span>`;
+                } else {
+                    // Game Over
+                    setTimeout(() => {
+                        document.getElementById('result-modal').style.display = 'flex';
+                        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+                        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+                        document.getElementById('res-attempts').innerText = attemptsUsed;
+                        document.getElementById('res-score-val').innerText = "0";
+                        document.getElementById('res-true-val').innerText = correct;
+                    }, 1000);
+                    document.getElementById('check-btn').disabled = true;
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

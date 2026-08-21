@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+
+        .simulation-container { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; }
+        .circuit-diagram { width: 100%; height: 250px; position: relative; font-size: 14px; max-width: 800px; margin: 0 auto; }
+        .component { position: absolute; text-align: center; }
+        .battery { top: 90px; left: 20px; width: 60px; height: 50px; }
+        .battery::before { content: '+'; position: absolute; top: 0; right: 0; font-weight: bold; font-size: 1.2em;}
+        .battery::after { content: '−'; position: absolute; top: 0; left: 0; font-weight: bold; font-size: 1.2em;}
+        .battery-line { position: absolute; background-color: #333; }
+        .battery-long { width: 2px; height: 50px; right: 20px; top: 0; }
+        .battery-short { width: 2px; height: 30px; left: 20px; top: 10px; }
+        .lamp { width: 40px; height: 40px; border: 2px solid #7f8c8d; border-radius: 50%; transition: box-shadow 0.3s, background-color 0.3s, border-color 0.3s; }
+        .lamp::before, .lamp::after { content: ''; position: absolute; top: 50%; left: 15%; width: 70%; height: 2px; background-color: #7f8c8d; transform: translateY(-50%) rotate(45deg); transition: background-color 0.3s; }
+        .lamp::after { transform: translateY(-50%) rotate(-45deg); }
+        .lamp.on { border-color: #f39c12; box-shadow: 0 0 20px #f1c40f; }
+        .lamp.on::before, .lamp.on::after { background-color: #f39c12; }
+        #lamp1 { top: 20px; left: 250px; }
+        #lamp2 { top: 20px; left: 450px; }
+        .switch-visual { top: 100px; left: 650px; width: 60px; height: 30px; }
+        .switch-lever { width: 50px; height: 4px; background: #333; position: absolute; top: 13px; left: 5px; transform-origin: 0 50%; transition: transform 0.3s ease; }
+        .switch-visual::before, .switch-visual::after { content: ''; position: absolute; top: 13px; width: 6px; height: 6px; border-radius: 50%; background-color: #333; }
+        .switch-visual::before { left: -3px; } .switch-visual::after { right: 7px; }
+        .switch-visual.open .switch-lever { transform: rotate(-45deg); }
+        .wire { background-color: #555; position: absolute; }
+        .wire.h { height: 2px; }
+        .wire.v { width: 2px; }
+
+        .meter { border-radius: 50%; width: 60px; height: 60px; background: #fff; z-index: 10; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; position: absolute; transition: all 0.5s ease; }
+        .ammeter { border: 2px solid #2980b9; }
+        .voltmeter { border: 2px solid #27ae60; }
+        .meter .reading { font-size: 1.1em; }
+        .meter .unit { font-size: 0.8em; }
+        .ammeter .reading { color: #e74c3c; }
+        .voltmeter .reading { color: #27ae60; }
+        /* Провода вольтметра */
+        .probe { position: absolute; background-color: #e74c3c; /* Красный провод */ z-index: 9; transition: all 0.5s ease; transform-origin: top; width: 2px;}
+        .probe.right { background-color: #3498db; /* Синий/голубой провод */ }
+
+
+        .measurement-point { width: 10px; height: 10px; background-color: #555; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); cursor: pointer; z-index: 5; }
+        .measurement-point::after { content: attr(id); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.8em; font-weight: bold; color: #333; }
+
+        /* Точки для амперметра - центрированы по проводам */
+        #pointA { top: 114px; left: 174px; } /* В точке, где горизонтальный провод соединяется с вертикальным */
+        #pointB { top: 39px; left: 370px; } /* Между лампами */
+        #pointC { top: 114px; left: 584px; } /* В точке, где вертикальный провод соединяется с горизонтальным */
+
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; }
+        .control-group { text-align: center; }
+        .control-group label { margin-bottom: 5px; display: block; font-weight: bold; }
+        .control-group .lang-btn { margin: 2px; }
+
+        .results-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td .input-wrapper { display: flex; align-items: center; justify-content: center; gap: 5px; }
+        td input, td select { width: 100px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton, #switch-btn { background-color: #3498db; }
+        #switch-btn:hover, #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 10px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        
+        .result-feedback { font-weight: bold; font-size: 0.9em; min-width: 80px; text-align: left;}
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    
+    <div class="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level">8 класс</h2>
+            <p><span data-key="author_prefix"></span> <span data-key="author_details"></span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright"></div>
+
+    <div class="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button"></button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info">
+        <div><label for="student_lastname" data-key="student_lastname"></label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname"></label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number"></label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter"></label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title"></h1>
+    <h2 data-key="lab_topic_title"></h2>
+    <p><strong data-key="lab_goal_title"></strong> <span data-key="lab_goal_text"></span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title"></h4>
+        <ol>
+            <li data-key="instruction_step1"></li>
+            <li data-key="instruction_step2"></li>
+            <li data-key="instruction_step3"></li>
+            <li data-key="instruction_step4"></li>
+        </ol>
+    </div>
+    
+    <h3 data-key="procedure_title"></h3>
+    <div class="simulation-container">
+        <div class="circuit-diagram">
+            <div class="component battery"><div class="battery-line battery-short"></div><div class="battery-line battery-long"></div></div>
+            <div id="lamp1" class="component lamp"></div>
+            <div id="lamp2" class="component lamp"></div>
+            <div id="circuit-switch-visual" class="component switch-visual open"><div class="switch-lever"></div></div>
+            
+            <div class="wire h" style="top: 114px; left: 82px; width: 92px;"></div> <div class="wire v" style="top: 40px; left: 174px; height: 74px;"></div> <div class="wire h" style="top: 39px; left: 175px; width: 75px;"></div> <div class="wire h" style="top: 39px; left: 292px; width: 78px;"></div> <div class="wire h" style="top: 39px; left: 387px; width: 63px;"></div> <div class="wire h" style="top: 39px; left: 492px; width: 92px;"></div> <div class="wire v" style="top: 40px; left: 584px; height: 74px;"></div> <div class="wire h" style="top: 114px; left: 585px; width: 65px;"></div> <div class="wire v" style="top: 115px; left: 709px; height: 85px;"></div> <div class="wire h" style="top: 199px; left: 19px; width: 690px;"></div> <div class="wire v" style="top: 115px; left: 18px; height: 85px;"></div>
+            
+            <div id="pointA" class="measurement-point"></div> 
+            <div id="pointB" class="measurement-point"></div> 
+            <div id="pointC" class="measurement-point"></div>
+            
+            <div id="ammeter" class="meter ammeter" style="visibility: hidden;"><span class="reading" id="ammeter-reading">0.00</span><span class="unit">A</span></div>
+            <div id="voltmeter" class="meter voltmeter" style="visibility: hidden;"><span class="reading" id="voltmeter-reading">0.00</span><span class="unit">V</span></div>
+            <div id="probe1" class="probe" style="visibility: hidden;"></div><div id="probe2" class="probe right" style="visibility: hidden;"></div>
+        </div>
+        <div class="controls">
+            <div class="control-group"><label data-key="switch_control_label"></label><button id="switch-btn" class="action-button" data-key="switch_btn_close"></button></div>
+            <div class="control-group"><label data-key="ammeter_control_label"></label><div><button class="lang-btn" data-point="A">A</button><button class="lang-btn" data-point="B">B</button><button class="lang-btn" data-point="C">C</button><button class="lang-btn" data-point="off" data-key="ammeter_btn_off"></button></div></div>
+            <div class="control-group"><label data-key="voltmeter_control_label"></label><div><button class="lang-btn" data-vpoint="L1" data-key="voltmeter_btn_l1"></button><button class="lang-btn" data-vpoint="L2" data-key="voltmeter_btn_l2"></button><button class="lang-btn" data-vpoint="L12" data-key="voltmeter_btn_l12"></button><button class="lang-btn" data-vpoint="off" data-key="voltmeter_btn_off"></button></div></div>
+        </div>
+    </div>
+    
+    <div class="results-container">
+        <div id="current-results">
+            <h3 data-key="current_table_title"></h3>
+            <table>
+                <thead><tr><th data-key="th_point_i"></th><th data-key="th_current"></th></tr></thead>
+                <tbody>
+                    <tr><td>I₁ (A)</td><td><div class="input-wrapper"><input type="number" id="i1_input" step="0.01"><span id="i1_feedback" class="result-feedback"></span></div></td></tr>
+                    <tr><td>I₂ (B)</td><td><div class="input-wrapper"><input type="number" id="i2_input" step="0.01"><span id="i2_feedback" class="result-feedback"></span></div></td></tr>
+                    <tr><td>I₃ (C)</td><td><div class="input-wrapper"><input type="number" id="i3_input" step="0.01"><span id="i3_feedback" class="result-feedback"></span></div></td></tr>
+                </tbody>
+            </table>
+            <div class="control-group" style="text-align: center; margin-top: 20px;">
+                <label data-key="conclusion_label_i"></label>
+                <div class="input-wrapper"><select id="conclusion_select_i"><option value="" data-key="conclusion_option_select"></option><option value="eq" data-key="conclusion_option_eq_i"></option><option value="gt" data-key="conclusion_option_gt_i"></option><option value="lt" data-key="conclusion_option_lt_i"></option></select><span id="conclusion_i_feedback" class="result-feedback"></span></div>
+            </div>
+        </div>
+        <div id="voltage-results">
+            <h3 data-key="voltage_table_title"></h3>
+            <table>
+                <thead><tr><th data-key="th_point_v"></th><th data-key="th_voltage"></th></tr></thead>
+                <tbody>
+                    <tr><td data-key="voltmeter_btn_l1"></td><td><div class="input-wrapper"><input type="number" id="u1_input" step="0.01"><span id="u1_feedback" class="result-feedback"></span></div></td></tr>
+                    <tr><td data-key="voltmeter_btn_l2"></td><td><div class="input-wrapper"><input type="number" id="u2_input" step="0.01"><span id="u2_feedback" class="result-feedback"></span></div></td></tr>
+                    <tr><td data-key="voltmeter_btn_l12"></td><td><div class="input-wrapper"><input type="number" id="u12_input" step="0.01"><span id="u12_feedback" class="result-feedback"></span></div></td></tr>
+                </tbody>
+            </table>
+            <div class="control-group" style="text-align: center; margin-top: 20px;">
+                <label data-key="conclusion_label_v"></label>
+                <div class="input-wrapper"><select id="conclusion_select_v"><option value="" data-key="conclusion_option_select"></option><option value="eq" data-key="conclusion_option_eq_v"></option><option value="gt" data-key="conclusion_option_gt_v"></option><option value="lt" data-key="conclusion_option_lt_v"></option></select><span id="conclusion_v_feedback" class="result-feedback"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button"></button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button"></button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button"></button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // -----------------------------------------------------------------
+    // ВАЖНЫЕ НАСТРОЙКИ ДЛЯ TELEGRAM
+    // -----------------------------------------------------------------
+    // 1. Замените 'ВАШ_BOT_TOKEN' на реальный токен вашего бота.
+    //    Его можно получить у @BotFather в Telegram.
+    const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM'; 
+
+    // 2. Замените 'ВАШ_CHAT_ID' на ваш ID чата в Telegram.
+    //    Как получить:
+    //    a) Найдите в Telegram бота @userinfobot.
+    //    b) Отправьте ему любое сообщение.
+    //    c) Он пришлет вам ваш "Id". Скопируйте это число сюда.
+    //    d) Важно: Вы должны хотя бы раз запустить вашего бота (/start), 
+    //       чтобы он мог отправлять вам сообщения.
+    const CHAT_ID = '876026321'; 
+
+    // -----------------------------------------------------------------
+    
+    let CORRECT_VALUES;
+
+    const translations = {
+        ru: {
+            grade_level: "8 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Интерактивная лабораторная работа №3", lab_topic_title: "Тема: Измерение силы тока и напряжения", lab_goal_title: "Цель:", lab_goal_text: "Научиться собирать простейшую электрическую цепь, измерять силу тока и напряжение на её участках.", instruction_title: "Инструкция по выполнению", instruction_step1: "Замкните цепь с помощью ключа. Лампочки загорятся.", instruction_step2: "С помощью кнопок подключайте амперметр к точкам A, B, C и вольтметр к Лампе 1, Лампе 2 и обеим лампам.", instruction_step3: "Запишите все показания в соответствующие таблицы.", instruction_step4: "Сделайте выводы о соотношении токов и напряжений, выбрав правильные варианты в выпадающих списках.", procedure_title: "Ход работы", battery: "Источник", lamp: "Лампа", switch_control_label: "Управление цепью:", switch_btn_close: "Замкнуть ключ", switch_btn_open: "Разомкнуть ключ", ammeter_control_label: "Измерить ток (I):", ammeter_btn_off: "Убрать", voltmeter_control_label: "Измерить напряжение (U):", voltmeter_btn_l1: "Лампа 1", voltmeter_btn_l2: "Лампа 2", voltmeter_btn_l12: "Обе лампы", voltmeter_btn_off: "Убрать", current_table_title: "Измерение силы тока", voltage_table_title: "Измерение напряжения", th_point_i: "Участок (Точка)", th_current: "Сила тока I, А", th_point_v: "Участок", th_voltage: "Напряжение U, В", conclusion_label_i: "Вывод о силе тока:", conclusion_label_v: "Вывод о напряжении:", conclusion_option_select: "Выберите...", conclusion_option_eq_i: "I₁ = I₂ = I₃", conclusion_option_gt_i: "I₁ > I₂ > I₃", conclusion_option_lt_i: "I₁ < I₂ < I₃", conclusion_option_eq_v: "Uобщ = U₁ + U₂", conclusion_option_gt_v: "Uобщ > U₁ + U₂", conclusion_option_lt_v: "Uобщ < U₁ + U₂", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", your_answer: "Ваш ответ:", correct_answer: "Правильный ответ:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:", conclusion: "Вывод", feedback_correct: "Верно 👍", feedback_incorrect: "Неверно ❌", error_details: "Проверьте токен бота, ID чата и подключение к интернету."
+        },
+        kk: {
+            grade_level: "8 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика мұғалімі, Шымкент қ. №8 гимназиясы, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№3 Интерактивті зертханалық жұмыс", lab_topic_title: "Тақырыбы: Ток күші мен кернеуді өлшеу", lab_goal_title: "Мақсаты:", lab_goal_text: "Қарапайым электр тізбегін құрастыруды, оның бөліктеріндегі ток күші мен кернеуді өлшеуді үйрену.", instruction_title: "Орындау нұсқаулығы", instruction_step1: "Кілттің көмегімен тізбекті тұйықтаңыз. Шамдар жанады.", instruction_step2: "Түймелерді пайдаланып, амперметрді A, B, C нүктелеріне және вольтметрді 1-ші шамға, 2-ші шамға және екі шамға қосыңыз.", instruction_step3: "Барлық көрсеткіштерді тиісті кестелерге жазыңыз.", instruction_step4: "Ашылмалы тізімдерден дұрыс нұсқаларды таңдау арқылы токтар мен кернеулердің қатынасы туралы қорытынды жасаңыз.", procedure_title: "Жұмыс барысы", battery: "Ток көзі", lamp: "Шам", switch_control_label: "Тізбекті басқару:", switch_btn_close: "Кілтті тұйықтау", switch_btn_open: "Кілтті ажырату", ammeter_control_label: "Токты өлшеу (I):", ammeter_btn_off: "Алып тастау", voltmeter_control_label: "Кернеуді өлшеу (U):", voltmeter_btn_l1: "1-ші шам", voltmeter_btn_l2: "2-ші шам", voltmeter_btn_l12: "Екі шам", voltmeter_btn_off: "Алып тастау", current_table_title: "Ток күшін өлшеу", voltage_table_title: "Кернеуді өлшеу", th_point_i: "Бөлік (Нүкте)", th_current: "Ток күші I, А", th_point_v: "Бөлік", th_voltage: "Кернеу U, В", conclusion_label_i: "Ток күші туралы қорытынды:", conclusion_label_v: "Кернеу туралы қорытынды:", conclusion_option_select: "Таңдаңыз...", conclusion_option_eq_i: "I₁ = I₂ = I₃", conclusion_option_gt_i: "I₁ > I₂ > I₃", conclusion_option_lt_i: "I₁ < I₂ < I₃", conclusion_option_eq_v: "Uжалпы = U₁ + U₂", conclusion_option_gt_v: "Uжалпы > U₁ + U₂", conclusion_option_lt_v: "Uжалпы < U₁ + U₂", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Литер", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберу...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Барлық өрістерді толтырыңыз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", your_answer: "Сіздің жауабыңыз:", correct_answer: "Дұрыс жауап:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:", conclusion: "Қорытынды", feedback_correct: "Дұрыс 👍", feedback_incorrect: "Қате ❌", error_details: "Бот токенін, чат ID-ін және интернет қосылымын тексеріңіз."
+        },
+        en: {
+            grade_level: "8th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium №8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Interactive Lab Work #3", lab_topic_title: "Topic: Measuring Current and Voltage", lab_goal_title: "Objective:", lab_goal_text: "To learn how to assemble a simple electrical circuit and measure the current and voltage in its sections.", instruction_title: "Instructions", instruction_step1: "Close the circuit using the switch. The lamps will light up.", instruction_step2: "Use the buttons to connect the ammeter to points A, B, C and the voltmeter to Lamp 1, Lamp 2, and both lamps.", instruction_step3: "Record all readings in the corresponding tables.", instruction_step4: "Draw conclusions about the relationship of currents and voltages by selecting the correct options in the dropdown lists.", procedure_title: "Procedure", battery: "Source", lamp: "Lamp", switch_control_label: "Circuit Control:", switch_btn_close: "Close Switch", switch_btn_open: "Open Switch", ammeter_control_label: "Measure Current (I):", ammeter_btn_off: "Remove", voltmeter_control_label: "Measure Voltage (U):", voltmeter_btn_l1: "Lamp 1", voltmeter_btn_l2: "Lamp 2", voltmeter_btn_l12: "Both Lamps", voltmeter_btn_off: "Remove", current_table_title: "Current Measurement", voltage_table_title: "Voltage Measurement", th_point_i: "Section (Point)", th_current: "Current I, A", th_point_v: "Section", th_voltage: "Voltage U, V", conclusion_label_i: "Conclusion on Current:", conclusion_label_v: "Conclusion on Voltage:", conclusion_option_select: "Select...", conclusion_option_eq_i: "I₁ = I₂ = I₃", conclusion_option_gt_i: "I₁ > I₂ > I₃", conclusion_option_lt_i: "I₁ < I₂ < I₃", conclusion_option_eq_v: "U_total = U₁ + U₂", conclusion_option_gt_v: "U_total > U₁ + U₂", conclusion_option_lt_v: "U_total < U₁ + U₂", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Grade (number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report sent successfully!", send_error: "Send error.", validation_message: "Please fill in all fields.", final_result_title: "Your Final Result:", out_of_10: "out of 10", answers_review_title: "Answers Review:", your_answer: "Your answer:", correct_answer: "Correct answer:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:", conclusion: "Conclusion", feedback_correct: "Correct 👍", feedback_incorrect: "Incorrect ❌", error_details: "Check your bot token, chat ID, and internet connection."
+        }
+    };
+    let currentLang = 'ru';
+    let state = { isCircuitClosed: false, ammeterPosition: 'OFF', voltmeterPosition: 'OFF', attemptsLeft: 2, finalScoreText: '' };
+
+    const lamps = document.querySelectorAll('.lamp');
+    const switchVisualEl = document.getElementById('circuit-switch-visual');
+    const switchBtn = document.getElementById('switch-btn');
+    const ammeter = document.getElementById('ammeter');
+    const ammeterReading = document.getElementById('ammeter-reading');
+    const voltmeter = document.getElementById('voltmeter');
+    const voltmeterReading = document.getElementById('voltmeter-reading');
+    const probe1 = document.getElementById('probe1');
+    const probe2 = document.getElementById('probe2');
+    const ammeterSelectors = document.querySelectorAll('button[data-point]');
+    const voltmeterSelectors = document.querySelectorAll('button[data-vpoint]');
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+
+    function updateSimulation() {
+        if (state.isCircuitClosed) {
+            lamps.forEach(lamp => lamp.classList.add('on'));
+            switchVisualEl.classList.remove('open');
+            switchBtn.dataset.key = 'switch_btn_open';
+        } else {
+            lamps.forEach(lamp => lamp.classList.remove('on'));
+            switchVisualEl.classList.add('open');
+            switchBtn.dataset.key = 'switch_btn_close';
+        }
+        switchBtn.textContent = translations[currentLang][switchBtn.dataset.key];
+
+        // Positioning for Ammeter
+        if (state.ammeterPosition !== 'OFF') {
+            const pointEl = document.getElementById(`point${state.ammeterPosition}`);
+            // ---ИСПРАВЛЕНО--- Центрируем амперметр строго по точке
+            ammeter.style.left = `${pointEl.offsetLeft - ammeter.offsetWidth / 2 + pointEl.offsetWidth / 2}px`;
+            ammeter.style.top = `${pointEl.offsetTop - ammeter.offsetHeight / 2 + pointEl.offsetHeight / 2}px`;
+            ammeter.style.visibility = 'visible';
+            ammeterReading.textContent = state.isCircuitClosed ? CORRECT_VALUES.I.toFixed(2) : "0.00";
+        } else {
+            ammeter.style.visibility = 'hidden';
+        }
+
+        // Positioning for Voltmeter
+        voltmeter.style.visibility = 'hidden';
+        probe1.style.visibility = 'hidden';
+        probe2.style.visibility = 'hidden';
+        if (state.voltmeterPosition !== 'OFF') {
+            let reading;
+            const wireTopY = 39; // Y-координата верхнего горизонтального провода
+            let probeLeftX, probeRightX;
+
+            // Определяем X-координаты для подключения щупов
+            if (state.voltmeterPosition === 'L1') { 
+                probeLeftX = document.querySelector('.wire.h[style*="left: 175px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 175px"]').offsetWidth / 2;
+                probeRightX = document.querySelector('.wire.h[style*="left: 292px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 292px"]').offsetWidth / 2;
+                reading = CORRECT_VALUES.U1; 
+            } else if (state.voltmeterPosition === 'L2') { 
+                probeLeftX = document.querySelector('.wire.h[style*="left: 387px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 387px"]').offsetWidth / 2;
+                probeRightX = document.querySelector('.wire.h[style*="left: 492px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 492px"]').offsetWidth / 2;
+                reading = CORRECT_VALUES.U2; 
+            } else if (state.voltmeterPosition === 'L12') { 
+                probeLeftX = document.querySelector('.wire.h[style*="left: 175px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 175px"]').offsetWidth / 2;
+                probeRightX = document.querySelector('.wire.h[style*="left: 492px"]').offsetLeft + document.querySelector('.wire.h[style*="left: 492px"]').offsetWidth / 2;
+                reading = CORRECT_VALUES.U_total; 
+            }
+            
+            // Позиционируем вольтметр
+            voltmeter.style.left = `${probeLeftX + (probeRightX - probeLeftX)/2 - voltmeter.offsetWidth/2}px`;
+            voltmeter.style.top = `${wireTopY - voltmeter.offsetHeight - 10}px`; 
+            voltmeterReading.textContent = state.isCircuitClosed ? reading.toFixed(2) : "0.00";
+            
+            // ---ИСПРАВЛЕНО--- Корректно позиционируем щупы, чтобы они были видны
+            const voltmeterBottomY = voltmeter.offsetTop + voltmeter.offsetHeight;
+            const probeHeight = wireTopY - voltmeterBottomY;
+
+            // Щуп 1 (левый)
+            probe1.style.left = `${probeLeftX - 1}px`;
+            probe1.style.top = `${voltmeterBottomY}px`;
+            probe1.style.height = `${probeHeight}px`;
+
+            // Щуп 2 (правый)
+            probe2.style.left = `${probeRightX - 1}px`;
+            probe2.style.top = `${voltmeterBottomY}px`;
+            probe2.style.height = `${probeHeight}px`;
+
+            voltmeter.style.visibility = 'visible';
+            probe1.style.visibility = 'visible';
+            probe2.style.visibility = 'visible';
+        }
+    }
+
+    switchBtn.addEventListener('click', () => { state.isCircuitClosed = !state.isCircuitClosed; updateSimulation(); });
+    ammeterSelectors.forEach(btn => { btn.addEventListener('click', () => { state.ammeterPosition = btn.dataset.point.toUpperCase(); ammeterSelectors.forEach(b => b.classList.remove('active')); if(btn.dataset.point !== 'off') btn.classList.add('active'); updateSimulation(); }); });
+    voltmeterSelectors.forEach(btn => { btn.addEventListener('click', () => { state.voltmeterPosition = btn.dataset.vpoint.toUpperCase(); voltmeterSelectors.forEach(b => b.classList.remove('active')); if(btn.dataset.vpoint !== 'off') btn.classList.add('active'); updateSimulation(); }); });
+    
+    function setLanguage(lang) {
+        currentLang = lang; document.querySelector('html').setAttribute('lang', lang);
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            const translation = translations[lang]?.[key];
+            if (translation) {
+                if (key === 'copyright') element.innerHTML = translation.replace('{year}', new Date().getFullYear());
+                else element.innerHTML = translation;
+            }
+        });
+        updateCheckButtonText(); 
+        updateSimulation(); // Update simulation visuals and button text immediately
+    }
+    
+    document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => { 
+        btn.addEventListener('click', (e) => { 
+            if (e.target.id === 'backButton' || btn.classList.contains('active')) return; 
+            document.querySelectorAll('.lang-btn[data-lang]').forEach(b => b.classList.remove('active')); 
+            e.target.classList.add('active'); 
+            resetState(); // Reset everything, then apply language
+            setLanguage(e.target.dataset.lang);
+        }); 
+    });
+    backButton.addEventListener('click', () => window.history.back());
+    function updateCheckButtonText() { if (state.attemptsLeft > 0) { const attemptText = translations[currentLang][state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2']; checkButton.innerHTML = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`; } else {checkButton.innerHTML = translations[currentLang].check_button;}}
+
+    checkButton.addEventListener('click', function() {
+        if (state.attemptsLeft <= 0) return;
+        let allFieldsValid = true;
+        const inputsToCheck = document.querySelectorAll('.student-info input, tbody input, #conclusion_select_i, #conclusion_select_v');
+        inputsToCheck.forEach(input => { if (input.value.trim() === '') { input.classList.add('incorrect-input'); allFieldsValid = false; } else { input.classList.remove('incorrect-input'); } });
+        if (!allFieldsValid) { validationMessageDiv.textContent = translations[currentLang].validation_message; validationMessageDiv.style.display = 'block'; return; }
+        validationMessageDiv.style.display = 'none';
+
+        state.attemptsLeft--;
+        let score = 0;
+        const totalPoints = 8;
+        const tolerance = 0.1; // Допустимая погрешность 0.1 (например, 0.5А при ожидаемом 0.45А)
+
+        const provideFeedback = (el, isCorrect) => {
+            const feedbackEl = el.nextElementSibling;
+            el.className = isCorrect ? 'correct-input' : 'incorrect-input';
+            if (feedbackEl && feedbackEl.classList.contains('result-feedback')) {
+                feedbackEl.textContent = isCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+                feedbackEl.className = 'result-feedback ' + (isCorrect ? 'correct' : 'incorrect');
+            }
+        };
+
+        const checkValue = (id, correctValue) => {
+            const input = document.getElementById(id);
+            const userValue = parseFloat(input.value.replace(',', '.'));
+            // Проверяем, что userValue - это число и оно близко к correctValue
+            const isCorrect = !isNaN(userValue) && Math.abs(userValue - correctValue) <= tolerance;
+            if (isCorrect) score++;
+            provideFeedback(input, isCorrect);
+        };
+        checkValue('i1_input', CORRECT_VALUES.I); checkValue('i2_input', CORRECT_VALUES.I); checkValue('i3_input', CORRECT_VALUES.I);
+        checkValue('u1_input', CORRECT_VALUES.U1); checkValue('u2_input', CORRECT_VALUES.U2); checkValue('u12_input', CORRECT_VALUES.U_total);
+        
+        const conclusion_i = document.getElementById('conclusion_select_i');
+        const isConclusionICorrect = conclusion_i.value === 'eq';
+        if (isConclusionICorrect) score++;
+        provideFeedback(conclusion_i, isConclusionICorrect);
+        
+        const conclusion_v = document.getElementById('conclusion_select_v');
+        const isConclusionVCorrect = conclusion_v.value === 'eq';
+        if (isConclusionVCorrect) score++;
+        provideFeedback(conclusion_v, isConclusionVCorrect);
+
+        updateCheckButtonText();
+        
+        if (state.attemptsLeft === 0 || score === totalPoints) {
+            if (score === totalPoints) state.attemptsLeft = 0; // Если все правильно, попытки обнуляем
+            checkButton.style.display = 'none'; showAnswersButton.style.display = 'inline-block';
+            const finalScore = Math.round((score / totalPoints) * 10);
+            state.finalScoreText = `${finalScore} ${translations[currentLang].out_of_10}`;
+            finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${finalScore >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></h3>`;
+            
+            // Отключить все поля ввода и кнопки управления после финальной проверки
+            inputsToCheck.forEach(el => el.disabled = true);
+            document.querySelectorAll('.controls button').forEach(el => el.disabled = true);
+        }
+    });
+    
+    showAnswersButton.addEventListener('click', function() {
+        shareToTeacherButton.style.display = 'inline-block';
+        const trans = translations[currentLang];
+        const studentLastname = document.getElementById('student_lastname').value || '...';
+        const studentFirstname = document.getElementById('student_firstname').value || '...';
+        const studentClass = (document.getElementById('student_class_number').value + document.getElementById('student_class_letter').value).trim() || '...';
+        let reviewHTML = `<h4>${trans.answers_review_title}</h4><p><b>${trans.report_student}</b> ${studentLastname} ${studentFirstname}</p><p><b>${trans.report_class}</b> ${studentClass}</p><p><b>${trans.report_score}</b> <span class="${parseFloat(state.finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></p><hr>`;
+        reviewHTML += `<h5>${trans.current_table_title}</h5>`;
+        reviewHTML += `<p><b>I₁:</b> ${trans.your_answer} ${document.getElementById('i1_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.I.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>I₂:</b> ${trans.your_answer} ${document.getElementById('i2_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.I.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>I₃:</b> ${trans.your_answer} ${document.getElementById('i3_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.I.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>${trans.conclusion}:</b> ${trans.your_answer} ${document.getElementById('conclusion_select_i').options[document.getElementById('conclusion_select_i').selectedIndex].text}. ${trans.correct_answer} ${trans.conclusion_option_eq_i}</p><hr>`;
+        reviewHTML += `<h5>${trans.voltage_table_title}</h5>`;
+        reviewHTML += `<p><b>U₁:</b> ${trans.your_answer} ${document.getElementById('u1_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.U1.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>U₂:</b> ${trans.your_answer} ${document.getElementById('u2_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.U2.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>Uобщ:</b> ${trans.your_answer} ${document.getElementById('u12_input').value||'?'}. ${trans.correct_answer} ${CORRECT_VALUES.U_total.toFixed(2)}</p>`;
+        reviewHTML += `<p><b>${trans.conclusion}:</b> ${trans.your_answer} ${document.getElementById('conclusion_select_v').options[document.getElementById('conclusion_select_v').selectedIndex].text}. ${trans.correct_answer} ${trans.conclusion_option_eq_v}</p><hr>`;
+        answersReviewDiv.innerHTML = reviewHTML; answersReviewDiv.style.display = 'block'; showAnswersButton.style.display = 'none';
+    });
+    
+    async function generatePdfBlob() {
+        if (answersReviewDiv.style.display === 'none') {
+            // Если ответы еще не показаны, отобразим их, но не будем скрывать showAnswersButton
+            // Это нужно для корректного захвата всей информации в PDF
+            const currentShowAnswersDisplay = showAnswersButton.style.display;
+            showAnswersButton.click(); 
+            showAnswersButton.style.display = currentShowAnswersDisplay; // Восстановим состояние кнопки
+        }
+
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        
+        // Скрыть кнопки и навигацию перед захватом
+        const buttonsToHide = document.querySelectorAll('.action-buttons, .top-nav');
+        buttonsToHide.forEach(el => el.style.visibility = 'hidden');
+
+        const canvas = await html2canvas(mainContainer, { scale: 1.5, useCORS: true, windowWidth: 900 });
+        
+        // Восстановить видимость кнопок и навигации
+        buttonsToHide.forEach(el => el.style.visibility = 'visible');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = canvas.height * pdfWidth / canvas.width;
+        let heightLeft = imgHeight, position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async function() {
+        this.textContent = translations[currentLang].sending; // Изменить текст кнопки на "Отправка..."
+        this.disabled = true; // Отключить кнопку
+        
+        // Функция для очистки имени файла от недопустимых символов
+        function sanitizeFilename(name) {
+            if (!name) return "";
+            return name.replace(/[\/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
+        }
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            
+            if (!pdfBlob || pdfBlob.size === 0) {
+                throw new Error("PDF generation failed or resulted in an empty file.");
+            }
+
+            const student = {
+                lastname: document.getElementById('student_lastname').value || 'student',
+                firstname: document.getElementById('student_firstname').value || 'report',
+                class: (document.getElementById('student_class_number').value + document.getElementById('student_class_letter').value).trim() || 'class'
+            };
+
+            const safeClass = sanitizeFilename(student.class);
+            const safeLastname = sanitizeFilename(student.lastname);
+            const safeFirstname = sanitizeFilename(student.firstname);
+            
+            const fileName = `Lab_Report_3_${safeClass}_${safeLastname}_${safeFirstname}.pdf`;
+            
+            const caption = `Отчет по лабораторной работе №3\nУченик(ца): ${student.lastname} ${student.firstname}\nКласс: ${student.class}\nОценка: ${state.finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.ok) {
+                this.textContent = translations[currentLang].send_success; // Вернуть исходный текст кнопки
+                this.style.backgroundColor = '#27ae60'; // Зеленый цвет при успехе
+            } else {
+                console.error('Telegram API Error Response:', result);
+                let errorMessage = result.description || 'Unknown error';
+                if (response.status === 400) {
+                        errorMessage += ` (Bad Request). Это часто означает неверный CHAT_ID (${CHAT_ID}) или то, что вы не начали диалог с ботом.`;
+                } else if (response.status === 401) {
+                        errorMessage += ` (Unauthorized). Проверьте правильность BOT_TOKEN (${BOT_TOKEN}).`;
+                }
+                throw new Error(errorMessage);
+            }
+        } catch (error) {
+            console.error('Full Error:', error);
+            this.textContent = translations[currentLang].send_error; // Вернуть исходный текст кнопки
+            this.style.backgroundColor = '#e74c3c'; // Красный цвет при ошибке
+            this.disabled = false; // Активировать кнопку снова
+            alert(`${translations[currentLang].send_error}: ${error.message}\n${translations[currentLang].error_details}`);
+        }
+    });
+
+    function resetState() {
+        // Случайные значения для напряжения источника (9-12В) и сопротивлений лампочек
+        const U_total_source = parseFloat((Math.random() * 3 + 9).toFixed(2)); 
+        const R1 = parseFloat((Math.random() * 2 + 4).toFixed(2)); // Сопротивление лампы 1 (4-6 Ом)
+        const R2 = parseFloat((Math.random() * 2 + 2).toFixed(2)); // Сопротивление лампы 2 (2-4 Ом)
+
+        const I = U_total_source / (R1 + R2);
+        CORRECT_VALUES = { 
+            I: I, 
+            U1: I * R1, 
+            U2: I * R2, 
+            U_total: U_total_source // Напряжение на всем участке цепи равно напряжению источника
+        };
+
+        state = { isCircuitClosed: false, ammeterPosition: 'OFF', voltmeterPosition: 'OFF', attemptsLeft: 2, finalScoreText: '' };
+        
+        document.querySelectorAll('input, select').forEach(el => { el.value = ''; el.disabled = false; el.classList.remove('correct-input', 'incorrect-input'); });
+        document.querySelectorAll('.student-info input').forEach(el => { el.value = ''; el.disabled = false; });
+        document.querySelectorAll('.controls button').forEach(el => el.disabled = false); // Разблокируем все кнопки управления
+        document.querySelectorAll('.result-feedback').forEach(el => el.textContent = '');
+
+        checkButton.style.display = 'inline-block'; 
+        showAnswersButton.style.display = 'none'; 
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = ''; 
+        answersReviewDiv.style.display = 'none'; 
+        validationMessageDiv.style.display = 'none';
+        
+        document.querySelectorAll('button[data-point], button[data-vpoint]').forEach(b => b.classList.remove('active'));
+        
+        // Убедимся, что выключатель и метры в исходном состоянии
+        switchVisualEl.classList.add('open');
+        switchBtn.dataset.key = 'switch_btn_close';
+        ammeter.style.visibility = 'hidden';
+        voltmeter.style.visibility = 'hidden';
+        probe1.style.visibility = 'hidden';
+        probe2.style.visibility = 'hidden';
+
+        setLanguage(currentLang); // Применяем текущий язык после сброса
+        updateSimulation(); // Обновляем симуляцию после сброса и установки языка
+    }
+    
+    resetState(); // Инициализация при загрузке страницы
+});
+</script>
+</body>
+</html>

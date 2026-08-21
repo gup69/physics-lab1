@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* CSS стили для оформления страницы */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        /* Стили для шапки с логотипом */
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-right: 20px;
+            object-fit: cover;
+        }
+        .page-header .header-text h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #2c3e50;
+        }
+        .page-header .header-text p {
+            margin: 5px 0 0 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        /* Стили для значка "Все права защищены" */
+        .copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        /* Стили для полей ввода данных ученика */
+        .student-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .student-info div {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .student-info label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        .student-info input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .student-info input[name="class_letter"] {
+            max-width: 60px;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+
+        .simulation-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .lab-section {
+            margin-bottom: 30px;
+        }
+        .instrument-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Стили для симуляторов плотности */
+        .density-sim {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            min-height: 150px;
+        }
+        .sim-visuals {
+            flex-basis: 250px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .sim-controls {
+            flex-grow: 1;
+        }
+        .static-dimension {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .scales-container {
+            position: relative;
+            width: 180px;
+            height: 120px;
+            margin: 20px auto;
+        }
+        .scales-base {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 40px;
+            background: #bdc3c7;
+            border-radius: 5px;
+        }
+        .scales-base::before { /* 3D effect */
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 5px;
+            width: calc(100% - 10px);
+            height: 10px;
+            background: #95a5a6;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            transform: skewX(-45deg);
+        }
+        .scales-display {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 1.2em;
+            font-family: monospace;
+            z-index: 2;
+        }
+        .scales-platform {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 10px;
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 2px;
+            z-index: 1;
+        }
+        .block-3d-on-scales {
+            position: absolute;
+            bottom: 60px; /* on top of the platform */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            width: 80px; /* Smaller for perspective */
+            height: 40px;
+            background-color: #d2b48c;
+        }
+        .block-3d-on-scales::before {
+            content: '';
+            position: absolute;
+            background-color: #e3c196;
+            top: -15px;
+            left: 8px;
+            width: 100%;
+            height: 15px;
+            transform: skewX(-45deg);
+        }
+        .block-3d-on-scales::after {
+            content: '';
+            position: absolute;
+            background-color: #b89c74;
+            top: -7.5px;
+            left: 100%;
+            width: 15px;
+            height: 100%;
+            transform: skewY(-45deg);
+        }
+
+        .menzurka-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stone-visual {
+            width: 50px;
+            height: 40px;
+            background: #8e8e8e;
+            border: 1px solid #555;
+            align-self: center;
+            border-radius: 45% 55% 60% 40% / 70% 30% 70% 30%; /* Неправильная форма */
+            transition: visibility 0.3s;
+        }
+        .menzurka-sim {
+            width: 100px;
+            height: 200px;
+            border: 2px solid #7f8c8d;
+            border-bottom: 4px solid #7f8c8d;
+            border-top: none;
+            position: relative;
+            background: linear-gradient(to top, #3498db var(--water-level-after), transparent var(--water-level-after)), 
+                        linear-gradient(to top, #a9cce3 var(--water-level-before), transparent var(--water-level-before));
+            transition: background 0.5s;
+            overflow: hidden;
+        }
+        .menzurka-sim .stone-in-water {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 40px;
+            background-color: #7f8c8d;
+            border-radius: 45% 55% 60% 40% / 70% 30% 70% 30%;
+            opacity: var(--stone-opacity, 0);
+            transition: opacity 0.3s;
+        }
+        .menzurka-scale {
+            position: absolute;
+            left: 5px;
+            top: 0;
+            height: 100%;
+            width: calc(100% - 10px);
+            font-size: 10px;
+            color: #34495e;
+        }
+        .menzurka-scale-mark {
+            position: absolute;
+            left: 0;
+            height: 1px;
+            background: #34495e;
+        }
+        .menzurka-unit {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-weight: bold;
+        }
+
+        .beaker-container {
+            position: relative;
+            width: 100px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .beaker-visual {
+            width: 90px;
+            height: 100px;
+            border: 2px solid #7f8c8d;
+            border-top: none;
+            position: relative;
+            border-radius: 0 0 5px 5px;
+            background: #ecf0f1; /* Цвет стекла */
+            display: flex;
+            align-items: flex-end; /* Вода будет снизу */
+            justify-content: center;
+        }
+        .beaker-visual::before { /* Rim */
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -2px;
+            right: -2px;
+            height: 10px;
+            background: #e0e0e0;
+            border: 2px solid #7f8c8d;
+            border-radius: 3px;
+        }
+        .beaker-water {
+            width: 100%;
+            height: 0;
+            background-color: #a9cce3;
+            border-radius: 0 0 3px 3px;
+            transition: height 0.5s;
+        }
+        
+        .sim-controls-stone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+
+        .instruction-block, .formulas-block {
+            background-color: #eaf5ff;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .formulas-block p { margin: 5px 0; font-size: 1.1em; }
+        
+        td input {
+            width: 80px; padding: 5px; border: 1px solid #ccc;
+            border-radius: 3px; text-align: center;
+        }
+        td input:disabled { background-color: #eee; color: #777; }
+        .result-feedback {
+            font-weight: bold; display: block; width: 100%; text-align: center;
+            margin-top: 4px; height: 1em; transition: color 0.3s;
+        }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+        .action-button {
+            display: inline-block; margin: 20px 10px 0; padding: 10px 25px;
+            font-size: 16px; cursor: pointer; color: white; border: none;
+            border-radius: 5px; transition: background-color 0.3s, opacity 0.5s;
+        }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #checkButton { background-color: #3498db; }
+        #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #showAnswersButton:hover { background-color: #8e44ad; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #shareToTeacherButton:hover { background-color: #2980b9; }
+
+        #finalResult, #answersReview { text-align: center; margin-top: 20px; }
+        #answersReview {
+            text-align: left; padding: 15px; background-color: #ecf0f1;
+            border-radius: 5px; border: 1px solid #bdc3c7;
+        }
+        #answersReview ul { list-style-type: none; padding: 0; }
+        #answersReview li { margin-bottom: 10px; }
+        .lang-switcher { text-align: right; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 5px 10px;
+            margin-left: 5px; cursor: pointer; border-radius: 4px;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton {
+            background-color: #3498db; color: white; border-color: #3498db;
+        }
+        #backButton:hover { background-color: #2980b9; }
+
+        #validationMessage {
+            color: #e74c3c; font-weight: bold; text-align: center;
+            margin-top: 15px; display: none;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td { background-color: #ecf0f1; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        
+        <div class="page-header">
+           
+            <div class="header-text">
+                <h2 data-key="grade_level">7 класс</h2>
+                <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+
+        <div class="top-nav">
+            <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="student-info">
+            <div>
+                <label for="student_lastname" data-key="student_lastname">Фамилия</label>
+                <input type="text" id="student_lastname" name="student_lastname" >
+            </div>
+            <div>
+                <label for="student_firstname" data-key="student_firstname">Имя</label>
+                <input type="text" id="student_firstname" name="student_firstname" >
+            </div>
+            <div>
+                <label for="student_class" data-key="student_class">Класс</label>
+                <input type="text" id="student_class" name="student_class" >
+            </div>
+            <div>
+                <label for="student_class_letter" data-key="student_class_letter">Литер</label>
+                <input type="text" id="student_class_letter" name="student_class_letter" maxlength="1" >
+            </div>
+        </div>
+
+        <div id="pdf-part-1">
+            <h1 data-key="main_title">Интерактивная лабораторная работа №3</h1>
+
+            <div class="lab-section" id="main_lab_section">
+                <h2 data-key="lab_topic_title">Тема: Определение плотности жидкости и твердых тел</h2>
+                <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Научиться определять массу, объем и вычислять плотность твердых тел (правильной и неправильной формы) и жидкости.</span></p>
+                
+                <div class="formulas-block">
+                    <h4 data-key="formulas_title">Основные формулы</h4>
+                    <p><b>Плотность:</b> ρ = m / V</p>
+                    <p><b data-key="volume_block">Объем бруска:</b> V = a · b · c</p>
+                    <p><b data-key="volume_liquid">Объем вытесненной жидкости:</b> V<sub>тела</sub> = V<sub>2</sub> - V<sub>1</sub></p>
+                </div>
+
+                <div class="instruction-block">
+                    <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+                    <ol>
+                        <li data-key="instruction_step1">Внимательно изучите данные для каждого из трех экспериментов.</li>
+                        <li data-key="instruction_step2">Для **бруска**: используйте показания массы и размеров для расчета его объема и плотности.</li>
+                        <li data-key="instruction_step3">Для **камня**: используйте показания массы. Активируйте чекбокс, чтобы "опустить" камень в мензурку и определить его объем по разности уровней воды. Рассчитайте плотность.</li>
+                        <li data-key="instruction_step4">Для **воды**: используйте известный объем и массу пустого стакана. Активируйте чекбокс, чтобы "налить" воду и увидеть итоговую массу. Рассчитайте массу воды и ее плотности.</li>
+                        <li data-key="instruction_step5">Заполните все ячейки таблицы и нажмите "Проверить". У вас есть две попытки.</li>
+                    </ol>
+                </div>
+
+                <h3 data-key="procedure_title">Ход работы:</h3>
+                <div class="simulation-grid">
+                    <div class="instrument-container">
+                        <h4 data-key="part1_title">Часть 1. Определение плотности бруска</h4>
+                        <p data-key="part1_instruction">Масса и размеры бруска сгенерированы случайно. Используйте эти данные, чтобы вычислить объем и плотность. Внесите значения массы, объема и плотности в таблицу.</p>
+                        <div class="density-sim">
+                            <div class="sim-visuals">
+                                <div class="scales-container">
+                                    <div class="scales-platform"></div>
+                                    <div class="scales-base">
+                                        <div class="scales-display"><span id="block_mass_display"></span> г</div>
+                                    </div>
+                                    <div class="block-3d-on-scales"></div>
+                                </div>
+                            </div>
+                            <div class="sim-controls">
+                                <div class="static-dimension"><span data-key="length">Длина:</span> <strong id="block_l_value"></strong> см</div>
+                                <div class="static-dimension"><span data-key="width">Ширина:</span> <strong id="block_w_value"></strong> см</div>
+                                <div class="static-dimension"><span data-key="height">Высота:</span> <strong id="block_h_value"></strong> см</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instrument-container">
+                        <h4 data-key="part2_title">Часть 2. Определение плотности камня</h4>
+                        <p data-key="part2_instruction">Масса камня и начальный объем воды сгенерированы случайно. "Опустите" камень в воду, чтобы увидеть конечный объем. Вычислите объем камня и его плотность.</p>
+                         <div class="density-sim">
+                            <div class="sim-visuals">
+                                <div class="menzurka-container">
+                                    <div class="stone-visual" id="stone_visual"></div>
+                                    <div class="menzurka-sim" id="stone_menzurka_sim">
+                                        <div class="menzurka-scale" id="menzurka_scale_container"></div>
+                                        <div class="stone-in-water"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sim-controls sim-controls-stone">
+                                <div class="scale-display"><span data-key="mass_label">Масса:</span> <span id="stone_mass_display"></span> г</div>
+                                <label><input type="checkbox" id="drop_stone_check"> <span data-key="drop_stone">Опустить камень в воду</span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instrument-container">
+                        <h4 data-key="part3_title">Часть 3. Определение плотности жидкости</h4>
+                        <p data-key="part3_instruction">Масса пустого стакана и объем воды сгенерированы случайно. "Налейте" воду, отметив галочку, чтобы увидеть общую массу. Вычислите массу жидкости и ее плотность.</p>
+                        <div class="density-sim">
+                            <div class="sim-visuals">
+                                <div class="beaker-container">
+                                    <div class="beaker-visual">
+                                        <div class="beaker-water" id="beaker_water"></div>
+                                    </div>
+                                </div>
+                                <div class="scale-display" id="liquid_scale_display">120.0 г</div>
+                            </div>
+                            <div class="sim-controls">
+                                 <label><input type="checkbox" id="pour_liquid_check"> <span data-key="pour_liquid">Налить воду</span> (<span id="liquid_volume_info"></span> см³)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="lab-section" id="results_section">
+                    <h3 data-key="results_table_title">Таблица результатов:</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-key="th_object">Объект/Вещество</th>
+                                <th data-key="th_mass">Масса, m (г)</th>
+                                <th data-key="th_volume">Объем, V (см³)</th>
+                                <th data-key="th_density">Плотность, ρ (г/см³)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-key="object_block">Брусок</td>
+                                <td><input type="text" id="block_m_input"><span id="block_m_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="block_v_input"><span id="block_v_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="block_d_input"><span id="block_d_feedback" class="result-feedback"></span></td>
+                            </tr>
+                            <tr>
+                                <td data-key="object_stone">Камень</td>
+                                <td><input type="text" id="stone_m_input"><span id="stone_m_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="stone_v_input"><span id="stone_v_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="stone_d_input"><span id="stone_d_feedback" class="result-feedback"></span></td>
+                            </tr>
+                            <tr>
+                                <td data-key="object_liquid">Вода</td>
+                                <td><input type="text" id="liquid_m_input"><span id="liquid_m_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="liquid_v_input"><span id="liquid_v_feedback" class="result-feedback"></span></td>
+                                <td><input type="text" id="liquid_d_input"><span id="liquid_d_feedback" class="result-feedback"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pdf-part-2">
+                <div id="finalResult"></div>
+                <div id="answersReview" style="display: none;"></div>
+                <div id="telegram-button-container" style="text-align: center;">
+                     <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+                </div>
+            </div>
+            
+            <div class="action-buttons" style="text-align: center;">
+                <button id="checkButton" class="action-button" data-key="check_button"></button>
+                <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать правильные ответы</button>
+                <div id="validationMessage"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- ВАЖНО: Настройки для Telegram ---
+    const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM'; // Замените на токен вашего бота
+    const CHAT_ID = '876026321';   // Замените на ваш ID чата
+
+    const translations = {
+        ru: {
+            grade_level: "7 класс",
+            author_prefix: "Автор:",
+            author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            copyright: "© Все права защищены, {year}",
+            back_button: "Назад",
+            student_lastname: "Фамилия",
+            student_firstname: "Имя",
+            student_class: "Класс",
+            student_class_letter: "Литер",
+            report_student: "Ученик(ца):",
+            report_class: "Класс:",
+            report_score: "Итоговая оценка:",
+            validation_message: "Пожалуйста, заполните все выделенные поля!",
+            main_title: "Интерактивная лабораторная работа №3",
+            lab_topic_title: "Тема: Определение плотности жидкости и твердых тел",
+            lab_goal_title: "Цель:",
+            lab_goal_text: "Научиться определять массу, объем и вычислять плотность твердых тел (правильной и неправильной формы) и жидкости.",
+            formulas_title: "Основные формулы",
+            volume_block: "Объем бруска:",
+            volume_liquid: "Объем вытесненной жидкости:",
+            instruction_title: "Инструкция по выполнению",
+            instruction_step1: "Внимательно изучите данные для каждого из трех экспериментов.",
+            instruction_step2: "Для **бруска**: используйте показания массы и размеров для расчета его объема и плотности.",
+            instruction_step3: "Для **камня**: используйте показания массы. Активируйте чекбокс, чтобы \"опустить\" камень в мензурку и определить его объем по разности уровней воды. Рассчитайте плотность.",
+            instruction_step4: "Для **воды**: используйте известный объем и массу пустого стакана. Активируйте чекбокс, чтобы \"налить\" воду и увидеть итоговую массу. Рассчитайте массу воды и ее плотность.",
+            instruction_step5: "Заполните все ячейки таблицы и нажмите \"Проверить\". У вас есть две попытки.",
+            procedure_title: "Ход работы:",
+            part1_title: "Часть 1. Определение плотности бруска",
+            part1_instruction: "Масса и размеры бруска сгенерированы случайно. Используйте эти данные, чтобы вычислить объем и плотность. Внесите значения массы, объема и плотности в таблицу.",
+            length: "Длина:",
+            width: "Ширина:",
+            height: "Высота:",
+            part2_title: "Часть 2. Определение плотности камня",
+            part2_instruction: "Масса камня и начальный объем воды сгенерированы случайно. \"Опустите\" камень в воду, чтобы увидеть конечный объем. Вычислите объем камня и его плотность.",
+            drop_stone: "Опустить камень в воду",
+            mass_label: "Масса:",
+            part3_title: "Часть 3. Определение плотности жидкости",
+            part3_instruction: "Масса пустого стакана и объем воды сгенерированы случайно. \"Налейте\" воду, отметив галочку, чтобы увидеть общую массу. Вычислите массу жидкости и ее плотность.",
+            pour_liquid: "Налить воду",
+            results_table_title: "Таблица результатов:",
+            th_object: "Объект/Вещество",
+            th_mass: "Масса, m (г)",
+            th_volume: "Объем, V (см³)",
+            th_density: "Плотность, ρ (г/см³)",
+            object_block: "Брусок",
+            object_stone: "Камень",
+            object_liquid: "Вода",
+            check_button: "Проверить",
+            attempts_left_1: "попытка",
+            attempts_left_2: "попытки",
+            show_answers_button: "Показать правильные ответы",
+            share_button: "Поделиться с учителем",
+            sending: "Отправка...",
+            send_success: "Отчет успешно отправлен!",
+            send_error: "Ошибка отправки.",
+            feedback_correct: "Верно 👍",
+            feedback_incorrect: "Неверно ❌",
+            final_result_title: "Ваш результат:",
+            out_of_10: "из 10",
+            answers_review_title: "Разбор ответов:",
+            your_answer: "Ваш ответ",
+            correct_answer: "Правильный ответ"
+        },
+        kk: {
+            grade_level: "7 сынып",
+            author_prefix: "Авторы:",
+            author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, №8 гимназия, Шымкент қ., Қазақстан",
+            copyright: "© Барлық құқықтар қорғалған, {year}",
+            back_button: "Артқа",
+            student_lastname: "Тегі",
+            student_firstname: "Аты",
+            student_class: "Сынып",
+            student_class_letter: "Литер",
+            report_student: "Оқушы:",
+            report_class: "Сынып:",
+            report_score: "Қорытынды баға:",
+            validation_message: "Барлық бөлектелген өрістерді толтырыңыз!",
+            main_title: "№3 Интерактивті зертханалық жұмыс",
+            lab_topic_title: "Тақырыбы: Сұйықтықтар мен қатты денелердің тығыздығын анықтау",
+            lab_goal_title: "Мақсаты:",
+            lab_goal_text: "Қатты денелердің (дұрыс және бұрыс пішінді) және сұйықтықтың массасын, көлемін анықтауды және тығыздығын есептеуді үйрену.",
+            formulas_title: "Негізгі формулалар",
+            volume_block: "Білеушенің көлемі:",
+            volume_liquid: "Ығыстырылған сұйықтық көлемі:",
+            instruction_title: "Орындау нұсқаулығы",
+            instruction_step1: "Үш тәжірибенің әрқайсысы үшін деректерді мұқият зерттеңіз.",
+            instruction_step2: "Білеуше үшін: оның көлемі мен тығыздығын есептеу үшін массасы мен өлшемдерінің көрсеткіштерін пайдаланыңыз.",
+            instruction_step3: "Тас үшін: масса көрсеткіштерін пайдаланыңыз. Тасты мензуркаға \"батыру\" үшін құсбелгіні қойып, су деңгейлерінің айырмасы бойынша оның көлемін анықтаңыз. Тығыздықты есептеңіз.",
+            instruction_step4: "Су үшін: белгілі көлемді және бос стақанның массасын пайдаланыңыз. Суды \"құю\" және жалпы массаны көру үшін құсбелгіні қойыңыз. Судың массасын және оның тығыздығын есептеңіз.",
+            instruction_step5: "Кестенің барлық ұяшықтарын толтырып, \"Тексеру\" батырмасын басыңыз. Сізде екі мүмкіндік бар.",
+            procedure_title: "Жұмыстың барысы:",
+            part1_title: "1-бөлім. Білеушенің тығыздығын анықтау",
+            part1_instruction: "Білеушенің массасы мен өлшемдері кездейсоқ жасалады. Осы деректерді пайдаланып, оның көлемі мен тығыздығын есептеңіз. Масса, көлем және тығыздық мәндерін кестеге енгізіңіз.",
+            length: "Ұзындығы:",
+            width: "Ені:",
+            height: "Биіктігі:",
+            part2_title: "2-бөлім. Тастың тығыздығын анықтау",
+            part2_instruction: "Тастың массасы мен судағы бастапқы көлемі кездейсоқ жасалады. Соңғы көлемді көру үшін тасты суға \"батырыңыз\". Тастың көлемін және оның тығыздығын есептеңіз.",
+            drop_stone: "Тасты суға батыру",
+            mass_label: "Массасы:",
+            part3_title: "3-бөлім. Сұйықтықтың тығыздығын анықтау",
+            part3_instruction: "Бос стақанның массасы мен судың көлемі кездейсоқ жасалады. Жалпы массаны көру үшін суды \"құйыңыз\". Сұйықтықтың массасын және оның тығыздығын есептеңіз.",
+            pour_liquid: "Су құю",
+            results_table_title: "Нәтижелер кестесі:",
+            th_object: "Объект/Зат",
+            th_mass: "Масса, m (г)",
+            th_volume: "Көлем, V (см³)",
+            th_density: "Тығыздық, ρ (г/см³)",
+            object_block: "Білеуше",
+            object_stone: "Тас",
+            object_liquid: "Су",
+            check_button: "Тексеру",
+            attempts_left_1: "мүмкіндік қалды",
+            attempts_left_2: "мүмкіндік қалды",
+            show_answers_button: "Дұрыс жауаптарды көрсету",
+            share_button: "Мұғаліммен бөлісу",
+            sending: "Жіберілуде...",
+            send_success: "Есеп сәтті жіберілді!",
+            send_error: "Жіберу қатесі.",
+            feedback_correct: "Дұрыс 👍",
+            feedback_incorrect: "Қате ❌",
+            final_result_title: "Сіздің нәтижеңіз:",
+            out_of_10: "/ 10",
+            answers_review_title: "Жауаптарды талдау:",
+            your_answer: "Сіздің жауабыңыз",
+            correct_answer: "Дұрыс жауап"
+        },
+        en: {
+            grade_level: "7th Grade",
+            author_prefix: "Author:",
+            author_details: "Yuriy Gryaznov, Physics teacher, Gymnasium №8, Shymkent, Kazakhstan",
+            copyright: "© All rights reserved, {year}",
+            back_button: "Back",
+            student_lastname: "Last Name",
+            student_firstname: "First Name",
+            student_class: "Grade",
+            student_class_letter: "Letter",
+            report_student: "Student:",
+            report_class: "Grade:",
+            report_score: "Final Score:",
+            validation_message: "Please fill in all highlighted fields!",
+            main_title: "Interactive Laboratory Work #3",
+            lab_topic_title: "Topic: Determining the Density of Liquids and Solids",
+            lab_goal_title: "Goal:",
+            lab_goal_text: "To learn how to determine mass, volume, and calculate the density of solid bodies (regular and irregular shapes) and liquids.",
+            formulas_title: "Key Formulas",
+            volume_block: "Volume of a block:",
+            volume_liquid: "Volume of displaced liquid:",
+            instruction_title: "Instructions",
+            instruction_step1: "For each of the three experiments, carefully examine the data.",
+            instruction_step2: "For the **block**: use the mass and dimension readings to calculate its volume and density.",
+            instruction_step3: "For the **stone**: use the mass reading. Activate the checkbox to \"drop\" the stone into the beaker and determine its volume by the difference in water levels. Calculate the density.",
+            instruction_step4: "For the **water**: use the known volume and empty beaker mass. Activate the checkbox to \"pour\" the water and see the total mass. Calculate the mass of the water and its density.",
+            instruction_step5: "When all fields are filled, click the \"Check\" button. You have two attempts.",
+            procedure_title: "Procedure:",
+            part1_title: "Part 1. Determining the Density of a Block",
+            part1_instruction: "The mass and dimensions of the block are randomly generated. Use this data to calculate the volume and density. Enter the mass, volume, and density values into the table.",
+            length: "Length:",
+            width: "Width:",
+            height: "Height:",
+            part2_title: "Part 2. Determining the Density of a Stone",
+            part2_instruction: "The mass of the stone and the initial volume of water are randomly generated. \"Drop\" the stone into the water to see the final volume. Calculate the volume of the stone and its density.",
+            drop_stone: "Drop stone in water",
+            mass_label: "Mass:",
+            part3_title: "Part 3. Determining the Density of a Liquid",
+            part3_instruction: "The mass of the empty beaker and the volume of water are randomly generated. \"Pour\" the water by checking the box to see the total mass. Calculate the mass of the liquid and its density.",
+            pour_liquid: "Pour water",
+            results_table_title: "Results Table:",
+            th_object: "Object/Substance",
+            th_mass: "Mass, m (g)",
+            th_volume: "Volume, V (cm³)",
+            th_density: "Density, ρ (g/cm³)",
+            object_block: "Block",
+            object_stone: "Stone",
+            object_liquid: "Water",
+            check_button: "Check",
+            attempts_left_1: "attempt left",
+            attempts_left_2: "attempts left",
+            show_answers_button: "Show Correct Answers",
+            share_button: "Share with Teacher",
+            sending: "Sending...",
+            send_success: "Report sent successfully!",
+            send_error: "Send error.",
+            feedback_correct: "Correct 👍",
+            feedback_incorrect: "Incorrect ❌",
+            final_result_title: "Your result:",
+            out_of_10: "out of 10",
+            answers_review_title: "Answers Review:",
+            your_answer: "Your answer",
+            correct_answer: "Correct answer"
+        }
+    };
+
+    let currentLang = 'ru';
+    let attemptsLeft = 2;
+    let finalScoreText = '';
+    
+    // --- Получаем все DOM-элементы ---
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+
+    const sim = {
+        block: {
+            l_value: document.getElementById('block_l_value'),
+            w_value: document.getElementById('block_w_value'),
+            h_value: document.getElementById('block_h_value'),
+            mass_display: document.getElementById('block_mass_display'),
+            m_input: document.getElementById('block_m_input'),
+            v_input: document.getElementById('block_v_input'),
+            d_input: document.getElementById('block_d_input'),
+            m_feedback: document.getElementById('block_m_feedback'),
+            v_feedback: document.getElementById('block_v_feedback'),
+            d_feedback: document.getElementById('block_d_feedback')
+        },
+        stone: {
+            mass_display: document.getElementById('stone_mass_display'),
+            menzurka: document.getElementById('stone_menzurka_sim'),
+            menzurka_scale: document.getElementById('menzurka_scale_container'),
+            drop_check: document.getElementById('drop_stone_check'),
+            m_input: document.getElementById('stone_m_input'),
+            v_input: document.getElementById('stone_v_input'),
+            d_input: document.getElementById('stone_d_input'),
+            m_feedback: document.getElementById('stone_m_feedback'),
+            v_feedback: document.getElementById('stone_v_feedback'),
+            d_feedback: document.getElementById('stone_d_feedback'),
+            visual: document.getElementById('stone_visual')
+        },
+        liquid: {
+            scale_display: document.getElementById('liquid_scale_display'),
+            pour_check: document.getElementById('pour_liquid_check'),
+            water_visual: document.getElementById('beaker_water'),
+            volume_info: document.getElementById('liquid_volume_info'),
+            m_input: document.getElementById('liquid_m_input'),
+            v_input: document.getElementById('liquid_v_input'),
+            d_input: document.getElementById('liquid_d_input'),
+            m_feedback: document.getElementById('liquid_m_feedback'),
+            v_feedback: document.getElementById('liquid_v_feedback'),
+            d_feedback: document.getElementById('liquid_d_feedback')
+        }
+    };
+    
+    // --- Правильные ответы ---
+    const correct = {
+        block: { m: 0, v: 0, d: 0 },
+        stone: { m: 0, v: 0, d: 0, v1: 0, v2: 0 },
+        liquid: { m: 0, v: 0, d: 0, beaker_m: 0 }
+    };
+    
+    function initializeBlockSim() {
+        const l = (Math.random() * 4 + 4).toFixed(1);
+        const w = (Math.random() * 2 + 2).toFixed(1);
+        const h = (Math.random() * 2 + 1.5).toFixed(1);
+        const m = (Math.random() * 50 + 80).toFixed(1);
+
+        sim.block.l_value.textContent = l;
+        sim.block.w_value.textContent = w;
+        sim.block.h_value.textContent = h;
+        sim.block.mass_display.textContent = m;
+
+        correct.block.m = parseFloat(m);
+        correct.block.v = parseFloat(l) * parseFloat(w) * parseFloat(h);
+        correct.block.d = correct.block.m / correct.block.v;
+    }
+
+    function initializeStoneSim() {
+        const m = (Math.random() * 30 + 60).toFixed(1);
+        const v = (Math.random() * 15 + 20).toFixed(1);
+        const v1 = Math.floor(Math.random() * 21 + 40);
+
+        correct.stone.m = parseFloat(m);
+        correct.stone.v = parseFloat(v);
+        correct.stone.d = correct.stone.m / correct.stone.v;
+        correct.stone.v1 = v1;
+        correct.stone.v2 = v1 + correct.stone.v;
+
+        sim.stone.mass_display.textContent = correct.stone.m.toFixed(1);
+        sim.stone.menzurka.style.setProperty('--water-level-before', `${correct.stone.v1}%`);
+        sim.stone.menzurka.style.setProperty('--water-level-after', `${correct.stone.v1}%`);
+
+        sim.stone.menzurka_scale.innerHTML = '';
+        const unitLabel = document.createElement('span');
+        unitLabel.className = 'menzurka-unit';
+        unitLabel.textContent = 'мл';
+        sim.stone.menzurka_scale.appendChild(unitLabel);
+
+        for(let i=0; i<=100; i+=2) {
+            const mark = document.createElement('div');
+            mark.className = 'menzurka-scale-mark';
+            mark.style.bottom = `${i}%`;
+            if (i % 10 === 0) {
+                mark.style.width = '20px';
+                const label = document.createElement('span');
+                label.textContent = i;
+                label.style.position = 'absolute';
+                label.style.left = '25px';
+                label.style.bottom = `${i}%`;
+                label.style.transform = 'translateY(50%)';
+                sim.stone.menzurka_scale.appendChild(label);
+            } else {
+                mark.style.width = '10px';
+            }
+            sim.stone.menzurka_scale.appendChild(mark);
+        }
+    }
+    
+    function initializeLiquidSim() {
+        const beaker_m = (Math.random() * 30 + 100).toFixed(1);
+        const v = Math.floor(Math.random() * 31 + 50);
+
+        correct.liquid.beaker_m = parseFloat(beaker_m);
+        correct.liquid.v = v;
+        correct.liquid.m = v * 1.0;
+        correct.liquid.d = 1.0;
+
+        sim.liquid.scale_display.textContent = `${correct.liquid.beaker_m} г`;
+        sim.liquid.volume_info.textContent = correct.liquid.v;
+    }
+
+    sim.stone.drop_check.addEventListener('change', () => {
+        if (sim.stone.drop_check.checked) {
+            sim.stone.menzurka.style.setProperty('--water-level-after', `${correct.stone.v2}%`);
+            sim.stone.menzurka.style.setProperty('--stone-opacity', '1');
+            sim.stone.visual.style.visibility = 'hidden';
+        } else {
+            sim.stone.menzurka.style.setProperty('--water-level-after', `${correct.stone.v1}%`);
+            sim.stone.menzurka.style.setProperty('--stone-opacity', '0');
+            sim.stone.visual.style.visibility = 'visible';
+        }
+    });
+
+    sim.liquid.pour_check.addEventListener('change', () => {
+        if (sim.liquid.pour_check.checked) {
+            sim.liquid.scale_display.textContent = (correct.liquid.beaker_m + correct.liquid.m).toFixed(1) + " г";
+            sim.liquid.water_visual.style.height = '60%';
+        } else {
+            sim.liquid.scale_display.textContent = `${correct.liquid.beaker_m.toFixed(1)} г`;
+            sim.liquid.water_visual.style.height = '0%';
+        }
+    });
+
+    function resetState() {
+        attemptsLeft = 2;
+        finalScoreText = '';
+        checkButton.style.display = 'inline-block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = '';
+        answersReviewDiv.style.display = 'none';
+        validationMessageDiv.style.display = 'none';
+        
+        document.querySelectorAll('.student-info input, td input').forEach(input => {
+            input.value = '';
+            input.className = '';
+            input.disabled = false;
+        });
+        
+        document.querySelectorAll('.result-feedback').forEach(feedback => {
+            feedback.textContent = '';
+        });
+
+        sim.stone.drop_check.checked = false;
+        sim.liquid.pour_check.checked = false;
+        sim.stone.visual.style.visibility = 'visible';
+        
+        initializeBlockSim();
+        initializeStoneSim();
+        initializeLiquidSim();
+        updateCheckButtonText();
+    }
+
+
+    function setLanguage(lang) {
+        if (currentLang !== lang) {
+            resetState();
+        }
+        currentLang = lang;
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') {
+                    text = text.replace('{year}', new Date().getFullYear());
+                }
+                element.textContent = text;
+            }
+        });
+        document.querySelector('html').setAttribute('lang', lang);
+        updateCheckButtonText();
+    }
+
+    const langButtons = document.querySelectorAll('.lang-switcher .lang-btn');
+    langButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            if(lang) {
+                setLanguage(lang);
+                langButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            }
+        });
+    });
+
+    backButton.addEventListener('click', () => {
+        history.back();
+    });
+
+
+    function updateCheckButtonText() {
+        if (attemptsLeft > 0) {
+            const attemptText = attemptsLeft === 1 ? translations[currentLang].attempts_left_1 : translations[currentLang].attempts_left_2;
+            checkButton.textContent = `${translations[currentLang].check_button} (${attemptsLeft} ${attemptText})`;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+        const allInputs = document.querySelectorAll('.student-info input, td input');
+        
+        allInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input');
+                allFieldsValid = false;
+            } else {
+                input.classList.remove('incorrect-input');
+            }
+        });
+
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block';
+            return;
+        }
+
+        attemptsLeft--;
+        let correctPoints = 0;
+        const totalPoints = 9;
+
+        const provideFeedback = (userInput, correctValue, feedbackEl, isDensity = false, tolerance = 0.1) => {
+            const userNum = parseFloat(userInput.value.replace(',', '.'));
+            let isCorrect = false;
+            if (!isNaN(userNum)) {
+                if (isDensity) {
+                    isCorrect = Math.abs(userNum - correctValue) / correctValue < 0.05; // 5% tolerance for density
+                } else {
+                    isCorrect = Math.abs(userNum - correctValue) < tolerance;
+                }
+            }
+            
+            if(isCorrect) correctPoints++;
+            
+            feedbackEl.textContent = isCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+            feedbackEl.className = isCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+            userInput.className = isCorrect ? 'correct-input' : 'incorrect-input';
+        };
+        
+        provideFeedback(sim.block.m_input, correct.block.m, sim.block.m_feedback);
+        provideFeedback(sim.block.v_input, correct.block.v, sim.block.v_feedback, false, 0.5);
+        provideFeedback(sim.block.d_input, correct.block.d, sim.block.d_feedback, true);
+        
+        provideFeedback(sim.stone.m_input, correct.stone.m, sim.stone.m_feedback);
+        provideFeedback(sim.stone.v_input, correct.stone.v, sim.stone.v_feedback, false, 1.0);
+        provideFeedback(sim.stone.d_input, correct.stone.d, sim.stone.d_feedback, true);
+
+        provideFeedback(sim.liquid.m_input, correct.liquid.m, sim.liquid.m_feedback);
+        provideFeedback(sim.liquid.v_input, correct.liquid.v, sim.liquid.v_feedback);
+        provideFeedback(sim.liquid.d_input, correct.liquid.d, sim.liquid.d_feedback, true);
+
+
+        updateCheckButtonText();
+
+        if (attemptsLeft === 0) {
+            checkButton.style.display = 'none';
+            showAnswersButton.style.display = 'inline-block';
+            
+            const score = (correctPoints / totalPoints * 10).toFixed(1);
+            const resultText = translations[currentLang].final_result_title;
+            const outOfText = translations[currentLang].out_of_10;
+            finalScoreText = `${score} ${outOfText}`;
+
+            finalResultDiv.innerHTML = `<h3>${resultText} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></h3>`;
+
+            document.querySelectorAll('td input, .student-info input').forEach(input => {
+                input.disabled = true;
+            });
+        }
+    });
+    
+    showAnswersButton.addEventListener('click', () => {
+        const trans = translations[currentLang];
+        
+        const lastName = document.getElementById('student_lastname').value || '...';
+        const firstName = document.getElementById('student_firstname').value || '...';
+        const studentClass = document.getElementById('student_class').value || '...';
+        const studentLetter = document.getElementById('student_class_letter').value || '...';
+
+        let reviewHTML = `<h3>${trans.answers_review_title}</h3>`;
+        reviewHTML += `<p><b>${trans.report_student}</b> ${lastName} ${firstName}</p>`;
+        reviewHTML += `<p><b>${trans.report_class}</b> ${studentClass} "${studentLetter}"</p>`;
+        reviewHTML += `<p><b>${trans.report_score}</b> <span class="${parseFloat(finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></p><hr>`;
+        reviewHTML += '<ul>';
+        
+        const createReviewLine = (objectName, userInput, correctValue) => `<li>${objectName}: ${trans.your_answer} <strong>${userInput}</strong>. ${trans.correct_answer}: <strong>${correctValue}</strong></li>`;
+        
+        reviewHTML += `<li><strong>${translations[currentLang].object_block}:</strong><ul>`;
+        reviewHTML += createReviewLine("Масса (г)", sim.block.m_input.value, correct.block.m.toFixed(1));
+        reviewHTML += createReviewLine("Объем (см³)", sim.block.v_input.value, correct.block.v.toFixed(2));
+        reviewHTML += createReviewLine("Плотность (г/см³)", sim.block.d_input.value, correct.block.d.toFixed(2));
+        reviewHTML += `</ul></li>`;
+
+        reviewHTML += `<li><strong>${translations[currentLang].object_stone}:</strong><ul>`;
+        reviewHTML += createReviewLine("Масса (г)", sim.stone.m_input.value, correct.stone.m.toFixed(1));
+        reviewHTML += createReviewLine("Объем (см³)", sim.stone.v_input.value, correct.stone.v.toFixed(1));
+        reviewHTML += createReviewLine("Плотность (г/см³)", sim.stone.d_input.value, correct.stone.d.toFixed(2));
+        reviewHTML += `</ul></li>`;
+
+        reviewHTML += `<li><strong>${translations[currentLang].object_liquid}:</strong><ul>`;
+        reviewHTML += createReviewLine("Масса (г)", sim.liquid.m_input.value, correct.liquid.m.toFixed(1));
+        reviewHTML += createReviewLine("Объем (см³)", sim.liquid.v_input.value, correct.liquid.v);
+        reviewHTML += createReviewLine("Плотность (г/см³)", sim.liquid.d_input.value, correct.liquid.d.toFixed(1));
+        reviewHTML += `</ul></li>`;
+
+        reviewHTML += '</ul>';
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        
+        mainContainer.classList.add('pdf-export-mode');
+
+        const canvas = await html2canvas(mainContainer, { scale: 2, useCORS: true, windowWidth: 900 });
+        
+        mainContainer.classList.remove('pdf-export-mode');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 40;
+        const contentWidth = pdfWidth - margin * 2;
+        const ratio = canvas.height / canvas.width;
+        const imgHeight = contentWidth * ratio;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, contentWidth, imgHeight);
+        heightLeft -= (pdfHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position -= (pdfHeight - margin);
+            pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, position + margin, contentWidth, imgHeight);
+            heightLeft -= (pdfHeight - margin * 2);
+        }
+        
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async () => {
+        const button = shareToTeacherButton;
+        button.textContent = translations[currentLang].sending;
+        button.disabled = true;
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const lastName = document.getElementById('student_lastname').value || 'student';
+            const firstName = document.getElementById('student_firstname').value || 'report';
+            const studentClass = document.getElementById('student_class').value || '...';
+            const studentLetter = document.getElementById('student_class_letter').value || '';
+            const fileName = `Lab_Report_3_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+            const caption = `Отчет по лабораторной работе №3\nУченик(ца): ${lastName} ${firstName}\nКласс: ${studentClass}${studentLetter}\nОценка: ${finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                button.textContent = translations[currentLang].send_success;
+                button.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description);
+            }
+
+        } catch (error) {
+            console.error('Telegram API Error:', error);
+            button.textContent = translations[currentLang].send_error;
+            button.style.backgroundColor = '#e74c3c';
+            button.disabled = false;
+        }
+    });
+
+
+    // --- Инициализация ---
+    initializeBlockSim();
+    initializeStoneSim();
+    initializeLiquidSim();
+    setLanguage('ru');
+});
+</script>
+
+</body>
+</html>

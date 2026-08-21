@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа: Определение ЭДС и внутреннего сопротивления</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header h2 { margin: 0; color: #2c3e50; }
+        .page-header p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px; }
+        .lang-switcher { display: flex; gap: 5px; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 4px 10px;
+            cursor: pointer; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #475569;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+
+        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+        .instruction-block {
+            background-color: #eaf5ff; border-left: 5px solid #3498db;
+            padding: 15px; margin: 20px 0; border-radius: 5px;
+        }
+        .simulation-box {
+            display: flex; flex-direction: column; align-items: center;
+            background: #e9ecef; border: 1px solid #ccc; border-radius: 8px;
+            padding: 20px; margin-bottom: 20px; position: relative;
+        }
+        .controls-panel {
+            display: flex; gap: 20px; align-items: center; justify-content: center;
+            margin-top: 15px; width: 100%; flex-wrap: wrap;
+        }
+        .task-card {
+            background: #fff3cd; border: 1px solid #ffeeba; padding: 15px;
+            border-radius: 6px; margin-bottom: 20px; font-size: 1.05em;
+        }
+        .measurement-table {
+            width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff;
+        }
+        .measurement-table th, .measurement-table td {
+            border: 1px solid #ddd; padding: 10px; text-align: center;
+        }
+        .measurement-table th { background-color: #f1f2f6; }
+        .calculation-panel {
+            background: #fafafa; border: 1px solid #ddd; padding: 20px;
+            border-radius: 8px; margin-bottom: 20px; text-align: center;
+        }
+        .calculation-panel input {
+            width: 100px; padding: 8px; text-align: center; font-size: 1.1em;
+            border: 1px solid #ccc; border-radius: 4px; margin: 0 10px;
+        }
+        .action-button {
+            display: inline-block; margin: 5px; padding: 10px 20px;
+            font-size: 1em; cursor: pointer; color: white; border: none;
+            border-radius: 5px; background-color: #3498db; transition: background 0.3s;
+        }
+        .action-button:hover { background-color: #2980b9; }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .result-feedback { font-weight: bold; margin-top: 10px; display: block; font-size: 1.1em; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; background-color: #e8f8f5 !important; }
+        .incorrect-input { border-color: #e74c3c !important; background-color: #fdedec !important; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="title_lab">Интерактивная лабораторная работа</h2>
+                <p><b><span data-key="author_lbl">Автор:</span></b> Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</p>
+            </div>
+        </div>
+        <div class="copyright">© Все права защищены, <span id="current-year"></span></div>
+
+        <div class="top-nav">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <h1 data-key="main_heading">Лабораторная работа: Определение ЭДС и внутреннего сопротивления источника тока</h1>
+        
+        <div class="lab-section">
+            <p><strong><span data-key="goal_title">Цель:</span></strong> <span data-key="goal_text">Определить ЭДС (&epsilon;) и внутреннее сопротивление (<i>r</i>) источника тока с помощью амперметра и вольтметра при различных положениях реостата.</span></p>
+
+            <div class="instruction-block">
+                <h4 data-key="instruction_title">Инструкция по выполнению:</h4>
+                <ol>
+                    <li data-key="inst_1">Перемещайте ползунок реостата, меняя его сопротивление <i>R</i>.</li>
+                    <li data-key="inst_2">Снимите показания приборов для двух разных положений реостата и нажмите кнопки «Зафиксировать опыт 1» и «Зафиксировать опыт 2».</li>
+                    <li data-key="inst_3">Используя формулы, рассчитайте ЭДС и внутреннее сопротивление источника и введите результаты в поля проверки.</li>
+                </ol>
+            </div>
+
+            <div class="simulation-box">
+                <h3 style="margin-top:0; border:none; color:#2c3e50;" data-key="sim_title">Виртуальная электрическая цепь</h3>
+                <canvas id="circuitCanvas" width="550" height="220" style="background:#fff; border:1px solid #bbb; border-radius:4px;"></canvas>
+                
+                <div class="controls-panel">
+                    <div>
+                        <label><b data-key="lbl_rheostat">Сопротивление реостата (R):</b> <span id="valR">3.0</span> Ом</label><br>
+                        <input type="range" id="sliderR" min="1.0" max="6.0" step="0.2" value="3.0" style="width: 200px;">
+                    </div>
+                    <div>
+                        <span style="font-size: 1.1em;"><b>I</b> = <span id="valI" style="color:#2980b9;">0.00</span> А</span><br>
+                        <span style="font-size: 1.1em;"><b>U</b> = <span id="valU" style="color:#27ae60;">0.00</span> В</span>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button id="btnPoint1" class="action-button" data-key="btn_point1">Зафиксировать опыт 1</button>
+                    <button id="btnPoint2" class="action-button" data-key="btn_point2" style="background-color: #e67e22;">Зафиксировать опыт 2</button>
+                </div>
+            </div>
+
+            <table class="measurement-table">
+                <thead>
+                    <tr>
+                        <th data-key="tbl_exp">Опыт</th>
+                        <th data-key="tbl_i">Сила тока I (А)</th>
+                        <th data-key="tbl_u">Напряжение U (В)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td id="tableI1">—</td>
+                        <td id="tableU1">—</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td id="tableI2">—</td>
+                        <td id="tableU2">—</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="calculation-panel">
+                <div style="margin-bottom: 15px;">
+                    <label><b data-key="input_emf">ЭДС (&epsilon;, В):</b></label>
+                    <input type="text" id="emfInput" placeholder="0.0">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label><b data-key="input_r">Внутреннее сопротивление (<i>r</i>, Ом):</b></label>
+                    <input type="text" id="rInput" placeholder="0.00">
+                </div>
+                <button id="checkButton" class="action-button" data-key="btn_check">Проверить результаты</button>
+                <span id="feedbackMessage" class="result-feedback"></span>
+            </div>
+
+            <div style="text-align: center;">
+                <button id="showAnswersButton" class="action-button" style="background-color: #9b59b6; display: none;" data-key="btn_show">Показать правильный ответ</button>
+            </div>
+
+            <div id="answersReview"></div>
+            <div id="finalResult" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    const translations = {
+        ru: {
+            title_lab: "Интерактивная лабораторная работа",
+            author_lbl: "Автор:",
+            main_heading: "Лабораторная работа: Определение ЭДС и внутреннего сопротивления источника тока",
+            goal_title: "Цель:",
+            goal_text: "Определить ЭДС (ε) и внутреннее сопротивление (r) источника тока с помощью амперметра и вольтметра при различных положениях реостата.",
+            instruction_title: "Инструкция по выполнению:",
+            inst_1: "Перемещайте ползунок реостата, меняя его сопротивление R.",
+            inst_2: "Снимите показания приборов для двух разных положений реостата и нажмите кнопки фиксации опыта.",
+            inst_3: "Используя формулы, рассчитайте ЭДС и внутреннее сопротивление источника и введите результаты в поля проверки.",
+            sim_title: "Виртуальная электрическая цепь",
+            lbl_rheostat: "Сопротивление реостата (R):",
+            btn_point1: "Зафиксировать опыт 1",
+            btn_point2: "Зафиксировать опыт 2",
+            tbl_exp: "Опыт",
+            tbl_i: "Сила тока I (А)",
+            tbl_u: "Напряжение U (В)",
+            input_emf: "ЭДС (ε, В):",
+            input_r: "Внутреннее сопротивление (r, Ом):",
+            btn_check: "Проверить результаты",
+            btn_show: "Показать правильный ответ",
+            msg_empty: "Пожалуйста, заполните оба поля!",
+            msg_correct: "Верно! Все расчеты выполнены правильно 👍",
+            msg_wrong: "Неверно. Проверьте расчеты по формулам ❌",
+            review_title: "Разбор решения:",
+            step_r: "Внутреннее сопротивление: ",
+            step_emf: "ЭДС источника: ",
+            score_10: "Оценка: 10/10",
+            score_0: "Оценка: 0/10"
+        },
+        kk: {
+            title_lab: "Интерактивті зертханалық жұмыс",
+            author_lbl: "Авторы:",
+            main_heading: "Зертханалық жұмыс: Тоқ көзінің ЭҚК-ін және ішкі кедергісін анықтау",
+            goal_title: "Мақсаты:",
+            goal_text: "Реостаттың әртүрлі жағдайларында амперметр мен вольтметр көмегімен тоқ көзінің ЭҚК-ін (ε) және ішкі кедергісін (r) анықтау.",
+            instruction_title: "Орындау бойынша нұсқаулық:",
+            inst_1: "Реостат сырғытпасын жылжытып, оның R кедергісін өзгертіңіз.",
+            inst_2: "Реостаттың екі түрлі жағдайы үшін прибор көрсеткіштерін алып, тәжірибені тіркеу түймелерін басыңыз.",
+            inst_3: "Формулаларды қолдана отырып, ЭҚК пен ішкі кедергіні есептеп, нәтижелерін енгізіңіз.",
+            sim_title: "Виртуалды электр тізбегі",
+            lbl_rheostat: "Реостат кедергісі (R):",
+            btn_point1: "1-тәжірибені тіркеу",
+            btn_point2: "2-тәжірибені тіркеу",
+            tbl_exp: "Тәжірибе",
+            tbl_i: "Ток күші I (А)",
+            tbl_u: "Кернеу U (В)",
+            input_emf: "ЭҚК (ε, В):",
+            input_r: "Ішкі кедергі (r, Ом):",
+            btn_check: "Нәтижелерді тексеру",
+            btn_show: "Дұрыс жауапты көрсету",
+            msg_empty: "Барлық өрістерді толтырыңыз!",
+            msg_correct: "Дұрыс! Барлық есептеулер дұрыс орындалды 👍",
+            msg_wrong: "Қате. Формула бойынша есептеулерді тексеріңіз ❌",
+            review_title: "Шешу жолын талдау:",
+            step_r: "Ішкі кедергі: ",
+            step_emf: "ЭҚК: ",
+            score_10: "Баға: 10/10",
+            score_0: "Баға: 0/10"
+        },
+        en: {
+            title_lab: "Interactive Laboratory Work",
+            author_lbl: "Author:",
+            main_heading: "Lab Work: Determination of EMF and Internal Resistance of a Current Source",
+            goal_title: "Goal:",
+            goal_text: "Determine the EMF (ε) and internal resistance (r) of a power source using an ammeter and voltmeter at various rheostat positions.",
+            instruction_title: "Instructions:",
+            inst_1: "Move the rheostat slider to change its resistance R.",
+            inst_2: "Take instrument readings for two different rheostat positions and click the record buttons.",
+            inst_3: "Using the formulas, calculate the EMF and internal resistance and enter the results into the check fields.",
+            sim_title: "Virtual Electrical Circuit",
+            lbl_rheostat: "Rheostat resistance (R):",
+            btn_point1: "Record Point 1",
+            btn_point2: "Record Point 2",
+            tbl_exp: "Exp",
+            tbl_i: "Current I (A)",
+            tbl_u: "Voltage U (V)",
+            input_emf: "EMF (ε, V):",
+            input_r: "Internal resistance (r, Ohm):",
+            btn_check: "Check Results",
+            btn_show: "Show Correct Answer",
+            msg_empty: "Please fill in both fields!",
+            msg_correct: "Correct! All calculations are correct 👍",
+            msg_wrong: "Incorrect. Check your calculations ❌",
+            review_title: "Solution breakdown:",
+            step_r: "Internal resistance: ",
+            step_emf: "EMF: ",
+            score_10: "Score: 10/10",
+            score_0: "Score: 0/10"
+        }
+    };
+
+    let currentLang = 'ru';
+
+    // Истинные случайные параметры источника для сессии
+    const trueEmf = (Math.random() * 0.8 + 4.0).toFixed(2); // ЭДС от 4.0 до 4.8 В
+    const trueR = (Math.random() * 0.8 + 0.6).toFixed(2);   // Внутреннее сопротивление от 0.6 до 1.4 Ом
+
+    let point1 = null;
+    let point2 = null;
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.querySelectorAll('[data-key]').forEach(el => {
+            const key = el.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+
+        const reviewEl = document.getElementById('answersReview');
+        if (reviewEl.style.display === 'block') {
+            showAnswerContent();
+        }
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setLanguage(btn.getAttribute('data-lang'));
+        });
+    });
+
+    // Отрисовка схемы на Canvas
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    const sliderR = document.getElementById('sliderR');
+    const valR = document.getElementById('valR');
+    const valI = document.getElementById('valI');
+    const valU = document.getElementById('valU');
+
+    function updatePhysics() {
+        const R = parseFloat(sliderR.value);
+        valR.innerText = R.toFixed(1);
+
+        // Расчет по закону Ома для полной цепи
+        const I = parseFloat(trueEmf) / (R + parseFloat(trueR));
+        const U = I * R;
+
+        valI.innerText = I.toFixed(2);
+        valU.innerText = U.toFixed(2);
+
+        drawCircuit();
+        return { I, U, R };
+    }
+
+    function drawCircuit() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Провода
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(80, 40, 390, 140);
+
+        // Источник питания (ЭДС, r)
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(70, 90, 20, 40);
+        ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+        ctx.fillText("ε, r", 70, 85);
+
+        // Вольтметр (параллельно источнику)
+        ctx.beginPath(); ctx.arc(160, 110, 22, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2c3e50'; ctx.fillText("V", 155, 114);
+
+        // Амперметр (последовательно)
+        ctx.beginPath(); ctx.arc(380, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2c3e50'; ctx.fillText("A", 375, 44);
+
+        // Реостат
+        ctx.strokeRect(240, 165, 90, 30);
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(260, 160, 20, 40);
+        ctx.fillText("Реостат", 260, 155);
+    }
+
+    sliderR.addEventListener('input', updatePhysics);
+    updatePhysics();
+
+    // Фиксация точек
+    document.getElementById('btnPoint1').addEventListener('click', () => {
+        point1 = updatePhysics();
+        document.getElementById('tableI1').innerText = point1.I.toFixed(2);
+        document.getElementById('tableU1').innerText = point1.U.toFixed(2);
+    });
+
+    document.getElementById('btnPoint2').addEventListener('click', () => {
+        point2 = updatePhysics();
+        document.getElementById('tableI2').innerText = point2.I.toFixed(2);
+        document.getElementById('tableU2').innerText = point2.U.toFixed(2);
+    });
+
+    const checkButton = document.getElementById('checkButton');
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const finalResultDiv = document.getElementById('finalResult');
+
+    checkButton.addEventListener('click', () => {
+        const userEmfStr = document.getElementById('emfInput').value.replace(',', '.');
+        const userRStr = document.getElementById('rInput').value.replace(',', '.');
+        const t = translations[currentLang];
+
+        if (!point1 || !point2) {
+            feedbackMessage.textContent = currentLang === 'ru' ? 'Сначала зафиксируйте оба опыта!' : (currentLang === 'kk' ? 'Алдымен екі тәжірибені тіркеңіз!' : 'First record both experiments!');
+            feedbackMessage.className = 'result-feedback incorrect';
+            return;
+        }
+
+        if (userEmfStr.trim() === '' || userRStr.trim() === '') {
+            feedbackMessage.textContent = t.msg_empty;
+            feedbackMessage.className = 'result-feedback incorrect';
+            return;
+        }
+
+        const userEmf = parseFloat(userEmfStr);
+        const userR = parseFloat(userRStr);
+
+        // Эталонный расчет по формулам из методички
+        const exactR = (point1.U - point2.U) / (point2.I - point1.I);
+        const exactEmf = (point2.U * point1.I - point1.U * point2.I) / (point1.I - point2.I);
+
+        const isEmfCorrect = Math.abs(userEmf - exactEmf) <= 0.2;
+        const isRCorrect = Math.abs(userR - exactR) <= 0.2;
+
+        if (isEmfCorrect && isRCorrect) {
+            feedbackMessage.textContent = t.msg_correct;
+            feedbackMessage.className = 'result-feedback correct';
+            checkButton.disabled = true;
+            finalResultDiv.innerHTML = `<span class="correct">${t.score_10}</span>`;
+        } else {
+            feedbackMessage.textContent = t.msg_wrong;
+            feedbackMessage.className = 'result-feedback incorrect';
+            showAnswersButton.style.display = 'inline-block';
+            finalResultDiv.innerHTML = `<span class="incorrect">${t.score_0}</span>`;
+        }
+    });
+
+    function showAnswerContent() {
+        const t = translations[currentLang];
+        if (!point1 || !point2) return;
+        const exactR = (point1.U - point2.U) / (point2.I - point1.I);
+        const exactEmf = (point2.U * point1.I - point1.U * point2.I) / (point1.I - point2.I);
+
+        let reviewHTML = `<h3>${t.review_title}</h3>`;
+        reviewHTML += `<p>1. ${t.step_r}<b><i>r</i> = (${point1.U.toFixed(2)} - ${point2.U.toFixed(2)}) / (${point2.I.toFixed(2)} - ${point1.I.toFixed(2)}) = ${exactR.toFixed(2)} Ом</b></p>`;
+        reviewHTML += `<p>2. ${t.step_emf}<b>ε = (${point2.U.toFixed(2)}·${point1.I.toFixed(2)} - ${point1.U.toFixed(2)}·${point2.I.toFixed(2)}) / (${point1.I.toFixed(2)} - ${point2.I.toFixed(2)}) = ${exactEmf.toFixed(2)} В</b></p>`;
+        document.getElementById('answersReview').innerHTML = reviewHTML;
+        document.getElementById('answersReview').style.display = 'block';
+    }
+
+    showAnswersButton.addEventListener('click', () => {
+        showAnswerContent();
+        showAnswersButton.style.display = 'none';
+    });
+});
+</script>
+</body>
+</html>

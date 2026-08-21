@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный Клуб: Ионный Шторм (v19 - исправлено)</title>
+    
+    <style>
+        /* Все стили (CSS) остаются точно такими же, как в прошлых версиях. */
+        body { background-color: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 1280px; height: 720px; background-color: #000; background-size: cover; background-position: center; border-radius: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
+        #stats-display { position: absolute; top: 20px; left: 20px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 8px; font-size: 22px; z-index: 30; }
+        #stats-display span { margin-right: 20px; }
+        #character-sprite { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); height: 95%; max-width: 800px; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; opacity: 0; z-index: 10; }
+        #dialogue-box { position: absolute; bottom: 20px; left: 5%; width: 90%; min-height: 200px; background-color: rgba(10, 20, 40, 0.9); border: 2px solid #6c91d9; border-radius: 15px; padding: 20px; box-sizing: border-box; z-index: 21; }
+        #dialogue-text.task-text { font-size: 26px; color: #ffc107; text-align: center; }
+        #character-name { font-size: 28px; font-weight: bold; color: #ffc107; margin-bottom: 15px; }
+        #dialogue-text { font-size: 24px; line-height: 1.4; margin: 0; }
+        .term { color: cyan; text-decoration: underline; cursor: pointer; }
+        #choices-container { position: absolute; bottom: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 22; }
+        .choice-button { width: 70%; padding: 18px; font-size: 20px; font-weight: bold; background-color: rgba(40, 80, 150, 0.9); color: #fff; border: 2px solid #a8c1ff; border-radius: 30px; cursor: pointer; text-align: center; transition: background-color 0.2s, transform 0.2s; }
+        .choice-button:hover { background-color: rgba(60, 110, 200, 1); transform: scale(1.02); }
+        #glossary-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 40; color: white; font-size: 1.2em; }
+        .glossary-box { display: flex; position: relative; width: 80%; max-width: 900px; padding: 30px; box-sizing: border-box; border: 2px solid cyan; background-color: rgba(10, 20, 30, 0.95); border-radius: 10px; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        .close-button { position: absolute; top: 10px; right: 20px; color: #ff4500; font-size: 3em; line-height: 1; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-button:hover { color: #ff7733; }
+        #glossary-title { font-size: 2em; color: #ffc107; margin-bottom: 20px; padding-right: 40px; }
+        #glossary-text { font-size: 1.4em; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 T: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Персонаж">
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            chapter8_scene1: {
+                background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/max_worried.png', character: 'Инженер Орлов',
+                text: 'Плохие новости. Перегрелся сверхпроводящий кабель, питающий крио-камеру. Он перешел в обычное состояние и теперь греется!',
+                choices: [{ text: 'Насколько это критично?', nextSceneId: 'chapter8_scene2' }]
+            },
+            chapter8_scene2: {
+                 background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена',
+                 text: 'Его <span class="term" data-term="resistance">сопротивление</span> зависит от температуры. Нам нужно рассчитать, насколько оно выросло, чтобы понять, выдержит ли система.',
+                 choices: [{ text: 'Давайте данные для расчета.', nextSceneId: 'chapter8_act1_quiz' }]
+            },
+            chapter8_act1_quiz: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: null, character: 'ЗАДАЧА: ТОК В МЕТАЛЛАХ', isTask: true,
+                text: 'Найдите <span class="term" data-term="resistance">сопротивление</span> R кабеля при температуре T = __T__ K. <br>R = R₀(1 + α(T - T₀)). R₀ = __R0__ Ом, α = __ALPHA__, T₀ = 273 K.',
+                choices: 'CHOICES_CH8_ACT1'
+            },
+            chapter8_act1_fail: {
+                background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена',
+                text: 'Неверный расчет. Сначала найди разность температур (T - T₀), умножь на α, прибавь единицу и только потом умножай на R₀.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter8_act1_quiz'}]
+            },
+            chapter8_act1_success: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: 'assets/sprites/elena_happy.png', character: 'Елена',
+                text: 'Верно, сопротивление выросло до __R_FINAL__ Ом! Это предел, но система пока держится. Теперь нужно стабилизировать раствор вокруг кристалла.',
+                choices: [{ text: 'Переходим к следующему этапу.', nextSceneId: 'chapter8_act2_scene1'}]
+            },
+            chapter8_act2_scene1: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'Доктор Белова',
+                text: 'Раствор нестабилен. Нам нужно выделить на катоде __MASS__ грамм чистого меди для катализатора, используя <span class="term" data-term="electrolysis">электролиз</span>.',
+                choices: [{ text: 'Что для этого нужно?', nextSceneId: 'chapter8_act2_quiz'}]
+            },
+            chapter8_act2_quiz: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: null, character: 'ЗАДАЧА: ЗАКОН ФАРАДЕЯ', isTask: true,
+                text: 'Какой <span class="term" data-term="charge">заряд</span> (q) нужно пропустить через <span class="term" data-term="electrolyte">электролит</span>, чтобы выделить m = __MASS__ г меди?<br>m = kq. Электрохимический эквивалент меди k ≈ __K_CU_STR__ кг/Кл.',
+                choices: 'CHOICES_CH8_ACT2'
+            },
+            chapter8_act2_fail: {
+                background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Ошибка. Чтобы найти заряд, нужно массу разделить на электрохимический эквивалент (q = m/k). И не забудь перевести граммы в килограммы!',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter8_act2_quiz'}]
+            },
+            chapter8_act2_success: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Именно так! Нужно пропустить заряд в __Q_RESULT__ кКл. Запускаю процесс электролиза... Стабилизация раствора началась!',
+                choices: [{ text: 'Отлично! Что-то еще?', nextSceneId: 'chapter8_act3_scene1'}]
+            },
+            chapter8_act3_scene1: {
+                background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/alex_smirk.png', character: 'Алекс',
+                text: 'Рано радуетесь. Процесс вызвал ионизацию остаточного газа в камере. Возник <span class="term" data-term="gas_discharge">тлеющий разряд</span>, который может повредить датчики!',
+                choices: [{ text: 'Как его погасить?', nextSceneId: 'chapter8_act3_quiz'}]
+            },
+            chapter8_act3_quiz: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: null, character: 'ЗАДАЧА: ТОК В ГАЗАХ', isTask: true,
+                text: 'Чтобы погасить разряд, нужно снизить <span class="term" data-term="e_field">напряженность</span> поля ниже порога ионизации. Какой из методов сработает?',
+                choices: [
+                    { text: 'Увеличить давление газа в камере', isCorrect: true, stat: 'practice', nextSceneId: 'chapter8_act3_success'},
+                    { text: 'Увеличить напряжение между электродами', isCorrect: false, nextSceneId: 'chapter8_act3_fail'},
+                    { text: 'Нагреть газ в камере', isCorrect: false, nextSceneId: 'chapter8_act3_fail'}
+                ]
+            },
+            chapter8_act3_fail: {
+                background: 'assets/backgrounds/materials_lab_alarm.jpg', sprite: 'assets/sprites/alex_neutral.png', character: 'Алекс',
+                text: 'Неправильно! Это только усилит ионизацию и разряд! Нужно сделать так, чтобы электронам было сложнее разогнаться и ионизировать атомы.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter8_act3_quiz'}]
+            },
+            chapter8_act3_success: {
+                background: 'assets/backgrounds/materials_lab.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Точно! Увеличиваем давление — ионы и электроны чаще сталкиваются с атомами и не успевают набрать энергию для ионизации. Подаю буферный газ... Разряд погас!',
+                choices: [{ text: 'Миссия выполнена!', nextSceneId: 'ending_ch8'}]
+            },
+            ending_ch8: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'ИТОГ',
+                text: 'Поздравляем! Вы справились с "Ионным Штормом" и изучили прохождение тока в разных средах. Все миссии пройдены!',
+                choices: [
+                    { text: 'К списку миссий', href: 'missions.html', onComplete: 'mission8' }
+                ]
+            }
+        };
+
+        const glossary = {
+            resistance: { title: "Сопротивление (R)", text: "Мера противодействия электрическому току. В металлах сопротивление растет с увеличением температуры из-за более частых столкновений электронов с ионами кристаллической решетки." },
+            electrolysis: { title: "Электролиз", text: "Процесс выделения на электродах составных частей растворенных веществ (электролитов) при прохождении через них электрического тока." },
+            electrolyte: { title: "Электролиты", text: "Вещества, растворы или расплавы которых проводят электрический ток благодаря наличию свободных ионов. Носителями заряда в них являются положительные и отрицательные ионы." },
+            charge: { title: "Электрический заряд (q)", text: "Физическая величина, определяющая способность тел быть источником электромагнитных полей и принимать участие в электромагнитном взаимодействии. Измеряется в Кулонах (Кл)." },
+            gas_discharge: { title: "Газовый разряд", text: "Процесс протекания электрического тока через газ. Возникает, когда в газе появляются свободные носители заряда (электроны и ионы), обычно в результате ионизации под действием сильного электрического поля." },
+            e_field: { title: "Электрическое поле", text: "Особый вид материи, существующий вокруг электрических зарядов. Оно действует на другие заряды с некоторой силой." }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name'); // ИСПРАВЛЕНИЕ ЗДЕСЬ
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {});
+            }
+
+            function formatNumber(value) {
+                if (typeof value !== 'number') return value;
+                if (Math.abs(value) > 1e5 || (Math.abs(value) < 1e-5 && value !== 0)) {
+                    const parts = value.toExponential(1).split('e');
+                    return `${parts[0]} &times; 10<sup>${parts[1]}</sup>`;
+                } 
+                if (!Number.isInteger(value)) {
+                    if (Math.abs(value) < 1) return value.toPrecision(2);
+                    return value.toFixed(2);
+                }
+                return value;
+            }
+
+            function generateProblemData() {
+                const p = {};
+                p.R0 = 0.5 + Math.random() * 0.2; // ИСПРАВЛЕНО: Генерируем как число
+                p.ALPHA = 0.004;
+                p.T = 350 + Math.floor(Math.random() * 51);
+                const T0 = 273;
+                const R_final_correct = p.R0 * (1 + p.ALPHA * (p.T - T0));
+                p.R_FINAL = R_final_correct; // Храним как число
+                p.CHOICES_CH8_ACT1 = [
+                    { text: `__R_FINAL__ Ом`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter8_act1_success' },
+                    { text: `${(p.R0 * (1 + p.ALPHA * p.T)).toFixed(2)} Ом`, isCorrect: false, nextSceneId: 'chapter8_act1_fail' },
+                    { text: `${(p.R0 + (1 + p.ALPHA * (p.T - T0))).toFixed(2)} Ом`, isCorrect: false, nextSceneId: 'chapter8_act1_fail' }
+                ].sort(() => Math.random() - 0.5);
+                
+                p.MASS = 5 + Math.floor(Math.random() * 6);
+                p.K_CU = 3.3e-7;
+                p.K_CU_STR = formatNumber(p.K_CU);
+                const Q_correct = (p.MASS / 1000) / p.K_CU;
+                p.Q_RESULT = Math.round(Q_correct / 1000);
+                p.CHOICES_CH8_ACT2 = [
+                    { text: `${p.Q_RESULT} кКл`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter8_act2_success' },
+                    { text: `${Math.round(p.MASS / p.K_CU / 1000)} кКл`, isCorrect: false, nextSceneId: 'chapter8_act2_fail' },
+                    { text: `${Math.round(((p.MASS / 1000) * p.K_CU) / 1000)} кКл`, isCorrect: false, nextSceneId: 'chapter8_act2_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'chapter8_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object') {
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    let choiceText = choice.text;
+                    for (const key in gameState.problemData) {
+                        if (typeof gameState.problemData[key] !== 'object') {
+                             choiceText = choiceText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                        }
+                    }
+                    const button = document.createElement('button');
+                    button.innerHTML = choiceText;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play().catch(e => {});
+                    audioMusic.play().catch(e => {});
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

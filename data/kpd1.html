@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>КПД и Второй закон термодинамики | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; width: 100%; max-width: 1100px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* КРУПНАЯ ВИЗУАЛИЗАЦИЯ ТЕПЛОВОЙ МАШИНЫ */
+    .viewport { position: relative; width: 100%; height: 420px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #475569; display: flex; justify-content: center; align-items: center; }
+
+    /* Расчеты */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: monospace; font-size: 0.95rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    .calc-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 12px; font-family: monospace; font-size: 1.1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.9rem; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 14px; font-weight: bold; font-size: 1rem; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 180px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8; }
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } 
+
+    .formulas { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 12px; margin-top: 15px; font-family: monospace; font-size: 0.9rem; color: #94A3B8; }
+    .formulas b { color: #38BDF8; font-size: 0.95rem; }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Визуализация КПД тепловой машины" data-kk="Жылу машинасының ӘИК визуализациясы" data-en="Heat Engine Efficiency Visualization">Визуализация КПД тепловой машины</h1>
+      <p data-ru="Молекулярная физика и Второй закон термодинамики" data-kk="Молекулярлық физика және Термодинамиканың екінші заңы" data-en="Molecular physics and Second Law of Thermodynamics">Молекулярная физика и Второй закон термодинамики</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- КРУПНАЯ МОДЕЛЬ В VIEWPORT -->
+    <div class="panel">
+      <h2 data-ru="Модель теплового двигателя" data-kk="Жылу қозғалтқышының моделі" data-en="Heat Engine Model">Модель теплового двигателя</h2>
+      
+      <div class="viewport">
+          <svg viewBox="0 0 460 380" width="100%" height="100%">
+              <!-- Нагреватель (Верх) -->
+              <rect x="80" y="15" width="260" height="60" rx="10" fill="rgba(239, 68, 68, 0.2)" stroke="#EF4444" stroke-width="2.5"/>
+              <text x="210" y="40" fill="#FCA5A5" font-size="14" font-family="monospace" text-anchor="middle" font-weight="bold" id="svg-t1">Нагреватель: T₁ = -- K</text>
+              <text x="210" y="60" fill="#EF4444" font-size="11" font-family="monospace" text-anchor="middle" id="svg-q1">Получено тепла Q₁ = -- Дж</text>
+
+              <!-- Потоки тепла (Красные точки вниз) -->
+              <circle cx="160" cy="92" r="4.5" fill="#EF4444">
+                  <animate attributeName="cy" values="85;110;85" dur="1.2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="260" cy="92" r="4.5" fill="#EF4444">
+                  <animate attributeName="cy" values="85;110;85" dur="1.2s" begin="0.6s" repeatCount="indefinite"/>
+              </circle>
+
+              <!-- Цилиндр и поршень (Центр - крупный размер) -->
+              <rect x="110" y="115" width="200" height="145" rx="8" fill="rgba(30, 41, 59, 0.9)" stroke="#38BDF8" stroke-width="2.5"/>
+              
+              <!-- Движущийся поршень -->
+              <rect x="114" y="150" width="192" height="24" rx="4" fill="#38BDF8">
+                  <animate attributeName="y" values="140;175;140" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <line x1="210" y1="150" x2="210" y2="100" stroke="#94A3B8" stroke-width="6">
+                  <animate attributeName="y2" values="100;125;100" dur="2s" repeatCount="indefinite"/>
+              </line>
+
+              <text x="210" y="200" fill="#38BDF8" font-size="13" font-family="monospace" text-anchor="middle" font-weight="bold">РАБОЧЕЕ ТЕЛО</text>
+              <text x="210" y="228" fill="#10B981" font-size="14" font-family="monospace" text-anchor="middle" font-weight="bold" id="svg-a">Работа A = -- Дж</text>
+
+              <!-- Потоки сброса (Синие точки вниз) -->
+              <circle cx="160" cy="278" r="4.5" fill="#3B82F6">
+                  <animate attributeName="cy" values="270;295;270" dur="1.2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="260" cy="278" r="4.5" fill="#3B82F6">
+                  <animate attributeName="cy" values="270;295;270" dur="1.2s" begin="0.6s" repeatCount="indefinite"/>
+              </circle>
+
+              <!-- Холодильник (Низ) -->
+              <rect x="80" y="305" width="260" height="60" rx="10" fill="rgba(59, 130, 246, 0.2)" stroke="#3B82F6" stroke-width="2.5"/>
+              <text x="210" y="330" fill="#93C5FD" font-size="14" font-family="monospace" text-anchor="middle" font-weight="bold" id="svg-t2">Холодильник: T₂ = -- K</text>
+              <text x="210" y="350" fill="#3B82F6" font-size="11" font-family="monospace" text-anchor="middle" id="svg-q2">Сброс тепла Q₂ = -- Дж</text>
+
+              <!-- Механический маховик (Крупный индикатор работы справа) -->
+              <g transform="translate(390, 187)">
+                  <circle cx="0" cy="0" r="32" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="6,4">
+                      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="2s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="0" cy="0" r="9" fill="#10B981"/>
+                  <line x1="0" y1="0" x2="0" y2="-28" stroke="#fff" stroke-width="3.5">
+                      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="2s" repeatCount="indefinite"/>
+                  </line>
+                  <text x="0" y="48" fill="#10B981" font-size="10" font-family="monospace" text-anchor="middle" font-weight="bold">МАХОВИК</text>
+              </g>
+              <line x1="310" y1="187" x2="355" y2="187" stroke="#10B981" stroke-width="3" stroke-dasharray="3,3"/>
+          </svg>
+      </div>
+    </div>
+
+    <!-- РАСЧЕТНЫЙ МОДУЛЬ -->
+    <div class="panel">
+      <h2 data-ru="Расчетный блок" data-kk="Есептеу блогы" data-en="Calculation Unit">Расчетный блок</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+          <div class="data-row">
+            <span data-ru="Получено тепло (Q₁):" data-kk="Алынған жылу (Q₁):" data-en="Heat absorbed (Q₁):">Получено тепло (Q₁):</span>
+            <strong id="lbl-q1">-- Дж</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Совершенная работа (A):" data-kk="Атқарылған жұмыс (A):" data-en="Work done (A):">Совершенная работа (A):</span>
+            <strong id="lbl-a">-- Дж</strong>
+          </div>
+      </div>
+
+      <div class="formulas">
+          <div data-ru="Основные формулы:" data-kk="Негізгі формулалар:" data-en="Basic formulas:">Основные формулы:</div>
+          <div style="margin-top:6px"><b>η = (A / Q₁) * 100%</b></div>
+          <div style="margin-top:4px"><b>η_max = ((T₁ - T₂) / T₁) * 100%</b></div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="in-eta" placeholder="Фактический КПД η (%)" data-ru="Фактический КПД η (%)" data-kk="Нақты ӘИК η (%)" data-en="Actual Efficiency η (%)" step="0.1">
+        <input type="number" id="in-etamax" placeholder="Максимальный КПД Карно η_max (%)" data-ru="Максимальный КПД Карно η_max (%)" data-kk="Максималды Карно ӘИК η_max (%)" data-en="Max Carnot Efficiency η_max (%)" step="0.1">
+      </div>
+
+      <button class="btn-submit" onclick="analyzeKPD()" data-ru="ПРОВЕРИТЬ ЧЕРЕЗ ИИ" data-kk="ЖИ АРҚЫЛЫ ТЕКСЕРУ" data-en="VERIFY VIA AI">ПРОВЕРИТЬ ЧЕРЕЗ ИИ</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD THERMO готов. Рассчитайте фактический КПД и предел Карно по данным крупной модели.</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD THERMO дайын. Ірі модель деректері бойынша нақты ӘИК пен Карно шегін есептеңіз.</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD THERMO ready. Calculate actual efficiency and Carnot limit from the large model data.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // СЛУЧАЙНАЯ ГЕНЕРАЦИЯ ПАРАМЕТРОВ СЕССИИ
+    const Q1 = Math.floor(Math.random() * 501) + 800; // от 800 до 1300 Дж
+    const T2 = Math.floor(Math.random() * 101) + 270;   // от 270 до 370 K
+    const T1 = T2 + Math.floor(Math.random() * 351) + 200; // нагреватель выше на 200–550 K
+
+    // Идеальный предел Карно
+    const true_etamax = ((T1 - T2) / T1) * 100;
+
+    // Реальный КПД тепловой машины (60-80% от идеального Карно)
+    const real_ratio = 0.60 + Math.random() * 0.20; 
+    const true_eta = true_etamax * real_ratio;
+
+    // Полезная работа и сброшенное тепло
+    const A = Math.round(Q1 * (true_eta / 100));
+    const Q2 = Q1 - A;
+
+    // Вывод параметров в SVG и интерфейс
+    document.getElementById('svg-t1').textContent = `Нагреватель: T₁ = ${T1} K`;
+    document.getElementById('svg-q1').textContent = `Получено тепла Q₁ = ${Q1} Дж`;
+    document.getElementById('svg-a').textContent = `Работа A = ${A} Дж`;
+    document.getElementById('svg-t2').textContent = `Холодильник: T₂ = ${T2} K`;
+    document.getElementById('svg-q2').textContent = `Сброс тепла Q₂ = ${Q2} Дж`;
+
+    document.getElementById('lbl-q1').innerText = `${Q1} Дж`;
+    document.getElementById('lbl-a').innerText = `${A} Дж`;
+
+    // ИИ АНАЛИЗАТОР
+    function analyzeKPD() {
+        const studentEta = parseFloat(document.getElementById('in-eta').value);
+        const studentEtamax = parseFloat(document.getElementById('in-etamax').value);
+        
+        if (isNaN(studentEta) || isNaN(studentEtamax)) {
+            printAI("ОШИБКА: Заполните оба поля КПД.", "ҚАТЕ: ӘИК екі өрісін де толтырыңыз.", "ERROR: Fill in both efficiency fields.", "error");
+            return;
+        }
+
+        let errRU = [], errKK = [], errEN = [];
+
+        if (Math.abs(studentEta - true_eta) > 1.5) {
+            errRU.push("Фактический КПД (η)"); errKK.push("Нақты ӘИК (η)"); errEN.push("Actual Efficiency (η)");
+        }
+        if (Math.abs(studentEtamax - true_etamax) > 1.5) {
+            errRU.push("КПД Карно (η_max)"); errKK.push("Карно ӘИК (η_max)"); errEN.push("Carnot Efficiency (η_max)");
+        }
+
+        if (errRU.length === 0) {
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Фактический КПД: ${studentEta.toFixed(1)}% | Предел Карно: ${studentEtamax.toFixed(1)}%.<br>Второй закон термодинамики подтвержден!`,
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Нақты ӘИК: ${studentEta.toFixed(1)}% | Карно шегі: ${studentEtamax.toFixed(1)}%.<br>Термодинамиканың екінші заңы расталды!`,
+                    `SYNC SUCCESSFUL.<br>Actual Efficiency: ${studentEta.toFixed(1)}% | Carnot Limit: ${studentEtamax.toFixed(1)}%.<br>Second Law of Thermodynamics verified!`,
+                    "success");
+        } else {
+            printAI(`ОШИБКА В РАСЧЕТАХ.<br>Ошибки найдены в: <b>${errRU.join(", ")}</b>.<br>Проверьте формулу η = (A / Q1) * 100% и формулу Карно через температуры T1 и T2.`,
+                    `ЕСЕПТЕУДЕГІ ҚАТЕ.<br>Қателер табылды: <b>${errKK.join(", ")}</b>.<br>η = (A / Q1) * 100% формуласын және T1, T2 арқылы Карно формуласын тексеріңіз.`,
+                    `CALCULATION ERROR.<br>Errors found in: <b>${errEN.join(", ")}</b>.<br>Check formula η = (A / Q1) * 100% and Carnot formula using T1 and T2.`,
+                    "error");
+        }
+    }
+
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        document.getElementById('ai-output').prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const lang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            span.style.display = span.getAttribute('data-lang-text') === lang ? 'inline' : 'none';
+        });
+    }
+
+    applyLogLanguage();
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        applyLogLanguage();
+      });
+    });
+  </script>
+</body>
+</html>

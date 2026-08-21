@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Оптика: Исправленная версия</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            touch-action: none; 
+        }
+        .container {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h2 { margin: 0 0 10px 0; color: #2c3e50; }
+        .subtitle { color: #7f8c8d; margin-bottom: 15px; font-size: 0.9em;}
+        
+        canvas {
+            width: 100%;
+            height: 400px;
+            background: #fff;
+            border: 1px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: grab;
+            touch-action: none;
+        }
+        canvas:active { cursor: grabbing; }
+
+        .status-panel {
+            margin-top: 15px;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            min-height: 20px;
+        }
+        .controls {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: left;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #bdc3c7;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .legend { font-size: 0.9em; color: #7f8c8d; }
+        .highlight { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Оптическая Лаборатория</h2>
+    <div class="subtitle">Перетаскивай синюю стрелку (предмет)</div>
+    
+    <canvas id="opticsCanvas"></canvas>
+
+    <div id="statusText" class="status-panel">Загрузка...</div>
+    
+    <div class="controls">
+        <select id="lensSelector">
+            <option value="converging" selected>🔵 Собирающая линза (+F)</option>
+            <option value="diverging">🔴 Рассеивающая линза (-F)</option>
+        </select>
+        <div class="legend">
+            F - фокус, 2F - двойной фокус.<br>
+            Синий = Предмет, Красный = Изображение.
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('opticsCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('statusText');
+    const lensSelector = document.getElementById('lensSelector');
+
+    let width, height, cx, cy;
+    const focalLengthMag = 100; 
+    let objectPos = -250; 
+    const objectHeight = 70; 
+    let isDragging = false;
+    let lensType = 'converging';
+
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        lensSelector.addEventListener('change', (e) => {
+            lensType = e.target.value;
+            drawScene();
+        });
+        
+        const start = (e) => {
+            if(e.touches) e.preventDefault();
+            const pos = getPointerPos(e);
+            if (pos < -10) { isDragging = true; objectPos = pos; drawScene(); }
+        };
+        const move = (e) => {
+            if (!isDragging) return;
+            if(e.touches) e.preventDefault();
+            let pos = getPointerPos(e);
+            if (pos > -20) pos = -20; 
+            if (pos < -cx + 20) pos = -cx + 20;
+            objectPos = pos;
+            drawScene();
+        };
+        const end = () => { isDragging = false; };
+
+        canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); canvas.addEventListener('mouseup', end); canvas.addEventListener('mouseleave', end);
+        canvas.addEventListener('touchstart', start, {passive: false}); canvas.addEventListener('touchmove', move, {passive: false}); canvas.addEventListener('touchend', end);
+        
+        drawScene();
+    }
+
+    function resize() {
+        width = canvas.offsetWidth;
+        height = canvas.offsetHeight;
+        canvas.width = width * window.devicePixelRatio;
+        canvas.height = height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        cx = width / 2; cy = height / 2;
+        drawScene();
+    }
+
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        return (clientX - rect.left) - cx;
+    }
+
+    function drawArrow(x, y, h, color, isDashed = false, label = "") {
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+        if (isDashed) ctx.setLineDash([5, 5]); else ctx.setLineDash([]);
+        ctx.moveTo(cx + x, cy); ctx.lineTo(cx + x, cy - h); ctx.stroke();
+        
+        ctx.beginPath(); ctx.setLineDash([]); 
+        const headSize = 10; const dir = h > 0 ? 1 : -1;
+        ctx.moveTo(cx + x, cy - h);
+        ctx.lineTo(cx + x - headSize/2, cy - h + headSize * dir);
+        ctx.lineTo(cx + x + headSize/2, cy - h + headSize * dir);
+        ctx.closePath(); ctx.fill();
+        
+        if(label) { 
+            ctx.fillStyle = color; ctx.font = "bold 14px Arial"; 
+            ctx.fillText(label, cx + x - (x>0? -10:50), cy - h - 10 * dir); 
+        }
+    }
+
+    function drawPoint(x, label) {
+        ctx.beginPath(); ctx.arc(cx + x, cy, 4, 0, Math.PI * 2); ctx.fillStyle = '#2c3e50'; ctx.fill();
+        ctx.fillStyle = '#7f8c8d'; ctx.font = "12px Arial"; ctx.textAlign = "center"; ctx.fillText(label, cx + x, cy + 20);
+    }
+
+    function drawSegment(x1, y1, x2, y2, color, dashed=false, infinite=false) {
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+        if(dashed) ctx.setLineDash([5, 10]); else ctx.setLineDash([]);
+        ctx.moveTo(cx + x1, cy - y1);
+        if (infinite) {
+             const dx = x2 - x1; const dy = y2 - y1;
+             ctx.lineTo(cx + x1 + dx * 50, cy - (y1 + dy * 50));
+        } else {
+             ctx.lineTo(cx + x2, cy - y2);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // --- ФУНКЦИЯ ОТРИСОВКИ СЦЕНЫ ---
+    function drawScene() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Оптическая ось
+        ctx.beginPath(); ctx.strokeStyle = '#95a5a6'; ctx.lineWidth = 1;
+        ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.stroke();
+
+        // 2. ОТРИСОВКА ЛИНЗЫ (ИСПРАВЛЕНО)
+        ctx.beginPath(); 
+        ctx.strokeStyle = '#2c3e50'; // Темно-синий цвет для линзы
+        ctx.lineWidth = 3;
+        const lensH = 150; // Высота пол-линзы
+        const arrS = 15;   // Размер стрелки
+        
+        // Вертикальная линия
+        ctx.moveTo(cx, cy - lensH); 
+        ctx.lineTo(cx, cy + lensH);
+        ctx.stroke();
+
+        ctx.beginPath();
+        if (lensType === 'converging') {
+            // СОБИРАЮЩАЯ: Стрелки наружу (обычные стрелочки)
+            // Верх
+            ctx.moveTo(cx - arrS, cy - lensH + arrS); 
+            ctx.lineTo(cx, cy - lensH); 
+            ctx.lineTo(cx + arrS, cy - lensH + arrS);
+            // Низ
+            ctx.moveTo(cx - arrS, cy + lensH - arrS); 
+            ctx.lineTo(cx, cy + lensH); 
+            ctx.lineTo(cx + arrS, cy + lensH - arrS);
+        } else {
+            // РАССЕИВАЮЩАЯ: Стрелки "наоборот" (вилочки)
+            // Верх (V-образная)
+            ctx.moveTo(cx - arrS, cy - lensH); 
+            ctx.lineTo(cx, cy - lensH + arrS); 
+            ctx.lineTo(cx + arrS, cy - lensH);
+            // Низ (^-образная)
+            ctx.moveTo(cx - arrS, cy + lensH); 
+            ctx.lineTo(cx, cy + lensH - arrS); 
+            ctx.lineTo(cx + arrS, cy + lensH);
+        }
+        ctx.stroke();
+
+        // 3. Фокусы
+        const f_mag = focalLengthMag;
+        drawPoint(-f_mag, lensType==='converging'?"F":"F мнимый"); 
+        drawPoint(f_mag, lensType==='converging'?"F":"F мнимый");
+        drawPoint(-2*f_mag, "2F"); drawPoint(2*f_mag, "2F");
+
+        // 4. Предмет
+        const d_obj_abs = Math.abs(objectPos);
+        drawArrow(objectPos, 0, objectHeight, '#3498db', false, "Предмет");
+
+        // 5. Расчет изображения
+        const f_eff = (lensType === 'converging') ? f_mag : -f_mag;
+        let imagePos = (f_eff * d_obj_abs) / (d_obj_abs - f_eff);
+        const magnification = - imagePos / d_obj_abs;
+        const imageHeight = objectHeight * magnification;
+        const isVirtual = imagePos < 0;
+
+        // 6. Лучи
+        ctx.save(); ctx.beginPath(); ctx.rect(0,0,width,height); ctx.clip();
+        const rayColor = '#bdc3c7';
+
+        // Луч 1: Через центр
+        drawSegment(objectPos, objectHeight, 0, 0, rayColor, isVirtual, true);
+        if(isVirtual) drawSegment(0, 0, -objectPos, -objectHeight, rayColor, false, true);
+
+        // Луч 2: Параллельный
+        drawSegment(objectPos, objectHeight, 0, objectHeight, rayColor);
+        
+        if (lensType === 'converging') {
+            drawSegment(0, objectHeight, f_mag, 0, rayColor, isVirtual && d_obj_abs < f_mag, true);
+            if(isVirtual && d_obj_abs < f_mag) drawSegment(0, objectHeight, f_mag, 0, rayColor, false, true);
+        } else {
+            // Рассеивающая: от мнимого фокуса
+            const slope = (objectHeight - 0) / (0 - (-f_mag));
+            drawSegment(0, objectHeight, width, objectHeight + slope*width, rayColor, false);
+            drawSegment(0, objectHeight, -f_mag, 0, rayColor, true); // Пунктир назад
+        }
+        ctx.restore();
+
+        // 7. Изображение
+        if (lensType === 'converging' && Math.abs(d_obj_abs - f_mag) < 2) {
+             statusText.innerHTML = "Лучи параллельны. Нет изображения.";
+             statusText.className = "status-panel highlight";
+        } else {
+             drawArrow(imagePos, 0, imageHeight, '#e74c3c', isVirtual, "Изображение");
+             updateStatus(isVirtual, magnification);
+        }
+    }
+
+    function updateStatus(isVirtual, mag) {
+        let type = isVirtual ? "Мнимое" : "Действительное";
+        let orientation = mag > 0 ? "прямое" : "перевернутое";
+        let sizeMag = Math.abs(mag);
+        let size = sizeMag > 1.05 ? "увеличенное" : (sizeMag < 0.95 ? "уменьшенное" : "равное");
+        statusText.innerHTML = `Характеристика: ${type}, ${orientation}, ${size}.`;
+        statusText.className = "status-panel";
+    }
+
+    init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №6</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* CSS стили для оформления страницы */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header .header-text h2 {
+            margin: 0; padding: 0; border: none; color: #2c3e50;
+        }
+        .page-header .header-text p {
+            margin: 5px 0 0 0; color: #7f8c8d; font-style: italic;
+        }
+        .copyright {
+            text-align: center; font-size: 12px; color: #95a5a6;
+            padding-bottom: 15px; border-bottom: 1px solid #eee;
+        }
+        .student-info {
+            display: flex; flex-wrap: wrap; gap: 15px; padding: 15px;
+            background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px;
+        }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .student-info input[name="class_letter"] { max-width: 60px; }
+        .top-nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+        }
+        h1, h2, h3, h4 {
+            color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;
+        }
+        .lab-section { margin-bottom: 30px; }
+        .instrument-container {
+            margin-top: 20px; padding: 15px; border: 1px solid #ddd;
+            border-radius: 8px; background-color: #fafafa; width: 100%; box-sizing: border-box;
+        }
+        
+        /* Стили для симулятора */
+        .archimedes-sim {
+            display: flex; justify-content: center; align-items: flex-start;
+            gap: 20px; min-height: 420px; padding-top: 20px;
+        }
+        .stand-and-beaker {
+            position: relative;
+            width: 250px;
+            height: 400px;
+        }
+        .stand {
+            width: 100%; height: 380px;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .stand-base {
+            width: 80%; height: 15px; background: #7f8c8d; border-radius: 5px;
+            position: absolute; bottom: 0;
+        }
+        .stand-rod {
+            width: 15px; height: 100%; background: #95a5a6;
+        }
+        .stand-arm {
+            position: absolute; top: 0; left: 50%; 
+            width: 150px; height: 15px; background: #95a5a6;
+            transform: translateX(-50%);
+            transition: top 0.5s ease;
+            display: flex; justify-content: center;
+        }
+        .dynamometer-container {
+            position: absolute; top: 15px; 
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .dynamometer-body {
+            width: 30px; 
+            height: 120px; /* ИЗМЕНЕНО: высота увеличена */
+            background: #ecf0f1; border: 2px solid #34495e;
+            border-radius: 5px; position: relative; overflow: hidden;
+        }
+        .dynamometer-spring {
+            width: 100%; height: 20%;
+            background-image: repeating-linear-gradient( to bottom, #7f8c8d, #7f8c8d 1px, transparent 1px, transparent 5px );
+            transition: height 0.3s ease;
+        }
+        .dynamometer-hook {
+            width: 100%; height: 20px; position: relative;
+        }
+        .dynamometer-hook::before {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 2px; height: 10px; background: #34495e;
+        }
+        .dynamometer-hook::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            width: 16px; height: 8px; border: 2px solid #34495e;
+            border-top: none; border-radius: 0 0 8px 8px;
+        }
+        .dynamometer-reading {
+            background: white; border: 1px solid #bdc3c7; padding: 2px 8px;
+            font-size: 1.1em; font-weight: bold; border-radius: 3px;
+        }
+        .attached-body {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 50px; border: 1px solid #555; border-radius: 3px;
+        }
+        .body-al { background: #d0d3d4; }
+        .body-fe { background: #aeb6bf; }
+        .body-cu { background: #e59866; }
+        
+        .beaker-container {
+            width: 150px; height: 200px; position: absolute;
+            bottom: 15px; left: 50%; transform: translateX(-50%);
+        }
+        .beaker {
+            width: 100%; height: 100%; border: 2px solid #aed6f1; border-top: none;
+            border-radius: 0 0 10px 10px; position: relative;
+            /* ИЗМЕНЕНО: вода сделана полупрозрачной */
+            background: linear-gradient(to top, rgba(214, 234, 248, 0.6) 80%, transparent 80%);
+        }
+        .sim-controls { width: 250px; padding-left: 20px; display: flex; flex-direction: column; align-items: flex-start; }
+        .control-group { margin-bottom: 15px; width: 100%; }
+        .control-group label { display: block; margin-bottom: 5px; }
+        .body-buttons { display: flex; gap: 5px; margin-bottom: 10px; }
+        .body-buttons button {
+            background: #fff; border: 1px solid #bdc3c7; padding: 6px 10px;
+            cursor: pointer; border-radius: 5px; font-size: 0.9em;
+        }
+        .body-buttons button.active { background-color: #3498db; color: white; border-color: #3498db; }
+
+        .instruction-block, .formulas-block {
+            background-color: #eaf5ff; border-left: 5px solid #3498db;
+            padding: 15px; margin: 20px 0; border-radius: 5px;
+        }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .formulas-block p { margin: 5px 0; font-size: 1em; }
+        
+        td input {
+            width: 70px; padding: 4px; border: 1px solid #ccc;
+            border-radius: 3px; text-align: center; font-size: 0.9em;
+        }
+        td input:disabled { background-color: #eee; color: #777; }
+        .result-feedback {
+            font-weight: bold; display: block; width: 100%; text-align: center;
+            margin-top: 4px; height: 1em; transition: color 0.3s; font-size: 0.8em;
+        }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+        .action-button {
+            display: inline-block; margin: 15px 5px 0; padding: 8px 18px;
+            font-size: 1em; cursor: pointer; color: white; border: none;
+            border-radius: 5px; transition: background-color 0.3s, opacity 0.5s;
+        }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #checkButton { background-color: #3498db; }
+        #checkButton:hover { background-color: #2980b9; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #showAnswersButton:hover { background-color: #8e44ad; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #shareToTeacherButton:hover { background-color: #2980b9; }
+
+        #finalResult, #answersReview, #penaltyMessage { text-align: center; margin-top: 20px; font-size: 1em; }
+        #answersReview {
+            text-align: left; padding: 10px; background-color: #ecf0f1;
+            border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em;
+        }
+        #answersReview ul { list-style-type: none; padding: 0; }
+        #answersReview li { margin-bottom: 8px; }
+        .lang-switcher { text-align: right; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 4px 8px;
+            margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton {
+            background-color: #6c757d; color: white; border-color: #6c757d;
+        }
+        #backButton:hover { background-color: #5a6268; }
+
+        #validationMessage {
+            color: #e74c3c; font-weight: bold; text-align: center;
+            margin-top: 15px; display: none; font-size: 0.9em;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td { background-color: #ecf0f1; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="grade_level">7 класс</h2>
+                <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+
+        <div class="top-nav">
+            <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="student-info">
+            <div>
+                <label for="student_lastname" data-key="student_lastname">Фамилия</label>
+                <input type="text" id="student_lastname" name="student_lastname" >
+            </div>
+            <div>
+                <label for="student_firstname" data-key="student_firstname">Имя</label>
+                <input type="text" id="student_firstname" name="student_firstname" >
+            </div>
+            <div>
+                <label for="student_class" data-key="student_class">Класс</label>
+                <input type="text" id="student_class" name="student_class" >
+            </div>
+            <div>
+                <label for="student_class_letter" data-key="student_class_letter">Литер</label>
+                <input type="text" id="student_class_letter" name="student_class_letter" maxlength="1" >
+            </div>
+        </div>
+
+        <h1 data-key="main_title">Интерактивная лабораторная работа №6</h1>
+
+        <div class="lab-section" id="main_lab_section">
+            <h2 data-key="lab_topic_title">Тема: Изучение закона Архимеда</h2>
+            <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Экспериментально определить выталкивающую силу и проверить справедливость закона Архимеда.</span></p>
+            
+            <div class="formulas-block">
+                <h4 data-key="formulas_title">Основные формулы</h4>
+                <p><b data-key="formula_archimedes_exp">Сила Архимеда (эксп.):</b> F<sub>A</sub> = P<sub>возд</sub> - P<sub>жидк</sub></p>
+                <p><b data-key="formula_archimedes_theor">Сила Архимеда (теор.):</b> F<sub>A</sub> = ρ<sub>ж</sub> · g · V<sub>т</sub></p>
+            </div>
+
+            <div class="instruction-block">
+                <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+                <ol>
+                    <li data-key="instruction_step1">Выберите тело для исследования (Алюминий, Сталь или Медь).</li>
+                    <li data-key="instruction_step2">Динамометр покажет вес выбранного тела в воздухе. Занесите это значение в таблицу.</li>
+                    <li data-key="instruction_step3">Активируйте галочку "Опустить в воду", чтобы погрузить тело. Динамометр покажет вес тела в воде. Занесите и это значение в таблицу.</li>
+                    <li data-key="instruction_step4">Используя формулы, рассчитайте экспериментальное и теоретическое значения Силы Архимеда. Объем тела указан в таблице.</li>
+                    <li data-key="instruction_step5">Повторите опыт для двух других тел и заполните всю таблицу.</li>
+                    <li data-key="instruction_step6">Когда все поля будут заполнены, нажмите "Проверить". У вас есть две попытки.</li>
+                </ol>
+            </div>
+
+            <h3 data-key="procedure_title">Ход работы:</h3>
+            <div class="instrument-container">
+                <div class="archimedes-sim">
+                    <div class="stand-and-beaker">
+                        <div class="stand">
+                            <div class="stand-rod"></div>
+                            <div class="stand-arm" id="stand_arm">
+                                <div class="dynamometer-container">
+                                    <div class="dynamometer-body">
+                                        <div class="dynamometer-spring" id="dynamometer_spring"></div>
+                                        <div class="dynamometer-hook">
+                                            <div class="attached-body" id="attached_body"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stand-base"></div>
+                        </div>
+                        <div class="beaker-container">
+                            <div class="beaker"></div>
+                        </div>
+                    </div>
+                    <div class="sim-controls">
+                        <div class="dynamometer-reading"><span id="dynamometer_reading">0.00</span> Н</div>
+                        <div class="control-group">
+                            <label data-key="body_choice_label">Выберите тело:</label>
+                            <div class="body-buttons">
+                                <button id="body_al_btn" class="active" data-key="body_al">Алюминий</button>
+                                <button id="body_fe_btn" data-key="body_fe">Сталь</button>
+                                <button id="body_cu_btn" data-key="body_cu">Медь</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label><input type="checkbox" id="submerge_check"> <span data-key="submerge_label">Опустить в воду</span></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lab-section" id="results_section">
+                <h3 data-key="results_table_title">Таблица результатов:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-key="th_object">Тело</th>
+                            <th data-key="th_p_air">Вес в воздухе P<sub>возд</sub> (Н)</th>
+                            <th data-key="th_p_water">Вес в воде P<sub>жидк</sub> (Н)</th>
+                            <th data-key="th_fa_exp">F<sub>A эксп.</sub> (Н)</th>
+                            <th data-key="th_fa_theor">F<sub>A теор.</sub> (Н)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results_body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="pdf-part-2">
+            <div id="finalResult"></div>
+            <div id="answersReview" style="display: none;"></div>
+            <div id="telegram-button-container" style="text-align: center;">
+                 <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+            </div>
+        </div>
+        
+        <div class="action-buttons" style="text-align: center;">
+            <button id="checkButton" class="action-button" data-key="check_button"></button>
+            <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать правильные ответы</button>
+            <div id="validationMessage"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- ВАЖНО: Настройки для Telegram ---
+   const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM'; // Замените на токен вашего бота
+    const CHAT_ID = '876026321';   // Замените на ваш ID чата
+
+    // --- Объект с переводами для всех языков ---
+    const translations = {
+        ru: {
+            grade_level: "7 класс",
+            author_prefix: "Автор:",
+            author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            copyright: "© Все права защищены, {year}",
+            back_button: "Назад",
+            student_lastname: "Фамилия",
+            student_firstname: "Имя",
+            student_class: "Класс",
+            student_class_letter: "Литер",
+            main_title: "Интерактивная лабораторная работа №6",
+            lab_topic_title: "Тема: Изучение закона Архимеда",
+            lab_goal_title: "Цель:",
+            lab_goal_text: "Экспериментально определить выталкивающую силу и проверить справедливость закона Архимеда.",
+            formulas_title: "Основные формулы",
+            formula_archimedes_exp: "Сила Архимеда (эксп.):",
+            formula_archimedes_theor: "Сила Архимеда (теор.):",
+            instruction_title: "Инструкция по выполнению",
+            instruction_step1: "Выберите тело для исследования (Алюминий, Сталь или Медь).",
+            instruction_step2: "Динамометр покажет вес выбранного тела в воздухе. Занесите это значение в таблицу.",
+            instruction_step3: "Активируйте галочку \"Опустить в воду\", чтобы погрузить тело. Динамометр покажет вес тела в воде. Занесите и это значение в таблицу.",
+            instruction_step4: "Используя формулы, рассчитайте экспериментальное и теоретическое значения Силы Архимеда. Объем тела указан в таблице.",
+            instruction_step5: "Повторите опыт для двух других тел и заполните всю таблицу.",
+            instruction_step6: "Когда все поля будут заполнены, нажмите \"Проверить\". У вас есть две попытки.",
+            procedure_title: "Ход работы:",
+            body_choice_label: "Выберите тело:",
+            body_al: "Алюминий",
+            body_fe: "Сталь",
+            body_cu: "Медь",
+            submerge_label: "Опустить в воду",
+            results_table_title: "Таблица результатов:",
+            th_object: "Тело",
+            th_p_air: "Вес в воздухе P<sub>возд</sub> (Н)",
+            th_p_water: "Вес в воде P<sub>жидк</sub> (Н)",
+            th_fa_exp: "F<sub>A эксп.</sub> (Н)",
+            th_fa_theor: "F<sub>A теор.</sub> (Н)",
+            check_button: "Проверить",
+            show_answers_button: "Показать правильные ответы",
+            share_button: "Поделиться с учителем",
+            attempts_left_1: "попытка",
+            attempts_left_2: "попытки",
+            feedback_correct: "Верно",
+            feedback_incorrect: "Ошибка",
+            validation_message: "Пожалуйста, заполните все поля.",
+            final_result_title: "Ваш итоговый результат:",
+            out_of_10: "из 10",
+            answers_review_title: "Разбор ответов",
+            report_student: "Ученик(ца):",
+            report_class: "Класс:",
+            report_score: "Итоговая оценка:",
+            your_answer: "Ваш ответ:",
+            correct_answer: "Правильный ответ:",
+            sending: "Отправка...",
+            send_success: "Успешно отправлено!",
+            send_error: "Ошибка отправки"
+        },
+        kk: {
+            grade_level: "7 сынып",
+            author_prefix: "Авторы:",
+            author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ. №8 гимназия, Қазақстан",
+            copyright: "© Барлық құқықтар қорғалған, {year}",
+            back_button: "Артқа",
+            student_lastname: "Тегі",
+            student_firstname: "Аты",
+            student_class: "Сынып",
+            student_class_letter: "Литер",
+            main_title: "№6 Интерактивті зертханалық жұмыс",
+            lab_topic_title: "Тақырыбы: Архимед заңын зерттеу",
+            lab_goal_title: "Мақсаты:",
+            lab_goal_text: "Кері итеруші күшті тәжірибе жүзінде анықтау және Архимед заңының дұрыстығын тексеру.",
+            formulas_title: "Негізгі формулалар",
+            formula_archimedes_exp: "Архимед күші (тәж.):",
+            formula_archimedes_theor: "Архимед күші (теор.):",
+            instruction_title: "Орындау нұсқаулығы",
+            instruction_step1: "Зерттеу үшін денені таңдаңыз (Алюминий, Болат немесе Мыс).",
+            instruction_step2: "Динамометр таңдалған дененің ауадағы салмағын көрсетеді. Бұл мәнді кестеге енгізіңіз.",
+            instruction_step3: "Денені батыру үшін \"Суға батыру\" құсбелгісін қойыңыз. Динамометр дененің судағы салмағын көрсетеді. Бұл мәнді де кестеге енгізіңіз.",
+            instruction_step4: "Формулаларды пайдаланып, Архимед күшінің тәжірибелік және теориялық мәндерін есептеңіз. Дененің көлемі кестеде көрсетілген.",
+            instruction_step5: "Тәжірибені басқа екі дене үшін қайталап, бүкіл кестені толтырыңыз.",
+            instruction_step6: "Барлық ұяшықтар толтырылғанда, \"Тексеру\" түймесін басыңыз. Сізде екі мүмкіндік бар.",
+            procedure_title: "Жұмыс барысы:",
+            body_choice_label: "Денені таңдаңыз:",
+            body_al: "Алюминий",
+            body_fe: "Болат",
+            body_cu: "Мыс",
+            submerge_label: "Суға батыру",
+            results_table_title: "Нәтижелер кестесі:",
+            th_object: "Дене",
+            th_p_air: "Ауадағы салмақ P<sub>ауа</sub> (Н)",
+            th_p_water: "Судағы салмақ P<sub>сұйық</sub> (Н)",
+            th_fa_exp: "F<sub>A тәж.</sub> (Н)",
+            th_fa_theor: "F<sub>A теор.</sub> (Н)",
+            check_button: "Тексеру",
+            show_answers_button: "Дұрыс жауаптарды көрсету",
+            share_button: "Мұғаліммен бөлісу",
+            attempts_left_1: "мүмкіндік",
+            attempts_left_2: "мүмкіндік",
+            feedback_correct: "Дұрыс",
+            feedback_incorrect: "Қате",
+            validation_message: "Барлық ұяшықтарды толтырыңыз.",
+            final_result_title: "Сіздің қорытынды нәтижеңіз:",
+            out_of_10: "/ 10",
+            answers_review_title: "Жауаптарды талдау",
+            report_student: "Оқушы:",
+            report_class: "Сынып:",
+            report_score: "Қорытынды баға:",
+            your_answer: "Сіздің жауабыңыз:",
+            correct_answer: "Дұрыс жауап:",
+            sending: "Жіберілуде...",
+            send_success: "Сәтті жіберілді!",
+            send_error: "Жіберу қатесі"
+        },
+        en: {
+            grade_level: "7th Grade",
+            author_prefix: "Author:",
+            author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium №8, Shymkent, Kazakhstan",
+            copyright: "© All rights reserved, {year}",
+            back_button: "Back",
+            student_lastname: "Last Name",
+            student_firstname: "First Name",
+            student_class: "Grade",
+            student_class_letter: "Letter",
+            main_title: "Interactive Laboratory Work №6",
+            lab_topic_title: "Topic: Study of Archimedes' Principle",
+            lab_goal_title: "Objective:",
+            lab_goal_text: "To experimentally determine the buoyant force and verify Archimedes' principle.",
+            formulas_title: "Key Formulas",
+            formula_archimedes_exp: "Buoyant Force (exp.):",
+            formula_archimedes_theor: "Buoyant Force (theor.):",
+            instruction_title: "Instructions",
+            instruction_step1: "Select a body for the experiment (Aluminum, Steel, or Copper).",
+            instruction_step2: "The dynamometer will show the weight of the selected body in the air. Record this value in the table.",
+            instruction_step3: "Check the \"Submerge in water\" box to immerse the body. The dynamometer will show its weight in water. Record this value too.",
+            instruction_step4: "Using the formulas, calculate the experimental and theoretical values of the Buoyant Force. The volume of the body is given in the table.",
+            instruction_step5: "Repeat the experiment for the other two bodies and complete the entire table.",
+            instruction_step6: "Once all fields are filled, click \"Check\". You have two attempts.",
+            procedure_title: "Procedure:",
+            body_choice_label: "Select a body:",
+            body_al: "Aluminum",
+            body_fe: "Steel",
+            body_cu: "Copper",
+            submerge_label: "Submerge in water",
+            results_table_title: "Results Table:",
+            th_object: "Object",
+            th_p_air: "Weight in air P<sub>air</sub> (N)",
+            th_p_water: "Weight in water P<sub>liquid</sub> (N)",
+            th_fa_exp: "F<sub>A exp.</sub> (N)",
+            th_fa_theor: "F<sub>A theor.</sub> (N)",
+            check_button: "Check",
+            show_answers_button: "Show Correct Answers",
+            share_button: "Share with Teacher",
+            attempts_left_1: "attempt",
+            attempts_left_2: "attempts",
+            feedback_correct: "Correct",
+            feedback_incorrect: "Incorrect",
+            validation_message: "Please fill in all fields.",
+            final_result_title: "Your Final Result:",
+            out_of_10: "out of 10",
+            answers_review_title: "Answers Review",
+            report_student: "Student:",
+            report_class: "Grade:",
+            report_score: "Final Score:",
+            your_answer: "Your answer:",
+            correct_answer: "Correct answer:",
+            sending: "Sending...",
+            send_success: "Sent successfully!",
+            send_error: "Sending failed"
+        }
+    };
+
+    let currentLang = 'ru';
+    let attemptsLeft = 2;
+    let finalScoreText = '';
+    
+    // --- Получаем все DOM-элементы ---
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+    
+    // Элементы симулятора
+    const dynamometerReading = document.getElementById('dynamometer_reading');
+    const dynamometerSpring = document.getElementById('dynamometer_spring');
+    const attachedBody = document.getElementById('attached_body');
+    const submergeCheck = document.getElementById('submerge_check');
+    const bodyAlBtn = document.getElementById('body_al_btn');
+    const bodyFeBtn = document.getElementById('body_fe_btn');
+    const bodyCuBtn = document.getElementById('body_cu_btn');
+    const resultsBody = document.getElementById('results_body');
+    const standArm = document.getElementById('stand_arm');
+
+    // --- Параметры симуляции ---
+    const G = 9.8;
+    const RHO_WATER = 1000; // кг/м³
+    const BODIES = {
+        al: { name: {ru: "Алюминий", kk: "Алюминий", en: "Aluminum"}, mass: 0.135, volume: 0, p_air: 0, p_water: 0, fa_exp: 0, fa_theor: 0 },
+        fe: { name: {ru: "Сталь", kk: "Болат", en: "Steel"}, mass: 0.312, volume: 0, p_air: 0, p_water: 0, fa_exp: 0, fa_theor: 0 },
+        cu: { name: {ru: "Медь", kk: "Мыс", en: "Copper"}, mass: 0.445, volume: 0, p_air: 0, p_water: 0, fa_exp: 0, fa_theor: 0 }
+    };
+    let currentBody = 'al';
+    let isSubmerged = false;
+
+    // --- Функции ---
+    function initializeSimulation() {
+        BODIES.al.volume = parseFloat((Math.random() * 0.00001 + 0.00005).toFixed(5));
+        BODIES.fe.volume = parseFloat((Math.random() * 0.00001 + 0.00004).toFixed(5));
+        BODIES.cu.volume = parseFloat((Math.random() * 0.00001 + 0.00005).toFixed(5));
+        
+        for (const key in BODIES) {
+            const body = BODIES[key];
+            body.p_air = body.mass * G;
+            body.fa_theor = RHO_WATER * G * body.volume;
+            body.p_water = body.p_air - body.fa_theor;
+            body.fa_exp = body.p_air - body.p_water;
+        }
+    }
+
+    function updateSimulation() {
+        const body = BODIES[currentBody];
+        attachedBody.className = `attached-body body-${currentBody}`;
+        
+        // ИЗМЕНЕНО: Коэффициент визуализации для растяжения пружины
+        const p_air_px = body.p_air * 8; 
+        
+        if (isSubmerged) {
+            // ИЗМЕНЕНО: Коэффициент визуализации для растяжения пружины
+            const p_water_px = body.p_water * 8;
+            dynamometerSpring.style.height = `${20 + p_water_px}px`;
+            dynamometerReading.textContent = body.p_water.toFixed(2);
+            // ИЗМЕНЕНО: Глубина погружения тела
+            standArm.style.top = '160px'; 
+        } else {
+            dynamometerSpring.style.height = `${20 + p_air_px}px`;
+            dynamometerReading.textContent = body.p_air.toFixed(2);
+            standArm.style.top = '0px';
+        }
+    }
+
+    function setupTable() {
+        resultsBody.innerHTML = '';
+        for (const key in BODIES) {
+            const body = BODIES[key];
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${body.name[currentLang]} (V = ${body.volume} м³)</td>
+                <td><input type="text" id="p_air_${key}"><span id="p_air_feedback_${key}" class="result-feedback"></span></td>
+                <td><input type="text" id="p_water_${key}"><span id="p_water_feedback_${key}" class="result-feedback"></span></td>
+                <td><input type="text" id="fa_exp_${key}"><span id="fa_exp_feedback_${key}" class="result-feedback"></span></td>
+                <td><input type="text" id="fa_theor_${key}"><span id="fa_theor_feedback_${key}" class="result-feedback"></span></td>
+            `;
+            resultsBody.appendChild(row);
+        }
+    }
+    
+    // --- Обработчики событий ---
+    bodyAlBtn.addEventListener('click', () => {
+        currentBody = 'al';
+        bodyAlBtn.classList.add('active');
+        bodyFeBtn.classList.remove('active');
+        bodyCuBtn.classList.remove('active');
+        updateSimulation();
+    });
+    bodyFeBtn.addEventListener('click', () => {
+        currentBody = 'fe';
+        bodyFeBtn.classList.add('active');
+        bodyAlBtn.classList.remove('active');
+        bodyCuBtn.classList.remove('active');
+        updateSimulation();
+    });
+    bodyCuBtn.addEventListener('click', () => {
+        currentBody = 'cu';
+        bodyCuBtn.classList.add('active');
+        bodyAlBtn.classList.remove('active');
+        bodyFeBtn.classList.remove('active');
+        updateSimulation();
+    });
+    submergeCheck.addEventListener('change', () => {
+        isSubmerged = submergeCheck.checked;
+        updateSimulation();
+    });
+
+    // --- Функция сброса состояния ---
+    function resetState() {
+        attemptsLeft = 2;
+        finalScoreText = '';
+        initializeSimulation();
+        updateSimulation();
+        document.querySelectorAll('td input').forEach(input => {
+            input.value = '';
+            input.disabled = false;
+            input.className = '';
+        });
+        document.querySelectorAll('.result-feedback').forEach(span => {
+            span.textContent = '';
+            span.className = 'result-feedback';
+        });
+        submergeCheck.checked = false;
+        isSubmerged = false;
+        currentBody = 'al';
+        bodyAlBtn.click();
+        checkButton.style.display = 'inline-block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'none';
+        finalResultDiv.innerHTML = '';
+        answersReviewDiv.style.display = 'none';
+        answersReviewDiv.innerHTML = '';
+        validationMessageDiv.style.display = 'none';
+    }
+
+    function setLanguage(lang) {
+        if (currentLang !== lang) {
+            resetState(); 
+        }
+        currentLang = lang;
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') {
+                    text = text.replace('{year}', new Date().getFullYear());
+                }
+                element.innerHTML = text; 
+            }
+        });
+        document.querySelector('html').setAttribute('lang', lang);
+        setupTable(); 
+        updateCheckButtonText();
+    }
+    
+    const langSwitchButtons = document.querySelectorAll('.lang-switcher .lang-btn');
+    langSwitchButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            if(lang) {
+                setLanguage(lang);
+                langSwitchButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            }
+        });
+    });
+
+    backButton.addEventListener('click', () => {
+        history.back();
+    });
+
+
+    function updateCheckButtonText() {
+        if (attemptsLeft > 0) {
+            const attemptText = translations[currentLang][attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2'];
+            checkButton.textContent = `${translations[currentLang].check_button} (${attemptsLeft} ${attemptText})`;
+        }
+    }
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+        const allInputs = document.querySelectorAll('.student-info input, td input');
+        
+        allInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input');
+                allFieldsValid = false;
+            } else {
+                input.classList.remove('incorrect-input');
+            }
+        });
+
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block';
+            return;
+        }
+
+        attemptsLeft--;
+        let correctPoints = 0;
+        const totalPoints = Object.keys(BODIES).length * 4;
+
+        for (const key in BODIES) {
+            const body = BODIES[key];
+            const pAirInput = document.getElementById(`p_air_${key}`);
+            const pWaterInput = document.getElementById(`p_water_${key}`);
+            const faExpInput = document.getElementById(`fa_exp_${key}`);
+            const faTheorInput = document.getElementById(`fa_theor_${key}`);
+            
+            const pAirFeedback = document.getElementById(`p_air_feedback_${key}`);
+            const pWaterFeedback = document.getElementById(`p_water_feedback_${key}`);
+            const faExpFeedback = document.getElementById(`fa_exp_feedback_${key}`);
+            const faTheorFeedback = document.getElementById(`fa_theor_feedback_${key}`);
+
+            const check = (input, correctVal, feedback, tolerance) => {
+                const userVal = parseFloat(input.value.replace(',', '.'));
+                const isCorrect = !isNaN(userVal) && Math.abs(userVal - correctVal) <= tolerance;
+                if(isCorrect) correctPoints++;
+
+                input.className = isCorrect ? 'correct-input' : 'incorrect-input';
+                feedback.textContent = isCorrect ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect;
+                feedback.className = isCorrect ? 'result-feedback correct' : 'result-feedback incorrect';
+            };
+
+            check(pAirInput, body.p_air, pAirFeedback, 0.05);
+            check(pWaterInput, body.p_water, pWaterFeedback, 0.05);
+            check(faExpInput, body.fa_exp, faExpFeedback, 0.1);
+            check(faTheorInput, body.fa_theor, faTheorFeedback, 0.1);
+        }
+
+        updateCheckButtonText();
+
+        if (attemptsLeft === 0) {
+            checkButton.style.display = 'none';
+            showAnswersButton.style.display = 'inline-block';
+            
+            const score = totalPoints > 0 ? (correctPoints / totalPoints * 10).toFixed(1) : 10;
+            const resultText = translations[currentLang].final_result_title;
+            const outOfText = translations[currentLang].out_of_10;
+            finalScoreText = `${score} ${outOfText}`;
+
+            finalResultDiv.innerHTML = `<h3>${resultText} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></h3>`;
+
+            document.querySelectorAll('td input, .student-info input').forEach(input => {
+                input.disabled = true;
+            });
+        }
+    });
+    
+    showAnswersButton.addEventListener('click', () => {
+        const trans = translations[currentLang];
+        
+        const lastName = document.getElementById('student_lastname').value || '...';
+        const firstName = document.getElementById('student_firstname').value || '...';
+        const studentClass = document.getElementById('student_class').value || '...';
+        const studentLetter = document.getElementById('student_class_letter').value || '...';
+
+        let reviewHTML = `<h3>${trans.answers_review_title}</h3>`;
+        reviewHTML += `<p><b>${trans.report_student}</b> ${lastName} ${firstName}</p>`;
+        reviewHTML += `<p><b>${trans.report_class}</b> ${studentClass} "${studentLetter}"</p>`;
+        reviewHTML += `<p><b>${trans.report_score}</b> <span class="${parseFloat(finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${finalScoreText}</span></p><hr>`;
+        reviewHTML += '<ul>';
+        
+        for (const key in BODIES) {
+            const body = BODIES[key];
+            reviewHTML += `<li><strong>${body.name[currentLang]}:</strong><ul>`;
+            const p_air_input = document.getElementById(`p_air_${key}`).value || '...';
+            const p_water_input = document.getElementById(`p_water_${key}`).value || '...';
+            const fa_exp_input = document.getElementById(`fa_exp_${key}`).value || '...';
+            const fa_theor_input = document.getElementById(`fa_theor_${key}`).value || '...';
+
+            reviewHTML += `<li>${trans.th_p_air}: ${trans.your_answer} <strong>${p_air_input}</strong>. ${trans.correct_answer}: <strong>${body.p_air.toFixed(2)}</strong></li>`;
+            reviewHTML += `<li>${trans.th_p_water}: ${trans.your_answer} <strong>${p_water_input}</strong>. ${trans.correct_answer}: <strong>${body.p_water.toFixed(2)}</strong></li>`;
+            reviewHTML += `<li>${trans.th_fa_exp}: ${trans.your_answer} <strong>${fa_exp_input}</strong>. ${trans.correct_answer}: <strong>${body.fa_exp.toFixed(2)}</strong></li>`;
+            reviewHTML += `<li>${trans.th_fa_theor}: ${trans.your_answer} <strong>${fa_theor_input}</strong>. ${trans.correct_answer}: <strong>${body.fa_theor.toFixed(2)}</strong></li>`;
+
+            reviewHTML += `</ul></li>`;
+        }
+
+        reviewHTML += '</ul>';
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+        shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        
+        const actionButtons = document.querySelector('.action-buttons');
+        actionButtons.style.display = 'none';
+
+        const canvas = await html2canvas(mainContainer, { scale: 2, useCORS: true, windowWidth: 900 });
+        
+        actionButtons.style.display = 'block';
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 40;
+        const contentWidth = pdfWidth - margin * 2;
+        const ratio = canvas.height / canvas.width;
+        const imgHeight = contentWidth * ratio;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+        heightLeft -= (pdfHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position -= (pdfHeight - margin);
+            pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, position + margin, contentWidth, imgHeight);
+            heightLeft -= (pdfHeight - margin * 2);
+        }
+        
+        return pdf.output('blob');
+    }
+
+    shareToTeacherButton.addEventListener('click', async () => {
+        const button = shareToTeacherButton;
+        button.textContent = translations[currentLang].sending;
+        button.disabled = true;
+
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const lastName = document.getElementById('student_lastname').value || 'student';
+            const firstName = document.getElementById('student_firstname').value || 'report';
+            const studentClass = document.getElementById('student_class').value || '...';
+            const studentLetter = document.getElementById('student_class_letter').value || '';
+            const fileName = `Lab_Report_6_${studentClass}${studentLetter}_${lastName}_${firstName}.pdf`;
+            const caption = `Отчет по лабораторной работе N6\nУченик(ца): ${lastName} ${firstName}\nКласс: ${studentClass}${studentLetter}\nОценка: ${finalScoreText}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                button.textContent = translations[currentLang].send_success;
+                button.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description);
+            }
+
+        } catch (error) {
+            console.error('Telegram API Error:', error);
+            button.textContent = translations[currentLang].send_error;
+            button.style.backgroundColor = '#e74c3c';
+            button.disabled = false;
+            alert(`${translations[currentLang].send_error}\n\nТехническая информация: ${error.message}`);
+        }
+    });
+
+
+    // --- Инициализация ---
+    initializeSimulation();
+    updateSimulation();
+    setLanguage('ru');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v6.0 (Статика)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px; 
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; 
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch; 
+        }
+
+        .game-area {
+            flex: 2; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; 
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+        
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; } 
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1; 
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc; 
+            min-height: 100%; 
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column; 
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2 🔒</button>
+            <button id="btn-m3">Миссия 3 🔒</button>
+            <button id="btn-m4">Миссия 4 🔒</button>
+            <button id="btn-m5">Миссия 5 🔒</button>
+            <button id="btn-m6">Миссия 6 🔒</button>
+            <button id="btn-m7">Миссия 7 🔒</button>
+            <button id="btn-m8">Миссия 8 🔒</button>
+            <button id="btn-m9">Миссия 9 🔒</button>
+            <button id="btn-m10">Миссия 10 🔒</button>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                        </div>
+                    <p id="mission-question">...</p>
+                </div>
+                
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    
+                    <p id="feedback-message"></p>
+                </div>
+            </div> 
+
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ (Нужно 5 ✔ для 🔓)</h3>
+                <ul id="progress-list">
+                    </ul>
+            </div> 
+        </div> 
+    </div> 
+
+<script>
+        // --- (НОВОЕ) ОБЪЕКТ ПЕРЕВОДОВ (СТАТИКА) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН! МИССИЯ",
+                    unlocked: "РАЗБЛОКИРОВАНА!",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Момент силы", scenario: "К гаечному ключу приложена сила. Рассчитайте момент этой силы относительно оси вращения.", data: { F: "Сила", d: "Плечо силы" }, question: "Задача: Введите момент силы (M) в Н·м." },
+                    { title: "Миссия 2: Поиск силы", scenario: "Чтобы создать необходимый момент, к рычагу прикладывают силу на известном расстоянии. Какая это должна быть сила?", data: { M: "Момент силы", d: "Плечо силы" }, question: "Задача: Введите силу (F) в Ньютонах." },
+                    { title: "Миссия 3: Равновесие рычага (Сила)", scenario: "На левое плечо рычага действует сила F1. Какую силу F2 нужно приложить к правому плечу, чтобы рычаг был в равновесии?", data: { F1: "Сила F1", d1: "Плечо d1", d2: "Плечо d2" }, question: "Задача: Введите силу (F2) в Ньютонах." },
+                    { title: "Миссия 4: Равновесие рычага (Плечо)", scenario: "Две силы F1 и F2 должны уравновесить рычаг. F1 приложена на плече d1. На каком расстоянии d2 нужно приложить F2?", data: { F1: "Сила F1", d1: "Плечо d1", F2: "Сила F2" }, question: "Задача: Введите плечо (d2) в метрах." },
+                    { title: "Миссия 5: Давление твердого тела", scenario: "Кирпич лежит на поверхности. Рассчитайте давление, которое он оказывает на эту поверхность.", data: { F: "Сила (Вес)", S: "Площадь опоры" }, question: "Задача: Введите давление (P) в Паскалях (Па)." },
+                    { title: "Миссия 6: Поиск силы давления", scenario: "Известно, какое давление оказывает объект на опору. Зная площадь опоры, найдите силу, с которой объект давит на нее.", data: { P: "Давление", S: "Площадь опоры" }, question: "Задача: Введите силу (F) в Ньютонах." },
+                    { title: "Миссия 7: Гидростатическое давление", scenario: "Водолаз погрузился в озеро. Рассчитайте давление воды, действующее на него на этой глубине.", data: { rho: "Плотность жидкости", h: "Глубина" }, question: "Задача: Введите гидростатическое давление (P) в Паскалях (Па)." },
+                    { title: "Миссия 8: Поиск глубины", scenario: "Датчик на дне водоема зафиксировал гидростат. давление. Зная плотность воды, определите глубину.", data: { P: "Давление", rho: "Плотность жидкости" }, question: "Задача: Введите глубину (h) в метрах." }, // "гидростатическое" сокращено
+                    { title: "Миссия 9: Сообщающиеся сосуды", scenario: "В U-образную трубку налиты две несмешивающиеся жидкости (1 и 2). Высота столба 1 известна. Найдите высоту столба 2.", data: { rho1: "Плотность 1", h1: "Высота 1", rho2: "Плотность 2" }, question: "Задача: Введите высоту (h2) в метрах." },
+                    { title: "Миссия 10: Гидравлический пресс", scenario: "На малый поршень пресса действует F1. Рассчитайте силу F2, которая будет действовать на большой поршень.", data: { F1: "Сила F1", S1: "Площадь S1", S2: "Площадь S2" }, question: "Задача: Введите силу (F2) в Ньютонах." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС! КЕЛЕСІ МИССИЯ",
+                    unlocked: "АШЫЛДЫ!",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Күш моменті", scenario: "Кілтке күш түсірілген. Осы күштің айналу осіне қатысты моментін есептеңіз.", data: { F: "Күш", d: "Күш иіні" }, question: "Тапсырма: Күш моментін (M) Н·м енгізіңіз." },
+                    { title: "Миссия 2: Күшті табу", scenario: "Қажетті моментті жасау үшін иінтірекке белгілі бір қашықтықта күш түсіріледі. Бұл қандай күш болуы керек?", data: { M: "Күш моменті", d: "Күш иіні" }, question: "Тапсырма: Күшті (F) Ньютонмен енгізіңіз." },
+                    { title: "Миссия 3: Иінтірек тепе-теңдігі (Күш)", scenario: "Иінтіректің сол жақ иініне F1 күші әсер етеді. Иінтірек тепе-теңдікте болуы үшін оң жақ иініне қандай F2 күшін түсіру керек?", data: { F1: "Күш F1", d1: "Иін d1", d2: "Иін d2" }, question: "Тапсырма: Күшті (F2) Ньютонмен енгізіңіз." },
+                    { title: "Миссия 4: Иінтірек тепе-теңдігі (Иін)", scenario: "F1 және F2 күштері иінтіректі теңестіруі керек. F1 күші d1 иініне түсірілген. F2 күшін қандай d2 қашықтықта түсіру керек?", data: { F1: "Күш F1", d1: "Иін d1", F2: "Күш F2" }, question: "Тапсырма: Иінді (d2) метрмен енгізіңіз." },
+                    { title: "Миссия 5: Қатты дененің қысымы", scenario: "Кірпіш бетінде жатыр. Оның осы бетке түсіретін қысымын есептеңіз.", data: { F: "Күш (Салмақ)", S: "Тірек ауданы" }, question: "Тапсырма: Қысымды (P) Паскальмен (Па) енгізіңіз." },
+                    { title: "Миссия 6: Қысым күшін табу", scenario: "Нысанның тірекке қандай қысым түсіретіні белгілі. Тірек ауданын біле отырып, нысанның оған түсіретін күшін табыңыз.", data: { P: "Қысым", S: "Тірек ауданы" }, question: "Тапсырма: Күшті (F) Ньютонмен енгізіңіZ." },
+                    { title: "Миссия 7: Гидростатикалық қысым", scenario: "Сүңгуір көлге сүңгіді. Осы тереңдікте оған әсер ететін су қысымын есептеңіз.", data: { rho: "Сұйықтық тығыздығы", h: "Тереңдік" }, question: "Тапсырма: Гидростатикалық қысымды (P) Паскальмен (Па) енгізіңіз." },
+                    { title: "Миссия 8: Тереңдікті табу", scenario: "Су қоймасының түбіндегі датчик гидростат. қысымды тіркеді. Судың тығыздығын біле отырып, тереңдікті анықтаңыз.", data: { P: "Қысым", rho: "Сұйықтық тығыздығы" }, question: "Тапсырма: Тереңдікті (h) метрмен енгізіңіз." },
+                    { title: "Миссия 9: Қатынас ыдыстар", scenario: "U-түтікке араласпайтын екі сұйықтық (1-2) құйылған. 1-ші сұйықтық биіктігі белгілі. 2-ші сұйықтық биіктігін табыңыз.", data: { rho1: "Тығыздық 1", h1: "Биіктік 1", rho2: "Тығыздық 2" }, question: "Тапсырма: Биіктікті (h2) метрмен енгізіңіз." },
+                    { title: "Миссия 10: Гидравликалық пресс", scenario: "Пресс кіші поршеніне F1 күші әсер етеді. Үлкен поршенге әсер ететін F2 күшін есептеңіз.", data: { F1: "Күш F1", S1: "Аудан S1", S2: "Аудан S2" }, question: "Тапсырма: Күшті (F2) Ньютонмен енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct answer",
+                    unlock: "CALCULATION CORRECT! MISSION",
+                    unlocked: "UNLOCKED!",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Moment of Force (Torque)", scenario: "A force is applied to a wrench. Calculate the moment of this force (torque) about the axis of rotation.", data: { F: "Force", d: "Lever Arm" }, question: "Task: Enter the moment of force (M) in N·m." },
+                    { title: "Mission 2: Finding the Force", scenario: "To create a required torque, a force is applied to a lever at a known distance. What must this force be?", data: { M: "Torque", d: "Lever Arm" }, question: "Task: Enter the force (F) in Newtons." },
+                    { title: "Mission 3: Lever Equilibrium (Force)", scenario: "A force F1 acts on the left arm of a lever. What force F2 must be applied to the right arm to balance the lever?", data: { F1: "Force F1", d1: "Arm d1", d2: "Arm d2" }, question: "Task: Enter the force (F2) in Newtons." },
+                    { title: "Mission 4: Lever Equilibrium (Distance)", scenario: "Two forces F1 and F2 must balance a lever. F1 is applied at arm d1. At what distance d2 must F2 be applied?", data: { F1: "Force F1", d1: "Arm d1", F2: "Force F2" }, question: "Task: Enter the arm (d2) in meters." },
+                    { title: "Mission 5: Solid Pressure", scenario: "A brick lies on a surface. Calculate the pressure it exerts on that surface.", data: { F: "Force (Weight)", S: "Contact Area" }, question: "Task: Enter the pressure (P) in Pascals (Pa)." },
+                    { title: "Mission 6: Finding Pressure Force", scenario: "The pressure an object exerts is known. Knowing the contact area, find the force the object exerts.", data: { P: "Pressure", S: "Contact Area" }, question: "Task: Enter the force (F) in Newtons." },
+                    { title: "Mission 7: Hydrostatic Pressure", scenario: "A diver is in a lake. Calculate the water pressure acting on him at this depth.", data: { rho: "Fluid Density", h: "Depth" }, question: "Task: Enter the hydrostatic pressure (P) in Pascals (Pa)." },
+                    { title: "Mission 8: Finding Depth", scenario: "A sensor at the bottom of a reservoir recorded hydrostatic pressure. Knowing the fluid density, determine the depth.", data: { P: "Pressure", rho: "Fluid Density" }, question: "Task: Enter the depth (h) in meters." },
+                    { title: "Mission 9: Communicating Vessels", scenario: "Two immiscible liquids (1 and 2) are in a U-tube. The height of liquid column 1 is known. Find the height of liquid column 2.", data: { rho1: "Density 1", h1: "Height 1", rho2: "Density 2" }, question: "Task: Enter the height (h2) in meters." },
+                    { title: "Mission 10: Hydraulic Press", scenario: "A force F1 is applied to the small piston of a hydraulic press. Calculate the force F2 that will act on the large piston.", data: { F1: "Force F1", S1: "Area S1", S2: "Area S2" }, question: "Task: Enter the force (F2) in Newtons." }
+                ]
+            }
+        };
+
+
+        // --- Глобальные Константы и Состояние ---
+        const WINS_TO_UNLOCK = 5;
+        const G = 10; // g=10 м/с² для гидростатики и давления
+        const TOLERANCE = 0.02;
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru'; 
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        const missionTitle = document.getElementById('mission-title');
+        const missionScenario = document.getElementById('mission-scenario');
+        const missionData = document.getElementById('mission-data');
+        const missionQuestion = document.getElementById('mission-question');
+        const userAnswerInput = document.getElementById('user-answer');
+        const submitButton = document.getElementById('submit-button');
+        const newDataButton = document.getElementById('new-data-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const navButtons = document.querySelectorAll('.mission-nav button');
+        const progressList = document.getElementById('progress-list');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const progressTitle = document.getElementById('progress-title');
+        const inputLabel = document.getElementById('input-label');
+
+        // --- Утилиты ---
+
+        function getRandom(min, max, decimals = 0) {
+            const str = (Math.random() * (max - min) + min).toFixed(decimals);
+            return parseFloat(str);
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов ---
+
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+            const ui = translations[currentLang].ui;
+            submitButton.textContent = ui.submit;
+            newDataButton.textContent = ui.newData;
+            inputLabel.textContent = ui.inputLabel;
+            userAnswerInput.placeholder = ui.placeholder;
+            updateProgressWindow();
+            missionLoaders[currentMissionId]();
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = ''; 
+            const t = translations[currentLang].progress;
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                <span class="correct">${progress.correct} ✔</span> / 
+                                <span class="incorrect">${progress.incorrect} ❌</span>
+                             </span>`;
+
+                if (progress.unlocked) {
+                    li.innerHTML = `<span>${t.mission} ${i} 🔓</span> ${stats}`;
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    li.innerHTML = `<span>${t.mission} ${i} 🔒</span> ${stats}`;
+                    li.classList.add('locked');
+                    btn.disabled = true;
+                    btn.innerHTML = `${t.mission} ${i} 🔒`;
+                }
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- Загрузчики Миссий (Статика) ---
+
+        function loadMission1() {
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const F = getRandom(20, 100, 0); // Сила, Н
+            const d = getRandom(0.2, 2.0, 1);  // Плечо, м
+            currentCorrectAnswer = F * d;
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F} (F): ${F} Н</p><p>${t.data.d} (d): ${d} м</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission2() {
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const M = getRandom(50, 200, 0);
+            const d = getRandom(0.2, 2.0, 1);
+            currentCorrectAnswer = M / d;
+            
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.M} (M): ${M} Н·м</p><p>${t.data.d} (d): ${d} м</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission3() {
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const F1 = getRandom(100, 300, 0);
+            const d1 = getRandom(1, 5, 1);
+            const d2 = getRandom(1, 5, 1);
+            currentCorrectAnswer = (F1 * d1) / d2;
+            
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F1} (F1): ${F1} Н</p><p>${t.data.d1} (d1): ${d1} м</p><p>${t.data.d2} (d2): ${d2} м</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission4() {
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const F1 = getRandom(100, 300, 0);
+            const d1 = getRandom(1, 5, 1);
+            const F2 = getRandom(50, 500, 0);
+            currentCorrectAnswer = (F1 * d1) / F2;
+            
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F1} (F1): ${F1} Н</p><p>${t.data.d1} (d1): ${d1} м</p><p>${t.data.F2} (F2): ${F2} Н</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission5() {
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const F = getRandom(50, 500, 0); // Сила (вес)
+            const S = getRandom(0.1, 2.0, 2); // Площадь в м²
+            currentCorrectAnswer = F / S;
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F} (F): ${F} Н</p><p>${t.data.S} (S): ${S} м²</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission6() {
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const P = getRandom(1000, 10000, 0); // Давление в Па
+            const S = getRandom(0.1, 2.0, 2); // Площадь в м²
+            currentCorrectAnswer = P * S;
+            
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.P} (P): ${P} Па</p><p>${t.data.S} (S): ${S} м²</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission7() {
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const rho = getRandom(800, 13600, 0); // Плотность (от воды до ртути)
+            const h = getRandom(1, 100, 0); // Глубина в м
+            currentCorrectAnswer = rho * G * h;
+            
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.rho} (ρ): ${rho} кг/м³</p><p>${t.data.h} (h): ${h} м</p><p>(g = ${G} м/с²)</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission8() {
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const P = getRandom(10000, 500000, 0); // Давление в Па
+            const rho = getRandom(800, 1200, 0); // Плотность (например, вода)
+            currentCorrectAnswer = P / (rho * G);
+            
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.P} (P): ${P} Па</p><p>${t.data.rho} (ρ): ${rho} кг/м³</p><p>(g = ${G} м/с²)</p>`;
+            missionQuestion.textContent = t.question;
+        }
+        
+        function loadMission9() {
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            
+            const rho1 = getRandom(1000, 1500, 0); // Плотная жидкость
+            const h1 = getRandom(0.1, 0.5, 2); // Высота 1
+            const rho2 = getRandom(700, 950, 0); // Менее плотная (масло, керосин)
+            currentCorrectAnswer = (rho1 * h1) / rho2;
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.rho1} (ρ1): ${rho1} кг/м³</p><p>${t.data.h1} (h1): ${h1} м</p><p>${t.data.rho2} (ρ2): ${rho2} кг/м³</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission10() {
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const F1 = getRandom(50, 200, 0); 
+            const S1 = getRandom(0.01, 0.1, 3);
+            const S2 = getRandom(0.5, 2.0, 2);
+            currentCorrectAnswer = (F1 * S2) / S1;
+            
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F1} (F1): ${F1} Н</p><p>${t.data.S1} (S1): ${S1} м²</p><p>${t.data.S2} (S2): ${S2} м²</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        // --- Обработчик Проверки ---
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            let unlockedNewMission = false;
+            const t = translations[currentLang].feedback; 
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                // Правильный ответ
+                missionProgress[currentMissionId].correct++;
+                
+                const nextMissionId = currentMissionId + 1;
+                if (nextMissionId <= TOTAL_MISSIONS && !missionProgress[nextMissionId].unlocked) {
+                    if (missionProgress[currentMissionId].correct >= WINS_TO_UNLOCK) {
+                        missionProgress[nextMissionId].unlocked = true;
+                        unlockedNewMission = true;
+                    }
+                }
+
+                if (unlockedNewMission) {
+                    feedbackMessage.textContent = `${t.unlock} ${nextMissionId} ${t.unlocked}`;
+                    feedbackMessage.className = 'feedback-unlock';
+                } else {
+                    feedbackMessage.textContent = t.correct;
+                    feedbackMessage.className = 'feedback-correct';
+                }
+
+            } else {
+                // Неправильный ответ
+                missionProgress[currentMissionId].incorrect++;
+                feedbackMessage.textContent = `${t.incorrect} (${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+        // --- Инициализация Игры ---
+
+        function initializeGame() {
+            // 1. Заполняем массив загрузчиков
+            missionLoaders.push(null, 
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, 
+                // (ИСПРАВЛЕНО) Убрано слово 'Services' и комментарий
+                loadMission10 
+            );
+
+            // 2. Создаем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true
+                };
+            }
+
+            // 3. Слушатели на кнопки навигации
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    // (ИСПРАВЛЕНО) Опечатка 'missionLoadErs' исправлена
+                    missionLoaders[id](); 
+                });
+            });
+
+            // 4. Слушатели на кнопки управления
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                missionLoaders[currentMissionId](); 
+            });
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // 5. Слушатели на кнопки языка
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // 6. Первичная отрисовка и запуск
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

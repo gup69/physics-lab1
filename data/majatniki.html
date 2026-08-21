@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа: Маятники</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ff9800; /* Orange for mechanics */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Блокировка */
+        .locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; }
+        .tab-btn {
+            flex: 1; padding: 10px; background: #333; border: none; color: #aaa;
+            cursor: pointer; font-weight: bold; border-radius: 5px;
+        }
+        .tab-btn.active { background: var(--accent); color: black; }
+
+        /* Controls */
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #ccc; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { width: 100%; padding: 8px; background: #000; border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box;}
+        .val { float: right; color: var(--accent); font-weight: bold; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: #000; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button.action-btn:disabled { background: #555; cursor: not-allowed; }
+
+        /* Visualization */
+        .visualizer {
+            position: relative; height: 500px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Stopwatch */
+        .stopwatch {
+            position: absolute; top: 20px; right: 20px;
+            background: #222; border: 2px solid #555;
+            padding: 10px; border-radius: 8px; text-align: center;
+            width: 120px;
+        }
+        .sw-time { font-family: monospace; font-size: 1.5em; color: var(--success); display: block; margin-bottom: 5px;}
+        .sw-btn { padding: 5px 10px; cursor: pointer; font-size: 0.8em; border-radius: 3px; border:none;}
+        .sw-start { background: var(--success); color: white; }
+        .sw-reset { background: var(--danger); color: white; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 500px;
+            text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 20px 0; font-weight: bold; }
+        .modal-details { text-align: left; background: #000; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .modal-details span { color: #aaa; }
+        .modal-details strong { float: right; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1200px; align-items:center;">
+    <h1 style="color:var(--accent)">Виртуальная лаборатория: Маятники</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success); color:white;" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headSettings">2. Эксперимент</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="setMode('math')" data-lang="tabMath">Математический</button>
+                <button class="tab-btn" onclick="setMode('spring')" data-lang="tabSpring">Пружинный</button>
+            </div>
+
+            <div id="controls-math">
+                <div class="control-group">
+                    <label><span data-lang="lblLength">Длина нити (L):</span> <span class="val"><span id="len-val">1.00</span> м</span></label>
+                    <input type="range" id="len-slider" min="0.1" max="2.0" step="0.05" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label data-lang="lblGravity">Гравитация (g):</label>
+                    <select id="g-select">
+                        <option value="9.81" data-lang="gEarth">Земля (9.81 м/с²)</option>
+                        <option value="1.62" data-lang="gMoon">Луна (1.62 м/с²)</option>
+                        <option value="24.79" data-lang="gJupiter">Юпитер (24.79 м/с²)</option>
+                        <option value="unknown" data-lang="gUnknown">*** ПЛАНЕТА X ***</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="controls-spring" style="display:none;">
+                <div class="control-group">
+                    <label><span data-lang="lblMass">Масса груза (m):</span> <span class="val"><span id="mass-val">0.10</span> кг</span></label>
+                    <input type="range" id="mass-slider" min="0.05" max="1.0" step="0.05" value="0.10">
+                </div>
+                <div class="control-group">
+                    <label><span data-lang="lblSpringK">Жесткость (k):</span> <span class="val"><span id="k-val">10</span> Н/м</span></label>
+                    <input type="range" id="k-slider" min="5" max="50" step="1" value="10">
+                </div>
+                <div class="control-group">
+                    <label data-lang="lblTaskSpring">Задание:</label>
+                    <select id="spring-task-select">
+                        <option value="known" data-lang="taskKnown">Известные параметры</option>
+                        <option value="unknown_m" data-lang="taskUnknownM">Найти массу (m = ?)</option>
+                        <option value="unknown_k" data-lang="taskUnknownK">Найти жесткость (k = ?)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblAmp">Амплитуда:</span> <span class="val"><span id="amp-val">10</span>°/см</span></label>
+                <input type="range" id="amp-slider" min="5" max="30" step="1" value="10">
+            </div>
+
+            <div class="control-header" data-lang="headTask">3. Ответ</div>
+            <div class="control-group">
+                <label data-lang="lblAnswer">Ваш ответ (g, m или k):</label>
+                <input type="text" id="ans-input" placeholder="...">
+                <button class="action-btn" id="check-btn" style="margin-top:5px; background:var(--success); color:white;" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="font-size:0.9em; text-align:center; color:#aaa; margin-top:5px;"></div>
+                <div id="check-res" style="margin-top:5px; font-weight:bold; text-align:center;"></div>
+            </div>
+            
+            <button class="action-btn" id="pause-btn" style="background:#555;" data-lang="btnPause">ПАУЗА / СТАРТ</button>
+        </div>
+    </div>
+
+    <div class="visualizer">
+        <canvas id="sim-canvas" width="800" height="500"></canvas>
+        <div id="overlay-msg" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; color:#aaa; pointer-events:none;">
+            <h2 data-lang="msgStart">Введите имя и нажмите НАЧАТЬ</h2>
+        </div>
+        
+        <div class="stopwatch">
+            <span class="sw-time" id="sw-display">00.00</span>
+            <div style="display:flex; gap:5px; justify-content:center;">
+                <button class="sw-btn sw-start" id="sw-start-btn">Start</button>
+                <button class="sw-btn sw-reset" id="sw-reset-btn">Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div class="modal-details">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+            <div><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></div>
+            <hr style="border-color:#333; margin:10px 0;">
+            <div><span data-lang="resTrueVal">Правильный ответ:</span> <strong id="res-true-val"></strong></div>
+        </div>
+        
+        <p data-lang="resScoreLabel">Итоговая оценка:</p>
+        <div class="modal-score" id="res-score-val">10 / 10</div>
+        
+        <button class="action-btn" onclick="location.reload()" style="background:var(--accent); color:black;" data-lang="btnRestart">ЗАВЕРШИТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headSettings: "2. Эксперимент", tabMath: "Математический", tabSpring: "Пружинный",
+            lblLength: "Длина нити (L):",
+            lblGravity: "Гравитация (g):",
+            gEarth: "Земля (9.81 м/с²)", gMoon: "Луна (1.62 м/с²)", gJupiter: "Юпитер (24.79 м/с²)", gUnknown: "*** ПЛАНЕТА X ***",
+            lblMass: "Масса груза (m):", lblSpringK: "Жесткость (k):",
+            lblTaskSpring: "Режим:",
+            taskKnown: "Обучение (всё известно)", taskUnknownM: "Найти массу (m = ?)", taskUnknownK: "Найти жесткость (k = ?)",
+            lblAmp: "Амплитуда:",
+            headTask: "3. Ответ", lblAnswer: "Ваш ответ:",
+            btnCheck: "ПРОВЕРИТЬ", btnPause: "ПАУЗА / СТАРТ",
+            resCorrect: "ВЕРНО!", resWrong: "ОШИБКА. Осталось попыток: {n}",
+            swStart: "Старт", swStop: "Стоп",
+            msgStart: "Введите имя и нажмите НАЧАТЬ",
+            alertName: "Пожалуйста, введите ФИ ученика и класс!",
+            txtAttempts: "Попытки: {used} / 3",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resAttempts: "Использовано попыток:", resScoreLabel: "Оценка:", resTrueVal: "Верный ответ:", btnRestart: "ЗАВЕРШИТЬ"
+        },
+        kz: {
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headSettings: "2. Тәжірибе", tabMath: "Математикалық", tabSpring: "Серіппелі",
+            lblLength: "Жіп ұзындығы (L):",
+            lblGravity: "Гравитация (g):",
+            gEarth: "Жер (9.81 м/с²)", gMoon: "Ай (1.62 м/с²)", gJupiter: "Юпитер (24.79 м/с²)", gUnknown: "*** ПЛАНЕТА X ***",
+            lblMass: "Жүк массасы (m):", lblSpringK: "Қатаңдық (k):",
+            lblTaskSpring: "Режим:",
+            taskKnown: "Оқу (барлығы белгілі)", taskUnknownM: "Массаны табу (m = ?)", taskUnknownK: "Қатаңдықты табу (k = ?)",
+            lblAmp: "Амплитуда:",
+            headTask: "3. Жауап", lblAnswer: "Жауабыңыз:",
+            btnCheck: "ТЕКСЕРУ", btnPause: "ПАУЗА / БАСТАУ",
+            resCorrect: "ДҰРЫС!", resWrong: "ҚАТЕ. Қалған мүмкіндіктер: {n}",
+            swStart: "Бастау", swStop: "Тоқтау",
+            msgStart: "Атыңызды жазып, БАСТАУ басыңыз",
+            alertName: "Аты-жөніңізді және сыныпты енгізіңіз!",
+            txtAttempts: "Мүмкіндіктер: {used} / 3",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resAttempts: "Қолданылды:", resScoreLabel: "Баға:", resTrueVal: "Дұрыс жауап:", btnRestart: "АЯҚТАУ"
+        },
+        en: {
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headSettings: "2. Experiment", tabMath: "Pendulum", tabSpring: "Spring",
+            lblLength: "Length (L):",
+            lblGravity: "Gravity (g):",
+            gEarth: "Earth (9.81 m/s²)", gMoon: "Moon (1.62 m/s²)", gJupiter: "Jupiter (24.79 m/s²)", gUnknown: "*** PLANET X ***",
+            lblMass: "Mass (m):", lblSpringK: "Spring Constant (k):",
+            lblTaskSpring: "Mode:",
+            taskKnown: "Training (Known)", taskUnknownM: "Find Mass (m = ?)", taskUnknownK: "Find k (k = ?)",
+            lblAmp: "Amplitude:",
+            headTask: "3. Answer", lblAnswer: "Your Answer:",
+            btnCheck: "CHECK", btnPause: "PAUSE / START",
+            resCorrect: "CORRECT!", resWrong: "WRONG. Attempts left: {n}",
+            swStart: "Start", swStop: "Stop",
+            msgStart: "Enter Name and press START",
+            alertName: "Enter Name and Class!",
+            txtAttempts: "Attempts: {used} / 3",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resAttempts: "Used:", resScoreLabel: "Score:", resTrueVal: "Correct value:", btnRestart: "FINISH"
+        }
+    };
+
+    let currentLang = 'ru';
+    let mode = 'math'; 
+    let paused = false;
+    let time = 0;
+    let attemptsUsed = 0;
+    let isRunning = false;
+
+    // Physics State
+    const state = {
+        L: 1.0, 
+        g: 9.81, 
+        g_hidden: 0, 
+        m: 0.1,
+        m_hidden: 0,
+        k: 10,
+        k_hidden: 0,
+        amp: 10, 
+        springTask: 'known'
+    };
+
+    // Stopwatch
+    let swRunning = false;
+    let swStartTime = 0;
+    let swElapsedTime = 0;
+
+    // === Логика ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        // Update selects
+        updateSelectOptions('g-select', t, ['gEarth', 'gMoon', 'gJupiter', 'gUnknown']);
+        updateSelectOptions('spring-task-select', t, ['taskKnown', 'taskUnknownM', 'taskUnknownK']);
+        
+        const swBtn = document.getElementById('sw-start-btn');
+        swBtn.innerText = swRunning ? t.swStop : t.swStart;
+        
+        if(isRunning) {
+            document.getElementById('attempts-display').innerText = t.txtAttempts.replace('{used}', attemptsUsed);
+        }
+    }
+
+    function updateSelectOptions(id, t, keys) {
+        const sel = document.getElementById(id);
+        for(let i=0; i<sel.options.length; i++) {
+            // Для g-select ключи специфичны
+            let key = '';
+            if(id === 'g-select') {
+                if(sel.options[i].value === 'unknown') key = 'gUnknown';
+                else if(sel.options[i].value === '9.81') key = 'gEarth';
+                else if(sel.options[i].value === '1.62') key = 'gMoon';
+                else if(sel.options[i].value === '24.79') key = 'gJupiter';
+            } else {
+                if(sel.options[i].value === 'known') key = 'taskKnown';
+                if(sel.options[i].value === 'unknown_m') key = 'taskUnknownM';
+                if(sel.options[i].value === 'unknown_k') key = 'taskUnknownK';
+            }
+            if(t[key]) sel.options[i].text = t[key];
+        }
+    }
+
+    function setMode(newMode) {
+        mode = newMode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.tab-btn[onclick="setMode('${mode}')"]`).classList.add('active');
+
+        document.getElementById('controls-math').style.display = (mode === 'math') ? 'block' : 'none';
+        document.getElementById('controls-spring').style.display = (mode === 'spring') ? 'block' : 'none';
+        
+        time = 0;
+        // Сброс задания при смене режима
+        attemptsUsed = 0;
+        document.getElementById('check-res').innerText = "";
+        document.getElementById('ans-input').value = "";
+        document.getElementById('check-btn').disabled = false;
+        
+        // Обновить текст попыток
+        if(isRunning) {
+            document.getElementById('attempts-display').innerText = LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed);
+        }
+    }
+
+    // --- Physics ---
+    function getParams() {
+        if (mode === 'math') {
+            const g = (document.getElementById('g-select').value === 'unknown') ? parseFloat(state.g_hidden) : parseFloat(document.getElementById('g-select').value);
+            return { 
+                omega: Math.sqrt(g / state.L), 
+                amp: state.amp * (Math.PI/180) 
+            };
+        } else {
+            let m = state.m;
+            let k = state.k;
+            if (state.springTask === 'unknown_m') m = parseFloat(state.m_hidden);
+            if (state.springTask === 'unknown_k') k = parseFloat(state.k_hidden);
+
+            return {
+                omega: Math.sqrt(k / m),
+                amp: state.amp / 100 
+            };
+        }
+    }
+
+    // --- Draw ---
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        const { omega, amp } = getParams();
+        
+        if (!paused && isRunning) {
+            time += 0.016; 
+        }
+
+        ctx.strokeStyle = '#333';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(cvs.width/2, 0); ctx.lineTo(cvs.width/2, cvs.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (mode === 'math') {
+            drawMathPendulum(omega, amp);
+        } else {
+            drawSpringPendulum(omega, amp);
+        }
+
+        requestAnimationFrame(draw);
+    }
+
+    function drawMathPendulum(omega, thetaMax) {
+        const L_pixels = state.L * 200; 
+        const pivotX = cvs.width / 2;
+        const pivotY = 50;
+        const theta = thetaMax * Math.cos(omega * time);
+        const bobX = pivotX + L_pixels * Math.sin(theta);
+        const bobY = pivotY + L_pixels * Math.cos(theta);
+
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(bobX, bobY); ctx.stroke();
+
+        ctx.fillStyle = '#ff9800';
+        ctx.beginPath(); ctx.arc(bobX, bobY, 15, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawSpringPendulum(omega, A_meters) {
+        const pivotX = cvs.width / 2;
+        const pivotY = 50;
+        const baseLenPx = 250; 
+        const scale = 200; 
+        const displacement = A_meters * Math.cos(omega * time);
+        const currentLenPx = baseLenPx + displacement * scale;
+
+        ctx.strokeStyle = '#ccc'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(pivotX, pivotY);
+        const segments = 10;
+        const stepY = currentLenPx / segments;
+        for (let i = 1; i <= segments; i++) {
+            const xOffset = (i % 2 === 0) ? -10 : 10;
+            const y = pivotY + i * stepY;
+            if (i === segments) ctx.lineTo(pivotX, y); 
+            else ctx.lineTo(pivotX + xOffset, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(pivotX - 20, pivotY + currentLenPx, 40, 40);
+        
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(pivotX + 60, 50, 2, 400); 
+        for(let i=0; i<=40; i++) ctx.fillRect(pivotX + 55, 50 + i*10, 10, 1);
+        ctx.fillStyle = 'red';
+        ctx.fillRect(pivotX + 50, pivotY + baseLenPx, 20, 2);
+    }
+
+    function updateStopwatch() {
+        if (swRunning) {
+            const now = Date.now();
+            const diff = now - swStartTime + swElapsedTime;
+            const sec = Math.floor(diff / 1000);
+            const ms = Math.floor((diff % 1000) / 10); 
+            document.getElementById('sw-display').innerText = 
+                (sec < 10 ? "0"+sec : sec) + "." + (ms < 10 ? "0"+ms : ms);
+            requestAnimationFrame(updateStopwatch);
+        }
+    }
+
+    function showFinalResult(score, correct) {
+        const modal = document.getElementById('result-modal');
+        const t = LANG[currentLang];
+        
+        // Определение правильного ответа для вывода
+        let correctVal = 0;
+        if (mode === 'math') correctVal = state.g_hidden;
+        else if (state.springTask === 'unknown_m') correctVal = state.m_hidden;
+        else if (state.springTask === 'unknown_k') correctVal = state.k_hidden;
+
+        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+        document.getElementById('res-attempts').innerText = attemptsUsed;
+        document.getElementById('res-score-val').innerText = score + " / 10";
+        document.getElementById('res-score-val').style.color = (score > 0) ? "var(--success)" : "var(--danger)";
+        
+        document.getElementById('res-true-val').innerText = correct ? "---" : correctVal;
+
+        modal.style.display = 'flex';
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        state.g_hidden = (Math.random() * (20 - 5) + 5).toFixed(2);
+        state.m_hidden = (Math.random() * (0.8 - 0.2) + 0.2).toFixed(2);
+        state.k_hidden = (Math.floor(Math.random() * (40 - 15) + 15));
+
+        updateLanguage('ru');
+        draw();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        
+        // Sliders
+        document.getElementById('len-slider').oninput = (e) => { state.L = parseFloat(e.target.value); document.getElementById('len-val').innerText = state.L.toFixed(2); };
+        document.getElementById('mass-slider').oninput = (e) => { state.m = parseFloat(e.target.value); document.getElementById('mass-val').innerText = state.m.toFixed(2); };
+        document.getElementById('k-slider').oninput = (e) => { state.k = parseInt(e.target.value); document.getElementById('k-val').innerText = state.k; };
+        document.getElementById('amp-slider').oninput = (e) => { state.amp = parseInt(e.target.value); document.getElementById('amp-val').innerText = state.amp; };
+
+        document.getElementById('spring-task-select').onchange = (e) => {
+            state.springTask = e.target.value;
+            const ms = document.getElementById('mass-slider');
+            const ks = document.getElementById('k-slider');
+            ms.disabled = (state.springTask === 'unknown_m');
+            ks.disabled = (state.springTask === 'unknown_k');
+            
+            if(state.springTask === 'unknown_m') document.getElementById('mass-val').innerText = "???";
+            else document.getElementById('mass-val').innerText = state.m.toFixed(2);
+
+            if(state.springTask === 'unknown_k') document.getElementById('k-val').innerText = "???";
+            else document.getElementById('k-val').innerText = state.k;
+        };
+
+        // START LAB
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            isRunning = true;
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+            document.getElementById('overlay-msg').style.display = 'none';
+            
+            updateLanguage(currentLang); // Refresh text
+        };
+
+        document.getElementById('pause-btn').onclick = () => { paused = !paused; };
+
+        document.getElementById('sw-start-btn').onclick = () => {
+            if (!swRunning) {
+                swRunning = true;
+                swStartTime = Date.now();
+                updateStopwatch();
+                document.getElementById('sw-start-btn').innerText = (currentLang==='ru'?'Стоп':(currentLang==='kz'?'Тоқтау':'Stop'));
+                document.getElementById('sw-start-btn').style.background = '#e0a800'; 
+            } else {
+                swRunning = false;
+                swElapsedTime += Date.now() - swStartTime;
+                document.getElementById('sw-start-btn').innerText = (currentLang==='ru'?'Старт':(currentLang==='kz'?'Бастау':'Start'));
+                document.getElementById('sw-start-btn').style.background = 'var(--success)';
+            }
+        };
+        document.getElementById('sw-reset-btn').onclick = () => {
+            swRunning = false;
+            swElapsedTime = 0;
+            document.getElementById('sw-display').innerText = "00.00";
+            document.getElementById('sw-start-btn').innerText = (currentLang==='ru'?'Старт':(currentLang==='kz'?'Бастау':'Start'));
+            document.getElementById('sw-start-btn').style.background = 'var(--success)';
+        };
+
+        // CHECK
+        document.getElementById('check-btn').onclick = () => {
+            const userVal = parseFloat(document.getElementById('ans-input').value.replace(',','.'));
+            if(isNaN(userVal)) return;
+
+            // Определяем правильный ответ
+            let correctVal = 0;
+            let isValidTask = false;
+
+            if (mode === 'math') {
+                const gSel = document.getElementById('g-select').value;
+                if (gSel === 'unknown') { 
+                    correctVal = parseFloat(state.g_hidden);
+                    isValidTask = true;
+                }
+            } else {
+                if (state.springTask === 'unknown_m') { correctVal = parseFloat(state.m_hidden); isValidTask = true; }
+                if (state.springTask === 'unknown_k') { correctVal = parseFloat(state.k_hidden); isValidTask = true; }
+            }
+
+            if(!isValidTask) {
+                alert("Выберите режим 'Планета X' или 'Найти массу/жесткость' для проверки!");
+                return;
+            }
+
+            attemptsUsed++;
+            document.getElementById('attempts-display').innerText = LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed);
+
+            const err = Math.abs(userVal - correctVal) / correctVal;
+            const resDiv = document.getElementById('check-res');
+            const t = LANG[currentLang];
+
+            if (err < 0.1) {
+                // SUCCESS
+                let score = 0;
+                if(attemptsUsed === 1) score = 10;
+                else if(attemptsUsed === 2) score = 8;
+                else score = 7;
+
+                resDiv.innerHTML = `<span style="color:var(--success)">${t.resCorrect}</span>`;
+                setTimeout(() => showFinalResult(score, true), 1000);
+                document.getElementById('check-btn').disabled = true;
+            } else {
+                // FAIL
+                let left = 3 - attemptsUsed;
+                if(left > 0) {
+                    resDiv.innerHTML = `<span style="color:var(--danger)">${t.resWrong.replace('{n}', left)}</span>`;
+                } else {
+                    showFinalResult(0, false);
+                    document.getElementById('check-btn').disabled = true;
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

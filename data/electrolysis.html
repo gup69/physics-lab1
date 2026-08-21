@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа: Электролиз</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .page-header h2 { margin: 0; color: #2c3e50; }
+        .page-header p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px; }
+        .lang-switcher { display: flex; gap: 5px; }
+        .lang-btn {
+            background: none; border: 1px solid #bdc3c7; padding: 4px 10px;
+            cursor: pointer; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #475569;
+        }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+
+        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+        .instruction-block {
+            background-color: #eaf5ff; border-left: 5px solid #3498db;
+            padding: 15px; margin: 20px 0; border-radius: 5px;
+        }
+        .simulation-box {
+            display: flex; flex-direction: column; align-items: center;
+            background: #e9ecef; border: 1px solid #ccc; border-radius: 8px;
+            padding: 20px; margin-bottom: 20px; position: relative;
+        }
+        .task-card {
+            background: #fff3cd; border: 1px solid #ffeeba; padding: 15px;
+            border-radius: 6px; margin-bottom: 20px; font-size: 1.05em;
+        }
+        .calculation-panel {
+            background: #fafafa; border: 1px solid #ddd; padding: 20px;
+            border-radius: 8px; margin-bottom: 20px; text-align: center;
+        }
+        .calculation-panel input {
+            width: 120px; padding: 8px; text-align: center; font-size: 1.1em;
+            border: 1px solid #ccc; border-radius: 4px; margin: 0 10px;
+        }
+        .action-button {
+            display: inline-block; margin: 5px; padding: 10px 20px;
+            font-size: 1em; cursor: pointer; color: white; border: none;
+            border-radius: 5px; background-color: #3498db; transition: background 0.3s;
+        }
+        .action-button:hover { background-color: #2980b9; }
+        .action-button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .result-feedback { font-weight: bold; margin-top: 10px; display: block; font-size: 1.1em; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; background-color: #e8f8f5 !important; }
+        .incorrect-input { border-color: #e74c3c !important; background-color: #fdedec !important; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="printableArea">
+        <div class="page-header">
+            <div class="header-text">
+                <h2 data-key="title_lab">Интерактивная лабораторная работа</h2>
+                <p><span data-key="author_info"><b>Автор:</b> Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+            </div>
+        </div>
+        <div class="copyright">© Все права защищены, <span id="current-year"></span></div>
+
+        <div class="top-nav">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">Русский</button>
+                <button class="lang-btn" data-lang="kk">Қазақша</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <h1 data-key="main_heading">Лабораторная работа: Изучение закона электролиза Фарадея</h1>
+        
+        <div class="lab-section">
+            <p><strong><span data-key="goal_title">Цель:</span></strong> <span data-key="goal_text">Экспериментально и расчетным путем определить массу вещества, выделившегося на электроде при электролизе, используя первый закон Фарадея.</span></p>
+
+            <div class="instruction-block">
+                <h4 data-key="instruction_title">Инструкция по выполнению:</h4>
+                <ol>
+                    <li data-key="inst_1">Изучите индивидуальные параметры вашего варианта, сгенерированные автоматически.</li>
+                    <li data-key="inst_2">Используйте первый закон Фарадея: <i>m</i> = <i>k</i> · <i>I</i> · <i>t</i>, где <i>k</i> — электрохимический эквивалент, <i>I</i> — сила тока, <i>t</i> — время в секундах.</li>
+                    <li data-key="inst_3">Введите рассчитанную массу вещества (в граммах) в поле ответа и нажмите «Проверить».</li>
+                </ol>
+            </div>
+
+            <div class="task-card" id="taskCondition">
+                <!-- Динамическое условие -->
+            </div>
+
+            <div class="simulation-box">
+                <h3 style="margin-top:0; border:none; color:#2c3e50;" data-key="sim_title">Анимация процесса электролиза</h3>
+                <canvas id="electrolysisCanvas" width="550" height="220" style="background:#fff; border:1px solid #bbb; border-radius:4px;"></canvas>
+                <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;" data-key="sim_subtitle">Движение ионов в растворе и рост осадка на катоде</p>
+            </div>
+
+            <div class="calculation-panel">
+                <label for="massInput"><b data-key="input_label">Введите массу выделившегося вещества (<i>m</i>, г):</b></label>
+                <div style="margin-top: 10px;">
+                    <input type="text" id="massInput" placeholder="0.000"> <b data-key="unit_g">г</b>
+                    <button id="checkButton" class="action-button" data-key="btn_check">Проверить</button>
+                </div>
+                <span id="feedbackMessage" class="result-feedback"></span>
+            </div>
+
+            <div style="text-align: center;">
+                <button id="showAnswersButton" class="action-button" style="background-color: #9b59b6; display: none;" data-key="btn_show">Показать правильный ответ</button>
+            </div>
+
+            <div id="answersReview"></div>
+            <div id="finalResult" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    const translations = {
+        ru: {
+            title_lab: "Интерактивная лабораторная работа",
+            author_info: "<b>Автор:</b> Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан",
+            main_heading: "Лабораторная работа: Изучение закона электролиза Фарадея",
+            goal_title: "Цель:",
+            goal_text: "Экспериментально и расчетным путем определить массу вещества, выделившегося на электроде при электролизе, используя первый закон Фарадея.",
+            instruction_title: "Инструкция по выполнению:",
+            inst_1: "Изучите индивидуальные параметры вашего варианта, сгенерированные автоматически.",
+            inst_2: "Используйте первый закон Фарадея: <i>m</i> = <i>k</i> · <i>I</i> · <i>t</i>, где <i>k</i> — электрохимический эквивалент, <i>I</i> — сила тока, <i>t</i> — время в секундах.",
+            inst_3: "Введите рассчитанную массу вещества (в граммах) в поле ответа и нажмите «Проверить».",
+            sim_title: "Анимация процесса электролиза",
+            sim_subtitle: "Движение ионов в растворе и рост осадка на катоде",
+            input_label: "Введите массу выделившегося вещества (<i>m</i>, г):",
+            unit_g: "г",
+            btn_check: "Проверить",
+            btn_show: "Показать правильный ответ",
+            anode: "Анод (+)",
+            cathode: "Катод (-)",
+            msg_empty: "Пожалуйста, введите значение!",
+            msg_correct: "Верно! Отличный результат 👍",
+            msg_wrong1: "Неверно. Осталась 1 попытка ❌",
+            msg_wrong2: "Попытки исчерпаны ❌",
+            review_title: "Разбор решения:",
+            step_formula: "Формула: ",
+            step_time: "Перевод времени: ",
+            step_calc: "Расчет: ",
+            score_10: "Оценка: 10/10",
+            score_0: "Оценка: 0/10"
+        },
+        kk: {
+            title_lab: "Интерактивті зертханалық жұмыс",
+            author_info: "<b>Авторы:</b> Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ., №8 мектеп-гимназия, Қазақстан",
+            main_heading: "Зертханалық жұмыс: Фарадейдің электролиз заңын зерттеу",
+            goal_title: "Мақсаты:",
+            goal_text: "Фарадейдің бірінші заңын қолдана отырып, электролиз кезінде электродта бөлінген заттың массасын эксперименттік және есептік жолмен анықтау.",
+            instruction_title: "Орындау бойынша нұсқаулық:",
+            inst_1: "Автоматты түрде жасалған нұсқаңыздың жеке параметрлерін зерттеңіз.",
+            inst_2: "Фарадейдің бірінші заңын қолданыңыз: <i>m</i> = <i>k</i> · <i>I</i> · <i>t</i>, мұндағы <i>k</i> — электрохимиялық эквивалент, <i>I</i> — ток күші, <i>t</i> — уақыт секундпен.",
+            inst_3: "Заңның есептелген массасын (грамммен) жауап өрісіне енгізіп, «Тексеру» түймесін басыңыз.",
+            sim_title: "Электролиз процесінің анимациясы",
+            sim_subtitle: "Ерітіндідегі иондардың қозғалысы және катодтағы тұнбаның өсуі",
+            input_label: "Бөлінген заттың массасын енгізіңіз (<i>m</i>, г):",
+            unit_g: "г",
+            btn_check: "Тексеру",
+            btn_show: "Дұрыс жауапты көрсету",
+            anode: "Анод (+)",
+            cathode: "Катод (-)",
+            msg_empty: "Мәнді енгізіңіз!",
+            msg_correct: "Дұрыс! Тамаша нәтиже 👍",
+            msg_wrong1: "Қате. 1 мүмкіндік қалды ❌",
+            msg_wrong2: "Мүмкіндіктер таусылды ❌",
+            review_title: "Шешу жолын талдау:",
+            step_formula: "Формула: ",
+            step_time: "Уақытты түрлендіру: ",
+            step_calc: "Есептеу: ",
+            score_10: "Баға: 10/10",
+            score_0: "Баға: 0/10"
+        },
+        en: {
+            title_lab: "Interactive Laboratory Work",
+            author_info: "<b>Author:</b> Yuriy Petrovich Gryaznov, Physics Teacher, School-Gymnasium No. 8, Shymkent, Kazakhstan",
+            main_heading: "Lab Work: Study of Faraday's Electrolysis Law",
+            goal_title: "Goal:",
+            goal_text: "Experimentally and computationally determine the mass of the substance released at the electrode during electrolysis using Faraday's first law.",
+            instruction_title: "Instructions:",
+            inst_1: "Review the individual variant parameters generated automatically.",
+            inst_2: "Use Faraday's first law: <i>m</i> = <i>k</i> · <i>I</i> · <i>t</i>, where <i>k</i> is the electrochemical equivalent, <i>I</i> is current, <i>t</i> is time in seconds.",
+            inst_3: "Enter the calculated mass of the substance (in grams) into the answer field and click 'Check'.",
+            sim_title: "Electrolysis Process Animation",
+            sim_subtitle: "Ion movement in solution and sediment growth on the cathode",
+            input_label: "Enter the mass of the released substance (<i>m</i>, g):",
+            unit_g: "g",
+            btn_check: "Check",
+            btn_show: "Show Correct Answer",
+            anode: "Anode (+)",
+            cathode: "Cathode (-)",
+            msg_empty: "Please enter a value!",
+            msg_correct: "Correct! Excellent result 👍",
+            msg_wrong1: "Incorrect. 1 attempt left ❌",
+            msg_wrong2: "Attempts exhausted ❌",
+            review_title: "Solution breakdown:",
+            step_formula: "Formula: ",
+            step_time: "Time conversion: ",
+            step_calc: "Calculation: ",
+            score_10: "Score: 10/10",
+            score_0: "Score: 0/10"
+        }
+    };
+
+    let currentLang = 'ru';
+    let currentFeedbackKey = '';
+
+    const substances = [
+        { name: { ru: "Медь (Cu²⁺)", kk: "Мыс (Cu²⁺)", en: "Copper (Cu²⁺)" }, k: 0.329 },
+        { name: { ru: "Серебро (Ag⁺)", kk: "Күміс (Ag⁺)", en: "Silver (Ag⁺)" }, k: 1.118 },
+        { name: { ru: "Никель (Ni²⁺)", kk: "Никель (Ni²⁺)", en: "Nickel (Ni²⁺)" }, k: 0.304 }
+    ];
+
+    const selectedSubstance = substances[Math.floor(Math.random() * substances.length)];
+    const currentI = (Math.random() * 2.5 + 1.5).toFixed(1);
+    const timeMinutes = Math.floor(Math.random() * 20) + 10;
+    const timeSeconds = timeMinutes * 60;
+    const exactMass = (selectedSubstance.k * 0.001 * parseFloat(currentI) * timeSeconds);
+
+    function updateTaskCondition() {
+        const subName = selectedSubstance.name[currentLang];
+        let text = "";
+        if(currentLang === 'ru') {
+            text = `<b>Индивидуальный вариант:</b><br>Сила тока в электролите: <b>I = ${currentI} А</b>. Вещество: <b>${subName}</b> (электрохимический эквивалент <i>k = ${selectedSubstance.k} мг/Кл</i>). Время: <b>t = ${timeMinutes} мин</b> (${timeSeconds} с). Рассчитайте массу <i>m</i>.`;
+        } else if(currentLang === 'kk') {
+            text = `<b>Жеке нұсқа:</b><br>Ток күші: <b>I = ${currentI} А</b>. Зат: <b>${subName}</b> (электрохимиялық эквивалент <i>k = ${selectedSubstance.k} мг/Кл</i>). Уақыт: <b>t = ${timeMinutes} мин</b> (${timeSeconds} с). Массасын есептеңіз (<i>m</i>).`;
+        } else {
+            text = `<b>Individual Variant:</b><br>Current: <b>I = ${currentI} A</b>. Substance: <b>${subName}</b> (electrochemical equivalent <i>k = ${selectedSubstance.k} mg/C</i>). Time: <b>t = ${timeMinutes} min</b> (${timeSeconds} s). Calculate the mass <i>m</i>.`;
+        }
+        document.getElementById('taskCondition').innerHTML = text;
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.querySelectorAll('[data-key]').forEach(el => {
+            const key = el.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+        updateTaskCondition();
+        
+        if (currentFeedbackKey) {
+            feedbackMessage.textContent = translations[lang][currentFeedbackKey];
+        }
+
+        const reviewEl = document.getElementById('answersReview');
+        if (reviewEl.style.display === 'block') {
+            showAnswerContent();
+        }
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setLanguage(btn.getAttribute('data-lang'));
+        });
+    });
+
+    updateTaskCondition();
+
+    const canvas = document.getElementById('electrolysisCanvas');
+    const ctx = canvas.getContext('2d');
+    let ions = [];
+    for(let i=0; i<15; i++) {
+        ions.push({ x: 200 + Math.random()*150, y: 70 + Math.random()*100, vx: (Math.random()-0.5)*1.5, vy: (Math.random()-0.5)*1.5 });
+    }
+    let cathodeDeposit = 0;
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3;
+        ctx.strokeRect(150, 40, 250, 140);
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
+        ctx.fillRect(152, 70, 246, 108);
+
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(180, 50, 15, 110);
+        ctx.fillRect(355, 50, 15, 110);
+
+        if(cathodeDeposit < 12) cathodeDeposit += 0.005;
+        ctx.fillStyle = '#e67e22';
+        ctx.fillRect(352, 160 - cathodeDeposit*8, 5, cathodeDeposit*8);
+
+        ctx.fillStyle = '#333'; ctx.font = '12px sans-serif';
+        ctx.fillText(translations[currentLang].anode, 165, 35);
+        ctx.fillText(translations[currentLang].cathode, 345, 35);
+
+        ctx.fillStyle = '#e74c3c';
+        ions.forEach(ion => {
+            ion.x += ion.vx; ion.y += ion.vy;
+            if(ion.x < 160 || ion.x > 390) ion.vx *= -1;
+            if(ion.y < 80 || ion.y > 160) ion.vy *= -1;
+            ctx.beginPath(); ctx.arc(ion.x, ion.y, 4, 0, Math.PI*2); ctx.fill();
+        });
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    let attemptsLeft = 2;
+    const massInput = document.getElementById('massInput');
+    const checkButton = document.getElementById('checkButton');
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const finalResultDiv = document.getElementById('finalResult');
+
+    checkButton.addEventListener('click', () => {
+        if (attemptsLeft <= 0) return;
+        const userValStr = massInput.value.replace(',', '.');
+        const t = translations[currentLang];
+
+        if (userValStr.trim() === '') {
+            massInput.classList.add('incorrect-input');
+            currentFeedbackKey = 'msg_empty';
+            feedbackMessage.textContent = t.msg_empty;
+            feedbackMessage.className = 'result-feedback incorrect';
+            return;
+        }
+
+        const userMass = parseFloat(userValStr);
+        attemptsLeft--;
+        const tolerance = exactMass * 0.02;
+        const isCorrect = Math.abs(userMass - exactMass) <= tolerance;
+
+        if (isCorrect) {
+            massInput.classList.add('correct-input');
+            massInput.classList.remove('incorrect-input');
+            currentFeedbackKey = 'msg_correct';
+            feedbackMessage.textContent = t.msg_correct;
+            feedbackMessage.className = 'result-feedback correct';
+            checkButton.disabled = true; massInput.disabled = true;
+            finalResultDiv.innerHTML = `<span class="correct">${t.score_10}</span>`;
+        } else {
+            massInput.classList.add('incorrect-input');
+            if (attemptsLeft > 0) {
+                currentFeedbackKey = 'msg_wrong1';
+                feedbackMessage.textContent = t.msg_wrong1;
+                feedbackMessage.className = 'result-feedback incorrect';
+            } else {
+                currentFeedbackKey = 'msg_wrong2';
+                feedbackMessage.textContent = t.msg_wrong2;
+                feedbackMessage.className = 'result-feedback incorrect';
+                checkButton.disabled = true; massInput.disabled = true;
+                showAnswersButton.style.display = 'inline-block';
+                finalResultDiv.innerHTML = `<span class="incorrect">${t.score_0}</span>`;
+            }
+        }
+    });
+
+    function showAnswerContent() {
+        const t = translations[currentLang];
+        let unitText = currentLang === 'en' ? 'g' : 'г';
+        let reviewHTML = `<h3>${t.review_title}</h3>`;
+        reviewHTML += `<p>1. ${t.step_formula}<b><i>m</i> = <i>k</i> · <i>I</i> · <i>t</i></b></p>`;
+        reviewHTML += `<p>2. ${t.step_time}<b><i>t</i> = ${timeSeconds} с</b></p>`;
+        reviewHTML += `<p>3. ${t.step_calc}<b><i>m</i> = ${selectedSubstance.k}·10<sup>-3</sup> · ${currentI} · ${timeSeconds} = ${exactMass.toFixed(3)} ${unitText}</b></p>`;
+        document.getElementById('answersReview').innerHTML = reviewHTML;
+        document.getElementById('answersReview').style.display = 'block';
+    }
+
+    showAnswersButton.addEventListener('click', () => {
+        showAnswerContent();
+        showAnswersButton.style.display = 'none';
+    });
+});
+</script>
+</body>
+</html>

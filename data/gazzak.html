@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Газовые законы</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ff5722; /* Orange-Red for Heat/Thermodynamics */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Controls */
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 15px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 10px; 
+            background: #000; border: 1px solid #444; 
+            color: white; border-radius: 4px; box-sizing: border-box;
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button.action-btn:hover { opacity: 0.9; transform: scale(1.01); }
+        button.secondary { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        button.secondary:hover { background: rgba(255, 87, 34, 0.1); }
+
+        /* Визуализация */
+        .visualizer {
+            position: relative; height: 400px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; flex-direction: column;
+        }
+        canvas#gas-canvas { flex-grow: 1; border-bottom: 1px solid #333; }
+        
+        /* Приборы */
+        .readout-panel {
+            display: flex; justify-content: space-around;
+            background: #222; padding: 10px;
+            font-family: 'Courier New', monospace; font-size: 1.1em;
+        }
+        .readout { text-align: center; }
+        .readout span { display: block; font-size: 0.8em; color: #777; }
+        .readout strong { color: var(--accent); font-size: 1.4em; }
+
+        /* График */
+        .graph-container { height: 300px; margin-top: 20px; }
+
+        /* Блокировка */
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+
+        /* Модальное окно */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 500px;
+            text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 20px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1200px; align-items:center;">
+    <h1 style="color:var(--accent)">Газовые законы</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headExp">2. Эксперимент</div>
+            
+            <div class="control-group">
+                <label data-lang="lblProcess">Изопроцесс:</label>
+                <select id="process-select">
+                    <option value="isotherm" data-lang="optIsotherm">Изотермический (T=const)</option>
+                    <option value="isobar" data-lang="optIsobar">Изобарный (P=const)</option>
+                    <option value="isochor" data-lang="optIsochor">Изохорный (V=const)</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="group-vol">
+                <label><span data-lang="lblVolume">Объем (V):</span> <span class="val"><span id="val-v"></span> л</span></label>
+                <input type="range" id="slider-v" min="1" max="10" step="0.1" value="5">
+            </div>
+
+            <div class="control-group" id="group-temp">
+                <label><span data-lang="lblTemp">Температура (T):</span> <span class="val"><span id="val-t"></span> К</span></label>
+                <input type="range" id="slider-t" min="100" max="600" step="10" value="300">
+            </div>
+            
+            <div class="control-group" id="group-pres" style="display:none;">
+                 <label><span data-lang="lblPress">Давление (P):</span> <span class="val"><span id="val-p"></span> кПа</span></label>
+                 <input type="range" id="slider-p" min="50" max="500" step="10" value="100">
+            </div>
+
+            <button class="action-btn" id="measure-btn" style="background:#2196F3" data-lang="btnMeasure">ЗАПИСАТЬ ТОЧКУ</button>
+            <button class="action-btn secondary" id="clear-btn" style="margin-top:10px;" data-lang="btnClear">ОЧИСТИТЬ ГРАФИК</button>
+
+            <div class="control-header" data-lang="headTask">3. Ответ</div>
+            <div class="control-group">
+                <label data-lang="lblCalc">Рассчитайте кол-во вещества ν (моль):</label>
+                <input type="text" id="ans-input" placeholder="...">
+                <button class="action-btn" id="check-btn" style="margin-top:5px; background:var(--success);" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="font-size:0.9em; text-align:center; color:#aaa; margin-top:5px;"></div>
+                <div id="check-res" style="margin-top:5px; font-weight:bold; text-align:center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column;">
+        <div class="visualizer">
+            <canvas id="gas-canvas" width="600" height="300"></canvas>
+            <div class="readout-panel">
+                <div class="readout"><span>P (kPa)</span><strong id="read-p">100</strong></div>
+                <div class="readout"><span>V (L)</span><strong id="read-v">5.0</strong></div>
+                <div class="readout"><span>T (K)</span><strong id="read-t">300</strong></div>
+            </div>
+        </div>
+
+        <div class="panel graph-container">
+            <canvas id="gas-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div class="modal-details">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+            <div><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></div>
+            <hr style="border-color:#333; margin:10px 0;">
+            <div><span data-lang="resTrueVal">Правильный ответ:</span> <strong id="res-true-val"></strong></div>
+        </div>
+        <p data-lang="resScoreLabel">Оценка:</p>
+        <div class="modal-score" id="res-score-val">10 / 10</div>
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАВЕРШИТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headExp: "2. Эксперимент", lblProcess: "Изопроцесс:", 
+            optIsotherm: "Изотермический (T=const)", optIsobar: "Изобарный (P=const)", optIsochor: "Изохорный (V=const)",
+            lblVolume: "Объем (V):", lblTemp: "Температура (T):", lblPress: "Давление (P):",
+            btnMeasure: "ЗАПИСАТЬ ТОЧКУ", btnClear: "ОЧИСТИТЬ ГРАФИК",
+            headTask: "3. Ответ", lblCalc: "Рассчитайте кол-во вещества ν (моль):", btnCheck: "ПРОВЕРИТЬ",
+            alertName: "Введите имя и класс!",
+            txtAttempts: "Попытки: {used} / 3",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resAttempts: "Использовано:", resScoreLabel: "Оценка:", resTrueVal: "Истинное ν:", btnRestart: "ЗАВЕРШИТЬ",
+            logAdded: "Точка добавлена", resCorrect: "ВЕРНО!", resWrong: "ОШИБКА. Осталось попыток: {n}"
+        },
+        kz: {
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headExp: "2. Тәжірибе", lblProcess: "Изопроцесс:", 
+            optIsotherm: "Изотермиялық (T=const)", optIsobar: "Изобаралық (P=const)", optIsochor: "Изохоралық (V=const)",
+            lblVolume: "Көлем (V):", lblTemp: "Температура (T):", lblPress: "Қысым (P):",
+            btnMeasure: "НҮКТЕНІ ЖАЗУ", btnClear: "ГРАФИКТІ ТАЗАРТУ",
+            headTask: "3. Жауап", lblCalc: "Зат мөлшерін есептеңіз ν (моль):", btnCheck: "ТЕКСЕРУ",
+            alertName: "Аты-жөніңізді және сыныпты енгізіңіз!",
+            txtAttempts: "Мүмкіндіктер: {used} / 3",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resAttempts: "Қолданылды:", resScoreLabel: "Баға:", resTrueVal: "Дұрыс ν:", btnRestart: "АЯҚТАУ",
+            logAdded: "Нүкте қосылды", resCorrect: "ДҰРЫС!", resWrong: "ҚАТЕ. Қалған мүмкіндіктер: {n}"
+        },
+        en: {
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headExp: "2. Experiment", lblProcess: "Process:", 
+            optIsotherm: "Isothermal (T=const)", optIsobar: "Isobaric (P=const)", optIsochor: "Isochoric (V=const)",
+            lblVolume: "Volume (V):", lblTemp: "Temperature (T):", lblPress: "Pressure (P):",
+            btnMeasure: "RECORD POINT", btnClear: "CLEAR GRAPH",
+            headTask: "3. Answer", lblCalc: "Calculate amount ν (mol):", btnCheck: "CHECK",
+            alertName: "Enter Name and Class!",
+            txtAttempts: "Attempts: {used} / 3",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resAttempts: "Used:", resScoreLabel: "Score:", resTrueVal: "Correct ν:", btnRestart: "FINISH",
+            logAdded: "Point added", resCorrect: "CORRECT!", resWrong: "WRONG. Attempts left: {n}"
+        }
+    };
+
+    // State
+    let currentLang = 'ru';
+    let chart = null;
+    let attemptsUsed = 0;
+    let isRunning = false;
+    let molecules = []; // Particles for animation
+
+    // Physics State
+    // PV = nRT. R = 8.31
+    const R_CONST = 8.31;
+    const state = {
+        P: 100, // kPa
+        V: 5,   // Liters (10^-3 m^3)
+        T: 300, // Kelvin
+        nu: 1.0, // Moles (Hidden)
+        mode: 'isotherm' // isotherm, isobar, isochor
+    };
+
+    // === 2. Логика ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        // Update select
+        const procSel = document.getElementById('process-select');
+        procSel.options[0].text = t.optIsotherm;
+        procSel.options[1].text = t.optIsobar;
+        procSel.options[2].text = t.optIsochor;
+
+        updateGraphAxis();
+    }
+
+    function setMode(mode) {
+        state.mode = mode;
+        // Show/Hide sliders
+        document.getElementById('group-vol').style.display = 'none';
+        document.getElementById('group-temp').style.display = 'none';
+        document.getElementById('group-pres').style.display = 'none';
+
+        if (mode === 'isotherm') { // T=const, change V -> calc P
+            document.getElementById('group-vol').style.display = 'block';
+            document.getElementById('slider-v').disabled = false;
+        } else if (mode === 'isobar') { // P=const, change T -> calc V
+            document.getElementById('group-temp').style.display = 'block';
+            // Also allow P setup initially? No, let's fix P for isobaric or allow user to pick P once?
+            // Simplest: User changes T, V calculates. P is fixed at current value?
+            // Better: User sets P with slider, then varies T?
+            // Let's keep it simple: Isobar means we control T, V responds. P is constant.
+            // We can add a P slider that is "active" only to set initial state?
+            // Let's just fix P for the experiment based on initial state or make it a constant slider.
+            // Let's allow changing T.
+        } else if (mode === 'isochor') { // V=const, change T -> calc P
+            document.getElementById('group-temp').style.display = 'block';
+        }
+        
+        // Reset graph data
+        if(chart) {
+            chart.data.datasets[0].data = [];
+            chart.update();
+        }
+        updateGraphAxis();
+    }
+
+    function updatePhysics() {
+        // P (kPa), V (L), T (K), nu (mol)
+        // P * V = nu * R * T
+        // Units check: kPa * L = (10^3 Pa) * (10^-3 m^3) = Pa*m^3 = J
+        // R * T = 8.31 * K = J/mol
+        // So P(kPa)*V(L) = nu(mol)*8.31*T(K)
+        
+        if (state.mode === 'isotherm') {
+            // T is const, V changes -> P = (nu*R*T)/V
+            state.V = parseFloat(document.getElementById('slider-v').value);
+            state.P = (state.nu * R_CONST * state.T) / state.V;
+        } 
+        else if (state.mode === 'isobar') {
+            // P is const, T changes -> V = (nu*R*T)/P
+            state.T = parseInt(document.getElementById('slider-t').value);
+            state.V = (state.nu * R_CONST * state.T) / state.P;
+            // Limiting V to slider range for visualization safety?
+            if(state.V > 10) state.V = 10; // Clamp for visual
+        } 
+        else if (state.mode === 'isochor') {
+            // V is const, T changes -> P = (nu*R*T)/V
+            state.T = parseInt(document.getElementById('slider-t').value);
+            state.P = (state.nu * R_CONST * state.T) / state.V;
+        }
+
+        // Update display values
+        document.getElementById('val-v').innerText = state.V.toFixed(1);
+        document.getElementById('val-p').innerText = state.P.toFixed(0);
+        document.getElementById('val-t').innerText = state.T;
+
+        document.getElementById('read-v').innerText = state.V.toFixed(1);
+        document.getElementById('read-p').innerText = state.P.toFixed(0);
+        document.getElementById('read-t').innerText = state.T;
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('gas-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function initMolecules() {
+        molecules = [];
+        const count = 50; // Visual particles
+        for(let i=0; i<count; i++) {
+            molecules.push({
+                x: Math.random() * cvs.width,
+                y: Math.random() * cvs.height,
+                vx: (Math.random()-0.5)*2,
+                vy: (Math.random()-0.5)*2
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        
+        // Cylinder walls
+        const pistonX = (state.V / 10) * (cvs.width - 50) + 20; // Map V(1..10) to width
+        
+        // Gas area
+        ctx.fillStyle = 'rgba(255, 87, 34, 0.1)';
+        ctx.fillRect(20, 50, pistonX-20, 200);
+        
+        // Walls
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(20, 50, pistonX-20, 200);
+        
+        // Piston
+        ctx.fillStyle = '#555';
+        ctx.fillRect(pistonX, 50, 20, 200);
+        ctx.fillStyle = '#333'; // Rod
+        ctx.fillRect(pistonX+20, 140, cvs.width - pistonX, 20);
+
+        // Heat/Cool indicator
+        let colorTemp = state.T / 600; // 0..1
+        let r = Math.floor(255 * colorTemp);
+        let b = Math.floor(255 * (1-colorTemp));
+        ctx.fillStyle = `rgb(${r}, 50, ${b})`;
+        ctx.font = "20px Arial";
+        ctx.fillText("🌡️", 30, 40);
+        
+        // Particles
+        // Speed factor based on T
+        const speed = Math.sqrt(state.T) * 0.15; 
+        
+        ctx.fillStyle = `rgb(${r}, 200, ${b})`;
+        
+        molecules.forEach(m => {
+            m.x += m.vx * speed;
+            m.y += m.vy * speed;
+
+            // Bounce Piston
+            if (m.x > pistonX) { m.x = pistonX; m.vx *= -1; }
+            // Bounce Left
+            if (m.x < 20) { m.x = 20; m.vx *= -1; }
+            // Bounce Top/Bottom
+            if (m.y < 50) { m.y = 50; m.vy *= -1; }
+            if (m.y > 250) { m.y = 250; m.vy *= -1; }
+
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, 3, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    // --- Graph ---
+    function initChart() {
+        const ctxChart = document.getElementById('gas-chart').getContext('2d');
+        chart = new Chart(ctxChart, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Data',
+                    data: [],
+                    borderColor: '#ff5722',
+                    backgroundColor: 'rgba(255, 87, 34, 0.5)',
+                    showLine: true,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: {display:true, text:'X', color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'} },
+                    y: { title: {display:true, text:'Y', color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'} }
+                },
+                plugins: { legend: {display:false} }
+            }
+        });
+    }
+
+    function updateGraphAxis() {
+        if(!chart) return;
+        // Depends on mode
+        // Isotherm: P(V)
+        // Isobar: V(T)
+        // Isochor: P(T)
+        
+        if (state.mode === 'isotherm') {
+            chart.options.scales.x.title.text = (currentLang==='ru'?'Объем V (л)':(currentLang==='kz'?'Көлем V (л)':'Volume V (L)'));
+            chart.options.scales.y.title.text = (currentLang==='ru'?'Давление P (кПа)':(currentLang==='kz'?'Қысым P (кПа)':'Pressure P (kPa)'));
+        } else if (state.mode === 'isobar') {
+            chart.options.scales.x.title.text = (currentLang==='ru'?'Температура T (K)':(currentLang==='kz'?'Температура T (K)':'Temperature T (K)'));
+            chart.options.scales.y.title.text = (currentLang==='ru'?'Объем V (л)':(currentLang==='kz'?'Көлем V (л)':'Volume V (L)'));
+        } else if (state.mode === 'isochor') {
+            chart.options.scales.x.title.text = (currentLang==='ru'?'Температура T (K)':(currentLang==='kz'?'Температура T (K)':'Temperature T (K)'));
+            chart.options.scales.y.title.text = (currentLang==='ru'?'Давление P (кПа)':(currentLang==='kz'?'Қысым P (кПа)':'Pressure P (kPa)'));
+        }
+        chart.update();
+    }
+
+    function showFinalResult(score, correct) {
+        const modal = document.getElementById('result-modal');
+        const t = LANG[currentLang];
+
+        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+        document.getElementById('res-attempts').innerText = attemptsUsed;
+        document.getElementById('res-score-val').innerText = score + " / 10";
+        document.getElementById('res-score-val').style.color = (score > 0) ? "var(--success)" : "var(--danger)";
+        document.getElementById('res-true-val').innerText = correct ? "---" : state.nu.toFixed(2) + " моль";
+
+        modal.style.display = 'flex';
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        // Random Nu (0.5 to 3.0 moles)
+        state.nu = Math.random() * 2.5 + 0.5;
+        console.log("Teacher Info: Nu = " + state.nu.toFixed(3) + " mol");
+
+        initMolecules();
+        initChart();
+        updatePhysics();
+        updateLanguage('ru');
+        draw();
+
+        // Events
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('process-select').onchange = (e) => setMode(e.target.value);
+
+        document.getElementById('slider-v').oninput = updatePhysics;
+        document.getElementById('slider-t').oninput = updatePhysics;
+        document.getElementById('slider-p').oninput = (e) => { state.P = parseInt(e.target.value); updatePhysics(); };
+
+        // Start
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+            setMode('isotherm'); // Default start
+        };
+
+        // Measure
+        document.getElementById('measure-btn').onclick = () => {
+            if(!chart) return;
+            let xVal, yVal;
+            if (state.mode === 'isotherm') { xVal = state.V; yVal = state.P; }
+            else if (state.mode === 'isobar') { xVal = state.T; yVal = state.V; }
+            else if (state.mode === 'isochor') { xVal = state.T; yVal = state.P; }
+
+            const point = { x: xVal, y: yVal };
+            
+            // Add point
+            chart.data.datasets[0].data.push(point);
+            chart.data.datasets[0].data.sort((a,b) => a.x - b.x);
+            chart.update();
+        };
+
+        // Clear
+        document.getElementById('clear-btn').onclick = () => {
+            if(chart) {
+                chart.data.datasets[0].data = [];
+                chart.update();
+            }
+        };
+
+        // Check
+        document.getElementById('check-btn').onclick = () => {
+            const userVal = parseFloat(document.getElementById('ans-input').value.replace(',','.'));
+            if(isNaN(userVal)) return;
+
+            attemptsUsed++;
+            document.getElementById('attempts-display').innerText = LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed);
+
+            const correctVal = state.nu;
+            const err = Math.abs(userVal - correctVal) / correctVal;
+            const resDiv = document.getElementById('check-res');
+            const t = LANG[currentLang];
+
+            if (err < 0.15) { // 15% tolerance
+                let score = 0;
+                if(attemptsUsed === 1) score = 10;
+                else if(attemptsUsed === 2) score = 8;
+                else score = 7;
+
+                resDiv.innerHTML = `<span style="color:var(--success)">${t.resCorrect}</span>`;
+                setTimeout(() => showFinalResult(score, true), 1000);
+                document.getElementById('check-btn').disabled = true;
+            } else {
+                let left = 3 - attemptsUsed;
+                if(left > 0) {
+                    resDiv.innerHTML = `<span style="color:var(--danger)">${t.resWrong.replace('{n}', left)}</span>`;
+                } else {
+                    showFinalResult(0, false);
+                    document.getElementById('check-btn').disabled = true;
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор волновой оптики</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1a237e;
+            text-align: center;
+        }
+
+        .controls {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 80%;
+            max-width: 780px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        #simulationCanvas {
+            border: 1px solid #ccc;
+            background-color: #000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Симулятор интерференции и дифракции</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="wavelength">Длина волны (λ): <span id="wavelengthValue">550</span> нм</label>
+            <input type="range" id="wavelength" min="380" max="750" value="550">
+        </div>
+
+        <div class="control-group">
+            <label for="slits">Количество щелей (N): <span id="slitsValue">2</span></label>
+            <input type="range" id="slits" min="2" max="20" value="2" step="1">
+        </div>
+
+        <div class="control-group">
+            <label for="slitSeparation">Расстояние между щелями (d): <span id="slitSeparationValue">2000</span> нм</label>
+            <input type="range" id="slitSeparation" min="500" max="5000" value="2000">
+        </div>
+    </div>
+
+    <canvas id="simulationCanvas" width="800" height="200"></canvas>
+    
+    <script>
+        // Ждем, пока вся страница загрузится, чтобы безопасно работать с элементами
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ СТРАНИЦЫ ---
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const wavelengthSlider = document.getElementById('wavelength');
+            const slitsSlider = document.getElementById('slits');
+            const slitSeparationSlider = document.getElementById('slitSeparation');
+
+            const wavelengthValue = document.getElementById('wavelengthValue');
+            const slitsValue = document.getElementById('slitsValue');
+            const slitSeparationValue = document.getElementById('slitSeparationValue');
+
+            // --- 2. КОНСТАНТЫ И ПАРАМЕТРЫ СИМУЛЯЦИИ ---
+            const L = 0.01; // Расстояние от щелей до экрана (в метрах)
+            const screenScale = 30000; // Масштаб для отображения
+
+            // --- 3. ГЛАВНАЯ ФУНКЦИЯ ОТРИСОВКИ ---
+            function drawPattern() {
+                const lambda = parseInt(wavelengthSlider.value) * 1e-9; // Длина волны в метрах
+                const N = parseInt(slitsSlider.value); // Количество щелей
+                const d = parseInt(slitSeparationSlider.value) * 1e-9; // Расстояние между щелями в метрах
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const rgbColor = wavelengthToRgb(parseInt(wavelengthSlider.value));
+
+                for (let x = 0; x < canvas.width; x++) {
+                    const y = (x - canvas.width / 2) / screenScale;
+                    const sin_theta = y / L;
+                    const delta = (2 * Math.PI / lambda) * d * sin_theta;
+
+                    let intensity;
+                    if (Math.abs(Math.sin(delta / 2)) < 1e-9) {
+                        intensity = 1.0;
+                    } else {
+                        const numerator = Math.sin(N * delta / 2);
+                        const denominator = Math.sin(delta / 2);
+                        intensity = Math.pow(numerator / denominator, 2) / Math.pow(N, 2);
+                    }
+
+                    ctx.fillStyle = `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, ${intensity})`;
+                    ctx.fillRect(x, 0, 1, canvas.height);
+                }
+            }
+
+            // --- 4. ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ПРЕОБРАЗОВАНИЕ ДЛИНЫ ВОЛНЫ В ЦВЕТ (RGB) ---
+            function wavelengthToRgb(wavelength) {
+                let r = 0, g = 0, b = 0;
+
+                if (wavelength >= 380 && wavelength < 440) {
+                    r = -(wavelength - 440) / (440 - 380);
+                    b = 1.0;
+                } else if (wavelength >= 440 && wavelength < 490) {
+                    g = (wavelength - 440) / (490 - 440);
+                    b = 1.0;
+                } else if (wavelength >= 490 && wavelength < 510) {
+                    g = 1.0;
+                    b = -(wavelength - 510) / (510 - 490);
+                } else if (wavelength >= 510 && wavelength < 580) {
+                    r = (wavelength - 510) / (580 - 510);
+                    g = 1.0;
+                } else if (wavelength >= 580 && wavelength < 645) {
+                    r = 1.0;
+                    g = -(wavelength - 645) / (645 - 580);
+                } else if (wavelength >= 645 && wavelength <= 750) {
+                    r = 1.0;
+                }
+
+                return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+            }
+
+            // --- 5. ДОБАВЛЕНИЕ СЛУШАТЕЛЕЙ СОБЫТИЙ ---
+            function updateSimulation() {
+                wavelengthValue.textContent = wavelengthSlider.value;
+                slitsValue.textContent = slitsSlider.value;
+                slitSeparationValue.textContent = slitSeparationSlider.value;
+                drawPattern();
+            }
+
+            wavelengthSlider.addEventListener('input', updateSimulation);
+            slitsSlider.addEventListener('input', updateSimulation);
+            slitSeparationSlider.addEventListener('input', updateSimulation);
+
+            // --- 6. ПЕРВЫЙ ЗАПУСК ---
+            updateSimulation();
+        });
+    </script>
+
+</body>
+</html>

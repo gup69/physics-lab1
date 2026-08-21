@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+
+        .simulation-container { display: flex; justify-content: space-around; align-items: flex-start; gap: 15px; padding: 10px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; min-height: 450px; flex-wrap: wrap; }
+        .sim-column { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .sim-controls { flex-basis: 250px; padding: 10px; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .control-group input[type="range"], .control-group select { width: 100%; box-sizing: border-box; }
+        .control-group .display { font-weight: bold; color: #3498db; text-align: center; background: #fff; padding: 2px 5px; border-radius: 4px; border: 1px solid #ddd; }
+        .action-btn { width: 100%; padding: 10px; background-color: #27ae60; color: white; border: none; border-radius: 5px; font-size: 1em; cursor: pointer; transition: background-color 0.3s; }
+        .action-btn:disabled { background-color: #bdc3c7; }
+        
+        .visual-setup { text-align: center; border: 1px solid #ccc; padding: 10px; border-radius: 8px; background-color: #fff; }
+        .visual-setup p { margin: 0; font-weight: bold; font-size: 0.9em; }
+        
+        .scales-container { position: relative; width: 120px; height: 80px; margin: 10px auto 0 auto; }
+        .scales-platform { position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); width: 100px; height: 5px; background: #ecf0f1; border: 1px solid #bdc3c7; z-index: 2; } 
+        .scales-body { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #bdc3c7; border-radius: 3px; z-index: 1; } 
+        .scales-display { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); background: #34495e; color: #ecf0f1; padding: 2px 8px; border-radius: 2px; font-size: 1em; font-family: monospace; z-index: 3; }
+        .cylinder-on-scales { 
+            position: absolute; 
+            bottom: 50px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 25px; 
+            height: 40px; 
+            border-radius: 3px; 
+            z-index: 4; 
+            transition: opacity 0.5s ease-out; 
+        }
+        
+        .beaker, .calorimeter { position: relative; overflow: hidden; margin: 10px auto 0 auto; }
+        .beaker { width: 80px; height: 120px; background-color: rgba(174, 214, 241, 0.2); border: 2px solid #aed6f1; border-top: none; border-radius: 0 0 10px 10px; }
+        .calorimeter { width: 100px; height: 140px; background-color: #d5d8dc; border: 2px solid #566573; border-radius: 5px; display: flex; justify-content: center; align-items: center; }
+        .calorimeter-inner { width: 80px; height: 120px; background-color: #f8f9f9; border: 1px solid #abb2b9; border-radius: 3px; position: relative; overflow: hidden; }
+        .water { position: absolute; bottom: 0; width: 100%; background-color: #85c1e9; transition: height 0.5s; }
+        .hot-water { background-color: #f1948a; }
+        
+        .thermometer { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 8px; height: 95%; background-color: #f2f3f4; border: 1px solid #ccc; border-radius: 4px; }
+        .mercury { position: absolute; bottom: 4px; left: 2px; width: 4px; background-color: #e74c3c; border-radius: 2px; transition: height 0.5s; }
+        .thermometer::after { content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; background-color: #e74c3c; border-radius: 50%; }
+        
+        .cylinder-in-water { 
+            position: absolute; 
+            left: 50%; 
+            width: 25px; 
+            height: 40px; 
+            border-radius: 3px; 
+            transform: translateX(-50%); 
+            transition: bottom 1s ease-in-out; 
+        }
+        #cylinder-in-hot-water {
+            top: 30px; 
+            opacity: 1; 
+            transition: top 0.5s ease-out, opacity 0.5s ease-out; 
+        }
+        #cylinder-in-calorimeter {
+            bottom: 120px; 
+            opacity: 0; 
+            transition: bottom 1s ease-in-out, opacity 0.5s ease-out; 
+        }
+
+        .cylinder.al { background-color: #d0d3d4; border: 1px solid #888; }
+        .cylinder.fe { background-color: #aeb6bf; border: 1px solid #555; }
+        .cylinder.cu { background-color: #e59866; border: 1px solid #af643c; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        
+        td .input-container { 
+            display: flex; 
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            width: 100%;
+        }
+        td input { 
+            width: 100%; 
+            box-sizing: border-box; 
+            padding: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            text-align: center; 
+        }
+        .validation-icon {
+            font-size: 0.9em;
+            font-weight: bold;
+            text-align: center;
+            height: 1.2em;
+            margin-top: 4px;
+        }
+
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton { background-color: #3498db; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        .result-feedback { font-weight: bold; display: block; text-align: center; margin-top: 4px; height: 1em; font-size: 0.9em; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; box-shadow: 0 0 5px rgba(39, 174, 96, 0.5); }
+        .incorrect-input { border-color: #e74c3c !important; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    <div class="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level">8 класс</h2>
+            <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+
+    <div class="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info">
+        <div><label for="student_lastname" data-key="student_lastname">Фамилия</label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname">Имя</label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number">Класс (цифра)</label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter">Литер</label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title">Лабораторная работа №2</h1>
+    <h2 data-key="lab_topic_title">Тема: Определение удельной теплоемкости твердого тела</h2>
+    <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">Определить удельную теплоемкость металлического цилиндра.</span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+        <ol>
+            <li data-key="instruction_step1"></li>
+            <li data-key="instruction_step2"></li>
+            <li data-key="instruction_step3"></li>
+            <li data-key="instruction_step4"></li>
+            <li data-key="instruction_step5"></li>
+            <li data-key="instruction_step6"></li>
+            <li data-key="instruction_step7"></li>
+        </ol>
+    </div>
+    
+    <h3 data-key="procedure_title">Ход работы</h3>
+    <div class="simulation-container">
+        <div class="sim-controls">
+            <div class="control-group">
+                <label for="metal-select" data-key="metal_select_label">1. Материал цилиндра</label>
+                <select id="metal-select">
+                    <option value="al" data-key="metal_al">Алюминий</option>
+                    <option value="fe" data-key="metal_fe">Железо</option>
+                    <option value="cu" data-key="metal_cu">Медь</option>
+                </select>
+            </div>
+             <div class="control-group">
+                <label for="water-mass-slider" data-key="water_mass_label">2. Масса воды в калориметре</label>
+                <input type="range" id="water-mass-slider" min="100" max="150" value="120" step="5">
+                <div class="display"><span id="water-mass-display">120</span> г</div>
+            </div>
+            <div class="control-group">
+                <label for="water-temp-slider" data-key="water_temp_label">3. Начальная t° воды</label>
+                <input type="range" id="water-temp-slider" min="15" max="25" value="20" step="1">
+                <div class="display"><span id="water-temp-display">20</span> °C</div>
+            </div>
+            <div class="control-group">
+                <label for="cyl-temp-slider" data-key="cyl_temp_label">4. Начальная t° цилиндра</label>
+                <input type="range" id="cyl-temp-slider" min="80" max="100" value="95" step="1">
+                <div class="display"><span id="cyl-temp-display">95</span> °C</div>
+            </div>
+            <button id="action-btn" class="action-btn" data-key="action_btn_label">Опустить цилиндр</button>
+        </div>
+        
+        <div class="sim-column">
+             <div class="visual-setup">
+                <p data-key="scales_label">Весы</p>
+                <div class="scales-container">
+                    <div class="scales-platform"></div>
+                    <div class="scales-body">
+                        <div class="scales-display"><span id="scales-display">0.000</span> кг</div>
+                    </div>
+                    <div id="cylinder-on-scales" class="cylinder-on-scales cylinder al"></div>
+                </div>
+            </div>
+            <div class="visual-setup">
+                <p data-key="hot_beaker_label">Нагрев цилиндра</p>
+                <div class="beaker">
+                    <div class="water hot-water" style="height: 80%;"></div>
+                    <div id="cylinder-in-hot-water" class="cylinder-in-water cylinder al"></div>
+                    <div class="thermometer"><div class="mercury" id="hot-mercury"></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="sim-column">
+            <div class="visual-setup">
+                <p data-key="calorimeter_label">Калориметр</p>
+                <div class="calorimeter">
+                    <div class="calorimeter-inner">
+                        <div class="water" id="calorimeter-water"></div>
+                        <div id="cylinder-in-calorimeter" class="cylinder-in-water cylinder al"></div>
+                        <div class="thermometer"><div class="mercury" id="calorimeter-mercury"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h3 data-key="results_table_title">Таблица измерений и вычислений</h3>
+    <table>
+        <thead>
+            <tr>
+                <th data-key="th_param">Параметр</th>
+                <th data-key="th_value">Значение</th>
+                <th data-key="th_calculation">Расчет</th>
+                <th data-key="th_result">Результат</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td data-key="m1_label">Масса воды, m₁ (кг)</td>
+                <td><div class="input-container"><input type="number" step="0.001" id="m1_input"><div id="m1_feedback" class="validation-icon"></div></div></td>
+                <td data-key="q_received_label">Q получ. (Дж)</td>
+                <td><div class="input-container"><input type="number" id="q_input"><div id="q_feedback" class="validation-icon"></div></div></td>
+            </tr>
+            <tr>
+                <td data-key="t1_label">Начальная t° воды, t₁ (°C)</td>
+                <td><div class="input-container"><input type="number" id="t1_input"><div id="t1_feedback" class="validation-icon"></div></div></td>
+                 <td rowspan="3" data-key="cx_label">Удельная теплоемкость, cₓ (Дж/кг·°C)</td>
+                <td rowspan="3"><div class="input-container"><input type="number" id="cx_input"><div id="cx_feedback" class="validation-icon"></div></div></td>
+            </tr>
+            <tr>
+                <td data-key="m2_label">Масса цилиндра, m₂ (кг)</td>
+                <td><div class="input-container"><input type="number" step="0.001" id="m2_input"><div id="m2_feedback" class="validation-icon"></div></div></td>
+            </tr>
+            <tr>
+                <td data-key="t2_label">Начальная t° цилиндра, t₂ (°C)</td>
+                <td><div class="input-container"><input type="number" id="t2_input"><div id="t2_feedback" class="validation-icon"></div></div></td>
+            </tr>
+            <tr>
+                <td data-key="t_final_label">Конечная t°, t_общ (°C)</td>
+                <td><div class="input-container"><input type="number" id="t_final_input"><div id="t_final_feedback" class="validation-icon"></div></div></td>
+                 <td data-key="feedback_label">Обратная связь</td>
+                <td><div id="feedback-display" style="font-weight: bold;"></div></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button"></button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать ответы</button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button"></button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const BOT_TOKEN = '7965293959:AAHPx2BJ1ibi05eBqKHSipgpXXtHDY9Ozt4'; 
+    const CHAT_ID = '876026321';   
+
+    const C_WATER = 4200;
+
+    const METALS = {
+        al: { name: { ru: 'Алюминий', kk: 'Алюминий', en: 'Aluminum' }, c: 920, density: 2700, mass: 0 },
+        fe: { name: { ru: 'Железо', kk: 'Темір', en: 'Iron' }, c: 460, density: 7870, mass: 0 },
+        cu: { name: { ru: 'Медь', kk: 'Мыс', en: 'Copper' }, c: 385, density: 8960, mass: 0 }
+    };
+
+    const state = {
+        currentMetal: 'al',
+        m1: 0.120, t1: 20, t2: 95,
+        m2: 0, c_x: 0, t_final: null,
+        correct_q: null,
+        attemptsLeft: 2, finalScoreText: ''
+    };
+
+    const dom = {
+        metalSelect: document.getElementById('metal-select'),
+        waterMassSlider: document.getElementById('water-mass-slider'),
+        waterTempSlider: document.getElementById('water-temp-slider'),
+        cylTempSlider: document.getElementById('cyl-temp-slider'),
+        waterMassDisplay: document.getElementById('water-mass-display'),
+        waterTempDisplay: document.getElementById('water-temp-display'),
+        cylTempDisplay: document.getElementById('cyl-temp-display'),
+        scalesDisplay: document.getElementById('scales-display'),
+        cylinderOnScales: document.getElementById('cylinder-on-scales'),
+        cylinderInHotWater: document.getElementById('cylinder-in-hot-water'),
+        cylinderInCalorimeter: document.getElementById('cylinder-in-calorimeter'),
+        hotMercury: document.getElementById('hot-mercury'),
+        calorimeterWater: document.getElementById('calorimeter-water'),
+        calorimeterMercury: document.getElementById('calorimeter-mercury'),
+        actionBtn: document.getElementById('action-btn'),
+        inputs: {
+            m1: document.getElementById('m1_input'),
+            t1: document.getElementById('t1_input'),
+            m2: document.getElementById('m2_input'),
+            t2: document.getElementById('t2_input'),
+            t_final: document.getElementById('t_final_input'),
+            q: document.getElementById('q_input'),
+            cx: document.getElementById('cx_input')
+        },
+        feedbackIcons: { 
+            m1: document.getElementById('m1_feedback'),
+            t1: document.getElementById('t1_feedback'),
+            m2: document.getElementById('m2_feedback'),
+            t2: document.getElementById('t2_feedback'),
+            t_final: document.getElementById('t_final_feedback'),
+            q: document.getElementById('q_feedback'),
+            cx: document.getElementById('cx_feedback')
+        },
+        feedbackDisplay: document.getElementById('feedback-display'),
+        checkButton: document.getElementById('checkButton'),
+        showAnswersButton: document.getElementById('showAnswersButton'),
+        shareToTeacherButton: document.getElementById('shareToTeacherButton'),
+        finalResultDiv: document.getElementById('finalResult'),
+        answersReviewDiv: document.getElementById('answersReview'),
+        validationMessage: document.getElementById('validationMessage'),
+        backButton: document.getElementById('backButton'),
+    };
+
+    const translations = {
+        ru: {
+            grade_level: "8 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Лабораторная работа №2", lab_topic_title: "Тема: Определение удельной теплоемкости твердого тела", lab_goal_title: "Цель:", lab_goal_text: "Определить удельную теплоемкость металлического цилиндра.", instruction_title: "Инструкция по выполнению", instruction_step1: "Выберите материал цилиндра. Его случайная масса для этого опыта отобразится на весах.", instruction_step2: "С помощью ползунков установите массу воды в калориметре и начальные температуры воды и цилиндра.", instruction_step3: "Нажмите кнопку «Опустить цилиндр». Симуляция покажет конечную температуру смеси.", instruction_step4: "Занесите все измеренные значения (m₁, t₁, m₂, t₂, t_общ) в таблицу.", instruction_step5: "Рассчитайте количество теплоты, полученное водой: Q_получ = c_воды·m₁·(t_общ - t₁).", instruction_step6: "Используя уравнение теплового баланса, рассчитайте удельную теплоемкость цилиндра: cₓ = Q_получ / (m₂·(t₂ - t_общ)).", instruction_step7: "Введите вычисленные значения Q_получ и cₓ в таблицу и нажмите «Проверить».", procedure_title: "Ход работы", metal_select_label: "1. Материал цилиндра", metal_al: "Алюминий", metal_fe: "Железо", metal_cu: "Медь", water_mass_label: "2. Масса воды в калориметре", water_temp_label: "3. Начальная t° воды", cyl_temp_label: "4. Начальная t° цилиндра", action_btn_label: "Опустить цилиндр", scales_label: "Весы", hot_beaker_label: "Нагрев цилиндра", calorimeter_label: "Калориметр", results_table_title: "Таблица измерений и вычислений", th_param: "Параметр", th_value: "Значение (вписать)", th_calculation: "Расчет", th_result: "Результат (вписать)", m1_label: "Масса воды, m₁ (кг)", t1_label: "Начальная t° воды, t₁ (°C)", m2_label: "Масса цилиндра, m₂ (кг)", t2_label: "Начальная t° цилиндра, t₂ (°C)", t_final_label: "Конечная t°, t_общ (°C)", q_received_label: "Q получ. (Дж)", cx_label: "Удельная теплоемкость, cₓ (Дж/кг·°C)", feedback_label: "Обратная связь", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля ученика и таблицы.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", your_answer: "Ваш ответ:", correct_answer: "Правильный ответ:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:", feedback_correct: "Верно 👍", feedback_incorrect: "Неверно ❌", error_details: "Проверьте токен бота, ID чата и подключение к интернету."
+        },
+        kk: {
+             grade_level: "8 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ. №8 гимназиясы, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№2 Зертханалық жұмыс", lab_topic_title: "Тақырыбы: Қатты дененің меншікті жылу сыйымдылығын анықтау", lab_goal_title: "Мақсаты:", lab_goal_text: "Металл цилиндрдің меншікті жылу сыйымдылығын анықтау.", instruction_title: "Орындау нұсқаулығы", instruction_step1: "Цилиндр материалын таңдаңыз. Оның осы тәжірибеге арналған кездейсоқ массасы таразыда көрсетіледі.", instruction_step2: "Жүгірткілердің көмегімен калориметрдегі судың массасын және су мен цилиндрдің бастапқы температураларын орнатыңыз.", instruction_step3: "«Цилиндрді батыру» түймесін басыңыз. Симуляция қоспаның соңғы температурасын көрсетеді.", instruction_step4: "Барлық өлшенген мәндерді (m₁, t₁, m₂, t₂, t_жалпы) кестеге енгізіңіз.", instruction_step5: "Су алған жылу мөлшерін есептеңіз: Q_алынған = c_су·m₁·(t_жалпы - t₁).", instruction_step6: "Жылу балансы теңдеуін пайдаланып, цилиндрдің меншікті жылу сыйымдылығын есептеңіз: cₓ = Q_алынған / (m₂·(t₂ - t_жалпы)).", instruction_step7: "Есептелген Q_алынған және cₓ мәндерін кестеге енгізіп, «Тексеру» түймесін басыңыз.", procedure_title: "Жұмыс барысы", metal_select_label: "1. Цилиндр материалы", metal_al: "Алюминий", metal_fe: "Темір", metal_cu: "Мыс", water_mass_label: "2. Калориметрдегі судың массасы", water_temp_label: "3. Судың бастапқы t°", cyl_temp_label: "4. Цилиндрдің бастапқы t°", action_btn_label: "Цилиндрді батыру", scales_label: "Таразы", hot_beaker_label: "Цилиндрді қыздыру", calorimeter_label: "Калориметр", results_table_title: "Өлшеулер мен есептеулер кестесі", th_param: "Параметр", th_value: "Мәні (енгізу)", th_calculation: "Есептеу", th_result: "Нәтиже (енгізу)", m1_label: "Су массасы, m₁ (кг)", t1_label: "Судың бастапқы t°, t₁ (°C)", m2_label: "Цилиндр массасы, m₂ (кг)", t2_label: "Цилиндрдің бастапқы t°, t₂ (°C)", t_final_label: "Соңғы t°, t_жалпы (°C)", q_received_label: "Q алынған (Дж)", cx_label: "Меншікті жылу сыйымдылығы, cₓ (Дж/кг·°C)", feedback_label: "Кері байланыс", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Литер", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберу...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Оқушы мен кестенің барлық өрістерін толтырыңыз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", your_answer: "Сіздің жауабыңыз:", correct_answer: "Дұрыс жауап:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:", feedback_correct: "Дұрыс 👍", feedback_incorrect: "Қате ❌", error_details: "Бот токенін, чат ID-ін және интернет қосылымын тексеріңіз."
+        },
+        en: {
+             grade_level: "8th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium No. 8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Laboratory Work #2", lab_topic_title: "Topic: Determining the Specific Heat Capacity of a Solid", lab_goal_title: "Objective:", lab_goal_text: "To determine the specific heat capacity of a metal cylinder.", instruction_title: "Instructions", instruction_step1: "Select the cylinder material. Its random mass for this experiment will be displayed on the balance.", instruction_step2: "Use the sliders to set the mass of water in the calorimeter and the initial temperatures of the water and the cylinder.", instruction_step3: "Click the 'Lower the Cylinder' button. The simulation will show the final temperature of the mixture.", instruction_step4: "Enter all measured values (m₁, t₁, m₂, t₂, t_final) into the table.", instruction_step5: "Calculate the heat gained by the water: Q_gained = c_water·m₁·(t_final - t₁).", instruction_step6: "Using the heat balance equation, calculate the specific heat capacity of the cylinder: cₓ = Q_gained / (m₂·(t₂ - t_final)).", instruction_step7: "Enter the calculated values of Q_gained and cₓ into the table and click 'Check'.", procedure_title: "Procedure", metal_select_label: "1. Cylinder Material", metal_al: "Aluminum", metal_fe: "Iron", metal_cu: "Copper", water_mass_label: "2. Mass of Water in Calorimeter", water_temp_label: "3. Initial Water T°", cyl_temp_label: "4. Initial Cylinder T°", action_btn_label: "Lower the Cylinder", scales_label: "Balance", hot_beaker_label: "Cylinder Heating", calorimeter_label: "Calorimeter", results_table_title: "Table of Measurements and Calculations", th_param: "Parameter", th_value: "Value (to enter)", th_calculation: "Calculation", th_result: "Result (to enter)", m1_label: "Mass of water, m₁ (kg)", t1_label: "Initial water T°, t₁ (°C)", m2_label: "Mass of cylinder, m₂ (kg)", t2_label: "Initial cylinder T°, t₂ (°C)", t_final_label: "Final T°, t_final (°C)", q_received_label: "Q gained (J)", cx_label: "Specific Heat, cₓ (J/kg·°C)", feedback_label: "Feedback", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Class (Number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report Sent!", send_error: "Send Error.", validation_message: "Please fill in all student and table fields.", final_result_title: "Your Final Result:", out_of_10: "out of 10", answers_review_title: "Answers Review:", your_answer: "Your answer:", correct_answer: "Correct answer:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:", feedback_correct: "Correct 👍", feedback_incorrect: "Incorrect ❌", error_details: "Check your bot token, chat ID, and internet connection."
+        }
+    };
+    let currentLang = 'ru';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.querySelector('html').setAttribute('lang', lang);
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            const translation = translations[lang]?.[key];
+            if (translation) {
+                element.innerHTML = translation.replace('{year}', new Date().getFullYear());
+            }
+        });
+        document.querySelectorAll('option[data-key]').forEach(element => {
+             const key = element.getAttribute('data-key');
+             const translation = translations[lang]?.[key];
+             if(translation) element.textContent = translation;
+        });
+        updateCheckButtonText();
+    }
+    
+    function updateThermometer(mercuryEl, temp) {
+        const minTemp = 0, maxTemp = 100;
+        const percent = (temp - minTemp) / (maxTemp - minTemp);
+        mercuryEl.style.height = `${Math.max(0, Math.min(100, percent * 90))}%`;
+    }
+
+    function updateUI() {
+        state.currentMetal = dom.metalSelect.value;
+        state.m1 = dom.waterMassSlider.value / 1000;
+        state.t1 = parseInt(dom.waterTempSlider.value);
+        state.t2 = parseInt(dom.cylTempSlider.value);
+
+        const metal = METALS[state.currentMetal];
+        if (state.m2 === 0) { 
+             const randomVolume = (Math.random() * 10 + 15) / 1000000; 
+             metal.mass = metal.density * randomVolume;
+        }
+        state.m2 = metal.mass; 
+        state.c_x = metal.c;
+
+        dom.waterMassDisplay.textContent = dom.waterMassSlider.value;
+        dom.waterTempDisplay.textContent = state.t1;
+        dom.cylTempDisplay.textContent = state.t2;
+        dom.scalesDisplay.textContent = state.m2.toFixed(3);
+        
+        const cylClass = `cylinder ${state.currentMetal}`;
+        dom.cylinderOnScales.className = `cylinder-on-scales ${cylClass}`;
+        dom.cylinderInHotWater.className = `cylinder-in-water ${cylClass}`;
+        dom.cylinderInCalorimeter.className = `cylinder-in-water ${cylClass}`;
+
+        dom.calorimeterWater.style.height = `${(state.m1 / 0.150) * 80}%`;
+        updateThermometer(dom.calorimeterMercury, state.t1);
+        updateThermometer(dom.hotMercury, state.t2);
+    }
+    
+    function resetState() {
+        state.attemptsLeft = 2;
+        state.finalScoreText = '';
+        
+        for (const key in METALS) {
+            const metal = METALS[key];
+            const randomVolume = (Math.random() * 10 + 15) / 1000000;
+            metal.mass = metal.density * randomVolume;
+        }
+
+        dom.finalResultDiv.innerHTML = '';
+        dom.answersReviewDiv.style.display = 'none';
+        dom.checkButton.style.display = 'inline-block';
+        dom.showAnswersButton.style.display = 'none';
+        dom.shareToTeacherButton.style.display = 'none';
+        dom.validationMessage.style.display = 'none';
+        
+        document.querySelectorAll('input, button, select').forEach(el => {
+            if(!el.classList.contains('lang-btn') && el.id !== 'backButton') {
+                el.disabled = false;
+            }
+        });
+        Object.values(dom.inputs).forEach(input => {
+            input.value = '';
+            input.classList.remove('correct-input', 'incorrect-input');
+        });
+        Object.values(dom.feedbackIcons).forEach(icon => {
+            icon.textContent = '';
+            icon.className = 'validation-icon';
+        });
+
+        dom.feedbackDisplay.textContent = '';
+        
+        dom.cylinderOnScales.style.opacity = 1;
+        dom.cylinderInHotWater.style.top = '30px'; 
+        dom.cylinderInHotWater.style.opacity = 1;
+        dom.cylinderInCalorimeter.style.bottom = '120px'; 
+        dom.cylinderInCalorimeter.style.opacity = 0;
+
+        updateUI();
+        updateCheckButtonText();
+    }
+    
+    dom.actionBtn.addEventListener('click', () => {
+        dom.actionBtn.disabled = true;
+        
+        state.t_final = (state.c_x * state.m2 * state.t2 + C_WATER * state.m1 * state.t1) / (C_WATER * state.m1 + state.c_x * state.m2);
+        state.correct_q = C_WATER * state.m1 * (state.t_final - state.t1);
+
+        dom.cylinderInHotWater.style.top = '120px'; 
+        dom.cylinderInHotWater.style.opacity = 0; 
+        dom.cylinderOnScales.style.opacity = 0; 
+
+        setTimeout(() => {
+            dom.cylinderInCalorimeter.style.opacity = 1; 
+            dom.cylinderInCalorimeter.style.bottom = '5px'; 
+            setTimeout(() => {
+                updateThermometer(dom.calorimeterMercury, state.t_final);
+            }, 800);
+        }, 1000); 
+    });
+
+    dom.checkButton.addEventListener('click', () => {
+        if (state.attemptsLeft <= 0) return;
+        
+        const studentInfoInputs = document.querySelectorAll('.student-info input');
+        let allStudentInfoFilled = true;
+        studentInfoInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input'); 
+                allStudentInfoFilled = false;
+            } else { 
+                input.classList.remove('incorrect-input'); 
+                input.classList.add('correct-input');
+            }
+        });
+
+        if (!allStudentInfoFilled) {
+            dom.validationMessage.textContent = translations[currentLang].validation_message;
+            dom.validationMessage.style.display = 'block'; 
+            return;
+        }
+        
+        state.attemptsLeft--;
+        let score = 0;
+        const totalPoints = 7; 
+        
+        const userValues = {};
+        for (const key in dom.inputs) {
+            userValues[key] = parseFloat(dom.inputs[key].value.replace(',', '.'));
+        }
+
+        const checks = {
+            m1: { value: state.m1, tolerance: 0.0001, input: dom.inputs.m1, icon: dom.feedbackIcons.m1 },
+            t1: { value: state.t1, tolerance: 0.1, input: dom.inputs.t1, icon: dom.feedbackIcons.t1 },
+            m2: { value: state.m2, tolerance: 0.0001, input: dom.inputs.m2, icon: dom.feedbackIcons.m2 },
+            t2: { value: state.t2, tolerance: 0.1, input: dom.inputs.t2, icon: dom.feedbackIcons.t2 },
+            t_final: { value: state.t_final, tolerance: 0.5, input: dom.inputs.t_final, icon: dom.feedbackIcons.t_final },
+            q: { value: state.correct_q, tolerance: 0.05, isRelative: true, input: dom.inputs.q, icon: dom.feedbackIcons.q },
+            cx: { value: state.c_x, tolerance: 0.08, isRelative: true, input: dom.inputs.cx, icon: dom.feedbackIcons.cx },
+        };
+
+        let allTableInputsFilled = true;
+        for(const key in checks) {
+            const check = checks[key];
+            if (isNaN(userValues[key]) || dom.inputs[key].value.trim() === '') {
+                check.input.classList.remove('correct-input');
+                check.input.classList.add('incorrect-input');
+                check.icon.innerHTML = translations[currentLang].feedback_incorrect;
+                check.icon.className = 'validation-icon incorrect';
+                allTableInputsFilled = false;
+                continue; 
+            }
+
+            let isCorrect = false;
+            if (check.isRelative) {
+                isCorrect = Math.abs(userValues[key] - check.value) / check.value < check.tolerance;
+            } else {
+                isCorrect = Math.abs(userValues[key] - check.value) < check.tolerance;
+            }
+
+            if(isCorrect) {
+                score++;
+                check.input.classList.remove('incorrect-input');
+                check.input.classList.add('correct-input');
+                check.icon.innerHTML = translations[currentLang].feedback_correct;
+                check.icon.className = 'validation-icon correct';
+            } else {
+                check.input.classList.remove('correct-input');
+                check.input.classList.add('incorrect-input');
+                check.icon.innerHTML = translations[currentLang].feedback_incorrect;
+                check.icon.className = 'validation-icon incorrect';
+            }
+        }
+        
+        if (!allTableInputsFilled && allStudentInfoFilled) {
+             dom.validationMessage.textContent = translations[currentLang].validation_message;
+             dom.validationMessage.style.display = 'block'; 
+             return;
+        } else {
+             dom.validationMessage.style.display = 'none';
+        }
+
+        const finalScore = Math.round((score / totalPoints) * 10);
+        state.finalScoreText = `${finalScore} ${translations[currentLang].out_of_10}`;
+        dom.feedbackDisplay.innerHTML = `<span class="${finalScore >=5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span>`;
+        
+        updateCheckButtonText();
+
+        if (state.attemptsLeft === 0 || finalScore === 10) {
+            dom.finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${finalScore >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></h3>`;
+            dom.checkButton.style.display = 'none';
+            dom.showAnswersButton.style.display = 'inline-block';
+            
+            document.querySelectorAll('input, textarea, button, select').forEach(el => {
+                if(!el.classList.contains('lang-btn') && el.id !== 'backButton' && el.id !== 'showAnswersButton' && el.id !== 'shareToTeacherButton') {
+                    el.disabled = true;
+                }
+            });
+        }
+    });
+
+    function populateAnswersReview() {
+        const trans = translations[currentLang];
+        const student = {
+            lastname: document.getElementById('student_lastname').value || '...',
+            firstname: document.getElementById('student_firstname').value || '...',
+            classNum: document.getElementById('student_class_number').value || '...',
+            classLetter: document.getElementById('student_class_letter').value || '...',
+        };
+        
+        let reviewHTML = `<h4>${trans.answers_review_title}</h4>
+            <p><b>${trans.report_student}</b> ${student.lastname} ${student.firstname}</p>
+            <p><b>${trans.report_class}</b> ${student.classNum}${student.classLetter}</p>
+            <p><b>${trans.report_score}</b> <span class="${parseFloat(state.finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></p><hr>`;
+        
+        const createReviewLine = (label, userAnswer, correctAnswer) => `<p><b>${label}</b> ${trans.your_answer} ${userAnswer}. ${trans.correct_answer} ${correctAnswer}.</p>`;
+
+        reviewHTML += createReviewLine(trans.m1_label, dom.inputs.m1.value, state.m1.toFixed(3));
+        reviewHTML += createReviewLine(trans.t1_label, dom.inputs.t1.value, state.t1.toFixed(1));
+        reviewHTML += createReviewLine(trans.m2_label, dom.inputs.m2.value, state.m2.toFixed(3));
+        reviewHTML += createReviewLine(trans.t2_label, dom.inputs.t2.value, state.t2.toFixed(1));
+        reviewHTML += createReviewLine(trans.t_final_label, dom.inputs.t_final.value, state.t_final.toFixed(1));
+        reviewHTML += createReviewLine(trans.q_received_label, dom.inputs.q.value, state.correct_q.toFixed(0));
+        reviewHTML += createReviewLine(trans.cx_label, dom.inputs.cx.value, state.c_x.toFixed(0));
+
+        dom.answersReviewDiv.innerHTML = reviewHTML;
+        dom.answersReviewDiv.style.display = 'block';
+    }
+
+    dom.showAnswersButton.addEventListener('click', function() {
+        populateAnswersReview();
+        this.style.display = 'none';
+        dom.shareToTeacherButton.style.display = 'inline-block';
+        dom.shareToTeacherButton.disabled = false;
+    });
+    
+    function sanitizeFilename(name) { if (!name) return ""; return name.replace(/[\/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_'); }
+    async function generatePdfBlob() {
+        if (dom.answersReviewDiv.style.display === 'none') { populateAnswersReview(); }
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        const buttonsToHide = document.querySelectorAll('.action-buttons, .top-nav');
+        buttonsToHide.forEach(el => el.style.visibility = 'hidden');
+        
+        document.querySelectorAll('.validation-icon').forEach(icon => icon.style.display = 'none');
+        
+        const canvas = await html2canvas(mainContainer, { scale: 1.5, useCORS: true, windowWidth: 900 });
+        
+        document.querySelectorAll('.validation-icon').forEach(icon => icon.style.display = 'block');
+        buttonsToHide.forEach(el => el.style.visibility = 'visible');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = canvas.height * pdfWidth / canvas.width;
+        let heightLeft = imgHeight, position = 0;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        while (heightLeft > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+        return pdf.output('blob');
+    }
+
+    dom.shareToTeacherButton.addEventListener('click', async function() {
+        this.textContent = translations[currentLang].sending; 
+        this.disabled = true;
+        try {
+            const pdfBlob = await generatePdfBlob();
+            if (!pdfBlob || pdfBlob.size === 0) { throw new Error("PDF generation failed."); }
+            const student = {
+                lastname: document.getElementById('student_lastname').value || 'student',
+                firstname: document.getElementById('student_firstname').value || 'report',
+                class: (document.getElementById('student_class_number').value + document.getElementById('student_class_letter').value).trim() || 'class'
+            };
+            const fileName = `Lab_Report_2_${sanitizeFilename(student.class)}_${sanitizeFilename(student.lastname)}_${sanitizeFilename(student.firstname)}.pdf`;
+            const caption = `Отчет по лабораторной работе №2\nУченик(ца): ${student.lastname} ${student.firstname}\nКласс: ${student.class}\nОценка: ${state.finalScoreText}`;
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.ok) {
+                this.textContent = translations[currentLang].send_success;
+                this.style.backgroundColor = '#27ae60';
+            } else { 
+                console.error('Telegram API Error Response:', result);
+                let errorMessage = result.description || 'Unknown error';
+                if (response.status === 400) { errorMessage += ' (Bad Request). Это часто означает неверный CHAT_ID. Убедитесь, что ID корректен и вы начали диалог с ботом.'; } 
+                else if (response.status === 401) { errorMessage += ' (Unauthorized). Проверьте правильность BOT_TOKEN.'; }
+                throw new Error(errorMessage); 
+            }
+        } catch (error) {
+            console.error('Full Error:', error);
+            this.textContent = translations[currentLang].send_error;
+            this.style.backgroundColor = '#e74c3c';
+            this.disabled = false;
+            alert(`${translations[currentLang].send_error}: ${error.message} ${translations[currentLang].error_details}`);
+        }
+    });
+    
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (btn.classList.contains('active')) return;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            resetState();
+            setLanguage(e.target.dataset.lang);
+        });
+    });
+
+    function updateCheckButtonText() {
+        if (state.attemptsLeft > 0) {
+            const attemptText = translations[currentLang][state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2'];
+            dom.checkButton.textContent = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`;
+        } else {
+            dom.checkButton.textContent = translations[currentLang].check_button;
+            dom.checkButton.disabled = true;
+        }
+    }
+    
+    ['metal-select', 'water-mass-slider', 'water-temp-slider', 'cyl-temp-slider'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateUI);
+    });
+
+    dom.backButton.addEventListener('click', () => window.history.back());
+
+    resetState();
+    setLanguage('ru');
+});
+</script>
+</body>
+</html>

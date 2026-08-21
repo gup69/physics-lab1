@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тематический контроль | 7 класс</title>
+  
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --bg: #F0F4FF;
+      --text: #1E293B;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.9);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+    
+    .top-bar { width: 100%; max-width: 1200px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .back-btn { background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); color: #1E293B; padding: 8px 16px; border-radius: 12px; font-weight: 600; text-decoration: none; transition: 0.2s; }
+    .back-btn:hover { background: #FFFFFF; color: #4F46E5; }
+
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255, 255, 255, 0.5); padding: 4px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.8); }
+    .lang-btn { background: transparent; border: none; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { color: #4F46E5; }
+    .lang-btn.active { background: #FFFFFF; color: #4F46E5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .header { text-align: center; margin-bottom: 30px; max-width: 800px; }
+    .header h1 { font-size: 1.8rem; color: #0F172A; margin-bottom: 8px; line-height: 1.2; }
+    .header p { color: #475569; font-size: 1rem; }
+
+    .app-container { max-width: 1200px; width: 100%; display: flex; flex-direction: column; gap: 25px; }
+    .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(31, 38, 135, 0.05); }
+
+    /* Сетка тем */
+    .topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+    .topic-card { background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 16px; padding: 18px; cursor: pointer; transition: all 0.3s; }
+    .topic-card:hover { transform: translateY(-4px); background: #FFFFFF; border-color: #3B82F6; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15); }
+    .topic-card.active { background: #3B82F6; color: #FFFFFF; border-color: #3B82F6; }
+    .topic-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .topic-card p { font-size: 0.85rem; opacity: 0.85; }
+
+    /* Рабочая зона теста */
+    .test-area { display: none; margin-top: 10px; }
+    .test-area.active { display: block; }
+    .task-box { background: #FFFFFF; border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid #E2E8F0; }
+    .task-box h4 { font-size: 1.05rem; color: #0F172A; margin-bottom: 12px; }
+    
+    .options-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .option-label { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; cursor: pointer; padding: 8px 12px; border-radius: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; transition: 0.2s; }
+    .option-label:hover { background: #EFF6FF; border-color: #93C5FD; }
+    
+    .task-input { padding: 8px 12px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 0.95rem; width: 150px; margin-right: 10px; outline: none; }
+
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #2563EB; }
+
+    .feedback-box { margin-top: 15px; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; display: none; }
+    .feedback-success { background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback-error { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a href="../../../index.html" class="back-btn" data-i18n="back">← На главную</a>
+    <div class="lang-switcher">
+      <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">РУС</button>
+      <button class="lang-btn" data-lang="kk" onclick="setLanguage('kk')">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">ENG</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 data-i18n="title">Тематический контроль: Физика 7 класс</h1>
+    <p data-i18n="desc">Выберите тему для прохождения комплексного контроля знаний (тесты, задачи и контекстные вопросы).</p>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Сетка выбора тем -->
+    <div class="glass-panel">
+      <h3 style="margin-bottom: 15px; font-size: 1.2rem;" data-i18n="selectTopic">Выберите раздел курса:</h3>
+      <div class="topics-grid" id="topics-grid"></div>
+    </div>
+
+    <!-- Область заданий по выбранной теме -->
+    <div class="glass-panel test-area" id="test-area">
+      <h2 id="active-topic-title" style="color: #4F46E5; margin-bottom: 20px; font-size: 1.4rem;"></h2>
+      
+      <div id="task-container"></div>
+
+      <button class="btn" id="btn-check-topic" data-i18n="checkBtn">ПРОВЕРИТЬ ОТВЕТЫ</button>
+      <div class="feedback-box" id="topic-feedback"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const topicsData = [
+      {
+        id: 0,
+        icon: "🔬",
+        title: { ru: "Физика – наука о природе", kk: "Физика – табиғат туралы ғылым", en: "Physics - Science of Nature" },
+        desc: { ru: "Основные понятия, физические явления и методы познания природы.", kk: "Негізгі ұғымдар, физикалық құбылыстар.", en: "Basic concepts, physical phenomena." },
+        task: {
+          type: "choice",
+          question: {
+            ru: "Что из перечисленного относится к физическим явлениям?",
+            kk: "Төмендегiлердің қайсысы физикалық құбылыстарға жатады?",
+            en: "Which of the following is a physical phenomenon?"
+          },
+          options: [
+            { ru: "Плавление льда", kk: "Мұздың еруі", en: "Ice melting", correct: true },
+            { ru: "Горение бумаги", kk: "Қағаздың жануы", en: "Paper burning", correct: false },
+            { ru: "Образование ржавчины", kk: "Тоттың пайда болуы", en: "Rust formation", correct: false }
+          ]
+        }
+      },
+      {
+        id: 1,
+        icon: "📏",
+        title: { ru: "Физические величины и измерения", kk: "Физикалық шамалар және өлшеулер", en: "Physical Quantities & Measurements" },
+        desc: { ru: "Цена деления прибора, погрешности и международная система единиц (СИ).", kk: "Құралдың бөлік құны, қателіктер және ХБЖ.", en: "Instrument scale division, errors, and SI units." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Выразите 150 см в метрах (м):",
+            kk: "150 см метрмен өрнектеңіз (м):",
+            en: "Express 150 cm in meters (m):"
+          },
+          answer: 1.5
+        }
+      },
+      {
+        id: 2,
+        icon: "🏃‍♂️",
+        title: { ru: "Механическое движение", kk: "Механикалық қозғалыс", en: "Mechanical Motion" },
+        desc: { ru: "Траектория, путь, скорость, равномерное и неравномерное движение.", kk: "Траектория, жол, жылдамдық, бірқалыпты қозғалыс.", en: "Trajectory, path, speed, uniform motion." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Автомобиль за 2 часа проехал 140 км. Чему равна средняя скорость (в км/ч)?",
+            kk: "Автокөлік 2 сағатта 140 км жол жүрді. Орташа жылдамдық қандай (км/сағ)?",
+            en: "A car traveled 140 km in 2 hours. What is the average speed (in km/h)?"
+          },
+          answer: 70
+        }
+      },
+      {
+        id: 3,
+        icon: "🧱",
+        title: { ru: "Плотность вещества", kk: "Заттың тығыздығы", en: "Density" },
+        desc: { ru: "Расчет массы, объема и плотности тел по формуле ρ = m/V.", kk: "ρ = m/V формуласы бойынша массаны, көлемді және тығыздықты есептеу.", en: "Calculating mass, volume, and density using ρ = m/V." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Найдите массу (в кг) алюминиевого бруска объемом 0.05 м³ (плотность алюминия 2700 кг/м³):",
+            kk: "Көлемі 0.05 м³ алюминий білеушенің массасын табыңыз (тығыздығы 2700 кг/м³):",
+            en: "Find the mass (in kg) of an aluminum block with a volume of 0.05 m³ (density 2700 kg/m³):"
+          },
+          answer: 135
+        }
+      },
+      {
+        id: 4,
+        icon: "🤝",
+        title: { ru: "Взаимодействие тел", kk: "Денелердің өзара әрекеттесуі", en: "Interaction of Bodies" },
+        desc: { ru: "Импульс силы, масса как мера инертности, сила упругости и закон Гука.", kk: "Күш импульсі, инерттілік өлшемі масса, серпімділік күші және Гук заңы.", en: "Force impulse, mass as inertia measure, elastic force, and Hooke's law." },
+        task: {
+          type: "choice",
+          question: {
+            ru: "По закону Гука сила упругости прямо пропорциональна...",
+            kk: "Гук заңы бойынша серпімділік күші мынаған тура пропорционал...",
+            en: "According to Hooke's law, elastic force is directly proportional to..."
+          },
+          options: [
+            { ru: "абсолютному удлинению (деформации)", kk: "абсолют ұзаруға (деформацияға)", en: "absolute elongation (deformation)", correct: true },
+            { ru: "массе тела", kk: "дене массасына", en: "body mass", correct: false },
+            { ru: "скорости движения", kk: "қозғалыс жылдамдығына", en: "movement speed", correct: false }
+          ]
+        }
+      },
+      {
+        id: 5,
+        icon: "💧",
+        title: { ru: "Давление тел, жидкостей и газов", kk: "Қатты денелер, сұйықтар мен газдар қысымы", en: "Pressure in Solids, Liquids & Gases" },
+        desc: { ru: "Закон Паскаля, гидростатическое давление (p = ρgh) и закон Архимеда.", kk: "Паскаль заңы, гидростатикалық қысым және Архимед заңы.", en: "Pascal's law, hydrostatic pressure, and Archimedes' principle." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Чему равно гидростатическое давление воды на глубине 2 м? (ρ = 1000 кг/м³, g = 10 Н/кг, в Па):",
+            kk: "2 м тереңдіктегі судың гидростатикалық қысымы неге тең? (Па-мен):",
+            en: "What is the hydrostatic pressure of water at a depth of 2 m? (in Pa):"
+          },
+          answer: 20000
+        }
+      },
+      {
+        id: 6,
+        icon: "⚙️",
+        title: { ru: "Работа и мощность", kk: "Жұмыс және қуат", en: "Work and Power" },
+        desc: { ru: "Механическая работа (A = Fs), мощность (N = A/t) и КПД механизмов.", kk: "Механикалық жұмыс, қуат және механизмдердің ПӘК-і.", en: "Mechanical work, power, and mechanism efficiency." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Какую работу совершает сила 50 Н при перемещении тела на 4 метра (в Дж)?",
+            kk: "Денені 4 метрге жылжытқанда 50 Н күш қандай жұмыс атқарады (Дж)?",
+            en: "What work is done by a force of 50 N when moving a body by 4 meters (in J)?"
+          },
+          answer: 200
+        }
+      },
+      {
+        id: 7,
+        icon: "⚡",
+        title: { ru: "Энергия", kk: "Энергия", en: "Energy" },
+        desc: { ru: "Кинетическая и потенциальная энергия, закон сохранения энергии в механике.", kk: "Кинетикалық және потенциалдық энергия, механикадағы сақталу заңы.", en: "Kinetic and potential energy, law of conservation of energy." },
+        task: {
+          type: "input",
+          question: {
+            ru: "Найдите потенциальную энергию тела массой 2 кг на высоте 5 м (g = 9.8 м/с², в Дж):",
+            kk: "Массасы 2 кг дененің 5 м биіктіктегі потенциалдық энергиясын табыңыз (Дж):",
+            en: "Find the potential energy of a 2 kg body at a height of 5 m (g = 9.8 m/s², in J):"
+          },
+          answer: 98
+        }
+      },
+      {
+        id: 8,
+        icon: "⚖️",
+        title: { ru: "Момент силы", kk: "Күш моменті", en: "Moment of Force" },
+        desc: { ru: "Условия равновесия рычага, плечо силы и правило моментов.", kk: "Рычагтың тепе-теңдік шарттары, күш иіні және моменттер ережесі.", en: "Lever equilibrium conditions, force arm, and rule of moments." },
+        task: {
+          type: "input",
+          question: {
+            ru: "К плечу рычага 0.2 м приложена сила 30 Н. Чему равен момент силы (в Н·м)?",
+            kk: "Рычаг иініне 0.2 м қашықтықта 30 Н күш әсер етеді. Күш моменті неге тең (Н·м)?",
+            en: "A force of 30 N is applied to a lever arm of 0.2 m. What is the moment of force (in N·m)?"
+          },
+          answer: 6
+        }
+      },
+      {
+        id: 9,
+        icon: "🌍",
+        title: { ru: "Космос и Земля", kk: "Ғарыш және Жер", en: "Space and Earth" },
+        desc: { ru: "Всемирное тяготение, космические скорости и строение солнечной системы.", kk: "Бүкіләлемдік тартылыс, ғарыштық жылдамдықтар және күн жүйесі.", en: "Universal gravitation, space speeds, and solar system." },
+        task: {
+          type: "choice",
+          question: {
+            ru: "Какая планета Солнечной системы является самой большой по размерам?",
+            kk: "Күн жүйесіндегі ең үлкен ғаламшар қалай аталады?",
+            en: "Which planet in the Solar System is the largest in size?"
+          },
+          options: [
+            { ru: "Юпитер", kk: "Юпитер", en: "Jupiter", correct: true },
+            { ru: "Сатурн", kk: "Сатурн", en: "Saturn", correct: false },
+            { ru: "Марс", kk: "Марс", en: "Mars", correct: false }
+          ]
+        }
+      }
+    ];
+
+    let currentLang = localStorage.getItem('preferredLang') || 'ru';
+    let activeTopicId = null;
+
+    const translations = {
+      ru: {
+        back: "← На главную",
+        title: "Тематический контроль: Физика 7 класс",
+        desc: "Выберите тему для прохождения комплексного контроля знаний.",
+        selectTopic: "Выберите раздел курса:",
+        checkBtn: "ПРОВЕРИТЬ ОТВЕТ",
+        correctMsg: "Верно! Отличный результат.",
+        errorMsg: "Неверно. Попробуйте еще раз или повторите теорию."
+      },
+      kk: {
+        back: "← Басты бетке",
+        title: "Тақырыптық бақылау: Физика 7 сынып",
+        desc: "Білімді кешенді тексеру үшін тақырыпты таңдаңыз.",
+        selectTopic: "Курс бөлімін таңдаңыз:",
+        checkBtn: "ТЕКСЕРУ",
+        correctMsg: "Дұрыс! Керемет нәтиже.",
+        errorMsg: "Қате. Қайта көріңіз немесе теорияны қайталаңыз."
+      },
+      en: {
+        back: "← Back to Home",
+        title: "Topic-Based Control: Physics Grade 7",
+        desc: "Select a topic to take the comprehensive knowledge assessment.",
+        selectTopic: "Select course section:",
+        checkBtn: "CHECK ANSWER",
+        correctMsg: "Correct! Excellent result.",
+        errorMsg: "Incorrect. Try again or review the theory."
+      }
+    };
+
+    function renderTopics() {
+      const grid = document.getElementById('topics-grid');
+      grid.innerHTML = '';
+      topicsData.forEach(topic => {
+        let card = document.createElement('div');
+        card.className = `topic-card ${activeTopicId === topic.id ? 'active' : ''}`;
+        card.onclick = () => selectTopic(topic.id);
+        card.innerHTML = `
+          <h3><span>${topic.icon}</span> ${topic.title[currentLang]}</h3>
+          <p>${topic.desc[currentLang]}</p>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function selectTopic(id) {
+      activeTopicId = id;
+      renderTopics();
+      
+      const topic = topicsData[id];
+      document.getElementById('active-topic-title').innerText = `${topic.icon} ${topic.title[currentLang]}`;
+      
+      let container = document.getElementById('task-container');
+      container.innerHTML = '';
+
+      let taskBox = document.createElement('div');
+      taskBox.className = 'task-box';
+
+      if (topic.task.type === 'choice') {
+        let optionsHtml = '';
+        topic.task.options.forEach((opt) => {
+          optionsHtml += `
+            <label class="option-label">
+              <input type="radio" name="quiz-opt" value="${opt.correct}">
+              ${opt[currentLang]}
+            </label>
+          `;
+        });
+        taskBox.innerHTML = `
+          <h4>${topic.task.question[currentLang]}</h4>
+          <div class="options-list">${optionsHtml}</div>
+        `;
+      } else if (topic.task.type === 'input') {
+        taskBox.innerHTML = `
+          <h4>${topic.task.question[currentLang]}</h4>
+          <div style="margin-top: 10px;">
+            <input type="number" id="task-numeric-input" class="task-input" step="any" placeholder="Ответ...">
+          </div>
+        `;
+      }
+
+      container.appendChild(taskBox);
+      document.getElementById('topic-feedback').style.display = 'none';
+      document.getElementById('test-area').classList.add('active');
+    }
+
+    document.getElementById('btn-check-topic').addEventListener('click', () => {
+      if (activeTopicId === null) return;
+      let topic = topicsData[activeTopicId];
+      let feedback = document.getElementById('topic-feedback');
+      let isCorrect = false;
+
+      if (topic.task.type === 'choice') {
+        let selected = document.querySelector('input[name="quiz-opt"]:checked');
+        if (selected && selected.value === 'true') {
+          isCorrect = true;
+        }
+      } else if (topic.task.type === 'input') {
+        let userVal = parseFloat(document.getElementById('task-numeric-input').value);
+        if (!isNaN(userVal) && Math.abs(userVal - topic.task.answer) < 0.01) {
+          isCorrect = true;
+        }
+      }
+
+      let dict = translations[currentLang];
+      if (isCorrect) {
+        feedback.innerText = dict.correctMsg;
+        feedback.className = 'feedback-box feedback-success';
+      } else {
+        feedback.innerText = dict.errorMsg;
+        feedback.className = 'feedback-box feedback-error';
+      }
+      feedback.style.display = 'block';
+    });
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('preferredLang', lang); // Сохраняем выбор для других страниц
+
+      // Обновляем визуальное состояние кнопок
+      document.querySelectorAll('.lang-btn').forEach(b => {
+        if(b.getAttribute('data-lang') === lang) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        let key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) el.innerHTML = translations[lang][key];
+      });
+
+      renderTopics();
+      if (activeTopicId !== null) selectTopic(activeTopicId);
+    }
+
+    window.onload = () => {
+      // Инициализируем язык из памяти браузера при загрузке
+      setLanguage(currentLang);
+    };
+  </script>
+</body>
+</html>

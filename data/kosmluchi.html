@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-key="title">Изучение космических лучей</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]  
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+      
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2a2a4e;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #4a4a7e;
+            overflow: hidden; /* Важно, чтобы border-radius работал */
+        }
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 2px solid #4a4a7e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        header h1 {  
+            color: #ffffff;  
+            margin: 0;  
+            font-size: 1.8em;
+            text-align: left;  
+            flex-grow: 1; 
+        }
+
+      
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .header-button:hover {
+            background-color: #0056b3;
+        }
+        #language-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+
+        
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 20px;
+            padding: 20px;
+            background: #232342;
+            border-bottom: 2px solid #4a4a7e;
+        }
+       
+        .student-id-area {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 20px;
+        }
+        .student-id-area .control-group {
+            flex: 1 1 45%; 
+        }
+        
+     
+        .control-group {
+            flex: 1 1 200px;  
+            min-width: 180px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #a0a0ff;  
+        }
+        .control-group select,  
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box; 
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        
+       
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 0;
+            margin-top: 5px;
+        }
+        .value-display {
+            font-size: 1.1em;
+            text-align: right;
+            color: #ffffff;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-basis: 100%; 
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .button-group button {
+            padding: 12px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-basis: 220px; 
+        }
+        
+        .button-group button:disabled,
+        #record-journal-button:disabled,  
+        #clear-journal-button:disabled,  
+        #check-answer-button:disabled,
+        #material-guess:disabled {
+            background-color: #4a4a7e !important;
+            color: #999 !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #start-button { background-color: #28a745; color: white; }
+        #start-button:hover:not(:disabled) { background-color: #218838; }
+        
+        #clear-sim-button { background-color: #dc3545; color: white; }
+        #clear-sim-button:hover:not(:disabled) { background-color: #c82333; }
+        
+        #reset-button { background-color: #ffc107; color: #212529; }
+        #reset-button:hover:not(:disabled) { background-color: #e0a800; }
+
+       
+        .simulation-area {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            align-items: flex-start; 
+        }
+        
+        
+        .detector-visual {
+            flex: 1 1 250px;
+            min-width: 200px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            text-align: center;
+        }
+        .detector-visual img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            background: #e0e0e0;
+        }
+        .detector-visual p {
+            font-size: 0.9em;
+            color: #a0a0ff;
+            margin: 5px 0 0 0;
+        }
+
+        
+        .info-box {
+            flex: 2 1 400px; 
+            min-width: 300px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        
+        #main-counter-display {
+            font-family: "Courier New", Courier, monospace;
+            color: #39ff14; 
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            min-height: 50px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .info-row span:first-child {
+            font-weight: bold;
+            color: #a0a0ff;
+        }
+        .info-row span:last-child {
+            font-weight: bold;
+            color: #ffffff;
+            font-family: "Courier New", Courier, monospace;
+        }
+        /* Прогресс-бар для таймера */
+        #timer-progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #4a4a7e;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        #timer-progress-fill {
+            width: 0%; 
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.1s linear;
+        }
+
+       
+        .lab-section {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid #4a4a7e;
+        }
+        .lab-section h2 {
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        
+        /* Журнал */
+        #record-journal-button, #clear-journal-button {
+             padding: 10px 15px;
+             font-size: 1em;
+             font-weight: bold;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             margin-right: 10px;
+             margin-top: 5px;  
+        }
+        #record-journal-button { background-color: #007bff; color: white; }
+        #record-journal-button:hover:not(:disabled) { background-color: #0056b3; }
+        #clear-journal-button { background-color: #6c757d; color: white; }
+        #clear-journal-button:hover:not(:disabled) { background-color: #5a6268; }
+
+        #journal-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            font-size: 1.1em;
+        }
+        #journal-table th, #journal-table td {
+            border: 1px solid #4a4a7e;
+            padding: 10px;
+            text-align: center;
+        }
+        #journal-table th {
+            background-color: #232342;
+        }
+        #journal-table tr:nth-child(even) {
+            background-color: #232342;
+        }
+
+       
+        .analysis-container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0;
+            gap: 20px;
+        }
+        
+        .chart-container-analysis {
+            flex: 2 1 500px; 
+            min-width: 300px;
+            height: 350px;
+            background: #1a1a2e;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .info-box-analysis {
+            flex: 1 1 200px;
+            min-width: 200px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+        }
+        #equation-display {
+            color: #39ff14;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            line-height: 1.5;
+        }
+        #point-count-display {  
+            color: #ffc107;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        
+        #check-answer-button {
+            padding: 10px 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #007bff;
+            color: white;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 400px; 
+        }
+        #check-answer-button:hover:not(:disabled) { background-color: #0056b3; }
+        
+        #feedback-message {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: left;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        .feedback-success {
+            background-color: rgba(57, 255, 20, 0.1);
+            color: #39ff14;
+        }
+        .feedback-fail {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+                        display: none; 
+        }
+        .modal-content {
+            background: #2a2a4e;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #4a4a7e;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #e0e0e0;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        .modal-content code {
+            background-color: #1a1a2e;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+            color: #39ff14;
+        }
+
+        /* Финальное окно */
+        #result-content {
+            text-align: center;
+            color: #e0e0e0 !important; 
+        }
+        #result-content h2 {
+            font-size: 2em;
+            color: #ffc107;
+            border-color: #ffc107;
+        }
+        #result-content p {
+            font-size: 1.4em;
+            margin: 10px 0;
+        }
+        .final-score {
+            font-size: 3em;
+            font-weight: bold;
+            color: #39ff14 !important; 
+            margin: 20px 0;
+        }
+        #print-button {
+            padding: 12px 25px;
+            background-color: #007bff;  
+            color: white;  
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 15px;
+            margin-right: 15px;  
+        }
+        #print-button:hover {
+            background-color: #0056b3;
+        }
+        
+        /* Стили для печати (как в прошлый раз) */
+        @media print {
+            body > .container {
+                box-shadow: none;
+                border: none;
+                background-color: white;
+                color: black;
+            }
+            header, .controls-panel, .simulation-area, 
+            .journal-area, .analysis-area, .identification-area,
+            #instructions-modal, #close-result-button, #print-button {
+                display: none !important;
+            }
+            
+            #result-modal {
+                position: static;
+                display: block !important;
+                background: none;
+            }
+            #result-content {
+                width: 100%;
+                max-width: none;
+                background: none;
+                border: none;
+                box-shadow: none;
+                color: black;
+            }
+            #result-content h2 {
+                color: black;
+                border-color: black;
+            }
+            #result-content .final-score {
+                color: black;
+            }
+            body > *:not(#result-modal) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container dark-theme">
+        
+        <header>
+            <div class="header-controls">
+                <select id="language-select">
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                    <option value="kz">Қазақша</option>
+                </select>
+                <h1 data-key="header_title">Лабораторная работа: Изучение космических лучей</h1>
+            </div>
+            <button id="open-instructions-button" class="header-button" data-key="button_instructions">ИНСТРУКЦИЯ</button>
+        </header>
+
+        <div class="controls-panel">
+            <div class="student-id-area">
+                <div class="control-group">
+                    <label for="student-name" data-key="label_name">Ф.И. (Обязательно):</label>
+                    <input type="text" id="student-name" data-key="placeholder_name" placeholder="Иванов И.И.">
+                </div>
+                <div class="control-group">
+                    <label for="student-group" data-key="label_group">Группа (Обязательно):</label>
+                    <input type="text" id="student-group" data-key="placeholder_group" placeholder="П-201">
+                </div>
+            </div>
+            
+            <div class="control-group" style="flex-basis: 400px;">
+                <label for="filter-thickness-slider" data-key="label_thickness">1. ТОЛЩИНА ФИЛЬТРА "X" (СМ):</label>
+                <input type="range" id="filter-thickness-slider" min="0" max="10" value="0" step="0.5">
+                <div class="value-display" id="filter-thickness-value">0.0 см</div>
+            </div>
+
+            <div class="control-group">
+                <label for="time-input" data-key="label_time">2. ВРЕМЯ ИЗМЕРЕНИЯ (СЕК):</label>
+                <input type="number" id="time-input" min="1" max="60" value="10" step="1">
+            </div>
+
+            <div class="button-group">
+                <button id="start-button" disabled data-key="button_start">СТАРТ ИЗМЕРЕНИЯ</button>
+                <button id="clear-sim-button" disabled data-key="button_clear_sim">ОЧИСТИТЬ СЧЕТЧИК</button>
+                <button id="reset-button" disabled data-key="button_reset">ОБЩИЙ СБРОС (НОВЫЙ "X")</button>
+            </div>
+        </div>
+
+        <div class="simulation-area">
+            <div class="detector-visual">
+                <h3 data-key="heading_detector">Установка</h3>
+                <img src="img/im5.png" alt="Схема детектора">
+                <p data-key="detector_desc">Счетчик Гейгера и Фильтр "X"</p>
+            </div>
+
+            <div class="info-box">
+                <h3 data-key="heading_data">Данные измерений</h3>
+                
+                <div id="main-counter-display" data-key="counter_default">--.--</div>
+                
+                <div class="info-row">
+                    <span data-key="info_timer">Таймер:</span>
+                    <span id="timer-display">0.0 сек</span>
+                </div>
+                <div id="timer-progress-bar">
+                    <div id="timer-progress-fill"></div>
+                </div>
+                <hr style="border-color: #4a4a7e; margin: 15px 0;">
+                
+                <div class="info-row">
+                    <span data-key="info_total_counts">Всего событий (N):</span>
+                    <span id="total-counts-display">0</span>
+                </div>
+                <div class="info-row">
+                    <span data-key="info_current_thickness">Толщина (x):</span>
+                    <span id="current-thickness-display">0.0 см</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lab-section journal-area">
+            <h2 data-key="heading_journal">Лабораторный журнал</h2>
+            <button id="record-journal-button" disabled data-key="button_record">ЗАПИСАТЬ В ЖУРНАЛ (из инфо-блока)</button>
+            <button id="clear-journal-button" disabled data-key="button_clear_journal">ОЧИСТИТЬ ЖУРНАЛ</button>
+            
+            <table id="journal-table">
+                <thead>
+                    <tr>
+                        <th data-key="table_x">Толщина (x, см)</th>
+                        <th data-key="table_n">Всего событий (N)</th>
+                        <th data-key="table_ln_n">ln(N)</th> </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="lab-section analysis-area">
+            <h2 data-key="heading_analysis">Анализ данных</h2>
+            
+            <div class="analysis-container">
+                <div class="chart-container-analysis">
+                    <h3 style="text-align: center;" data-key="chart1_title">График 1: Зависимость N от x</h3>
+                    <canvas id="analysis-chart-n-vs-x"></canvas>
+                </div>
+                <div class="info-box-analysis">
+                    <h3 data-key="heading_results">Результаты анализа</h3>
+                    <div id="equation-display" data-key="info_need_points">
+                        (Нужно >4 точек)
+                    </div>
+                    <div id="point-count-display" data-key="info_points_count">
+                        Точек в журнале: 0/5
+                    </div>
+                </div>
+                <div class="chart-container-analysis">
+                     <h3 style="text-align: center;" data-key="chart2_title">График 2: Зависимость ln(N) от x (Линеаризация)</h3>
+                    <canvas id="analysis-chart-ln-vs-x"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-section identification-area">
+            <h2 data-key="heading_id_prefix">Идентификация "Фильтра-X" (Попыток: <span id="attempt-counter">3</span>)</h2>
+            <div class="control-group" style="max-width: 400px;">
+                <label for="material-guess" data-key="label_your_answer">Ваш ответ (Материал):</label>
+                <select id="material-guess" disabled>
+                    <option value="none" data-key="option_select_answer">--- Выберите ваш ответ ---</option>
+                    <option value="Al" data-key="opt_al">Алюминий (Al)</option>
+                    <option value="Fe" data-key="opt_fe">Железо (Fe)</option>
+                    <option value="Cu" data-key="opt_cu">Медь (Cu)</option>
+                    <option value="Sn" data-key="opt_sn">Олово (Sn)</option>
+                    <option value="Pb" data-key="opt_pb">Свинец (Pb)</option>
+                </select>
+            </div>
+            <button id="check-answer-button" disabled data-key="button_check">ПРОВЕРИТЬ ОТВЕТ</button>
+            <div id="feedback-message"></div>
+        </div>
+    </div>
+
+    <div id="instructions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-instructions-button" class="modal-close">&times;</button>
+            <h2 data-key="inst_h2">ИНСТРУКЦИЯ К РАБОТЕ</h2>
+            <div id="inst-content">
+                <p>Загрузка инструкции...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-content" id="result-content">
+            <h2 data-key="res_h2">РЕЗУЛЬТАТ ЛАБОРАТОРНОЙ РАБОТЫ</h2>
+            <p id="result-name-p" data-key="res_name">Студент: </p>
+            <p id="result-group-p" data-key="res_group">Группа: </p>
+            <p id="result-attempts-p" data-key="res_attempts">Использовано попыток: </p>
+            <p data-key="res_final_score">Финальный результат:</p>
+            <div class="final-score" id="result-score">0%</div>
+            <button id="print-button" data-key="button_print">РАСПЕЧАТАТЬ РЕЗУЛЬТАТ (PDF)</button>
+            <button id="close-result-button" class="header-button" style="margin-top: 20px;" data-key="button_close_program">ЗАКРЫТЬ ПРОГРАММУ</button>
+        </div>
+    </div>
+    
+<script>
+        
+        const PHYSICS_CONSTANTS = {
+            'BASE_INTENSITY_CPS': 100, 
+            'MIN_POINTS_FOR_TREND': 5, 
+            'MATERIALS': {
+                'Al': { name_ru: "Алюминий", name_en: "Aluminum", name_kz: "Алюминий", mu: 0.161 },
+                'Fe': { name_ru: "Железо", name_en: "Iron", name_kz: "Темір", mu: 0.274 },
+                'Cu': { name_ru: "Медь", name_en: "Copper", name_kz: "Мыс", mu: 0.367 },
+                'Sn': { name_ru: "Олово", name_en: "Tin", name_kz: "Қалайы", mu: 0.425 },
+                'Pb': { name_ru: "Свинец", name_en: "Lead", name_kz: "Қорғасын", mu: 0.512 }
+            }
+        };
+
+        
+        const LANGUAGE_STRINGS = {
+            ru: {
+                // Общие
+                title: "Изучение космических лучей", unit_cm: "см", unit_sec: "сек", unit_cps: "событий/сек", res_no_data: "НЕТ ДАННЫХ",
+                // Header
+                header_title: "Лабораторная работа: Изучение космических лучей", button_instructions: "ИНСТРУКЦИЯ",
+                // Controls
+                label_name: "Ф.И. (Обязательно):", placeholder_name: "Иванов И.И.", label_group: "Группа (Обязательно):", placeholder_group: "П-201",
+                label_thickness: '1. ТОЛЩИНА ФИЛЬТРА "X" (СМ):', label_time: "2. ВРЕМЯ ИЗМЕРЕНИЯ (СЕК):",
+                button_start: "СТАРТ ИЗМЕРЕНИЯ", button_sampling: "ИЗМЕРЕНИЕ...", button_clear_sim: "ОЧИСТИТЬ СЧЕТЧИК", button_reset: "ОБЩИЙ СБРОС (НОВЫЙ 'X')",
+                // Simulation
+                heading_detector: "Установка", detector_desc: 'Счетчик Гейгера и Фильтр "X"', heading_data: "Данные измерений",
+                counter_default: "--.--", info_timer: "Таймер:", info_total_counts: "Всего событий (N):", info_current_thickness: "Толщина (x):",
+                // Journal
+                heading_journal: "Лабораторный журнал", button_record: "ЗАПИСАТЬ В ЖУРНАЛ (из инфо-блока)", button_clear_journal: "ОЧИСТИТЬ ЖУРНАЛ",
+                table_x: "Толщина (x, см)", table_n: "Всего событий (N)", table_ln_n: "ln(N)",
+                // Analysis
+                heading_analysis: "Анализ данных", chart1_title: "График 1: Зависимость N от x", chart2_title: "График 2: Зависимость ln(N) от x (Линеаризация)",
+                heading_results: "Результаты анализа", info_need_points: "(Нужно >4 точек)", info_points_count: "Точек в журнале: 0/5",
+                info_points_count_prefix: "Точек в журнале",
+                chart_n_vs_x_label: "События (N)", chart_ln_n_label: "ln(N)", chart_trendline_label: "Линия тренда (y=mx+b)",
+                chart_x_axis: "Толщина (x, см)", chart_y_n: "Всего событий (N)", chart_y_ln: "Натуральный логарифм (ln(N))",
+                // Identification
+                heading_id_prefix: 'Идентификация "Фильтра-X" (Попыток: ', label_your_answer: 'Ваш ответ (Материал):',
+                option_select_answer: "--- Выберите ваш ответ ---", 
+                opt_al: "Алюминий (Al)", opt_fe: "Железо (Fe)", opt_cu: "Медь (Cu)", opt_sn: "Олово (Sn)", opt_pb: "Свинец (Pb)",
+                button_check: "ПРОВЕРИТЬ ОТВЕТ",
+                feedback_correct: "ПРАВИЛЬНО! Вы определили материал с {N}-й попытки.",
+                feedback_incorrect: "НЕПРАВИЛЬНО. Осталось попыток: {N}.",
+                feedback_no_attempts: "НЕПРАВИЛЬНО. Попытки закончились. Правильный ответ: {material} (μ ≈ {mu}).",
+                error_select_material: "Пожалуйста, выберите материал из списка.",
+                error_record_in_progress: "Дождитесь окончания измерения перед записью!",
+                error_zero_counts: "Нельзя записать 0 событий. Проведите измерение.",
+                error_duplicate_point: "Ошибка: Точка для толщины x={x} см уже есть в журнале. Выберите другую толщину.",
+                // Result Modal
+                res_h2: "РЕЗУЛЬТАТ ЛАБОРАТОРНОЙ РАБОТЫ", res_name: "Студент:", res_group: "Группа:", res_attempts: "Использовано попыток:",
+                res_final_score: "Финальный результат:", button_print: "РАСПЕЧАТАТЬ РЕЗУЛЬТАТ (PDF)", button_close_program: "ЗАКРЫТЬ ПРОГРАММУ",
+                alert_closing: "Работа завершена. Для сохранения результата нажмите 'РАСПЕЧАТАТЬ РЕЗУЛЬТАТ'. \n\nСтраница будет перезагружена.",
+                // Instructions
+                inst_h2: "ИНСТРУКЦИЯ К РАБОТЕ",
+                instructions_content: `
+                    <ol>
+                        <li><strong>Идентификация:</strong> Введите <strong>Ф.И.</strong> и <strong>Группу</strong>, чтобы активировать кнопки управления.</li>
+                        <li><strong>Цель работы:</strong> Определить неизвестный материал "Фильтр-X", вычислив его линейный коэффициент поглощения ($\mu$).</li>
+                        <li><strong>Теория:</strong> Интенсивность (N) космических лучей, прошедших через фильтр толщиной (x), описывается законом:
+                            <p style="text-align: center;">$N(x) = N_0 \\cdot e^{-\\mu x}$</p>
+                            где $N_0$ - интенсивность без фильтра (x=0), $\mu$ - линейный коэффициент поглощения.
+                        </li>
+                        <li><strong>Линеаризация:</strong> Чтобы найти $\mu$, прологарифмируем уравнение:
+                            <p style="text-align: center;">$\\ln(N) = \\ln(N_0) - \\mu x$</p>
+                            Это уравнение вида $y = b + mx$ (прямая линия), где:
+                            <ul>
+                                <li>$y = \\ln(N)$</li>
+                                <li>$x = x$ (толщина)</li>
+                                <li>$m = -\\mu$ (угловой коэффициент / наклон)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Сбор данных (Журнал):</strong>
+                            <ul>
+                                <li>Установите <strong>"Время измерения"</strong> (например, 10 секунд). <strong>Не меняйте</strong> это значение!</li>
+                                <li>Соберите <strong>минимум 5 точек</strong> для разных значений толщины (x).</li>
+                                <li>Начните с <strong>x = 0.0 см</strong>. Нажмите "СТАРТ".</li>
+                                <li>Дождитесь окончания измерения. Нажмите <strong>"ЗАПИСАТЬ В ЖУРНАЛ"</strong>.</li>
+                                <li>Повторите для других толщин (например, 2, 4, 6, 8, 10 см).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Анализ и Идентификация:</strong>
+                            <ul>
+                                <li>Как только у вас будет 5+ точек, программа автоматически построит <strong>График 2 (ln(N) от x)</strong> и рассчитает уравнение прямой <strong>$y = mx + b$</strong>.</li>
+                                <li>Ваша задача — <strong>вычислить $\mu$</strong>. Из теории $m = -\\mu$, следовательно, $\\mu = -m$.</li>
+                                <li>Сравните ваш $\mu$ с эталонными значениями:</li>
+                                <li style="list-style-type: none;">
+                                    <ul>
+                                        <li>Алюминий (Al): $\\mu \\approx 0.16$ см⁻¹</li>
+                                        <li>Железо (Fe): $\\mu \\approx 0.27$ см⁻¹</li>
+                                        <li>Медь (Cu): $\\mu \\approx 0.37$ см⁻¹</li>
+                                        <li>Олово (Sn): $\\mu \\approx 0.43$ см⁻¹</li>
+                                        <li>Свинец (Pb): $\\mu \\approx 0.51$ см⁻¹</li>
+                                    </ul>
+                                </li>
+                                <li>Выберите ваш ответ в блоке "Идентификация" и нажмите "ПРОВЕРИТЬ".</li>
+                            </ul>
+                        </li>
+                         <li><strong>Оценка:</strong> У вас 3 попытки. (100% / 80% / 60%).</li>
+                    </ol>`
+            },
+            en: {
+                // General
+                title: "Cosmic Ray Study", unit_cm: "cm", unit_sec: "sec", unit_cps: "events/sec", res_no_data: "NO DATA",
+                // Header
+                header_title: "Laboratory Work: Cosmic Ray Study", button_instructions: "INSTRUCTIONS",
+                // Controls
+                label_name: "Name (Required):", placeholder_name: "John Doe", label_group: "Group (Required):", placeholder_group: "P-201",
+                label_thickness: '1. FILTER "X" THICKNESS (CM):', label_time: "2. MEASUREMENT TIME (SEC):",
+                button_start: "START MEASUREMENT", button_sampling: "MEASURING...", button_clear_sim: "CLEAR COUNTER", button_reset: "FULL RESET (NEW 'X')",
+                // Simulation
+                heading_detector: "Setup", detector_desc: 'Geiger Counter and Filter "X"', heading_data: "Measurement Data",
+                counter_default: "--.--", info_timer: "Timer:", info_total_counts: "Total Events (N):", info_current_thickness: "Thickness (x):",
+                // Journal
+                heading_journal: "Laboratory Journal", button_record: "RECORD TO JOURNAL (from info-box)", button_clear_journal: "CLEAR JOURNAL",
+                table_x: "Thickness (x, cm)", table_n: "Total Events (N)", table_ln_n: "ln(N)",
+                // Analysis
+                heading_analysis: "Data Analysis", chart1_title: "Graph 1: N vs. x", chart2_title: "Graph 2: ln(N) vs. x (Linearization)",
+                heading_results: "Analysis Results", info_need_points: "(Need >4 points)", info_points_count: "Points in journal: 0/5",
+                info_points_count_prefix: "Points in journal",
+                chart_n_vs_x_label: "Events (N)", chart_ln_n_label: "ln(N)", chart_trendline_label: "Trendline (y=mx+b)",
+                chart_x_axis: "Thickness (x, cm)", chart_y_n: "Total Events (N)", chart_y_ln: "Natural Logarithm (ln(N))",
+                // Identification
+                heading_id_prefix: 'Identification of "Filter-X" (Attempts: ', label_your_answer: 'Your Answer (Material):',
+                option_select_answer: "--- Select your answer ---", 
+                opt_al: "Aluminum (Al)", opt_fe: "Iron (Fe)", opt_cu: "Copper (Cu)", opt_sn: "Tin (Sn)", opt_pb: "Lead (Pb)",
+                button_check: "CHECK ANSWER",
+                feedback_correct: "CORRECT! You identified the material on attempt #{N}.",
+                feedback_incorrect: "INCORRECT. Attempts left: {N}.",
+                feedback_no_attempts: "INCORRECT. No attempts left. The correct answer was: {material} (μ ≈ {mu}).",
+                error_select_material: "Please select a material from the list.",
+                error_record_in_progress: "Wait for the measurement to finish before recording!",
+                error_zero_counts: "Cannot record 0 events. Run a measurement.",
+                error_duplicate_point: "Error: A point for thickness x={x} cm is already in the journal. Choose a different thickness.",
+                // Result Modal
+                res_h2: "LABORATORY WORK RESULT", res_name: "Student:", res_group: "Group:", res_attempts: "Attempts used:",
+                res_final_score: "Final Score:", button_print: "PRINT RESULT (PDF)", button_close_program: "CLOSE PROGRAM",
+                alert_closing: "Work finished. To save your result, press 'PRINT RESULT'. \n\nThe page will be reloaded.",
+                // Instructions
+                inst_h2: "INSTRUCTIONS",
+                instructions_content: `
+                        <ol>
+                            <li><strong>Identification:</strong> Enter your <strong>Name</strong> and <strong>Group</strong> to activate control buttons.</li>
+                            <li><strong>Objective:</strong> Identify the unknown material "Filter-X" by calculating its linear absorption coefficient ($\mu$).</li>
+                            <li><strong>Theory:</strong> The intensity (N) of cosmic rays that pass through a filter of thickness (x) is described by the law:
+                                <p style="text-align: center;">$N(x) = N_0 \\cdot e^{-\\mu x}$</p>
+                                where $N_0$ is the intensity without a filter (x=0), and $\mu$ is the linear absorption coefficient.
+                            </li>
+                            <li><strong>Linearization:</strong> To find $\mu$, we linearize the equation by taking the natural logarithm:
+                                <p style="text-align: center;">$\\ln(N) = \\ln(N_0) - \\mu x$</p>
+                                This is a linear equation $y = b + mx$, where:
+                                <ul>
+                                    <li>$y = \\ln(N)$</li>
+                                    <li>$x = x$ (thickness)</li>
+                                    <li>$m = -\\mu$ (the slope/gradient)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Data Collection (Journal):</strong>
+                                <ul>
+                                    <li>Set the <strong>"Measurement Time"</strong> (e.g., 10 seconds). <strong>Do not change</strong> this value!</li>
+                                    <li>Collect a <strong>minimum of 5 points</strong> for different thickness values (x).</li>
+                                    <li>Start with <strong>x = 0.0 cm</strong>. Press "START".</li>
+                                    <li>Wait for the measurement to finish. Press <strong>"RECORD TO JOURNAL"</strong>.</li>
+                                    <li>Repeat for other thicknesses (e.g., 2, 4, 6, 8, 10 cm).</li>
+                                </ul>
+                            </li>
+                            <li><strong>Analysis and Identification:</strong>
+                                <ul>
+                                    <li>Once you have 5+ points, the program will auto-plot <strong>Graph 2 (ln(N) vs. x)</strong> and calculate the linear equation <strong>$y = mx + b$</strong>.</li>
+                                    <li>Your task is to <strong>calculate $\mu$</strong>. From the theory, $m = -\\mu$, therefore $\\mu = -m$.</li>
+                                    <li>Compare your calculated $\mu$ to the standard values:</li>
+                                    <li style="list-style-type: none;">
+                                        <ul>
+                                            <li>Aluminum (Al): $\\mu \\approx 0.16$ cm⁻¹</li>
+                                            <li>Iron (Fe): $\\mu \\approx 0.27$ cm⁻¹</li>
+                                            <li>Copper (Cu): $\\mu \\approx 0.37$ cm⁻¹</li>
+                                            <li>Tin (Sn): $\\mu \\approx 0.43$ cm⁻¹</li>
+                                            <li>Lead (Pb): $\\mu \\approx 0.51$ cm⁻¹</li>
+                                        </ul>
+                                    </li>
+                                    <li>Select your answer in the "Identification" block and press "CHECK".</li>
+                                </ul>
+                            </li>
+                             <li><strong>Grading:</strong> You have 3 attempts. (100% / 80% / 60%).</li>
+                        </ol>`
+            },
+            kz: {
+                // General
+                title: "Ғарыштық сәулелерді зерттеу", unit_cm: "см", unit_sec: "сек", unit_cps: "оқиға/сек", res_no_data: "ДЕРЕКТЕР ЖОҚ",
+                // Header
+                header_title: "Зертханалық жұмыс: Ғарыштық сәулелерді зерттеу", button_instructions: "НҰСҚАУЛЫҚ",
+                // Controls
+                label_name: "Аты-жөні (Міндетті):", placeholder_name: "Жананов Қ.Е.", label_group: "Топ (Міндетті):", placeholder_group: "П-201",
+                label_thickness: '1. "X" СҮЗГІНІҢ ҚАЛЫҢДЫҒЫ (СМ):', label_time: "2. ӨЛШЕУ УАҚЫТЫ (СЕК):",
+                button_start: "ӨЛШЕУДІ БАСТАУ", button_sampling: "ӨЛШЕНУДЕ...", button_clear_sim: "ЕСЕПТЕГІШТІ ТАЗАРТУ", button_reset: "ЖАЛПЫ СЫДЫРУ (ЖАҢА 'X')",
+                // Simulation
+                heading_detector: "Қондырғы", detector_desc: 'Гейгер есептегіші және "X" сүзгісі', heading_data: "Өлшеу деректері",
+                counter_default: "--.--", info_timer: "Таймер:", info_total_counts: "Барлық оқиға (N):", info_current_thickness: "Қалыңдық (x):",
+                // Journal
+                heading_journal: "Зертханалық журнал", button_record: "ЖУРНАЛҒА ЖАЗУ (инфо-блоктан)", button_clear_journal: "ЖУРНАЛДЫ ТАЗАРТУ",
+                table_x: "Қалыңдық (x, см)", table_n: "Барлық оқиға (N)", table_ln_n: "ln(N)",
+                // Analysis
+                heading_analysis: "Деректерді талдау", chart1_title: "График 1: N(x) тәуелділігі", chart2_title: "График 2: ln(N) - x тәуелділігі (Түзулеу)",
+                heading_results: "Талдау нәтижелері", info_need_points: "(>4 нүкте қажет)", info_points_count: "Журналдағы нүктелер: 0/5",
+                info_points_count_prefix: "Журналдағы нүктелер",
+                chart_n_vs_x_label: "Оқиғалар (N)", chart_ln_n_label: "ln(N)", chart_trendline_label: "Тренд сызығы (y=mx+b)",
+                chart_x_axis: "Қалыңдық (x, см)", chart_y_n: "Барлық оқиға (N)", chart_y_ln: "Натурал логарифм (ln(N))",
+                // Identification
+                heading_id_prefix: '"X" Сүзгісін анықтау (Әрекет: ', label_your_answer: 'Сіздің жауабыңыз (Материал):',
+                option_select_answer: "--- Жауабыңызды таңдаңыз ---", 
+                opt_al: "Алюминий (Al)", opt_fe: "Темір (Fe)", opt_cu: "Мыс (Cu)", opt_sn: "Қалайы (Sn)", opt_pb: "Қорғасын (Pb)",
+                button_check: "ЖАУАПТЫ ТЕКСЕРУ",
+                feedback_correct: "ДҰРЫС! Сіз материалды {N}-ші әрекеттен таптыңыз.",
+                feedback_incorrect: "ҚАТЕ. Қалған әрекет саны: {N}.",
+                feedback_no_attempts: "ҚАТЕ. Әрекеттер аяқталды. Дұрыс жауап: {material} (μ ≈ {mu}).",
+                error_select_material: "Тізімнен материалды таңдаңыз.",
+                error_record_in_progress: "Жазу үшін өлшеудің аяқталуын күтіңіз!",
+                error_zero_counts: "0 оқиғаны жазу мүмкін емес. Өлшеу жүргізіңіз.",
+                error_duplicate_point: "Қате: x={x} см қалыңдық үшін нүкте журналда бар. Басқа қалыңдықты таңдаңыз.",
+                // Result Modal
+                res_h2: "ЗЕРТХАНАЛЫҚ ЖҰМЫС НӘТИЖЕСІ", res_name: "Студент:", res_group: "Топ:", res_attempts: "Пайдаланылған әрекеттер:",
+                res_final_score: "Қорытынды нәтиже:", button_print: "НӘТИЖЕНІ БАСЫП ШЫҒАРУ (PDF)", button_close_program: "БАҒДАРЛАМАНЫ ЖАБУ",
+                alert_closing: "Жұмыс аяқталды. Нәтижені сақтау үшін 'НӘТИЖЕНІ БАСЫП ШЫҒАРУ' батырмасын басыңыз. \n\nБет қайта жүктеледі.",
+                // Instructions
+                inst_h2: "ЖҰМЫС НҰСҚАУЛЫҒЫ",
+                instructions_content: `
+                        <ol>
+                            <li><strong>Идентификация:</strong> Басқару түймелерін іске қосу үшін <strong>Аты-жөніңізді</strong> және <strong>Тобыңызды</strong> енгізіңіз.</li>
+                            <li><strong>Жұмыс мақсаты:</strong> Белгісіз "Фильтр-X" материалының сызықтық жұтылу коэффициентін ($\mu$) есептеу арқылы оны анықтау.</li>
+                            <li><strong>Теория:</strong> (x) қалыңдықтағы сүзгіден өткен ғарыштық сәулелердің қарқындылығы (N) келесі заңмен сипатталады:
+                                <p style="text-align: center;">$N(x) = N_0 \\cdot e^{-\\mu x}$</p>
+                                мұндағы $N_0$ - сүзгісіз қарқындылық (x=0), $\mu$ - сызықтық жұтылу коэффициенті.
+                            </li>
+                            <li><strong>Түзулеу (Линеаризация):</strong> $\mu$ табу үшін теңдеуді логарифмдейміз:
+                                <p style="text-align: center;">$\\ln(N) = \\ln(N_0) - \\mu x$</p>
+                                Бұл $y = b + mx$ түріндегі түзу сызықтың теңдеуі, мұнда:
+                                <ul>
+                                    <li>$y = \\ln(N)$</li>
+                                    <li>$x = x$ (қалыңдық)</li>
+                                    <li>$m = -\\mu$ (бұрыштық коэффициент / көлбеу)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Деректерді жинау (Журнал):</strong>
+                                <ul>
+                                    <li><strong>"Өлшеу уақытын"</strong> орнатыңыз (мыс., 10 секунд). Бұл мәнді <strong>өзгертпеңіз</strong>!</li>
+                                    <li>Әртүрлі қалыңдық (x) мәндері үшін <strong>кемінде 5 нүкте</strong> жинаңыз.</li>
+                                    <li><strong>x = 0.0 см</strong> бастаңыз. "БАСТАУ" түймесін басыңыз.</li>
+                                    <li>Өлшеу аяқталғанша күтіңіз. <strong>"ЖУРНАЛҒА ЖАЗУ"</strong> түймесін басыңыз.</li>
+                                    <li>Басқа қалыңдықтар үшін қайталаңыз (мыс., 2, 4, 6, 8, 10 см).</li>
+                                </ul>
+                            </li>
+                            <li><strong>Талдау және Анықтау:</strong>
+                                <ul>
+                                    <li>Сізде 5+ нүкте болғанда, бағдарлама автоматты түрде <strong>График 2 (ln(N) - x)</strong> тұрғызады және <strong>$y = mx + b$</strong> түзуінің теңдеуін есептейді.</li>
+                                    <li>Сіздің міндетіңіз — <strong>$\mu$ есептеу</strong>. Теория бойынша $m = -\\mu$, демек $\\mu = -m$.</li>
+                                    <li>Өзіңіздің $\mu$ мәніңізді эталондық мәндермен салыстырыңыз:</li>
+                                    <li style="list-style-type: none;">
+                                        <ul>
+                                            <li>Алюминий (Al): $\\mu \\approx 0.16$ см⁻¹</li>
+                                            <li>Темір (Fe): $\\mu \\approx 0.27$ см⁻¹</li>
+                                            <li>Мыс (Cu): $\\mu \\approx 0.37$ см⁻¹</li>
+                                            <li>Қалайы (Sn): $\\mu \\approx 0.43$ см⁻¹</li>
+                                            <li>Қорғасын (Pb): $\\mu \\approx 0.51$ см⁻¹</li>
+                                        </ul>
+                                    </li>
+                                    <li>"Идентификация" блогында жауабыңызды таңдап, "ТЕКСЕРУ" түймесін басыңыз.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Бағалау:</strong> Сізде 3 әрекет бар. (100% / 80% / 60%).</li>
+                        </ol>`
+            }
+        };
+
+        
+        let currentLang = 'ru';
+        let currentMaterialKey = 'Pb'; 
+        let currentMaterialMu = 0.512;
+        let calculatedMu = 0; 
+        let attemptCount = 3;
+        let attemptSucceeded = false;
+        
+        let journalData = []; 
+        let isSampling = false; 
+        let lastMeasurement = { x: 0, n: 0 };
+
+        let chart_N_vs_X;
+        let chart_LN_vs_X;
+
+        // === 4. МАТЕМАТИЧЕСКИЕ ФУНКЦИИ ===
+        
+        function poissonRandom(lambda) {
+            if (lambda < 30) {
+                let L = Math.exp(-lambda), k = 0, p = 1;
+                do { k++; p *= Math.random(); } while (p > L);
+                return k - 1;
+            } else {
+                let u1 = Math.random(), u2 = Math.random();
+                let z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                let result = Math.round(lambda + z * Math.sqrt(lambda));  
+                return Math.max(0, result);
+            }
+        }
+        
+        function calculateLinearRegression(data) {
+            let sum_x = 0, sum_y = 0, sum_xy = 0, sum_xx = 0;
+            let n = data.length;
+            if (n === 0) return { m: 0, b: 0 };
+            for (let i = 0; i < n; i++) {
+                sum_x += data[i].x;
+                sum_y += data[i].y;
+                sum_xy += data[i].x * data[i].y;
+                sum_xx += data[i].x * data[i].x;
+            }
+            let denominator = (n * sum_xx - sum_x * sum_x);
+            if (denominator === 0) return { m: 0, b: sum_y / n }; 
+            let m = (n * sum_xy - sum_x * sum_y) / denominator;
+            let b = (sum_y - m * sum_x) / n;
+            return { m, b };  
+        }
+
+        function calculateScore(attemptsUsed, isCorrect) {
+            if (!isCorrect) return 0;
+            switch (attemptsUsed) {
+                case 1: return 100;
+                case 2: return 80;  
+                case 3: return 60;  
+                default: return 0;
+            }
+        }
+        function closeWindow() {
+            alert(LANGUAGE_STRINGS[currentLang].alert_closing);
+            location.reload();
+        }
+        function printResult() {
+            window.print();
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 5.1. Поиск всех DOM-элементов ---
+            const studentNameInput = document.getElementById('student-name');
+            const studentGroupInput = document.getElementById('student-group');
+            const thicknessSlider = document.getElementById('filter-thickness-slider');
+            const thicknessValue = document.getElementById('filter-thickness-value');
+            const timeInput = document.getElementById('time-input');
+            const startButton = document.getElementById('start-button');
+            const clearSimButton = document.getElementById('clear-sim-button');
+            const resetButton = document.getElementById('reset-button');
+            
+            const mainCounter = document.getElementById('main-counter-display');
+            const totalCountsDisplay = document.getElementById('total-counts-display');
+            const timerDisplay = document.getElementById('timer-display');
+            const progressFill = document.getElementById('timer-progress-fill');
+            const currentThicknessDisplay = document.getElementById('current-thickness-display');
+
+            const recordJournalButton = document.getElementById('record-journal-button');
+            const clearJournalButton = document.getElementById('clear-journal-button');
+            const journalTableBody = document.querySelector("#journal-table tbody"); 
+            
+            const checkAnswerButton = document.getElementById('check-answer-button');
+            const equationDisplay = document.getElementById('equation-display'); 
+            const pointCountDisplay = document.getElementById('point-count-display'); 
+            const materialGuessSelect = document.getElementById('material-guess'); 
+            const feedbackMessage = document.getElementById('feedback-message'); 
+            const attemptCounter = document.getElementById('attempt-counter'); 
+
+            
+            const resultModal = document.getElementById('result-modal');
+            const resultNamePDom = document.getElementById('result-name-p');
+            const resultGroupPDom = document.getElementById('result-group-p');
+            const resultAttemptsPDom = document.getElementById('result-attempts-p');
+            const resultScoreDom = document.getElementById('result-score');
+            
+            const ctx_N_vs_X = document.getElementById('analysis-chart-n-vs-x').getContext('2d');
+            const ctx_LN_vs_X = document.getElementById('analysis-chart-ln-vs-x').getContext('2d');
+
+
+            
+            const allControlButtons = [
+                startButton, clearSimButton, resetButton,
+                recordJournalButton, clearJournalButton, checkAnswerButton
+            ];
+            
+            
+            function checkIdFields() {
+                const nameFilled = studentNameInput.value.trim() !== '';
+                const groupFilled = studentGroupInput.value.trim() !== '';
+                const canProceed = nameFilled && groupFilled && !attemptSucceeded && attemptCount > 0;
+                const canCheck = canProceed && journalData.length >= PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND;
+
+                studentNameInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0); 
+                studentGroupInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+                resetButton.disabled = isSampling; 
+                
+                thicknessSlider.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+                timeInput.disabled = isSampling || (attemptSucceeded || attemptCount === 0);
+
+                startButton.disabled = !canProceed || isSampling;
+                clearSimButton.disabled = !canProceed || isSampling;
+                recordJournalButton.disabled = !canProceed || isSampling || lastMeasurement.n === 0;
+                clearJournalButton.disabled = !canProceed || isSampling || journalData.length === 0; 
+                
+                checkAnswerButton.disabled = !canCheck || isSampling;
+                materialGuessSelect.disabled = !canCheck || isSampling; 
+            }
+
+            
+            function setRandomMaterial() {
+                const materials = Object.keys(PHYSICS_CONSTANTS.MATERIALS);
+                currentMaterialKey = materials[Math.floor(Math.random() * materials.length)];
+                currentMaterialMu = PHYSICS_CONSTANTS.MATERIALS[currentMaterialKey].mu;
+                
+                console.log(`Новый Фильтр-X: ${currentMaterialKey} (μ = ${currentMaterialMu})`);
+            }
+
+            
+            function updateLanguage(langKey) {
+                if (!LANGUAGE_STRINGS[langKey] || Object.keys(LANGUAGE_STRINGS[langKey]).length === 0) {
+                     // Если словарь пуст (как en, kz), используем ru
+                    langKey = 'ru';
+                }
+                currentLang = langKey;
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                document.querySelectorAll('[data-key]').forEach(el => {
+                    const key = el.getAttribute('data-key');
+                    if (strings[key]) {
+                        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                            el.placeholder = strings[key];
+                        } else if (key.endsWith('_prefix')) {
+                            el.innerHTML = strings[key] + `<span id="attempt-counter">${attemptCount}</span>)`;
+                        } else if (el.tagName === 'OPTGROUP') {
+                            el.label = strings[key];
+                        } else if (el.tagName === 'P' && (el.id === 'result-name-p' || el.id === 'result-group-p' || el.id === 'result-attempts-p')) {
+                           // Не трогаем <p> в финальном окне
+                        }
+                         else {
+                            el.textContent = strings[key];
+                        }
+                    }
+                });
+                thicknessValue.textContent = `${parseFloat(thicknessSlider.value).toFixed(1)} ${strings.unit_cm}`;
+                currentThicknessDisplay.textContent = `${parseFloat(thicknessSlider.value).toFixed(1)} ${strings.unit_cm}`;
+                timerDisplay.textContent = `0.0 ${strings.unit_sec}`;
+                
+                const guessSelect = document.getElementById('material-guess');
+                Object.keys(PHYSICS_CONSTANTS.MATERIALS).forEach(key => {
+                    const material = PHYSICS_CONSTANTS.MATERIALS[key];
+                    const name = material[`name_${langKey}`] || material.name_ru;
+                    const guessOption = guessSelect.querySelector(`[value="${key}"]`);
+                    if (guessOption) {
+                        guessOption.textContent = name;
+                    }
+                });
+                
+                const instContent = document.getElementById('inst-content');
+                if (instContent && strings.instructions_content) { // Проверяем, что инструкции есть
+                    instContent.innerHTML = strings.instructions_content;
+                    if (window.MathJax) {
+                        MathJax.typesetPromise([instContent]).catch(err => console.error(err));
+                    }
+                }
+                updateChartLabels(); 
+                updateAnalysisGraph();
+            }
+            
+            
+            function startMeasurement() {
+                isSampling = true;
+                checkIdFields();
+                startButton.textContent = LANGUAGE_STRINGS[currentLang].button_sampling;
+                const durationSec = parseFloat(timeInput.value);
+                const thicknessX = parseFloat(thicknessSlider.value);
+                const baseIntensity = PHYSICS_CONSTANTS.BASE_INTENSITY_CPS;
+                const mu = currentMaterialMu;
+                const expectedCPS = baseIntensity * Math.exp(-mu * thicknessX);
+                const UPDATE_INTERVAL_MS = 100;
+                const expectedCountsPerInterval = expectedCPS / (1000 / UPDATE_INTERVAL_MS);
+                let totalCounts = 0;
+                let timeElapsedMs = 0;
+                const totalDurationMs = durationSec * 1000;
+                
+                clearSimulationDisplay(); 
+                currentThicknessDisplay.textContent = `${thicknessX.toFixed(1)} ${LANGUAGE_STRINGS[currentLang].unit_cm}`;
+
+                const simulationTimer = setInterval(() => {
+                    timeElapsedMs += UPDATE_INTERVAL_MS;
+                    const newCounts = poissonRandom(expectedCountsPerInterval);
+                    totalCounts += newCounts;
+                    const currentCPS = (totalCounts / (timeElapsedMs / 1000)).toFixed(2);
+
+                    mainCounter.textContent = currentCPS + " " + LANGUAGE_STRINGS[currentLang].unit_cps;
+                    totalCountsDisplay.textContent = totalCounts;
+                    timerDisplay.textContent = (timeElapsedMs / 1000).toFixed(1) + " " + LANGUAGE_STRINGS[currentLang].unit_sec;
+                    progressFill.style.width = `${(timeElapsedMs / totalDurationMs) * 100}%`;
+                    
+                    if (timeElapsedMs >= totalDurationMs) {
+                        clearInterval(simulationTimer);
+                        isSampling = false;
+                        
+                        const finalCPS = (totalCounts / durationSec).toFixed(2);
+                        mainCounter.textContent = finalCPS + " " + LANGUAGE_STRINGS[currentLang].unit_cps;
+                        totalCountsDisplay.textContent = totalCounts;
+                        timerDisplay.textContent = durationSec.toFixed(1) + " " + LANGUAGE_STRINGS[currentLang].unit_sec;
+                        progressFill.style.width = "100%";
+                        
+                        lastMeasurement = { x: thicknessX, n: totalCounts };
+                        
+                        startButton.textContent = LANGUAGE_STRINGS[currentLang].button_start;
+                        checkIdFields(); 
+                    }
+                }, UPDATE_INTERVAL_MS);
+            }
+
+            function clearSimulationDisplay() {
+                mainCounter.textContent = LANGUAGE_STRINGS[currentLang].counter_default;
+                totalCountsDisplay.textContent = "0";
+                timerDisplay.textContent = `0.0 ${LANGUAGE_STRINGS[currentLang].unit_sec}`;
+                progressFill.style.width = "0%";
+                lastMeasurement = { x: parseFloat(thicknessSlider.value), n: 0 };
+                recordJournalButton.disabled = true;
+            }
+            
+            
+            function initializeCharts() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                const commonOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: { display: true, text: strings.chart_x_axis, color: '#e0e0e0' },
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        },
+                        y: {
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true, labels: { color: '#e0e0e0' } }
+                    }
+                };
+                
+                chart_N_vs_X = new Chart(ctx_N_vs_X, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: strings.chart_n_vs_x_label,
+                            data: [],
+                            backgroundColor: '#007bff',
+                            borderColor: '#007bff',
+                            pointRadius: 5
+                        }]
+                    },
+                    options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: strings.chart_y_n, color: '#e0e0e0' } } } }
+                });
+
+                chart_LN_vs_X = new Chart(ctx_LN_vs_X, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [
+                            { 
+                                label: strings.chart_ln_n_label,
+                                data: [],
+                                backgroundColor: '#28a745',
+                                borderColor: '#28a745',
+                                pointRadius: 5
+                            },
+                            { 
+                                label: strings.chart_trendline_label,
+                                data: [],
+                                type: 'line',
+                                backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                                borderColor: '#dc3545',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0
+                            }
+                        ]
+                    },
+                    options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: strings.chart_y_ln, color: '#e0e0e0' } } } }
+                });
+            }
+            
+            function updateChartLabels() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                if (!strings || !chart_N_vs_X || !chart_LN_vs_X) return; // Защита, если графики еще не созданы
+
+                chart_N_vs_X.data.datasets[0].label = strings.chart_n_vs_x_label;
+                chart_N_vs_X.options.scales.x.title.text = strings.chart_x_axis;
+                chart_N_vs_X.options.scales.y.title.text = strings.chart_y_n;
+                chart_N_vs_X.update('none'); 
+                
+                chart_LN_vs_X.data.datasets[0].label = strings.chart_ln_n_label;
+                chart_LN_vs_X.data.datasets[1].label = strings.chart_trendline_label;
+                chart_LN_vs_X.options.scales.x.title.text = strings.chart_x_axis;
+                chart_LN_vs_X.options.scales.y.title.text = strings.chart_y_ln;
+                chart_LN_vs_X.update('none');
+            }
+
+            function updateAnalysisGraph() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                pointCountDisplay.textContent = `${strings.info_points_count_prefix}: ${journalData.length}/${PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND}`;
+                const data_N_vs_X = journalData.map(p => ({ x: p.x, y: p.n }));
+                const data_LN_vs_X = journalData.filter(p => p.n > 0).map(p => ({ x: p.x, y: Math.log(p.n) }));
+                
+                if (!chart_N_vs_X || !chart_LN_vs_X) return; // Защита
+
+                chart_N_vs_X.data.datasets[0].data = data_N_vs_X;
+                chart_LN_vs_X.data.datasets[0].data = data_LN_vs_X;
+                
+                if (data_LN_vs_X.length >= PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND) {
+                    const { m, b } = calculateLinearRegression(data_LN_vs_X);
+                    calculatedMu = -m; 
+                    
+                    const xValues = data_LN_vs_X.map(p => p.x);
+                    const minX = Math.min(...xValues);
+                    const maxX = Math.max(...xValues);
+                    const trendlineData = [
+                        { x: minX, y: m * minX + b },
+                        { x: maxX, y: m * maxX + b }
+                    ];
+                    
+                    chart_LN_vs_X.data.datasets[1].data = trendlineData;
+                    
+                    
+                    equationDisplay.innerHTML = `
+                        Уравнение:<br>
+                        y = ${m.toFixed(4)}x + ${b.toFixed(4)}<br>
+                        <span style="font-size: 0.9em; opacity: 0.8;">(Подсказка: $\\mu = -m$)</span>
+                    `;
+                    if (window.MathJax) {
+                        MathJax.typesetPromise([equationDisplay]).catch(err => console.error(err));
+                    }
+                    
+                } else {
+                    chart_LN_vs_X.data.datasets[1].data = [];
+                    calculatedMu = 0;
+                    equationDisplay.innerHTML = strings.info_need_points.replace('{N}', PHYSICS_CONSTANTS.MIN_POINTS_FOR_TREND - 1);
+                }
+                
+                chart_N_vs_X.update();
+                chart_LN_vs_X.update();
+                checkIdFields();
+            }
+
+            function recordToJournal() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                
+                if (isSampling) {
+                    alert(strings.error_record_in_progress); return;
+                }
+                if (lastMeasurement.n === 0) {
+                    alert(strings.error_zero_counts); return;
+                }
+                if (journalData.some(p => p.x === lastMeasurement.x)) {
+                    alert(strings.error_duplicate_point.replace('{x}', lastMeasurement.x)); return;
+                }
+                
+                const ln_n = (lastMeasurement.n > 0) ? Math.log(lastMeasurement.n) : 0;
+                
+                journalData.push({
+                    x: lastMeasurement.x,
+                    n: lastMeasurement.n,
+                    ln_n: ln_n 
+                });
+                journalData.sort((a, b) => a.x - b.x);
+                
+                renderTable();
+                updateAnalysisGraph();
+                
+                lastMeasurement.n = 0;
+                checkIdFields();
+            }
+            
+            function clearJournal() {
+                journalData = [];
+                renderTable(); 
+                updateAnalysisGraph(); 
+            }
+
+            function renderTable() {
+                journalTableBody.innerHTML = ''; 
+                journalData.forEach(point => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${point.x.toFixed(1)}</td>
+                        <td>${point.n}</td>
+                        <td>${point.n > 0 ? point.ln_n.toFixed(4) : "N/A (ln(0))"}</td>
+                    `;
+                    journalTableBody.appendChild(newRow);
+                });
+            }
+
+           
+            
+            function checkAnswer() {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                const guess = materialGuessSelect.value;
+                
+                if (guess === 'none') {
+                    alert(strings.error_select_material);
+                    return;
+                }
+                
+                const attemptNum = 4 - attemptCount; 
+                
+                if (guess === currentMaterialKey) {
+                    attemptSucceeded = true;
+                    feedbackMessage.innerHTML = strings.feedback_correct.replace('{N}', attemptNum);
+                    feedbackMessage.className = 'feedback-success';
+                    showFinalResult(true);
+                } else {
+                    attemptCount--;
+                    attemptCounter.textContent = attemptCount;
+                    
+                    if (attemptCount > 0) {
+                        // *** ИЗМЕНЕНИЕ: Убрана подсказка {mu} ***
+                        feedbackMessage.innerHTML = strings.feedback_incorrect
+                            .replace('{N}', attemptCount);
+                        feedbackMessage.className = 'feedback-fail';
+                    } else {
+                        const correctMaterial = PHYSICS_CONSTANTS.MATERIALS[currentMaterialKey];
+                        const correctName = correctMaterial[`name_${currentLang}`] || correctMaterial.name_ru;
+                        
+                        feedbackMessage.innerHTML = strings.feedback_no_attempts
+                            .replace('{material}', correctName)
+                            .replace('{mu}', currentMaterialMu.toFixed(3));
+                        feedbackMessage.className = 'feedback-fail';
+                        showFinalResult(false);
+                    }
+                }
+                checkIdFields(); 
+            }
+
+            function showFinalResult(isCorrect) {
+                const strings = LANGUAGE_STRINGS[currentLang];
+                let attemptsUsed = isCorrect ? (4 - attemptCount) : 3;
+                if (!isCorrect && attemptCount === 0) attemptsUsed = 3;
+
+                const score = calculateScore(attemptsUsed, isCorrect);
+                
+                resultNamePDom.textContent = strings.res_name + " " + (studentNameInput.value || strings.res_no_data);
+                resultGroupPDom.textContent = strings.res_group + " " + (studentGroupInput.value || strings.res_no_data);
+                resultAttemptsPDom.textContent = strings.res_attempts + " " + attemptsUsed;
+                resultScoreDom.textContent = `${score}%`;
+                resultScoreDom.style.color = score > 0 ? '#39ff14' : '#dc3545';
+                
+                resultModal.style.display = 'flex';
+                checkIdFields();
+            }
+            
+            function resetLab() {
+                attemptCount = 3;
+                attemptSucceeded = false;
+                calculatedMu = 0;
+                
+                setRandomMaterial();
+                
+                clearJournal();
+                clearSimulationDisplay();
+                
+                feedbackMessage.innerHTML = '';
+                feedbackMessage.className = '';
+                materialGuessSelect.value = 'none';
+                thicknessSlider.value = 0;
+                timeInput.value = 10; 
+                
+                updateLanguage(currentLang); 
+                
+                checkIdFields();
+            }
+
+            
+
+            studentNameInput.addEventListener('input', checkIdFields);
+            studentGroupInput.addEventListener('input', checkIdFields);
+
+            thicknessSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value).toFixed(1);
+                const unit = LANGUAGE_STRINGS[currentLang].unit_cm;
+                thicknessValue.textContent = `${val} ${unit}`;
+                currentThicknessDisplay.textContent = `${val} ${unit}`;
+                clearSimulationDisplay();
+            });
+            
+            document.getElementById('language-select').addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+            });
+            
+            document.getElementById('open-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'flex';
+                if (window.MathJax) {
+                    MathJax.typesetPromise().catch(err => console.error(err));
+                }
+            });
+            document.getElementById('close-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'none';
+            });
+             document.getElementById('instructions-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('instructions-modal')) {
+                    document.getElementById('instructions-modal').style.display = 'none';
+                }
+            });
+
+            startButton.addEventListener('click', startMeasurement);
+            clearSimButton.addEventListener('click', clearSimulationDisplay);
+            
+            recordJournalButton.addEventListener('click', recordToJournal);
+            clearJournalButton.addEventListener('click', clearJournal);
+            
+            checkAnswerButton.addEventListener('click', checkAnswer);
+            resetButton.addEventListener('click', resetLab);
+
+            document.getElementById('print-button').addEventListener('click', printResult);
+            document.getElementById('close-result-button').addEventListener('click', closeWindow);
+
+            
+            setRandomMaterial();
+            initializeCharts(); 
+            updateLanguage(currentLang); // Запускаем с 'ru'
+            checkIdFields(); 
+        });
+    </script>
+
+</body>
+</html>

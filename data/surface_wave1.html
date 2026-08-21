@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Определение скорости распространения поверхностной волны</title>
+  
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --bg: #F0F4FF;
+      --text: #1E293B;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.9);
+      --water: #BAE6FD;
+      --water-wave: #38BDF8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+    
+    .top-bar { width: 100%; max-width: 1200px; display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255, 255, 255, 0.5); padding: 4px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.8); }
+    .lang-btn { background: transparent; border: none; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { color: #4F46E5; }
+    .lang-btn.active { background: #FFFFFF; color: #4F46E5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .header { text-align: center; margin-bottom: 30px; max-width: 800px; }
+    .header h1 { font-size: 2rem; color: #0F172A; margin-bottom: 10px; line-height: 1.2; }
+    .app-container { display: flex; flex-wrap: wrap; gap: 30px; max-width: 1200px; width: 100%; justify-content: center; }
+    .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(31, 38, 135, 0.05); }
+
+    .lab-setup { flex: 1; min-width: 500px; display: flex; flex-direction: column; align-items: center; }
+    .experiment-area { width: 100%; height: 300px; position: relative; margin-top: 20px; display: flex; justify-content: center; align-items: center; }
+    
+    .cuvette-container { position: absolute; left: 20px; height: 160px; background: var(--water); border: 4px solid #94A3B8; border-radius: 8px; overflow: hidden; transition: width 0.3s; box-shadow: inset 0 0 20px rgba(2, 132, 199, 0.2); }
+    
+    .float-obj { position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; background: radial-gradient(circle, #EF4444, #991B1B); border-radius: 50%; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    
+    @keyframes bob { 0% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(0.85); } 100% { transform: translateY(-50%) scale(1); } }
+    .bobbing { animation: bob 0.4s infinite ease-in-out; }
+
+    .wave { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-radius: 50%; border: 3px solid var(--water-wave); opacity: 0; z-index: 5; pointer-events: none; }
+
+    .ruler-container { position: absolute; left: 20px; bottom: 30px; height: 20px; transition: width 0.3s; display: flex; justify-content: space-between; border-top: 2px solid #64748B; padding-top: 5px; }
+    .ruler-tick { width: 1px; height: 8px; background: #64748B; position: relative; }
+    .ruler-tick::after { content: attr(data-val); position: absolute; top: 10px; left: -10px; font-size: 10px; color: #64748B; }
+
+    .controls { margin-top: 40px; display: flex; gap: 15px; align-items: center; width: 100%; background: #FFFFFF; padding: 15px 20px; border-radius: 16px; border: 1px solid #E2E8F0; flex-wrap: wrap; }
+    .slider-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+    .slider-group label { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #475569; }
+    input[type=range] { width: 100%; cursor: pointer; }
+
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #2563EB; }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn-reset { background: #EF4444; }
+    .btn-reset:hover { background: #DC2626; }
+    .btn-clear { background: #64748B; }
+    .btn-clear:hover { background: #475569; }
+
+    .stopwatch { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #0F172A; background: #F1F5F9; padding: 10px 15px; border-radius: 12px; border: 2px solid #CBD5E1; min-width: 120px; text-align: center; }
+
+    .data-table { flex: 1; min-width: 400px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #FFFFFF; border-radius: 12px; overflow: hidden; }
+    th, td { border: 1px solid #E2E8F0; padding: 10px; text-align: center; font-size: 0.95rem; }
+    th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    
+    .formula-box { margin-top: 20px; background: #EFF6FF; padding: 15px; border-radius: 12px; border: 1px dashed #93C5FD; font-size: 0.9rem; color: #1E3A8A; line-height: 1.6; }
+
+    .verification-box { margin-top: 20px; background: #FFFFFF; padding: 20px; border-radius: 16px; border: 1px solid #E2E8F0; display: none; }
+    .verification-box h3 { font-size: 1.1rem; margin-bottom: 15px; color: #0F172A; }
+    .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .input-group label { font-weight: 600; font-size: 0.95rem; }
+    .input-group input { width: 100px; padding: 8px; border-radius: 8px; border: 1px solid #CBD5E1; text-align: center; font-size: 1rem; }
+    
+    .feedback-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: none; }
+    .feedback-success { background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FBBF24; }
+    .feedback-error { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+    .attempts-info { font-size: 0.85rem; color: #64748B; margin-top: 10px; text-align: right; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 data-i18n="title">Определение скорости распространения поверхностной волны</h1>
+    <p data-i18n="desc">Изменяйте длину кюветы <b>l</b> перед каждым из 5 измерений. Измерьте время прохождения волны и вычислите скорость.</p>
+  </div>
+
+  <div class="app-container">
+    <div class="glass-panel lab-setup">
+      <div class="experiment-area" id="exp-area">
+        <div class="cuvette-container" id="cuvette">
+          <div class="float-obj" id="float"></div>
+          <div class="wave" id="wave"></div>
+        </div>
+        <div class="ruler-container" id="ruler">
+          <div class="ruler-tick" data-val="0"></div>
+          <div class="ruler-tick" data-val="0.5"></div>
+          <div class="ruler-tick" data-val="1.0"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="slider-group">
+          <label><span data-i18n="lenLabel">Длина кюветы l, м:</span> <span id="l-val">0.5</span> <span data-i18n="meter">м</span></label>
+          <input type="range" id="l-slider" min="0.3" max="1.0" step="0.1">
+        </div>
+        <div class="stopwatch" id="timer-display">0.00 <span data-i18n="sec">с</span></div>
+        <button class="btn" id="btn-start" data-i18n="start">ПУСК</button>
+        <button class="btn btn-reset" id="btn-reset" data-i18n="reset">СБРОС</button>
+        <button class="btn btn-clear" id="btn-clear" data-i18n="newExp">НОВЫЙ ОПЫТ</button>
+      </div>
+    </div>
+
+    <div class="glass-panel data-table">
+      <h3 data-i18n="tableTitle">Таблица измерений</h3>
+      <table>
+        <thead><tr><th>№</th><th data-i18n="tableL">Длина $l$, м</th><th data-i18n="tableT">Время $t$, с</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+
+      <div class="formula-box">
+        <span data-i18n="formTitle">Формулы для расчета:</span><br>
+        1. $v = \frac{l}{t}$<br>
+        2. $v_{cp} = \frac{v_1 + v_2 + v_3 + v_4 + v_5}{5}$<br>
+        3. $\Delta v = |v_{cp} - v_i|$<br>
+        4. $\varepsilon = \frac{\Delta v_{cp}}{v_{cp}} \cdot 100\%$
+      </div>
+
+      <div class="verification-box" id="verify-box">
+        <h3 data-i18n="verifTitle">Проверка вычислений</h3>
+        <div class="input-group">
+          <label data-i18n="avgVel">Средняя скорость волны ($v_{cp}$), м/с:</label>
+          <input type="number" id="input-v" step="0.01" placeholder="0.00">
+        </div>
+        <div class="input-group">
+          <label data-i18n="relErr">Отн. погрешность ($\varepsilon$), %:</label>
+          <input type="number" id="input-e" step="0.1" placeholder="0.0">
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px;" id="btn-check" data-i18n="checkBtn">ПРОВЕРИТЬ</button>
+        
+        <div class="attempts-info"><span data-i18n="attempts">Осталось попыток:</span> <span id="attempts-left">3</span></div>
+        <div class="feedback-box" id="feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Основные статические переводы интерфейса
+    const translations = {
+      ru: {
+        title: "Определение скорости распространения поверхностной волны",
+        desc: "Изменяйте длину кюветы <b>l</b> перед каждым из 5 измерений. Измерьте время прохождения волны и вычислите скорость.",
+        lenLabel: "Длина кюветы l, м:", meter: "м", sec: "с",
+        start: "ПУСК", reset: "СБРОС", newExp: "НОВЫЙ ОПЫТ",
+        tableTitle: "Таблица измерений", tableL: "Длина $l$, м", tableT: "Время $t$, с",
+        formTitle: "Формулы для расчета:", verifTitle: "Проверка вычислений",
+        avgVel: "Средняя скорость волны ($v_{cp}$), м/с:", relErr: "Отн. погрешность ($\\varepsilon$), %:",
+        checkBtn: "ПРОВЕРИТЬ", attempts: "Осталось попыток:"
+      },
+      kk: {
+        title: "Беттік толқынның таралу жылдамдығын анықтау",
+        desc: "Әрбір 5 өлшеу алдында кюветаның ұзындығын <b>l</b> өзгертіңіз. Толқынның өту уақытын өлшеп, жылдамдығын есептеңіз.",
+        lenLabel: "Кювета ұзындығы l, м:", meter: "м", sec: "с",
+        start: "БАСТАУ", reset: "ТАСТАУ", newExp: "ЖАҢА ТӘЖІРИБЕ",
+        tableTitle: "Өлшеулер кестесі", tableL: "Ұзындық $l$, м", tableT: "Уақыт $t$, с",
+        formTitle: "Есептеу формулалары:", verifTitle: "Есептеулерді тексеру",
+        avgVel: "Толқынның орташа жылдамдығы ($v_{cp}$), м/с:", relErr: "Сал. қателік ($\\varepsilon$), %:",
+        checkBtn: "ТЕКСЕРУ", attempts: "Қалған мүмкіндіктер:"
+      },
+      en: {
+        title: "Determination of the propagation speed of a surface wave",
+        desc: "Change the cuvette length <b>l</b> before each of the 5 measurements. Measure the wave travel time and calculate the speed.",
+        lenLabel: "Cuvette length l, m:", meter: "m", sec: "s",
+        start: "START", reset: "RESET", newExp: "NEW EXP",
+        tableTitle: "Measurement Table", tableL: "Length $l$, m", tableT: "Time $t$, s",
+        formTitle: "Formulas for calculation:", verifTitle: "Verification",
+        avgVel: "Average wave speed ($v_{cp}$), m/s:", relErr: "Rel. error ($\\varepsilon$), %:",
+        checkBtn: "CHECK", attempts: "Attempts left:"
+      }
+    };
+
+    // Динамические переводы для блока результатов (оценки и ошибки)
+    const feedbackDict = {
+      ru: {
+        grade: "Оценка", perfect: "Отличный результат!", good: "Хорошо. Ошибка исправлена.", satisfactory: "Удовлетворительно.",
+        calcErr: "Ошибка в вычислениях. Попробуйте еще раз.", fail: "Оценка: 2/10. Правильные ответы:", speedUnit: "м/с", enterNums: "Введите числовые значения."
+      },
+      kk: {
+        grade: "Баға", perfect: "Керемет нәтиже!", good: "Жақсы. Қате түзетілді.", satisfactory: "Қанағаттанарлық.",
+        calcErr: "Есептеуде қате бар. Қайта көріңіз.", fail: "Баға: 2/10. Дұрыс жауаптар:", speedUnit: "м/с", enterNums: "Сандық мәндерді енгізіңіз."
+      },
+      en: {
+        grade: "Grade", perfect: "Excellent result!", good: "Good. Error corrected.", satisfactory: "Satisfactory.",
+        calcErr: "Calculation error. Try again.", fail: "Grade: 2/10. Correct answers:", speedUnit: "m/s", enterNums: "Please enter numeric values."
+      }
+    };
+
+    let currentLang = 'ru';
+    
+    // Состояние блока проверки для динамического перевода
+    let fbState = { type: null, grade: 0, realV: 0, realE: 0 };
+    const feedback = document.getElementById('feedback');
+
+    // Функция обновления текста блока результатов
+    function renderFeedback() {
+      if (!fbState.type) {
+        feedback.style.display = 'none';
+        return;
+      }
+      
+      let dict = feedbackDict[currentLang];
+      
+      if (fbState.type === 'success') {
+        let msg = '';
+        if (fbState.grade === 10) msg = dict.perfect;
+        else if (fbState.grade === 8) msg = dict.good;
+        else msg = dict.satisfactory;
+        
+        feedback.innerHTML = `${dict.grade}: ${fbState.grade}/10.<br>${msg}`;
+        feedback.className = 'feedback-box feedback-success';
+        
+      } else if (fbState.type === 'warning') {
+        feedback.innerHTML = dict.calcErr;
+        feedback.className = 'feedback-box feedback-warning';
+        
+      } else if (fbState.type === 'error') {
+        feedback.innerHTML = `${dict.fail}<br>$v_{cp} \\approx ${fbState.realV.toFixed(2)}$ ${dict.speedUnit}<br>$\\varepsilon \\approx ${fbState.realE.toFixed(1)}\\%$`;
+        feedback.className = 'feedback-box feedback-error';
+        // Перерисовываем формулы, если появились новые элементы
+        if (typeof MathJax !== 'undefined') MathJax.typesetPromise([feedback]);
+      }
+      
+      feedback.style.display = 'block';
+    }
+
+    // Главная функция переключения языка
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const elements = document.querySelectorAll('[data-i18n]');
+      elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) el.innerHTML = translations[lang][key];
+      });
+      
+      // Переводим динамический блок с оценкой, если он уже показан
+      renderFeedback();
+
+      if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+    }
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        changeLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
+    const PIXELS_PER_METER = 400; 
+    
+    const cuvette = document.getElementById('cuvette');
+    const floatObj = document.getElementById('float');
+    const waveObj = document.getElementById('wave');
+    const ruler = document.getElementById('ruler');
+    const lSlider = document.getElementById('l-slider');
+    const lVal = document.getElementById('l-val');
+    const timerDisplay = document.getElementById('timer-display');
+    
+    const btnStart = document.getElementById('btn-start');
+    const btnReset = document.getElementById('btn-reset');
+    const btnClear = document.getElementById('btn-clear');
+    const tableBody = document.getElementById('table-body');
+    const verifyBox = document.getElementById('verify-box');
+    const btnCheck = document.getElementById('btn-check');
+    const spanAttempts = document.getElementById('attempts-left');
+    
+    let lengthMeters, lengthPixels;
+    let trueSpeed; 
+    let isRunning = false;
+    let attemptCount = 0;
+    let startTime = 0;
+    let animationFrame;
+    let recordedData = []; 
+    let checksLeft = 3;
+
+    function initSetup() {
+      trueSpeed = (Math.floor(Math.random() * 5) + 3) / 10; 
+      lSlider.value = (Math.floor(Math.random() * 6) + 4) / 10; 
+      updateVisuals();
+    }
+
+    function updateVisuals() {
+      lengthMeters = parseFloat(lSlider.value);
+      lVal.innerText = lengthMeters.toFixed(1);
+      lengthPixels = lengthMeters * PIXELS_PER_METER;
+      
+      cuvette.style.width = `${lengthPixels}px`;
+      ruler.style.width = `${lengthPixels}px`;
+      
+      waveObj.style.width = '0px';
+      waveObj.style.height = '0px';
+      waveObj.style.opacity = '0';
+      floatObj.classList.remove('bobbing');
+    }
+
+    lSlider.addEventListener('input', () => { if(!isRunning && attemptCount === 0 || !btnStart.disabled) updateVisuals(); });
+
+    function initTable() {
+      tableBody.innerHTML = '';
+      for(let i = 1; i <= 5; i++) {
+        tableBody.innerHTML += `<tr><td>${i}</td><td id="l-${i}">-</td><td id="t-${i}">-</td></tr>`;
+      }
+    }
+    
+    window.onload = () => { initSetup(); initTable(); };
+
+    btnStart.addEventListener('click', () => {
+      if (isRunning || attemptCount >= 5) return;
+      isRunning = true;
+      btnStart.disabled = true;
+      lSlider.disabled = true; 
+      
+      floatObj.classList.add('bobbing');
+      waveObj.style.opacity = '1';
+      
+      startTime = performance.now();
+      requestAnimationFrame(updatePhysics);
+    });
+
+    function updatePhysics(currentTime) {
+      let t = (currentTime - startTime) / 1000;
+      
+      let waveRadiusMeters = trueSpeed * t;
+      let waveDiameterPixels = waveRadiusMeters * 2 * PIXELS_PER_METER;
+      
+      waveObj.style.width = `${waveDiameterPixels}px`;
+      waveObj.style.height = `${waveDiameterPixels}px`;
+      
+      if (waveRadiusMeters >= lengthMeters) {
+        waveObj.style.width = `${lengthPixels * 2}px`;
+        waveObj.style.height = `${lengthPixels * 2}px`;
+        floatObj.classList.remove('bobbing');
+        
+        let exactTime = lengthMeters / trueSpeed;
+        let measuredTime = exactTime + (Math.random() * 0.08 - 0.04); 
+        
+        timerDisplay.innerHTML = `${measuredTime.toFixed(2)} <span data-i18n="sec">${translations[currentLang].sec}</span>`;
+        recordResult(lengthMeters, measuredTime);
+        isRunning = false;
+        return; 
+      }
+      
+      timerDisplay.innerHTML = `${t.toFixed(2)} <span data-i18n="sec">${translations[currentLang].sec}</span>`;
+      animationFrame = requestAnimationFrame(updatePhysics);
+    }
+
+    function recordResult(l, t) {
+      attemptCount++;
+      document.getElementById(`l-${attemptCount}`).innerText = l.toFixed(2);
+      document.getElementById(`t-${attemptCount}`).innerText = t.toFixed(2);
+      recordedData.push({ l: l, t: t });
+
+      if (attemptCount >= 5) {
+        btnStart.disabled = true;
+        btnReset.disabled = true; 
+        lSlider.disabled = true;
+        verifyBox.style.display = 'block'; 
+      } else {
+        btnStart.disabled = true; 
+      }
+    }
+
+    btnReset.addEventListener('click', () => {
+      if (isRunning) { cancelAnimationFrame(animationFrame); isRunning = false; }
+      updateVisuals();
+      timerDisplay.innerHTML = `0.00 <span data-i18n="sec">${translations[currentLang].sec}</span>`;
+      
+      if (attemptCount < 5) {
+        btnStart.disabled = false;
+        lSlider.disabled = false; 
+      }
+    });
+
+    btnClear.addEventListener('click', () => {
+      if (isRunning) { cancelAnimationFrame(animationFrame); isRunning = false; }
+      
+      attemptCount = 0;
+      recordedData = [];
+      checksLeft = 3;
+      fbState = { type: null, grade: 0, realV: 0, realE: 0 };
+      
+      initSetup();
+      lSlider.disabled = false;
+      btnStart.disabled = false;
+      btnReset.disabled = false;
+      btnCheck.disabled = false;
+      timerDisplay.innerHTML = `0.00 <span data-i18n="sec">${translations[currentLang].sec}</span>`;
+      
+      verifyBox.style.display = 'none';
+      document.getElementById('input-v').value = '';
+      document.getElementById('input-e').value = '';
+      
+      renderFeedback(); // Очистит и скроет окно
+      spanAttempts.innerText = checksLeft;
+      initTable();
+    });
+
+    btnCheck.addEventListener('click', () => {
+      if (checksLeft <= 0) return;
+      const userV = parseFloat(document.getElementById('input-v').value);
+      const userE = parseFloat(document.getElementById('input-e').value);
+
+      if (isNaN(userV) || isNaN(userE)) {
+        // Показываем предупреждение (текст берем из словаря)
+        feedback.innerHTML = feedbackDict[currentLang].enterNums;
+        feedback.className = 'feedback-box feedback-warning';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      let vExact = recordedData.map(d => d.l / d.t);
+      let realVcpExact = vExact.reduce((a, b) => a + b, 0) / 5;
+      let absErrorsExact = vExact.map(v => Math.abs(realVcpExact - v));
+      let realDeltaExact = absErrorsExact.reduce((a, b) => a + b, 0) / 5;
+      let realEExact = (realDeltaExact / realVcpExact) * 100;
+
+      let vRounded = recordedData.map(d => Math.round((d.l / d.t) * 100) / 100);
+      let realVcpRounded = Math.round((vRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let absErrorsRounded = vRounded.map(v => Math.round(Math.abs(realVcpRounded - v) * 100) / 100);
+      let realDeltaRounded = Math.round((absErrorsRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let realERounded = (realDeltaRounded / realVcpRounded) * 100;
+
+      const marginV = 0.04;
+      const marginE = 2.0; 
+
+      const isVCorrect = Math.abs(userV - realVcpExact) <= marginV || Math.abs(userV - realVcpRounded) <= marginV;
+      const isECorrect = Math.abs(userE - realEExact) <= marginE || Math.abs(userE - realERounded) <= marginE;
+
+      checksLeft--;
+      spanAttempts.innerText = checksLeft;
+
+      if (isVCorrect && isECorrect) {
+        fbState.type = 'success';
+        fbState.grade = checksLeft === 2 ? 10 : (checksLeft === 1 ? 8 : 5);
+        btnCheck.disabled = true;
+      } else {
+        if (checksLeft > 0) {
+          fbState.type = 'warning';
+        } else {
+          fbState.type = 'error';
+          fbState.realV = realVcpRounded;
+          fbState.realE = realERounded;
+          btnCheck.disabled = true;
+        }
+      }
+      
+      // Запускаем перерисовку фидбека с учетом языка
+      renderFeedback();
+    });
+  </script>
+</body>
+</html>

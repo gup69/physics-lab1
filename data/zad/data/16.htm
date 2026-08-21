@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v20.0 (Волновая оптика и СТО)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                    </div>
+                    <p id="mission-question">...</p>
+                </div>
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- (НОВЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (ВОЛНОВАЯ ОПТИКА И СТО) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Интерференция (Юнг)", scenario: "В опыте Юнга расстояние между щелями d, экран на расстоянии L. Рассчитайте ширину интерференционной полосы для света λ.", data: { lambda: "Длина волны (нм)", L: "Расстояние до экрана (м)", d: "Расстояние между щелями (мм)" }, question: "Задача: Введите ширину полосы (Δx) в миллиметрах (мм)." },
+                    { title: "Миссия 2: Интерференция (Пленка)", scenario: "На пленку (n) падает свет (λ). Рассчитайте мин. толщину пленки для макс. отражения (k=0).", data: { lambda: "Длина волны (нм)", n: "Показатель преломления" }, question: "Задача: Введите толщину (d) в нанометрах (нм)." },
+                    { title: "Миссия 3: Диф. решетка (max k)", scenario: "На дифракционную решетку с периодом d падает свет с длиной волны λ. Рассчитайте максимальный порядок спектра.", data: { d: "Период (мкм)", lambda: "Длина волны (нм)" }, question: "Задача: Введите макс. порядок (k_max)." },
+                    { title: "Миссия 4: Диф. решетка (угол)", scenario: "На решетку с периодом d падает свет λ. Рассчитайте угол, под которым виден максимум k-го порядка.", data: { d: "Период (мкм)", lambda: "Длина волны (нм)", k: "Порядок k" }, question: "Задача: Введите угол (φ) в градусах (°)." },
+                    { title: "Миссия 5: Дисперсия (Скорость)", scenario: "Свет распространяется в прозрачной среде со скоростью v. Рассчитайте абсолютный показатель преломления этой среды.", data: { v: "Скорость света в среде (×10⁸ м/с)" }, question: "Задача: Введите показатель преломления (n)." },
+                    { title: "Миссия 6: Поляризация (Закон Малюса)", scenario: "Естественный свет (I₀) проходит через 2 поляризатора, оси которых образуют угол α. Рассчитайте итоговую интенсивность.", data: { alpha: "Угол (α) (°)" }, question: "Задача: Введите отношение (I / I₀) в процентах (%)." },
+                    { title: "Миссия 7: Поляризация (Угол Брюстера)", scenario: "Луч падает из воздуха (n₁=1) на диэлектрик (n₂). Рассчитайте угол Брюстера (угол полного отражения).", data: { n2: "Показатель n₂" }, question: "Задача: Введите угол Брюстера (α_B) в градусах (°)." },
+                    { title: "Миссия 8: СТО (Замедление времени)", scenario: "В ракете, летящей со скоростью v, прошел 1 час (t₀). Сколько времени прошло для наблюдателя на Земле?", data: { v_frac: "Скорость (в долях от c)" }, question: "Задача: Введите время на Земле (t) в часах." },
+                    { title: "Миссия 9: СТО (Сокращение длины)", scenario: "Стержень длиной L₀ (в покое) движется со скоростью v. Рассчитайте его релятивистскую длину для неподвижного наблюдателя.", data: { L0: "Длина покоя (м)", v_frac: "Скорость (в долях от c)" }, question: "Задача: Введите релятивистскую длину (L) в метрах (м)." },
+                    { title: "Миссия 10: СТО (Энергия покоя)", scenario: "Рассчитайте энергию покоя объекта массой m (E=mc²).", data: { m: "Масса (мг)" }, question: "Задача: Введите энергию (E) в Гигаджоулях (ГДж)." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Интерференция (Юнг)", scenario: "Юнг тәжірибесінде саңылаулар арасы d, экран L қашықтықта. λ жарық үшін интерференциялық жолақтың енін есептеңіз.", data: { lambda: "Толқын ұзындығы (нм)", L: "Экранға дейін (м)", d: "Саңылаулар арасы (мм)" }, question: "Тапсырма: Жолақ енін (Δx) миллиметрмен (мм) енгізіңіз." },
+                    { title: "Миссия 2: Интерференция (Пленка)", scenario: "Пленкаға (n) жарық (λ) түседі. Макс. шағылу үшін пленканың мин. қалыңдығын есептеңіз (k=0).", data: { lambda: "Толқын ұзындығы (нм)", n: "Сыну көрсеткіші" }, question: "Тапсырма: Қалыңдықты (d) нанометрмен (нм) енгізіңіз." },
+                    { title: "Миссия 3: Диф. тор (max k)", scenario: "Периоды d дифракциялық торға толқын ұзындығы λ жарық түседі. Спектрдің максималды ретін есептеңіз.", data: { d: "Период (мкм)", lambda: "Толқын ұзындығы (нм)" }, question: "Тапсырма: Макс. ретті (k_max) енгізіңіз." },
+                    { title: "Миссия 4: Диф. тор (бұрыш)", scenario: "Периоды d торға λ жарық түседі. k-ші ретті максимум көрінетін бұрышты есептеңіз.", data: { d: "Период (мкм)", lambda: "Толқын ұзындығы (нм)", k: "Рет k" }, question: "Тапсырма: Бұрышты (φ) градуспен (°) енгізіңіз." },
+                    { title: "Миссия 5: Дисперсия (Жылдамдық)", scenario: "Жарық мөлдір ортада v жылдамдықпен таралады. Осы ортаның абсолютті сыну көрсеткішін есептеңіз.", data: { v: "Ортадағы жарық жылдамдығы (×10⁸ м/с)" }, question: "Тапсырма: Сыну көрсеткішін (n) енгізіңіз." },
+                    { title: "Миссия 6: Поляризация (Малюс заңы)", scenario: "Табиғи жарық (I₀) осьтері α бұрыш жасайтын 2 поляризатордан өтеді. Қорытынды интенсивтілікті есептеңіз.", data: { alpha: "Бұрыш (α) (°)" }, question: "Тапсырма: (I / I₀) қатынасын пайызбен (%) енгізіңіз." },
+                    { title: "Миссия 7: Поляризация (Брюстер бұрышы)", scenario: "Сәуле ауадан (n₁=1) диэлектрикке (n₂) түседі. Брюстер бұрышын (толық шағылу бұрышы) есептеңіз.", data: { n2: "Көрсеткіш n₂" }, question: "Тапсырма: Брюстер бұрышын (α_B) градуспен (°) енгізіңіз." },
+                    { title: "Миссия 8: СТО (Уақыттың баяулауы)", scenario: "v жылдамдықпен ұшқан зымыранда 1 сағат (t₀) өтті. Жердегі бақылаушы үшін қанша уақыт өтті?", data: { v_frac: "Жылдамдық (c үлесімен)" }, question: "Тапсырма: Жердегі уақытты (t) сағатпен енгізіңіз." },
+                    { title: "Миссия 9: СТО (Ұзындықтың қысқаруы)", scenario: "Тыныштықтағы ұзындығы L₀ стержень v жылдамдықпен қозғалады. Қозғалмайтын бақылаушы үшін оның релятивистік ұзындығын есептеңіз.", data: { L0: "Тыныштық ұзындығы (м)", v_frac: "Жылдамдық (c үлесімен)" }, question: "Тапсырма: Релятивистік ұзындықты (L) метрмен (м) енгізіңіз." },
+                    { title: "Миссия 10: СТО (Тыныштық энергиясы)", scenario: "Массасы m объектінің тыныштық энергиясын есептеңіз (E=mc²).", data: { m: "Масса (мг)" }, question: "Тапсырма: Энергияны (E) Гигаджоульмен (ГДж) енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct Answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Interference (Young)", scenario: "In Young's experiment, slit separation is d, screen is at L. Calculate the fringe width for light λ.", data: { lambda: "Wavelength (nm)", L: "Screen distance (m)", d: "Slit separation (mm)" }, question: "Task: Enter the fringe width (Δx) in millimeters (mm)." },
+                    { title: "Mission 2: Interference (Film)", scenario: "Light (λ) hits a film (n). Calculate the min. film thickness for max. reflection (k=0).", data: { lambda: "Wavelength (nm)", n: "Refractive index" }, question: "Task: Enter the thickness (d) in nanometers (nm)." },
+                    { title: "Mission 3: Grating (max k)", scenario: "Light with wavelength λ is incident on a diffraction grating with period d. Calculate the maximum spectral order.", data: { d: "Period (μm)", lambda: "Wavelength (nm)" }, question: "Task: Enter the max. order (k_max)." },
+                    { title: "Mission 4: Grating (angle)", scenario: "Light λ is incident on a grating with period d. Calculate the angle at which the k-th order maximum is visible.", data: { d: "Period (μm)", lambda: "Wavelength (nm)", k: "Order k" }, question: "Task: Enter the angle (φ) in degrees (°)." },
+                    { title: "Mission 5: Dispersion (Speed)", scenario: "Light propagates in a transparent medium at a speed v. Calculate the absolute refractive index of this medium.", data: { v: "Speed of light in medium (×10⁸ m/s)" }, question: "Task: Enter the refractive index (n)." },
+                    { title: "Mission 6: Polarization (Malus's Law)", scenario: "Natural light (I₀) passes through 2 polarizers whose axes form an angle α. Calculate the final intensity.", data: { alpha: "Angle (α) (°)" }, question: "Task: Enter the ratio (I / I₀) in percent (%)." },
+                    { title: "Mission 7: Polarization (Brewster's Angle)", scenario: "A beam hits a dielectric (n₂) from air (n₁=1). Calculate Brewster's angle (the angle of total polarization).", data: { n2: "Index n₂" }, question: "Task: Enter Brewster's angle (α_B) in degrees (°)." },
+                    { title: "Mission 8: SRT (Time Dilation)", scenario: "In a rocket flying at speed v, 1 hour (t₀) passes. How much time has passed for an observer on Earth?", data: { v_frac: "Speed (as fraction of c)" }, question: "Task: Enter the time on Earth (t) in hours." },
+                    { title: "Mission 9: SRT (Length Contraction)", scenario: "A rod of rest length L₀ moves at speed v. Calculate its relativistic length for a stationary observer.", data: { L0: "Rest length (m)", v_frac: "Speed (as fraction of c)" }, question: "Task: Enter the relativistic length (L) in meters (m)." },
+                    { title: "Mission 10: SRT (Rest Energy)", scenario: "Calculate the rest energy of an object with mass m (E=mc²).", data: { m: "Mass (mg)" }, question: "Task: Enter the energy (E) in Gigajoules (GJ)." }
+                ]
+            }
+        };
+
+
+        // --- (НОВЫЕ) Глобальные Константы и Состояние ---
+        const C_LIGHT = 3e8; // Скорость света в вакууме (м/с)
+
+        const TOLERANCE = 0.03; // Погрешность (3%)
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        let missionTitle, missionScenario, missionData, missionQuestion,
+            userAnswerInput, submitButton, newDataButton, feedbackMessage,
+            navButtons, progressList, langButtons, progressTitle, inputLabel;
+
+
+        // --- Утилиты (Без изменений) ---
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+        
+        function degToRad(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        function radToDeg(radians) {
+            return radians * (180 / Math.PI);
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов (Без изменений) ---
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+
+            const t = translations[currentLang];
+            if (!t) {
+                console.error("Переводы для языка не найдены:", lang);
+                return;
+            }
+
+            if (t.ui) {
+                submitButton.textContent = t.ui.submit;
+                newDataButton.textContent = t.ui.newData;
+                inputLabel.textContent = t.ui.inputLabel;
+                userAnswerInput.placeholder = t.ui.placeholder;
+            } else {
+                 console.error("Секция 'ui' в переводах отсутствует для:", lang);
+            }
+
+            if (t.progress) {
+                 updateProgressWindow();
+            } else {
+                console.error("Секция 'progress' в переводах отсутствует для:", lang);
+            }
+           
+            if (t.missions && missionLoaders[currentMissionId]) {
+                missionLoaders[currentMissionId]();
+            } else {
+                 if (missionLoaders.length > 0) {
+                    console.error("Секция 'missions' в переводах отсутствует или загрузчик миссии не найден для:", lang, currentMissionId);
+                 }
+            }
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            
+            const t = translations[currentLang].progress;
+            if (!t) {
+                console.error("Переводы 'progress' не найдены для:", currentLang);
+                return;
+            }
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress || !missionProgress[i]) {
+                    console.error("Объект прогресса отсутствует для миссии:", i);
+                    continue; 
+                }
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                    <span class="correct">${progress.correct} ✔</span> /
+                                    <span class="incorrect">${progress.incorrect} ❌</span>
+                                </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    console.error("Кнопка не найдена для миссии:", i);
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (НОВЫЕ) Загрузчики Миссий (Волновая оптика и СТО) ---
+        // Константы для вывода
+        const C_DISPLAY = "3&times;10⁸ м/с";
+
+
+        function loadMission1() { // Интерференция (Юнг): Δx = λ * L / d
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const lambda_nm = getRandom(400, 700, 0); // нм
+            const lambda_m = lambda_nm * 1e-9;      // м
+            const L = getRandom(1, 3, 1);           // м
+            const d_mm = getRandom(0.1, 1, 2);      // мм
+            const d_m = d_mm * 1e-3;                // м
+            
+            const dx_m = (lambda_m * L) / d_m;
+            currentCorrectAnswer = dx_m * 1000; // Ответ в мм
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda_nm} нм</p><p>${t.data.L}: ${L} м</p><p>${t.data.d}: ${d_mm} мм</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() { // Интерференция (Пленка): 2*d*n = (k+1/2)λ. min d (k=0) => d = λ / (4n)
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const lambda_nm = getRandom(400, 700, 0); // нм
+            const n = getRandom(1.3, 1.8, 2);       // 
+            
+            const d_nm = lambda_nm / (4 * n);
+            currentCorrectAnswer = d_nm; // Ответ в нм
+
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda_nm} нм</p><p>${t.data.n}: ${n}</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+        
+        function loadMission3() { // Диф. решетка: k_max = floor(d/λ)
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const d_um = getRandom(1, 5, 2); // мкм
+            const d_m = d_um * 1e-6;       // м
+            const lambda_nm = getRandom(400, 700, 0); // нм
+            const lambda_m = lambda_nm * 1e-9;      // м
+            
+            currentCorrectAnswer = Math.floor(d_m / lambda_m); // Безразмерный
+
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.d}: ${d_um} мкм</p><p>${t.data.lambda}: ${lambda_nm} нм</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() { // Диф. решетка: d*sin(φ) = k*λ => φ = asin(k*λ / d)
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const lambda_nm = getRandom(400, 700, 0); // нм
+            const lambda_m = lambda_nm * 1e-9;      // м
+            const d_um = getRandom(2, 5, 2); // мкм (d > λ)
+            const d_m = d_um * 1e-6;       // м
+            
+            const k_max = Math.floor(d_m / lambda_m);
+            const k = getRandom(1, k_max, 0);
+            
+            const sin_phi = (k * lambda_m) / d_m;
+            currentCorrectAnswer = radToDeg(Math.asin(sin_phi)); // Ответ в градусах
+
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.d}: ${d_um} мкм</p><p>${t.data.lambda}: ${lambda_nm} нм</p><p>${t.data.k}: ${k}</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() { // Дисперсия: n = c / v
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const v_display = getRandom(1.5, 2.5, 2); // ×10⁸ м/с
+            const v_calc = v_display * 1e8;         // м/с
+            
+            currentCorrectAnswer = C_LIGHT / v_calc; // Ответ (безразмерный)
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.v}: ${v_display} &times; 10⁸ м/с</p><p>(c &approx; ${C_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() { // Поляризация (Малюс): I_nat = I_0/2. I_final = (I_0/2) * cos²(α)
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const alpha = getRandom(10, 80, 0); // градусы
+            
+            const I_ratio = 0.5 * Math.pow(Math.cos(degToRad(alpha)), 2);
+            currentCorrectAnswer = I_ratio * 100; // Ответ в %
+
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.alpha}: ${alpha}&deg;</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() { // Поляризация (Брюстер): tan(α_B) = n2 / n1 (n1=1)
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const n2 = getRandom(1.3, 2.0, 2);
+            
+            currentCorrectAnswer = radToDeg(Math.atan(n2)); // Ответ в градусах
+
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n2}: ${n2}</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() { // СТО (Время): t = t₀ / sqrt(1 - v²/c²)
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const t0 = 1.0; // час
+            const v_frac = getRandom(0.1, 0.9, 3); // 
+            
+            const gamma = 1 / Math.sqrt(1 - v_frac * v_frac);
+            currentCorrectAnswer = t0 * gamma; // Ответ в часах
+
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>t₀ = 1 час</p><p>${t.data.v_frac}: ${v_frac} c</p><p>(c &approx; ${C_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() { // СТО (Длина): L = L₀ * sqrt(1 - v²/c²)
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const L0 = getRandom(1, 10, 1); // м
+            const v_frac = getRandom(0.1, 0.9, 3); // 
+            
+            const gamma_inv = Math.sqrt(1 - v_frac * v_frac);
+            currentCorrectAnswer = L0 * gamma_inv; // Ответ в м
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L0}: ${L0} м</p><p>${t.data.v_frac}: ${v_frac} c</p><p>(c &approx; ${C_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() { // СТО (Энергия): E = mc²
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const m_mg = getRandom(1, 10, 1); // мг
+            const m_kg = m_mg / 1e6;        // кг
+            
+            const E_J = m_kg * C_LIGHT * C_LIGHT;
+            currentCorrectAnswer = E_J / 1e9; // Ответ в ГДж
+
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m_mg} мг</p><p>(c &approx; ${C_DISPLAY})</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+
+        // --- Обработчик Проверки (Без изменений) ---
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            // Допуск 3% или 0.05, в зависимости что больше
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                missionProgress[currentMissionId].incorrect++;
+                const t_feedback = translations[currentLang].feedback;
+                feedbackMessage.textContent = `${t_feedback.incorrect} (${t_feedback.correctAnswer}: ${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+
+        // --- Инициализация Игры (Исправлено в v15.1, без изменений) ---
+        function initializeGame() {
+            
+            // Назначаем DOM-элементы
+            missionTitle = document.getElementById('mission-title');
+            missionScenario = document.getElementById('mission-scenario');
+            missionData = document.getElementById('mission-data');
+            missionQuestion = document.getElementById('mission-question');
+            userAnswerInput = document.getElementById('user-answer');
+            submitButton = document.getElementById('submit-button');
+            newDataButton = document.getElementById('new-data-button');
+            feedbackMessage = document.getElementById('feedback-message');
+            navButtons = document.querySelectorAll('.mission-nav button');
+            progressList = document.getElementById('progress-list');
+            langButtons = document.querySelectorAll('.lang-btn');
+            progressTitle = document.getElementById('progress-title');
+            inputLabel = document.getElementById('input-label');
+            
+            // (ИЗМЕНЕНО) Заполняем массив НОВЫМИ загрузчиками миссий
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            // (Без изменений) Инициализируем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true 
+                };
+            }
+
+            // (Без изменений) Назначаем слушателей
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Загрузчик миссии не найден для ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                if (missionLoaders[currentMissionId]) {
+                    missionLoaders[currentMissionId](); 
+                }
+            });
+            
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // (Без изменений) Запускаем игру с языком по умолчанию
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

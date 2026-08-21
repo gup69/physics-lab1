@@ -1,0 +1,2184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер по кинематике (80 тем)</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #0056b3;
+            color: white;
+            padding: 1rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        main {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+        .problem-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            min-height: 250px;
+        }
+        #problem-content {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+        #problem-image {
+            max-width: 100%;
+            height: auto;
+            margin-top: 1rem;
+            border-radius: 4px;
+        }
+        #solution-container {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        #problem-solution {
+            /* Позволяет сохранить переносы строк из решения */
+            white-space: pre-wrap; 
+        }
+        .hidden {
+            display: none;
+        }
+        button {
+            font-size: 1rem;
+            padding: 0.5em 1em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #c0c0c0;
+            cursor: not-allowed;
+        }
+        #show-solution-btn {
+            background-color: #28a745; /* Зеленый */
+        }
+        #show-solution-btn:hover {
+            background-color: #218838;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        .navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .navigation button {
+            margin: 0 1rem;
+        }
+        #problem-counter {
+            font-size: 1.1rem;
+            font-weight: 600;
+            min-width: 80px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Тренажер по физике: Кинематика</h1>
+    </header>
+
+    <main>
+        <div class="problem-container">
+            <h2 id="problem-title">Задача №1</h2>
+            
+            <div id="problem-content">
+                <p id="problem-text">Текст задачи загружается...</p>
+                <img id="problem-image" src="" alt="Иллюстрация к задаче" style="display:none;">
+            </div>
+            
+            <button id="show-solution-btn">Показать решение</button>
+            
+            <div id="solution-container" class="hidden">
+                <p><strong>Ответ:</strong> <span id="problem-answer"></span></p>
+                <p><strong>Решение:</strong></p>
+                <p id="problem-solution"></p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="navigation">
+            <button id="prev-btn">← Предыдущая</button>
+            <span id="problem-counter">1 / 80</span> 
+            <button id="next-btn">Следующая →</button>
+        </div>
+        <button id="random-btn">Случайная задача</button>
+    </footer>
+
+    <script>
+        // --- 1. Вспомогательные функции ---
+
+        /**
+         * Генерирует случайное целое число в диапазоне [min, max]
+         */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        /**
+         * Перемешивает массив по алгоритму Фишера-Йейтса
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap
+            }
+        }
+        
+        /**
+         * Форматирует число с плавающей точкой, убирая .0
+         */
+        function formatNum(num, digits = 1) {
+            return num.toFixed(digits).replace(/\.0+$/, '');
+        }
+
+        // --- 2. БАЗА ДАННЫХ ГЕНЕРАТОРОВ ЗАДАЧ ---
+        // Теперь здесь 80 шаблонов!
+        
+        const problemGenerators = [
+          // --- Первые 71 задача ---
+          {
+            topic: "Равномерное движение",
+            generate: () => {
+                const v_kmh = getRandomInt(10, 40); const t_min = getRandomInt(2, 6) * 15;
+                const t_h = t_min / 60; const s_km = v_kmh * t_h;
+                const answer = `${formatNum(s_km)} км`;
+                return {
+                    text: `Велосипедист движется со скоростью ${v_kmh} км/ч. Какое расстояние он проедет за ${t_min} минут? Ответ дайте в километрах.`,
+                    answer: answer,
+                    solution: `1. Переведем минуты в часы: t = ${t_min} мин = ${t_min}/60 = ${formatNum(t_h, 2)} ч.
+2. Скорость V = ${v_kmh} км/ч.
+3. Расстояние S = V * t = ${v_kmh} * ${formatNum(t_h, 2)} = ${formatNum(s_km)} км.`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (S)",
+            generate: () => {
+                const a_ms2 = getRandomInt(1, 5); const t_s = getRandomInt(3, 10);
+                const s_m = (a_ms2 * t_s**2) / 2;
+                const answer = `${formatNum(s_m)} м`;
+                return {
+                    text: `Автомобиль, трогаясь с места, движется с постоянным ускорением ${a_ms2} м/с². Какой путь он пройдет за ${t_s} секунд?`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = 0.
+2. Ускорение a = ${a_ms2} м/с².
+3. Время t = ${t_s} с.
+4. Используем формулу S = V₀*t + (a * t²) / 2 = 0 + (${a_ms2} * ${t_s}²) / 2.
+5. S = (${a_ms2} * ${t_s**2}) / 2 = ${formatNum(s_m)} м.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (V по T)",
+            generate: () => {
+                const T_s = getRandomInt(2, 10); const R_m = getRandomInt(1, 5);
+                const v_ms = (2 * Math.PI * R_m) / T_s;
+                const answer = `${formatNum(v_ms, 2)} м/с`;
+                return {
+                    text: `Тело движется по окружности радиусом ${R_m} м с периодом ${T_s} с. Чему равна его линейная скорость? (Считать π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. Радиус R = ${R_m} м.
+2. Период T = ${T_s} с.
+3. Используем формулу V = (2 * π * R) / T.
+4. V = (2 * 3.14 * ${R_m}) / ${T_s} = ${formatNum(2 * 3.14 * R_m, 2)} / ${T_s} = ${formatNum(v_ms, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Тормозной путь (по t)",
+            generate: () => {
+                const v_kmh = getRandomInt(3, 8) * 18; const t_s = getRandomInt(4, 10);
+                const v0_ms = v_kmh / 3.6; const s_m = (v0_ms * t_s) / 2;
+                const answer = `${formatNum(s_m)} м`;
+                return {
+                    text: `Поезд, двигавшийся со скоростью ${v_kmh} км/ч, начал торможение и остановился через ${t_s} секунд. Найдите тормозной путь поезда.`,
+                    answer: answer,
+                    solution: `1. Переведем начальную скорость в м/с: V₀ = ${v_kmh} км/ч = ${v_kmh} / 3.6 = ${formatNum(v0_ms)} м/с.
+2. Конечная скорость V = 0 м/с.
+3. Время t = ${t_s} с.
+4. При равнозамедленном движении путь можно найти по формуле S = (V₀ + V) / 2 * t.
+5. S = (${formatNum(v0_ms)} + 0) / 2 * ${t_s} = ${formatNum(s_m)} м.`
+                };
+            }
+          },
+          {
+            topic: "Падение (t)",
+            generate: () => {
+                const g = 9.8; const h_m = getRandomInt(10, 100);
+                const t_s = Math.sqrt((2 * h_m) / g);
+                const answer = `${formatNum(t_s, 2)} с`;
+                return {
+                    text: `Тело падает без начальной скорости с высоты ${h_m} м. Сколько времени займет падение? (Принять g ≈ ${g} м/с²).`,
+                    answer: answer,
+                    solution: `1. Высота h = ${h_m} м, начальная скорость V₀ = 0, g ≈ ${g} м/с².
+2. Используем формулу высоты: h = (g * t²) / 2.
+3. Выразим время: t² = (2 * h) / g = (2 * ${h_m}) / ${g} = ${formatNum(2 * h_m / g, 2)}.
+4. t = √${formatNum(2 * h_m / g, 2)} = ${formatNum(t_s, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Падение (V)",
+            generate: () => {
+                const g = 9.8; const h_m = getRandomInt(5, 50);
+                const v_ms = Math.sqrt(2 * g * h_m);
+                const answer = `${formatNum(v_ms, 2)} м/с`;
+                return {
+                    text: `Тело падает без начальной скорости с высоты ${h_m} м. Какова будет его скорость в момент удара о землю? (Принять g ≈ ${g} м/с²).`,
+                    answer: answer,
+                    solution: `1. Высота h = ${h_m} м, начальная скорость V₀ = 0, g ≈ ${g} м/с².
+2. Используем формулу V² = 2 * g * h.
+3. V = √(2 * g * h) = √(2 * ${g} * ${h_m}) = √(${formatNum(2 * g * h_m, 2)}).
+4. V = ${formatNum(v_ms, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (H)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(10, 30);
+                const h_max = (v0_ms**2) / (2 * g);
+                const answer = `${formatNum(h_max, 2)} м`;
+                return {
+                    text: `Тело брошено вертикально вверх со скоростью ${v0_ms} м/с. Какова максимальная высота подъема? (Принять g ≈ ${g} м/с²).`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с, g ≈ ${g} м/с².
+2. На максимальной высоте (h_max) скорость V = 0.
+3. Используем формулу h = (V₀² - V²) / (2 * g).
+4. h_max = (${v0_ms}² - 0²) / (2 * ${g}) = ${formatNum(v0_ms**2)} / ${formatNum(2 * g)} = ${formatNum(h_max, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (t)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(10, 30);
+                const t_up = v0_ms / g; const t_total = 2 * t_up;
+                const answer = `${formatNum(t_total, 2)} с`;
+                return {
+                    text: `Тело брошено вертикально вверх со скоростью ${v0_ms} м/с. Сколько времени оно будет находиться в полете? (Принять g ≈ ${g} м/с²).`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с, g ≈ ${g} м/с².
+2. Время подъема до максимальной высоты (V=0): t_up = V₀ / g = ${v0_ms} / ${g} = ${formatNum(t_up, 2)} с.
+3. Время падения равно времени подъема.
+4. Общее время в полете t_total = 2 * t_up = 2 * ${formatNum(t_up, 2)} = ${formatNum(t_total, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Горизонтальный бросок (L)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(5, 25); const h_m = getRandomInt(20, 150);
+                const t_s = Math.sqrt((2 * h_m) / g); const L_m = v0_ms * t_s;
+                const answer = `${formatNum(L_m, 2)} м`;
+                return {
+                    text: `С башни высотой ${h_m} м горизонтально брошено тело со скоростью ${v0_ms} м/с. На каком расстоянии от основания башни тело упадет на землю? (Принять g ≈ ${g} м/с²).`,
+                    answer: answer,
+                    solution: `1. Движение по вертикали: h = (g * t²) / 2.
+2. Найдем время падения: t = √(2 * h / g) = √(2 * ${h_m} / ${g}) = ${formatNum(t_s, 2)} с.
+3. Движение по горизонтали: L = V₀ * t.
+4. L = ${v0_ms} м/с * ${formatNum(t_s, 2)} с = ${formatNum(L_m, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (V)",
+            generate: () => {
+                const v0_ms = getRandomInt(1, 10); const a_ms2 = getRandomInt(1, 5); const t_s = getRandomInt(3, 10);
+                const v_ms = v0_ms + a_ms2 * t_s;
+                const answer = `${formatNum(v_ms)} м/с`;
+                return {
+                    text: `Тело, имея начальную скорость ${v0_ms} м/с, начало двигаться с ускорением ${a_ms2} м/с². Какую скорость оно будет иметь через ${t_s} секунд?`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с.
+2. Ускорение a = ${a_ms2} м/с².
+3. Время t = ${t_s} с.
+4. Используем формулу V = V₀ + a * t.
+5. V = ${v0_ms} + ${a_ms2} * ${t_s} = ${formatNum(v_ms)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (S с V₀)",
+            generate: () => {
+                const v0_ms = getRandomInt(1, 10); const a_ms2 = getRandomInt(1, 4); const t_s = getRandomInt(3, 8);
+                const s_m = (v0_ms * t_s) + (a_ms2 * t_s**2) / 2;
+                const answer = `${formatNum(s_m)} м`;
+                return {
+                    text: `Тело, имея начальную скорость ${v0_ms} м/с, начало двигаться с ускорением ${a_ms2} м/с². Какой путь оно пройдет за ${t_s} секунд?`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с.
+2. Ускорение a = ${a_ms2} м/с².
+3. Время t = ${t_s} с.
+4. Используем формулу S = V₀*t + (a * t²) / 2.
+5. S = (${v0_ms} * ${t_s}) + (${a_ms2} * ${t_s}² / 2) = ${v0_ms * t_s} + ${a_ms2 * t_s**2 / 2} = ${formatNum(s_m)} м.`
+                };
+            }
+          },
+          {
+            topic: "Встреча",
+            generate: () => {
+                const v1_ms = getRandomInt(10, 20); const v2_ms = getRandomInt(20, 30);
+                const S_km = getRandomInt(50, 150); const S_m = S_km * 1000;
+                const t_s = S_m / (v1_ms + v2_ms); const t_min = t_s / 60;
+                const answer = `${formatNum(t_s)} с (≈ ${formatNum(t_min)} мин)`;
+                return {
+                    text: `Два автомобиля движутся навстречу друг другу. Скорость первого ${v1_ms} м/с, скорость второго ${v2_ms} м/с. Расстояние между ними ${S_km} км. Через какое время они встретятся?`,
+                    answer: answer,
+                    solution: `1. Переведем расстояние в метры: S = ${S_km} км = ${S_m} м.
+2. Скорость сближения V_сбл = V₁ + V₂ = ${v1_ms} + ${v2_ms} = ${v1_ms + v2_ms} м/с.
+3. Время до встречи t = S / V_сбл.
+4. t = ${S_m} / ${v1_ms + v2_ms} = ${formatNum(t_s)} с.`
+                };
+            }
+          },
+          {
+            topic: "Центростремительное (a)",
+            generate: () => {
+                const v_ms = getRandomInt(5, 20); const R_m = getRandomInt(20, 100);
+                const a_c = (v_ms**2) / R_m;
+                const answer = `${formatNum(a_c, 2)} м/с²`;
+                return {
+                    text: `Автомобиль движется по закруглению дороги радиусом ${R_m} м со скоростью ${v_ms} м/с. Чему равно его центростремительное ускорение?`,
+                    answer: answer,
+                    solution: `1. Скорость V = ${v_ms} м/с.
+2. Радиус R = ${R_m} м.
+3. Используем формулу a = V² / R.
+4. a = ${v_ms}² / ${R_m} = ${v_ms**2} / ${R_m} = ${formatNum(a_c, 2)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Окружность (V по f)",
+            generate: () => {
+                const R_m = getRandomInt(1, 5); const f_hz = getRandomInt(2, 10);
+                const v_ms = 2 * Math.PI * R_m * f_hz;
+                const answer = `${formatNum(v_ms, 2)} м/с`;
+                return {
+                    text: `Точка движется по окружности радиусом ${R_m} м с частотой ${f_hz} Гц (оборотов в секунду). Какова ее линейная скорость? (Считать π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. Радиус R = ${R_m} м.
+2. Частота f = ${f_hz} Гц.
+3. Используем формулу V = 2 * π * R * f (так как T = 1/f).
+4. V = 2 * 3.14 * ${R_m} * ${f_hz} = ${formatNum(v_ms, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (H)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(20, 50); const angle_deg = getRandomInt(30, 60);
+                const angle_rad = angle_deg * Math.PI / 180; const sin_a = Math.sin(angle_rad);
+                const h_max = (v0_ms**2 * sin_a**2) / (2 * g);
+                const answer = `${formatNum(h_max, 2)} м`;
+                return {
+                    text: `Тело брошено со скоростью ${v0_ms} м/с под углом ${angle_deg}° к горизонту. Какова максимальная высота подъема? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с, угол α = ${angle_deg}°.
+2. sin(α) = sin(${angle_deg}°) ≈ ${formatNum(sin_a, 3)}.
+3. Формула макс. высоты: H = (V₀² * sin²(α)) / (2 * g).
+4. H = (${v0_ms}² * ${formatNum(sin_a, 3)}²) / (2 * ${g}) = (${formatNum(v0_ms**2)} * ${formatNum(sin_a**2, 3)}) / ${formatNum(2 * g)} = ${formatNum(h_max, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (L)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(20, 50); const angle_deg = getRandomInt(20, 40);
+                const angle_rad_2 = (2 * angle_deg) * Math.PI / 180; const sin_2a = Math.sin(angle_rad_2);
+                const L_m = (v0_ms**2 * sin_2a) / g;
+                const answer = `${formatNum(L_m, 2)} м`;
+                return {
+                    text: `Тело брошено со скоростью ${v0_ms} м/с под углом ${angle_deg}° к горизонту. Какова дальность полета? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с, угол α = ${angle_deg}°.
+2. Угол 2α = ${2 * angle_deg}°, sin(2α) ≈ ${formatNum(sin_2a, 3)}.
+3. Формула дальности: L = (V₀² * sin(2α)) / g.
+4. L = (${v0_ms}² * ${formatNum(sin_2a, 3)}) / ${g} = ${formatNum((v0_ms**2) * sin_2a, 2)} / ${g} = ${formatNum(L_m, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (t)",
+            generate: () => {
+                const g = 9.8; const v0_ms = getRandomInt(20, 50); const angle_deg = getRandomInt(30, 75);
+                const angle_rad = angle_deg * Math.PI / 180; const sin_a = Math.sin(angle_rad);
+                const t_total = (2 * v0_ms * sin_a) / g;
+                const answer = `${formatNum(t_total, 2)} с`;
+                return {
+                    text: `Тело брошено со скоростью ${v0_ms} м/с под углом ${angle_deg}° к горизонту. Каково общее время полета? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Начальная скорость V₀ = ${v0_ms} м/с, угол α = ${angle_deg}°.
+2. sin(α) = sin(${angle_deg}°) ≈ ${formatNum(sin_a, 3)}.
+3. Формула времени полета: t = (2 * V₀ * sin(α)) / g.
+4. t = (2 * ${v0_ms} * ${formatNum(sin_a, 3)}) / ${g} = ${formatNum(2 * v0_ms * sin_a, 2)} / ${g} = ${formatNum(t_total, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Погоня",
+            generate: () => {
+                const v1_ms = getRandomInt(25, 40); const v2_ms = getRandomInt(10, 20);
+                const S_m = getRandomInt(100, 500); const v_rel = v1_ms - v2_ms;
+                const t_s = S_m / v_rel;
+                const answer = `${formatNum(t_s)} с`;
+                return {
+                    text: `Автомобиль, движущийся со скоростью ${v1_ms} м/с, догоняет второй автомобиль, движущийся со скоростью ${v2_ms} м/с. Изначально расстояние между ними ${S_m} м. Через какое время первый догонит второго?`,
+                    answer: answer,
+                    solution: `1. Скорость догоняющего V₁ = ${v1_ms} м/с.
+2. Скорость убегающего V₂ = ${v2_ms} м/с.
+3. Относительная скорость (скорость сближения) V_отн = V₁ - V₂ = ${v1_ms} - ${v2_ms} = ${v_rel} м/с.
+4. Время t = S / V_отн = ${S_m} / ${v_rel} = ${formatNum(t_s)} с.`
+                };
+            }
+          },
+          {
+            topic: "Средняя V (по участкам S)",
+            generate: () => {
+                const s1_km = getRandomInt(20, 60); const v1_kmh = getRandomInt(20, 40);
+                const s2_km = getRandomInt(40, 80); const v2_kmh = getRandomInt(60, 100);
+                const t1_h = s1_km / v1_kmh; const t2_h = s2_km / v2_kmh;
+                const s_total = s1_km + s2_km; const t_total = t1_h + t2_h;
+                const v_avg = s_total / t_total;
+                const answer = `${formatNum(v_avg)} км/ч`;
+                return {
+                    text: `Автомобиль проехал ${s1_km} км со скоростью ${v1_kmh} км/ч, а затем ${s2_km} км со скоростью ${v2_kmh} км/ч. Найдите среднюю скорость.`,
+                    answer: answer,
+                    solution: `1. Общий путь S = S₁ + S₂ = ${s1_km} + ${s2_km} = ${s_total} км.
+2. Время на первом участке: t₁ = S₁ / V₁ = ${s1_km} / ${v1_kmh} = ${formatNum(t1_h, 2)} ч.
+3. Время на втором участке: t₂ = S₂ / V₂ = ${s2_km} / ${v2_kmh} = ${formatNum(t2_h, 2)} ч.
+4. Общее время T = t₁ + t₂ = ${formatNum(t1_h, 2)} + ${formatNum(t2_h, 2)} = ${formatNum(t_total, 2)} ч.
+5. Средняя скорость V_ср = S / T = ${s_total} / ${formatNum(t_total, 2)} = ${formatNum(v_avg)} км/ч.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение X(t) (найти X)",
+            generate: () => {
+                const x0 = getRandomInt(-10, 10); const v0 = getRandomInt(-5, 5);
+                const a = getRandomInt(2, 8); const t = getRandomInt(1, 5);
+                const a_half = a / 2; const x = x0 + v0 * t + a_half * t**2;
+                const answer = `${formatNum(x)} м`;
+                return {
+                    text: `Движение тела: x = ${x0} ${v0 >= 0 ? '+' : ''}${v0}t ${a_half >= 0 ? '+' : ''}${a_half}t². (СИ). Найдите координату тела в момент t = ${t} с.`,
+                    answer: answer,
+                    solution: `1. Уравнение: x = ${x0} ${v0 >= 0 ? '+' : ''}${v0}t ${a_half >= 0 ? '+' : ''}${a_half}t².
+2. Подставляем t = ${t} с:
+   x = ${x0} ${v0 >= 0 ? '+' : ''} (${v0} * ${t}) ${a_half >= 0 ? '+' : ''} (${a_half} * ${t}²)
+   x = ${x0} ${v0 >= 0 ? '+' : ''} ${v0 * t} ${a_half >= 0 ? '+' : ''} ${a_half * (t**2)}
+   x = ${formatNum(x)} м.`
+                };
+            }
+          },
+          {
+            topic: "Средняя V (по участкам t)",
+            generate: () => {
+                const t1_h = getRandomInt(1, 3); const v1_kmh = getRandomInt(40, 60);
+                const t2_h = getRandomInt(1, 3); const v2_kmh = getRandomInt(80, 100);
+                const s1_km = v1_kmh * t1_h; const s2_km = v2_kmh * t2_h;
+                const s_total = s1_km + s2_km; const t_total = t1_h + t2_h;
+                const v_avg = s_total / t_total;
+                const answer = `${formatNum(v_avg)} км/ч`;
+                return {
+                    text: `Автомобиль ${t1_h} часа ехал со скоростью ${v1_kmh} км/ч, а затем ${t2_h} часа со скоростью ${v2_kmh} км/ч. Найдите среднюю скорость.`,
+                    answer: answer,
+                    solution: `1. Путь на первом участке: S₁ = V₁ * t₁ = ${v1_kmh} * ${t1_h} = ${s1_km} км.
+2. Путь на втором участке: S₂ = V₂ * t₂ = ${v2_kmh} * ${t2_h} = ${s2_km} км.
+3. Общий путь S = S₁ + S₂ = ${s1_km} + ${s2_km} = ${s_total} км.
+4. Общее время T = t₁ + t₂ = ${t1_h} + ${t2_h} = ${t_total} ч.
+5. Средняя скорость V_ср = S / T = ${s_total} / ${t_total} = ${formatNum(v_avg)} км/ч.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение V(t) (анализ)",
+            generate: () => {
+                const v0 = getRandomInt(-10, 10); const a = getRandomInt(2, 8);
+                const answer = `V₀ = ${v0} м/с, a = ${a} м/с²`;
+                return {
+                    text: `Уравнение скорости v = ${v0} ${a > 0 ? '+' : ''} ${a}t. (СИ). Найдите начальную скорость и ускорение.`,
+                    answer: answer,
+                    solution: `1. Общий вид уравнения скорости: v = V₀ + a*t.
+2. Сравнивая с v = ${v0} ${a > 0 ? '+' : ''} ${a}t, видим, что:
+   Начальная скорость V₀ = ${v0} м/с.
+   Ускорение a = ${a} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Река (по/против)",
+            generate: () => {
+                const v_boat = getRandomInt(15, 25); const v_river = getRandomInt(2, 5);
+                const v_down = v_boat + v_river; const v_up = v_boat - v_river;
+                const answer = `V_по = ${v_down} км/ч, V_против = ${v_up} км/ч`;
+                return {
+                    text: `Собственная скорость лодки ${v_boat} км/ч, скорость течения ${v_river} км/ч. Найдите V по течению и V против течения.`,
+                    answer: answer,
+                    solution: `1. Скорость по течению: V_по = V_лодки + V_течения = ${v_boat} + ${v_river} = ${v_down} км/ч.
+2. Скорость против течения: V_против = V_лодки - V_течения = ${v_boat} - ${v_river} = ${v_up} км/ч.`
+                };
+            }
+          },
+          {
+            topic: "Река (поперек, снос)",
+            generate: () => {
+                const v_boat = getRandomInt(3, 5); const v_river = getRandomInt(1, 3);
+                const width = getRandomInt(50, 150);
+                const t_cross = width / v_boat; const drift = v_river * t_cross;
+                const answer = `t = ${formatNum(t_cross)} с, снос = ${formatNum(drift)} м`;
+                return {
+                    text: `Лодка пересекает реку ${width} м, V лодки ⟂ берегу ${v_boat} м/с. V течения ${v_river} м/с. Найти t переправы и снос.`,
+                    answer: answer,
+                    solution: `1. Время переправы: t = Ширина / V_лодки = ${width} / ${v_boat} = ${formatNum(t_cross)} с.
+2. Снос течением: S_сноса = V_течения * t = ${v_river} * ${formatNum(t_cross)} = ${formatNum(drift)} м.`
+                };
+            }
+          },
+          {
+            topic: "Тормозной путь (без t)",
+            generate: () => {
+                const v0_kmh = getRandomInt(4, 10) * 18; const a_ms2 = getRandomInt(2, 5);
+                const v0_ms = v0_kmh / 3.6; const s_m = (v0_ms**2) / (2 * a_ms2);
+                const answer = `${formatNum(s_m)} м`;
+                return {
+                    text: `Автомобиль (V=${v0_kmh} км/ч) тормозит с ускорением ${a_ms2} м/с². Какой путь он пройдет до остановки?`,
+                    answer: answer,
+                    solution: `1. Скорость V₀ = ${v0_kmh} / 3.6 = ${formatNum(v0_ms)} м/с. V = 0. a = -${a_ms2} м/с².
+2. Формула S = (V² - V₀²) / (2 * a).
+3. S = (0² - ${formatNum(v0_ms)}²) / (2 * -${a_ms2}) = (-${formatNum(v0_ms**2)}) / (-${2 * a_ms2}) = ${formatNum(s_m)} м.`
+                };
+            }
+          },
+          {
+            topic: "Найти a (S, t, V₀=0)",
+            generate: () => {
+                const s_m = getRandomInt(50, 200); const t_s = getRandomInt(5, 10);
+                const a_ms2 = (2 * s_m) / (t_s**2);
+                const answer = `${formatNum(a_ms2, 2)} м/с²`;
+                return {
+                    text: `Из состояния покоя тело прошло ${s_m} м за ${t_s} с. Найдите ускорение.`,
+                    answer: answer,
+                    solution: `1. V₀ = 0. S = ${s_m} м, t = ${t_s} с.
+2. S = V₀*t + (a * t²) / 2  =>  S = (a * t²) / 2.
+3. a = (2 * S) / t² = (2 * ${s_m}) / ${t_s}² = ${formatNum(a_ms2, 2)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Найти V₀ (S, t, a)",
+            generate: () => {
+                const s_m = getRandomInt(100, 300); const t_s = getRandomInt(5, 10); const a_ms2 = getRandomInt(1, 4);
+                const at2_half = (a_ms2 * t_s**2) / 2; const v0_ms = (s_m - at2_half) / t_s;
+                const answer = `${formatNum(v0_ms, 2)} м/с`;
+                return {
+                    text: `Двигаясь с a=${a_ms2} м/с², тело прошло ${s_m} м за ${t_s} с. Найдите V₀.`,
+                    answer: answer,
+                    solution: `1. S = ${s_m} м, t = ${t_s} с, a = ${a_ms2} м/с².
+2. S = V₀*t + (a * t²) / 2.
+3. V₀*t = S - (a * t²) / 2.
+4. V₀ = (S - (a * t²) / 2) / t = (${s_m} - (${a_ms2} * ${t_s}²) / 2) / ${t_s}.
+5. V₀ = (${s_m} - ${at2_half}) / ${t_s} = ${formatNum(v0_ms, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Встреча (уравнения)",
+            generate: () => {
+                const x1_0 = getRandomInt(0, 10); const v1 = getRandomInt(1, 5);
+                const x2_0 = getRandomInt(50, 100); const v2 = getRandomInt(-5, -1);
+                const t_s = (x2_0 - x1_0) / (v1 - v2); const x_meet = x1_0 + v1 * t_s;
+                const answer = `t = ${formatNum(t_s)} с, x = ${formatNum(x_meet)} м`;
+                return {
+                    text: `Движение тел: x₁ = ${x1_0} + ${v1}t и x₂ = ${x2_0} ${v2}t. Найдите t и x встречи.`,
+                    answer: answer,
+                    solution: `1. При встрече x₁ = x₂.
+2. ${x1_0} + ${v1}t = ${x2_0} ${v2}t
+3. ${v1}t - (${v2}t) = ${x2_0} - ${x1_0}
+4. (${v1 - v2})t = ${x2_0 - x1_0}
+5. t = ${x2_0 - x1_0} / ${v1 - v2} = ${formatNum(t_s)} с.
+6. x = ${x1_0} + ${v1} * ${formatNum(t_s)} = ${formatNum(x_meet)} м.`
+                };
+            }
+          },
+          {
+            topic: "Угловая ω (V, R)",
+            generate: () => {
+                const v_ms = getRandomInt(10, 30); const R_m = getRandomInt(5, 20);
+                const w_rad_s = v_ms / R_m;
+                const answer = `${formatNum(w_rad_s, 2)} рад/с`;
+                return {
+                    text: `Точка движется по окружности R=${R_m} м с V=${v_ms} м/с. Найдите угловую скорость ω.`,
+                    answer: answer,
+                    solution: `1. V = ${v_ms} м/с, R = ${R_m} м.
+2. V = ω * R.
+3. ω = V / R = ${v_ms} / ${R_m} = ${formatNum(w_rad_s, 2)} рад/с.`
+                };
+            }
+          },
+          {
+            topic: "Угловая ω (f)",
+            generate: () => {
+                const f_hz = getRandomInt(2, 10);
+                const w_rad_s = 2 * Math.PI * f_hz;
+                const answer = `${formatNum(w_rad_s, 2)} рад/с (≈ ${formatNum(w_rad_s / Math.PI)}π рад/с)`;
+                return {
+                    text: `Тело вращается с частотой ${f_hz} Гц. Найдите угловую скорость ω. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. Частота f = ${f_hz} Гц.
+2. ω = 2 * π * f.
+3. ω = 2 * 3.14 * ${f_hz} = ${formatNum(w_rad_s, 2)} рад/с.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение X(t) (анализ V₀, a)",
+            generate: () => {
+                const x0 = getRandomInt(-10, 10);
+                const v0 = getRandomInt(-20, 20);
+                const a_half = getRandomInt(-5, 5);
+                const a = a_half * 2;
+                const answer = `x₀ = ${x0} м, V₀ = ${v0} м/с, a = ${a} м/с²`;
+                return {
+                    text: `Уравнение движения x(t) = ${x0} ${v0 >= 0 ? '+' : ''} ${v0}t ${a_half >= 0 ? '+' : ''} ${a_half}t². (СИ). Найдите x₀, V₀ и a.`,
+                    answer: answer,
+                    solution: `1. Общий вид: x(t) = x₀ + V₀t + (a*t²)/2.
+2. Сравниваем с x(t) = ${x0} ${v0 >= 0 ? '+' : ''} ${v0}t ${a_half >= 0 ? '+' : ''} ${a_half}t².
+3. x₀ = ${x0} м.
+4. V₀ = ${v0} м/с.
+5. a/2 = ${a_half}, следовательно a = 2 * (${a_half}) = ${a} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Уравнение X(t) (найти V(t))",
+            generate: () => {
+                const x0 = getRandomInt(-10, 10);
+                const v0 = getRandomInt(5, 20);
+                const a = getRandomInt(-5, -2) * 2;
+                const a_half = a / 2;
+                const t_find = getRandomInt(1, 5);
+                const v_t = v0 + a * t_find;
+                const answer = `${formatNum(v_t)} м/с`;
+                return {
+                    text: `Дано x(t) = ${x0} + ${v0}t ${a_half}t². (СИ). Найдите скорость V в момент t = ${t_find} с.`,
+                    answer: answer,
+                    solution: `1. Из x(t) = x₀ + V₀t + (a*t²)/2, находим V₀ = ${v0} м/с и a = 2 * (${a_half}) = ${a} м/с².
+2. Уравнение скорости: V(t) = V₀ + a*t = ${v0} ${a}t.
+3. V(t=${t_find}) = ${v0} + (${a} * ${t_find}) = ${v0} ${a * t_find} = ${formatNum(v_t)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение V(t) (найти S)",
+            generate: () => {
+                const v0 = getRandomInt(2, 10);
+                const a = getRandomInt(1, 4);
+                const t = getRandomInt(3, 8);
+                const s = v0 * t + (a * t**2) / 2;
+                const answer = `${formatNum(s)} м`;
+                return {
+                    text: `Скорость тела v(t) = ${v0} + ${a}t. (СИ). Найдите путь S, пройденный телом за ${t} с.`,
+                    answer: answer,
+                    solution: `1. Из v(t) = V₀ + a*t, находим V₀ = ${v0} м/с и a = ${a} м/с².
+2. Путь S = V₀*t + (a*t²)/2.
+3. S = (${v0} * ${t}) + (${a} * ${t}²) / 2 = ${v0 * t} + ${a * t**2 / 2} = ${formatNum(s)} м.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение X(t) (остановка)",
+            generate: () => {
+                const v0 = getRandomInt(10, 20);
+                const a = getRandomInt(-5, -2);
+                const t_stop = -v0 / (2 * a); // a в уравнении это a/2, так что a_real = 2*a
+                const answer = `${formatNum(t_stop)} с`;
+                return {
+                    text: `Дано x(t) = 5 + ${v0}t + ${a}t². (СИ). В какой момент времени t тело остановится (V=0)?`,
+                    answer: answer,
+                    solution: `1. Из x(t) находим V₀ = ${v0} м/с и a/2 = ${a} => a_real = ${2 * a} м/с².
+2. Уравнение скорости: V(t) = V₀ + a_real*t = ${v0} + ${2 * a}t.
+3. Тело остановится, когда V(t) = 0.
+4. 0 = ${v0} + ${2 * a}t  =>  t = -${v0} / (${2 * a}) = ${formatNum(t_stop)} с.`
+                };
+            }
+          },
+          {
+            topic: "Два этапа (разгон + V=const)",
+            generate: () => {
+                const a1 = getRandomInt(1, 3);
+                const t1 = getRandomInt(4, 10);
+                const t2 = getRandomInt(10, 20);
+                const v1_max = a1 * t1;
+                const s1 = (a1 * t1**2) / 2;
+                const s2 = v1_max * t2;
+                const s_total = s1 + s2;
+                const answer = `${formatNum(s_total)} м`;
+                return {
+                    text: `Тело ${t1} с разгонялось из покоя с a=${a1} м/с², а затем ${t2} с двигалось равномерно. Найти общий путь.`,
+                    answer: answer,
+                    solution: `1. Участок 1 (разгон): S₁ = (a₁*t₁²)/2 = (${a1} * ${t1}²)/2 = ${formatNum(s1)} м.
+2. Скорость в конце разгона: V_max = a₁*t₁ = ${a1} * ${t1} = ${formatNum(v1_max)} м/с.
+3. Участок 2 (V=const): S₂ = V_max * t₂ = ${formatNum(v1_max)} * ${t2} = ${formatNum(s2)} м.
+4. Общий путь S = S₁ + S₂ = ${formatNum(s1)} + ${formatNum(s2)} = ${formatNum(s_total)} м.`
+                };
+            }
+          },
+          {
+            topic: "Два этапа (разгон + торможение)",
+            generate: () => {
+                const a1 = getRandomInt(2, 4);
+                const t1 = getRandomInt(5, 10);
+                const a2 = getRandomInt(-3, -1);
+                const v_max = a1 * t1;
+                const t2 = -v_max / a2; // Время до остановки
+                const s1 = (a1 * t1**2) / 2;
+                const s2 = (v_max * t2) + (a2 * t2**2) / 2; // S = V₀t + at²/2
+                const s_total = s1 + s2;
+                const answer = `${formatNum(s_total)} м`;
+                return {
+                    text: `Тело ${t1} с разгонялось из покоя с a=${a1} м/с², а затем тормозило с a=${a2} м/с² до остановки. Найти общий путь.`,
+                    answer: answer,
+                    solution: `1. Участок 1 (разгон): S₁ = (a₁*t₁²)/2 = (${a1} * ${t1}²)/2 = ${formatNum(s1)} м.
+2. Скорость в конце разгона: V_max = a₁*t₁ = ${a1} * ${t1} = ${formatNum(v_max)} м/с.
+3. Участок 2 (торможение): V₀ = ${formatNum(v_max)}, V = 0, a₂ = ${a2}.
+4. Время торможения t₂ = (V - V₀) / a₂ = (0 - ${formatNum(v_max)}) / ${a2} = ${formatNum(t2)} с.
+5. Путь S₂ = (V² - V₀²) / (2*a₂) = (0² - ${formatNum(v_max)}²) / (2 * ${a2}) = ${formatNum(s2)} м.
+6. Общий путь S = S₁ + S₂ = ${formatNum(s1)} + ${formatNum(s2)} = ${formatNum(s_total)} м.`
+                };
+            }
+          },
+          {
+            topic: "Река (V результ.)",
+            generate: () => {
+                const v_boat = getRandomInt(3, 6);
+                const v_river = getRandomInt(2, 4);
+                const v_res = Math.sqrt(v_boat**2 + v_river**2);
+                const answer = `${formatNum(v_res, 2)} м/с`;
+                return {
+                    text: `Скорость лодки ⟂ берегу ${v_boat} м/с, V течения ${v_river} м/с. Найти результирующую скорость лодки (относительно берега).`,
+                    answer: answer,
+                    solution: `1. V лодки (Vᵧ) = ${v_boat} м/с. V течения (Vₓ) = ${v_river} м/с.
+2. Скорости перпендикулярны, V_рез = √(Vₓ² + Vᵧ²) по теореме Пифагора.
+3. V_рез = √(${v_river}² + ${v_boat}²) = √(${v_river**2 + v_boat**2}) = ${formatNum(v_res, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Средняя V (S/2 + S/2)",
+            generate: () => {
+                const v1 = getRandomInt(20, 40);
+                const v2 = getRandomInt(60, 100);
+                const v_avg = (2 * v1 * v2) / (v1 + v2);
+                const answer = `${formatNum(v_avg)} км/ч`;
+                return {
+                    text: `Автомобиль проехал первую половину *пути* со скоростью ${v1} км/ч, а вторую половину *пути* — со скоростью ${v2} км/ч. Найдите V_ср.`,
+                    answer: answer,
+                    solution: `1. Пусть S - весь путь. S₁ = S/2, S₂ = S/2.
+2. t₁ = S₁/V₁ = (S/2)/${v1} = S/${2*v1}.
+3. t₂ = S₂/V₂ = (S/2)/${v2} = S/${2*v2}.
+4. V_ср = S_общ / t_общ = S / (t₁ + t₂) = S / (S/${2*v1} + S/${2*v2}).
+5. V_ср = 1 / (1/${2*v1} + 1/${2*v2}) = 1 / ((${v2}+${v1}) / (${2*v1*v2})).
+6. V_ср = (2*${v1}*${v2}) / (${v1}+${v2}) = ${formatNum(v_avg)} км/ч.`
+                };
+            }
+          },
+          {
+            topic: "Средняя V (t/2 + t/2)",
+            generate: () => {
+                const v1 = getRandomInt(20, 40);
+                const v2 = getRandomInt(60, 100);
+                const v_avg = (v1 + v2) / 2;
+                const answer = `${formatNum(v_avg)} км/ч`;
+                return {
+                    text: `Автомобиль первую половину *времени* ехал со скоростью ${v1} км/ч, а вторую половину *времени* — со скоростью ${v2} км/ч. Найдите V_ср.`,
+                    answer: answer,
+                    solution: `1. Пусть T - все время. t₁ = T/2, t₂ = T/2.
+2. S₁ = V₁*t₁ = ${v1} * (T/2).
+3. S₂ = V₂*t₂ = ${v2} * (T/2).
+4. S_общ = S₁ + S₂ = (${v1}*T/2) + (${v2}*T/2) = T * (${v1}+${v2})/2.
+5. V_ср = S_общ / T_общ = (T * (${v1}+${v2})/2) / T = (${v1}+${v2})/2.
+6. V_ср = (${v1} + ${v2}) / 2 = ${formatNum(v_avg)} км/ч.`
+                };
+            }
+          },
+          {
+            topic: "Горизонтальный бросок (Найти V₀)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(20, 80);
+                const l = getRandomInt(30, 100);
+                const t = Math.sqrt(2 * h / g);
+                const v0 = l / t;
+                const answer = `${formatNum(v0, 2)} м/с`;
+                return {
+                    text: `Тело брошено горизонтально с высоты ${h} м. Дальность полета ${l} м. Найдите начальную скорость V₀. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. h = ${h} м, L = ${l} м.
+2. Время падения из h = (g*t²)/2  =>  t = √(2h/g) = √(2*${h}/${g}) = ${formatNum(t, 2)} с.
+3. Дальность L = V₀*t.
+4. V₀ = L / t = ${l} / ${formatNum(t, 2)} = ${formatNum(v0, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (Найти V₀ по H)",
+            generate: () => {
+                const g = 9.8;
+                const h_max = getRandomInt(10, 40);
+                const v0 = Math.sqrt(2 * g * h_max);
+                const answer = `${formatNum(v0, 2)} м/с`;
+                return {
+                    text: `Тело, брошенное вертикально вверх, поднялось на макс. высоту ${h_max} м. Найдите V₀. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H_max = ${h_max} м, V на H_max = 0.
+2. Формула S = (V² - V₀²) / (2a)  =>  H_max = (0² - V₀²) / (2 * -g).
+3. H_max = V₀² / (2g).
+4. V₀² = 2 * g * H_max = 2 * ${g} * ${h_max} = ${formatNum(2*g*h_max)}.
+5. V₀ = √(${formatNum(2*g*h_max)}) = ${formatNum(v0, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (Найти V₀ по t)",
+            generate: () => {
+                const g = 9.8;
+                const t_total = getRandomInt(2, 8);
+                const t_up = t_total / 2;
+                const v0 = g * t_up;
+                const answer = `${formatNum(v0, 2)} м/с`;
+                return {
+                    text: `Общее время полета тела, брошенного верт. вверх, составило ${t_total} с. Найдите V₀. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. T_общ = ${t_total} с.
+2. Время подъема t_под = T_общ / 2 = ${t_up} с.
+3. В верхней точке V = 0. V = V₀ - g*t_под.
+4. 0 = V₀ - g * t_под.
+5. V₀ = g * t_под = ${g} * ${t_up} = ${formatNum(v0, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (Найти R)",
+            generate: () => {
+                const v = getRandomInt(5, 15);
+                const ac = getRandomInt(2, 10);
+                const r = v**2 / ac;
+                const answer = `${formatNum(r)} м`;
+                return {
+                    text: `Тело движется по окружности с V = ${v} м/с. Его центростремительное a = ${ac} м/с². Найдите радиус R.`,
+                    answer: answer,
+                    solution: `1. V = ${v} м/с, a_c = ${ac} м/с².
+2. a_c = V² / R.
+3. R = V² / a_c = ${v}² / ${ac} = ${v**2} / ${ac} = ${formatNum(r)} м.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (Найти T)",
+            generate: () => {
+                const v = getRandomInt(10, 30);
+                const r = getRandomInt(5, 20);
+                const t = (2 * Math.PI * r) / v;
+                const answer = `${formatNum(t, 2)} с`;
+                return {
+                    text: `Тело движется по окружности R = ${r} м со скоростью V = ${v} м/с. Найдите период T. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. V = ${v} м/с, R = ${r} м.
+2. V = (2 * π * R) / T.
+3. T = (2 * π * R) / V = (2 * 3.14 * ${r}) / ${v} = ${formatNum(2*Math.PI*r, 2)} / ${v} = ${formatNum(t, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (Найти t по S,V,V₀)",
+            generate: () => {
+                const v0 = getRandomInt(1, 5);
+                const v = getRandomInt(10, 20);
+                const s = getRandomInt(50, 100);
+                const t = (2 * s) / (v0 + v);
+                const answer = `${formatNum(t, 2)} с`;
+                return {
+                    text: `Тело прошло ${s} м. Его V изменилась с ${v0} м/с до ${v} м/с. Найти время t.`,
+                    answer: answer,
+                    solution: `1. S = ${s} м, V₀ = ${v0} м/с, V = ${v} м/с.
+2. Используем формулу S = (V₀ + V) / 2 * t.
+3. t = (2 * S) / (V₀ + V) = (2 * ${s}) / (${v0} + ${v}) = ${2 * s} / ${v0 + v} = ${formatNum(t, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (Найти a по S,V,V₀)",
+            generate: () => {
+                const v0 = getRandomInt(1, 5);
+                const v = getRandomInt(10, 20);
+                const s = getRandomInt(20, 50);
+                const a = (v**2 - v0**2) / (2 * s);
+                const answer = `${formatNum(a, 2)} м/с²`;
+                return {
+                    text: `На пути ${s} м скорость тела выросла с ${v0} м/с до ${v} м/с. Найдите ускорение a.`,
+                    answer: answer,
+                    solution: `1. S = ${s} м, V₀ = ${v0} м/с, V = ${v} м/с.
+2. Используем формулу S = (V² - V₀²) / (2a).
+3. a = (V² - V₀²) / (2S) = (${v}² - ${v0}²) / (2 * ${s}) = ${v**2 - v0**2} / ${2 * s} = ${formatNum(a, 2)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Путь за N-ю секунду",
+            generate: () => {
+                const a = getRandomInt(2, 8);
+                const n = getRandomInt(3, 6);
+                const s_n = (a / 2) * (2 * n - 1);
+                const answer = `${formatNum(s_n)} м`;
+                return {
+                    text: `Тело движется из покоя с a = ${a} м/с². Какой путь оно пройдет за ${n}-ю (третью, четвертую и т.д.) секунду?`,
+                    answer: answer,
+                    solution: `1. Путь за N c: S(N) = a*N²/2. Путь за N-1 c: S(N-1) = a*(N-1)²/2.
+2. S за N-ю сек = S(N) - S(N-1) = (a/2) * [N² - (N-1)²] = (a/2) * [N² - (N² - 2N + 1)] = (a/2) * (2N - 1).
+3. S за ${n}-ю сек = (${a}/2) * (2*${n} - 1) = ${a/2} * ${2*n - 1} = ${formatNum(s_n)} м.`
+                };
+            }
+          },
+          {
+            topic: "Встреча (падение + бросок)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(50, 100);
+                const v0 = getRandomInt(10, 30);
+                // h₁ = gt²/2; h₂ = V₀t - gt²/2; h₁ + h₂ = H
+                // (gt²/2) + (V₀t - gt²/2) = H  =>  V₀t = H
+                const t = h / v0;
+                const h1 = (g * t**2) / 2;
+                const h_meet = h - h1;
+                const answer = `t = ${formatNum(t, 2)} с, на высоте H = ${formatNum(h_meet, 2)} м`;
+                return {
+                    text: `С высоты ${h} м падает тело 1 (V₀=0). Одновременно с земли ему навстречу бросают тело 2 (V₀=${v0} м/с). Найти t и H встречи. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Пусть H встречи (от земли) = h₂. Путь тела 1 = h₁. h₁ + h₂ = ${h}.
+2. Уравнение для тела 1 (ось вниз): h₁ = (g*t²)/2.
+3. Уравнение для тела 2 (ось вверх): h₂ = ${v0}*t - (g*t²)/2.
+4. Сложим: h₁ + h₂ = (g*t²)/2 + ${v0}*t - (g*t²)/2.
+5. ${h} = ${v0}*t.
+6. t = ${h} / ${v0} = ${formatNum(t, 2)} с.
+7. h₂ = ${v0}*${formatNum(t, 2)} - (g*${formatNum(t, 2)}²)/2 = ${formatNum(h_meet, 2)} м (от земли).`
+                };
+            }
+          },
+          {
+            topic: "График V(t) (Найти S)",
+            generate: () => {
+                const v_max = getRandomInt(5, 15);
+                const t_max = getRandomInt(4, 10);
+                const a = v_max / t_max;
+                const s = (v_max * t_max) / 2;
+                const answer = `${formatNum(s)} м`;
+                return {
+                    text: `Скорость тела растет по закону V = ${formatNum(a, 2)}*t (СИ). Найти путь S, пройденный за ${t_max} с.`,
+                    answer: answer,
+                    solution: `1. График V(t) - прямая, выходящая из (0,0) в точку (t=${t_max}, V=${formatNum(v_max, 1)}).
+2. Путь S равен площади под графиком V(t).
+3. Это площадь прямоугольного треугольника: S = (1/2) * основание * высота.
+4. S = (1/2) * t * V(t=${t_max}) = (1/2) * ${t_max} * (${formatNum(a, 2)}*${t_max}) = ${formatNum(s)} м.`
+                };
+            }
+          },
+          {
+            topic: "Угловое ускорение (найти ω)",
+            generate: () => {
+                const alpha = getRandomInt(1, 5); // рад/с²
+                const t = getRandomInt(3, 10); // с
+                const omega_final = alpha * t;
+                const answer = `${formatNum(omega_final)} рад/с`;
+                return {
+                    text: `Тело, вращаясь из покоя с постоянным угловым ускорением α = ${alpha} рад/с², крутилось ${t} с. Найдите конечную угловую скорость ω.`,
+                    answer: answer,
+                    solution: `1. Начальная угловая скорость ω₀ = 0.
+2. Угловое ускорение α = ${alpha} рад/с², время t = ${t} с.
+3. Формула: ω = ω₀ + α*t.
+4. ω = 0 + ${alpha} * ${t} = ${formatNum(omega_final)} рад/с.`
+                };
+            }
+          },
+          {
+            topic: "Угловое перемещение (ω=const)",
+            generate: () => {
+                const omega = getRandomInt(5, 20); // рад/с
+                const t = getRandomInt(2, 6); // с
+                const theta = omega * t;
+                const revs = theta / (2 * Math.PI);
+                const answer = `${formatNum(theta, 1)} рад (≈ ${formatNum(revs, 1)} оборотов)`;
+                return {
+                    text: `Колесо вращается равномерно с угловой скоростью ω = ${omega} рад/с. На какой угол θ (в радианах) оно повернется за ${t} с?`,
+                    answer: answer,
+                    solution: `1. Угловая скорость ω = ${omega} рад/с (постоянная).
+2. Время t = ${t} с.
+3. Угловое перемещение θ = ω * t.
+4. θ = ${omega} * ${t} = ${formatNum(theta, 1)} рад.`
+                };
+            }
+          },
+          {
+            topic: "Угловое перемещение (ускор.)",
+            generate: () => {
+                const alpha = getRandomInt(1, 4); // рад/с²
+                const t = getRandomInt(3, 8); // с
+                const theta = 0.5 * alpha * t**2;
+                const revs = theta / (2 * Math.PI);
+                const answer = `${formatNum(theta, 1)} рад (≈ ${formatNum(revs, 1)} оборотов)`;
+                return {
+                    text: `Маховик, вращаясь из покоя с α = ${alpha} рад/с², повернулся за ${t} с. Найдите угол поворота θ.`,
+                    answer: answer,
+                    solution: `1. Начальная угловая скорость ω₀ = 0. α = ${alpha} рад/с², t = ${t} с.
+2. Формула: θ = ω₀*t + (α*t²)/2.
+3. θ = 0 + (${alpha} * ${t}²) / 2 = ${formatNum(theta, 1)} рад.`
+                };
+            }
+          },
+          {
+            topic: "Тангенциальное ускорение (a_t)",
+            generate: () => {
+                const alpha = getRandomInt(2, 6); // рад/с²
+                const r = getRandomInt(1, 5) * 0.5; // 0.5, 1, 1.5... м
+                const a_t = alpha * r;
+                const answer = `${formatNum(a_t)} м/с²`;
+                return {
+                    text: `Диск радиусом R = ${r} м вращается с угловым ускорением α = ${alpha} рад/с². Найдите тангенциальное ускорение (a_t) точки на ободе.`,
+                    answer: answer,
+                    solution: `1. Угловое ускорение α = ${alpha} рад/с².
+2. Радиус R = ${r} м.
+3. Тангенциальное ускорение a_t = α * R.
+4. a_t = ${alpha} * ${r} = ${formatNum(a_t)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Полное ускорение (Окружность)",
+            generate: () => {
+                const v = getRandomInt(5, 15); // м/с
+                const r = getRandomInt(2, 10); // м
+                const a_t = getRandomInt(1, 5); // м/с²
+                const a_c = v**2 / r;
+                const a_total = Math.sqrt(a_t**2 + a_c**2);
+                const answer = `${formatNum(a_total, 2)} м/с²`;
+                return {
+                    text: `Тело движется по окружности R = ${r} м. В данный момент V = ${v} м/с, а тангенциальное ускорение a_t = ${a_t} м/с². Найдите полное ускорение (a).`,
+                    answer: answer,
+                    solution: `1. Тангенциальное a_t = ${a_t} м/с².
+2. Центростремительное a_c = V² / R = ${v}² / ${r} = ${formatNum(a_c, 2)} м/с².
+3. a_t и a_c перпендикулярны. a_total = √(a_t² + a_c²).
+4. a_total = √(${a_t}² + ${formatNum(a_c, 2)}²) = √(${formatNum(a_t**2 + a_c**2, 2)}) = ${formatNum(a_total, 2)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (V на H)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(20, 40); // м/с
+                const h_max = (v0**2) / (2 * g);
+                const h_find = getRandomInt(Math.floor(h_max / 3), Math.floor(h_max * 0.9)); // Высота < H_max
+                const v_h = Math.sqrt(v0**2 - 2 * g * h_find);
+                const answer = `${formatNum(v_h, 2)} м/с`;
+                return {
+                    text: `Тело брошено верт. вверх с V₀ = ${v0} м/с. Какова будет его скорость (V) на высоте ${h_find} м? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, H = ${h_find} м, a = -g.
+2. Используем S = (V² - V₀²) / (2a)  =>  H = (V² - V₀²) / (-2g).
+3. V² - V₀² = -2gH  =>  V² = V₀² - 2gH.
+4. V² = ${v0}² - 2 * ${g} * ${h_find} = ${formatNum(v0**2 - 2 * g * h_find, 2)}.
+5. V = √(${formatNum(v0**2 - 2 * g * h_find, 2)}) = ${formatNum(v_h, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Горизонтальный бросок (V в t)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(10, 30); // V_x
+                const t = getRandomInt(1, 4); // с
+                const v_y = g * t;
+                const v_total = Math.sqrt(v0**2 + v_y**2);
+                const answer = `${formatNum(v_total, 2)} м/с`;
+                return {
+                    text: `Тело брошено горизонтально с V₀ = ${v0} м/с. Найдите его полную скорость V через ${t} с полета. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Горизонтальная скорость Vₓ = V₀ = ${v0} м/с (постоянна).
+2. Вертикальная скорость Vᵧ = g * t = ${g} * ${t} = ${formatNum(v_y, 1)} м/с.
+3. Vₓ и Vᵧ перпендикулярны. V_total = √(Vₓ² + Vᵧ²).
+4. V_total = √(${v0}² + ${formatNum(v_y, 1)}²) = √(${formatNum(v0**2 + v_y**2, 2)}) = ${formatNum(v_total, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Горизонтальный бросок (Угол)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(10, 20); // V_x
+                const h = getRandomInt(20, 50);
+                const t = Math.sqrt(2 * h / g);
+                const v_y = g * t;
+                const angle_rad = Math.atan(v_y / v0);
+                const angle_deg = angle_rad * 180 / Math.PI;
+                const answer = `${formatNum(angle_deg, 1)}° к горизонту`;
+                return {
+                    text: `Тело брошено горизонтально с V₀ = ${v0} м/с с высоты ${h} м. Под каким углом к горизонту оно ударится о землю? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Vₓ = V₀ = ${v0} м/с.
+2. Найдем Vᵧ в момент удара. t = √(2h/g) = √(2*${h}/${g}) = ${formatNum(t, 2)} с.
+3. Vᵧ = g*t = ${g} * ${formatNum(t, 2)} = ${formatNum(v_y, 2)} м/с.
+4. Угол α: tg(α) = Vᵧ / Vₓ.
+5. tg(α) = ${formatNum(v_y, 2)} / ${v0} = ${formatNum(v_y / v0, 3)}.
+6. α = arctg(${formatNum(v_y / v0, 3)}) = ${formatNum(angle_deg, 1)}°.`
+                };
+            }
+          },
+          {
+            topic: "Относительная V (2D, дождь)",
+            generate: () => {
+                const v_rain = getRandomInt(5, 10); // м/с
+                const v_man = getRandomInt(1, 4); // м/с
+                const v_rel = Math.sqrt(v_rain**2 + v_man**2);
+                const angle_rad = Math.atan(v_man / v_rain);
+                const angle_deg = angle_rad * 180 / Math.PI;
+                const answer = `V_отн = ${formatNum(v_rel, 2)} м/с, под углом ${formatNum(angle_deg, 1)}° к вертикали`;
+                return {
+                    text: `Дождь падает верт. со V = ${v_rain} м/с. Человек идет гориз. со V = ${v_man} м/с. Какова V капель в системе отсчета человека?`,
+                    answer: answer,
+                    solution: `1. V_отн = V_капель - V_чел. Векторно. V_отн = V_капель + (-V_чел).
+2. V_капель (↓) = ${v_rain} м/с. (-V_чел) (←) = ${v_man} м/с.
+3. V_отн = √(V_капель² + V_чел²) = √(${v_rain}² + ${v_man}²) = ${formatNum(v_rel, 2)} м/с.
+4. Угол к верт: tg(α) = V_чел / V_капель = ${v_man} / ${v_rain} = ${formatNum(v_man / v_rain, 3)}.
+5. α = ${formatNum(angle_deg, 1)}°.`
+                };
+            }
+          },
+          {
+            topic: "Опережение (V=const)",
+            generate: () => {
+                const vA = getRandomInt(25, 35); // V_A > V_B
+                const vB = getRandomInt(15, 24);
+                const initial_S = getRandomInt(50, 200); // м
+                const v_rel = vA - vB;
+                const t_overtake = initial_S / v_rel;
+                const s_overtake = vA * t_overtake;
+                const answer = `t = ${formatNum(t_overtake, 1)} с, S_A = ${formatNum(s_overtake, 0)} м`;
+                return {
+                    text: `Авто A (V=${vA} м/с) догоняет авто B (V=${vB} м/с), отставая на ${initial_S} м. Через какое t A догонит B и какой S он проедет?`,
+                    answer: answer,
+                    solution: `1. Скорость сближения V_сбл = V_A - V_B = ${vA} - ${vB} = ${v_rel} м/с.
+2. Время t = S_нач / V_сбл = ${initial_S} / ${v_rel} = ${formatNum(t_overtake, 1)} с.
+3. Путь, пройденный авто A: S_A = V_A * t = ${vA} * ${formatNum(t_overtake, 1)} = ${formatNum(s_overtake, 0)} м.`
+                };
+            }
+          },
+          {
+            topic: "Встреча (ускор. V₀=0)",
+            generate: () => {
+                const a1 = getRandomInt(1, 3);
+                const a2 = getRandomInt(2, 4);
+                const S = getRandomInt(100, 300);
+                // S1 = a1*t²/2, S2 = a2*t²/2. S1+S2 = S
+                // (a1+a2)*t²/2 = S
+                const t = Math.sqrt(2 * S / (a1 + a2));
+                const s1 = 0.5 * a1 * t**2;
+                const answer = `t = ${formatNum(t, 2)} с, S₁ = ${formatNum(s1, 1)} м`;
+                return {
+                    text: `Два тела из покоя движутся навстречу с a₁=${a1} м/с² и a₂=${a2} м/с² с S=${S} м. Найти t и S₁ до встречи.`,
+                    answer: answer,
+                    solution: `1. S₁ = (a₁*t²)/2, S₂ = (a₂*t²)/2.
+2. S₁ + S₂ = S  =>  (a₁*t²)/2 + (a₂*t²)/2 = S.
+3. t² * (a₁ + a₂) / 2 = S  =>  t² = (2*S) / (a₁ + a₂).
+4. t² = (2*${S}) / (${a1} + ${a2}) = ${formatNum(2 * S / (a1 + a2), 2)}.
+5. t = ${formatNum(t, 2)} с.
+6. S₁ = (a₁*t²)/2 = (${a1} * ${formatNum(t**2, 2)}) / 2 = ${formatNum(s1, 1)} м.`
+                };
+            }
+          },
+          {
+            topic: "Обгон колонны",
+            generate: () => {
+                const L_col = getRandomInt(100, 300); // м
+                const v_col = getRandomInt(10, 15); // м/с
+                const v_car = getRandomInt(20, 30); // м/с
+                const v_rel = v_car - v_col;
+                const t_overtake = L_col / v_rel;
+                const answer = `${formatNum(t_overtake, 1)} с`;
+                return {
+                    text: `Колонна машин L=${L_col} м движется со V=${v_col} м/с. Автомобиль обгоняет ее, двигаясь со V=${v_car} м/с. Cколько времени займет обгон?`,
+                    answer: answer,
+                    solution: `1. Это задача на относительное движение. Представим, что колонна неподвижна.
+2. Относительная скорость V_отн = V_авто - V_колонны = ${v_car} - ${v_col} = ${v_rel} м/с.
+3. Автомобилю нужно пройти расстояние, равное длине колонны, с этой скоростью.
+4. t = L_колонны / V_отн = ${L_col} / ${v_rel} = ${formatNum(t_overtake, 1)} с.`
+                };
+            }
+          },
+          {
+            topic: "Встречный разъезд (колонна)",
+            generate: () => {
+                const L_col = getRandomInt(100, 300); // м
+                const v_col = getRandomInt(10, 15); // м/с
+                const v_car = getRandomInt(20, 30); // м/с
+                const v_rel = v_car + v_col;
+                const t_pass = L_col / v_rel;
+                const answer = `${formatNum(t_pass, 1)} с`;
+                return {
+                    text: `Колонна L=${L_col} м (V=${v_col} м/с) и авто (V=${v_car} м/с) едут навстречу. Сколько времени займет встречный разъезд (от начала до конца колонны)?`,
+                    answer: answer,
+                    solution: `1. Это задача на относительное движение.
+2. Скорость сближения V_сбл = V_авто + V_колонны = ${v_car} + ${v_col} = ${v_rel} м/с.
+3. Автомобилю нужно пройти расстояние, равное длине колонны, с этой скоростью.
+4. t = L_колонны / V_сбл = ${L_col} / ${v_rel} = ${formatNum(t_pass, 1)} с.`
+                };
+            }
+          },
+          {
+            topic: "Падение с V₀ (вниз)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(50, 150);
+                const v0 = getRandomInt(5, 15);
+                // V² = V₀² + 2gh
+                const v_final = Math.sqrt(v0**2 + 2 * g * h);
+                const answer = `${formatNum(v_final, 2)} м/с`;
+                return {
+                    text: `Тело брошено с H=${h} м вертикально вниз с V₀=${v0} м/с. Найти V в момент удара о землю. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, H = ${h} м, a = g = ${g} м/с².
+2. Формула без времени: H = (V² - V₀²) / (2a). (Ось вниз) S = H.
+3. V² = V₀² + 2gH = ${v0}² + 2 * ${g} * ${h}.
+4. V² = ${v0**2} + ${2*g*h} = ${formatNum(v0**2 + 2 * g * h, 2)}.
+5. V = √(${formatNum(v0**2 + 2 * g * h, 2)}) = ${formatNum(v_final, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Бросок с H (V₀ вверх, H_max)",
+            generate: () => {
+                const g = 9.8;
+                const h_start = getRandomInt(20, 50);
+                const v0 = getRandomInt(10, 30);
+                const h_up = (v0**2) / (2 * g); // Высота подъема от точки броска
+                const h_total_max = h_start + h_up;
+                const answer = `${formatNum(h_total_max, 2)} м (от земли)`;
+                return {
+                    text: `С H=${h_start} м тело брошено верт. вверх с V₀=${v0} м/с. Найти H_max от земли. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H_старт = ${h_start} м. V₀ = ${v0} м/с.
+2. Найдем высоту подъема (h_up) от точки броска до V=0.
+3. h_up = (V² - V₀²) / (2a) = (0² - ${v0}²) / (2 * -${g}) = ${v0**2} / ${2*g} = ${formatNum(h_up, 2)} м.
+4. H_max (от земли) = H_старт + h_up.
+5. H_max = ${h_start} + ${formatNum(h_up, 2)} = ${formatNum(h_total_max, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Бросок с H (V₀ вверх, t полета)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(20, 50);
+                const v0 = getRandomInt(10, 20);
+                // h = -V₀t + gt²/2 (ось вниз, V₀ вверх)
+                // 0 = (g/2)t² - V₀t - h
+                // t = [ V₀ ± √(V₀² - 4*(g/2)*(-h)) ] / (2 * g/2)
+                // t = [ V₀ + √(V₀² + 2gh) ] / g
+                const t = (v0 + Math.sqrt(v0**2 + 2 * g * h)) / g;
+                const answer = `${formatNum(t, 2)} с`;
+                return {
+                    text: `С H=${h} м тело брошено верт. вверх с V₀=${v0} м/с. Найти t всего полета. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Выберем ось Y вверх с 0 на земле. H_start = ${h}, H_final = 0.
+2. H_final = H_start + V₀t - (g*t²)/2.
+3. 0 = ${h} + ${v0}t - (${formatNum(g/2, 2)})t².
+4. (${formatNum(g/2, 2)})t² - ${v0}t - ${h} = 0.
+5. Решаем кв. уравнение: t = [ ${v0} + √(${v0}² - 4*(${formatNum(g/2, 2)})*(-${h})) ] / (2 * ${formatNum(g/2, 2)}). (берем +)
+6. t = [ ${v0} + √(${v0**2} + ${2*g*h}) ] / ${g} = ${formatNum(t, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Уравнение X(t) (описать движение)",
+            generate: () => {
+                const x0 = getRandomInt(-10, 10);
+                const v0 = getRandomInt(-20, 20);
+                const a_half = getRandomInt(-5, 5);
+                const a = a_half * 2;
+                
+                let desc_v = (v0 > 0) ? "нач. V > 0" : (v0 < 0 ? "нач. V < 0" : "нач. V = 0");
+                let desc_a = (a > 0) ? "ускорение a > 0 (равноускор.)" : (a < 0 ? "ускорение a < 0 (равнозамедл.)" : "a = 0 (равномерное)");
+                if (a < 0 && v0 < 0) desc_a = "ускорение a < 0 (равноускор.)";
+                if (a > 0 && v0 < 0) desc_a = "ускорение a > 0 (равнозамедл.)";
+
+                const answer = `x₀=${x0}, ${desc_v}, ${desc_a}. График - парабола.`;
+                return {
+                    text: `Опишите движение, заданное x(t) = ${x0} ${v0 >= 0 ? '+' : ''} ${v0}t ${a_half >= 0 ? '+' : ''} ${a_half}t².`,
+                    answer: answer,
+                    solution: `1. Общий вид: x(t) = x₀ + V₀t + (a*t²)/2.
+2. x₀ = ${x0} м (начальная координата).
+3. V₀ = ${v0} м/с (начальная скорость).
+4. a/2 = ${a_half} => a = ${a} м/с² (ускорение).
+5. ${answer}`
+                };
+            }
+          },
+          {
+            topic: "График V(t) (трапеция)",
+            generate: () => {
+                const t1 = getRandomInt(2, 5); // разгон
+                const t2 = getRandomInt(t1 + 2, t1 + 8); // V=const
+                const t3 = getRandomInt(t2 + 2, t2 + 5); // торможение
+                const v_max = getRandomInt(5, 15);
+                
+                const s1 = (v_max * t1) / 2; // S треугольника
+                const s2 = v_max * (t2 - t1); // S прямоугольника
+                const s3 = (v_max * (t3 - t2)) / 2; // S треугольника
+                const s_total = s1 + s2 + s3;
+
+                const answer = `${formatNum(s_total, 1)} м`;
+                return {
+                    text: `График V(t): от (0,0) до (t=${t1}, V=${v_max}), затем V=${v_max} до t=${t2}, затем до (t=${t3}, V=0). Найти S за ${t3} с.`,
+                    answer: answer,
+                    solution: `1. Путь S - это площадь под графиком V(t).
+2. График - трапеция. S = (a+b)/2 * h, где a=(t2-t1), b=t3, h=v_max.
+3. S = (${t2-t1} + ${t3}) / 2 * ${v_max} = ${formatNum(s_total, 1)} м.
+4. Или по частям:
+   S₁ (0-${t1}с) = (1/2) * ${t1} * ${v_max} = ${formatNum(s1, 1)} м.
+   S₂ (${t1}-${t2}с) = ${v_max} * (${t2}-${t1}) = ${formatNum(s2, 1)} м.
+   S₃ (${t2}-${t3}с) = (1/2) * (${t3}-${t2}) * ${v_max} = ${formatNum(s3, 1)} м.
+   S_общ = ${formatNum(s1, 1)} + ${formatNum(s2, 1)} + ${formatNum(s3, 1)} = ${formatNum(s_total, 1)} м.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (Найти V)",
+            generate: () => {
+                const r = getRandomInt(10, 50);
+                const ac = getRandomInt(2, 10);
+                const v = Math.sqrt(ac * r);
+                const answer = `${formatNum(v, 2)} м/с`;
+                return {
+                    text: `Тело движется по R=${r} м с центростремительным a=${ac} м/с². Найдите V.`,
+                    answer: answer,
+                    solution: `1. a_c = V² / R.
+2. V² = a_c * R = ${ac} * ${r} = ${ac * r}.
+3. V = √(${ac * r}) = ${formatNum(v, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (Найти R по T)",
+            generate: () => {
+                const t = getRandomInt(2, 6); // Период
+                const ac = getRandomInt(5, 15);
+                // ac = ω²R = (2π/T)²R  =>  R = ac / (2π/T)² = ac*T² / (4π²)
+                const r = (ac * t**2) / (4 * Math.PI**2);
+                const answer = `${formatNum(r, 2)} м`;
+                return {
+                    text: `Тело вращается с T=${t} с. a_c = ${ac} м/с². Найдите радиус R. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. T = ${t} с, a_c = ${ac} м/с².
+2. a_c = ω²R. ω = 2π / T.
+3. a_c = (2π / T)² * R = (4π² / T²) * R.
+4. R = (a_c * T²) / (4π²) = (${ac} * ${t}²) / (4 * 3.14²) = ${formatNum(r, 2)} м.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (Найти a_c по f, R)",
+            generate: () => {
+                const r = getRandomInt(1, 5) * 0.5; // м
+                const f = getRandomInt(1, 5); // Гц
+                // ac = ω²R = (2πf)²R
+                const ac = (2 * Math.PI * f)**2 * r;
+                const answer = `${formatNum(ac, 2)} м/с²`;
+                return {
+                    text: `Тело вращается по R=${r} м с частотой f=${f} Гц. Найдите a_c. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. R = ${r} м, f = ${f} Гц.
+2. a_c = ω²R. ω = 2πf.
+3. a_c = (2πf)² * R = (2 * 3.14 * ${f})² * ${r}.
+4. a_c = (${formatNum(2*Math.PI*f, 2)})² * ${r} = ${formatNum(ac, 2)} м/с².`
+                };
+            }
+          },
+          
+          // --- НОВЫЕ 9 ЗАДАЧ (72-80) ---
+          
+          {
+            topic: "Падение с V₀ (вниз, найти t)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(50, 150);
+                const v0 = getRandomInt(5, 15);
+                // H = V₀t + gt²/2  => (g/2)t² + V₀t - H = 0
+                const a = g / 2;
+                const b = v0;
+                const c = -h;
+                // t = [-b + sqrt(b² - 4ac)] / 2a  (берем только + корень)
+                const t = (-v0 + Math.sqrt(v0**2 - 4 * (g / 2) * (-h))) / (2 * (g / 2));
+                const answer = `${formatNum(t, 2)} с`;
+                return {
+                    text: `Тело брошено с H=${h} м верт. вниз с V₀=${v0} м/с. Найти t падения. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H = ${h} м, V₀ = ${v0} м/с. Ось Y вниз.
+2. H = V₀t + (g*t²)/2.
+3. (${formatNum(g/2, 2)})t² + ${v0}t - ${h} = 0.
+4. Решаем кв. уравнение t = [-V₀ + √(V₀² - 4(g/2)(-H))] / (2(g/2)).
+5. t = [-${v0} + √(${v0**2} + ${2*g*h})] / ${g} = ${formatNum(t, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Бросок с H (V₀ вверх, V удара)",
+            generate: () => {
+                const g = 9.8;
+                const h = getRandomInt(20, 50);
+                const v0 = getRandomInt(10, 20);
+                // V² = V₀² + 2aH (ось вверх, H = -h)
+                // V² = V₀² + 2(-g)(-h) = V₀² + 2gh
+                const v_final = Math.sqrt(v0**2 + 2 * g * h);
+                const answer = `${formatNum(v_final, 2)} м/с (направлена вниз)`;
+                return {
+                    text: `С H=${h} м тело брошено верт. вверх с V₀=${v0} м/с. Найти V в момент удара о землю. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H_start = ${h}, V₀ = ${v0}. Ось Y вверх, 0 на земле.
+2. H_final = 0. a = -g.
+3. H_final = H_start + V₀t + at²/2 (неудобно).
+4. S = (V² - V₀²) / 2a. S = H_final - H_start = 0 - h = -${h} м.
+5. -${h} = (V² - ${v0}²) / (2 * -${g}).
+6. V² - ${v0}² = 2 * g * h.
+7. V² = ${v0}² + 2gh = ${v0**2} + ${2*g*h} = ${formatNum(v0**2 + 2*g*h, 2)}.
+8. V = √(${formatNum(v0**2 + 2*g*h, 2)}) = ${formatNum(v_final, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Река (лодка под углом)",
+            generate: () => {
+                const v_boat = getRandomInt(4, 8);
+                const v_river = getRandomInt(2, 3);
+                const width = getRandomInt(100, 200);
+                const angle_deg = getRandomInt(20, 60);
+                const angle_rad = angle_deg * Math.PI / 180;
+                
+                const v_perp = v_boat * Math.cos(angle_rad); // Скорость ⟂
+                const v_par = v_river + v_boat * Math.sin(angle_rad); // Скорость ||
+                const t_cross = width / v_perp;
+                const drift = v_par * t_cross;
+                
+                const answer = `t = ${formatNum(t_cross, 1)} с, снос = ${formatNum(drift, 1)} м`;
+                return {
+                    text: `Лодка V=${v_boat} м/с пересекает реку ${width} м (V теч. = ${v_river} м/с), держа курс под углом ${angle_deg}° к *перпендикуляру* (по течению). Найти t и снос.`,
+                    answer: answer,
+                    solution: `1. V_лодки (отн. воды) = ${v_boat}. V_теч = ${v_river}.
+2. Разложим V_лодки:
+   V_⟂ (к берегу) = V_лодки * cos(${angle_deg}°) = ${v_boat} * ${formatNum(Math.cos(angle_rad), 2)} = ${formatNum(v_perp, 2)} м/с.
+   V_|| (вдоль берега) = V_лодки * sin(${angle_deg}°) = ${v_boat} * ${formatNum(Math.sin(angle_rad), 2)} = ${formatNum(v_boat * Math.sin(angle_rad), 2)} м/с.
+3. Время: t = Ширина / V_⟂ = ${width} / ${formatNum(v_perp, 2)} = ${formatNum(t_cross, 1)} с.
+4. Общая V вдоль берега = V_|| + V_теч = ${formatNum(v_boat * Math.sin(angle_rad), 2)} + ${v_river} = ${formatNum(v_par, 2)} м/с.
+5. Снос S = V_общ_|| * t = ${formatNum(v_par, 2)} * ${formatNum(t_cross, 1)} = ${formatNum(drift, 1)} м.`
+                };
+            }
+          },
+          {
+            topic: "Река (попасть напротив)",
+            generate: () => {
+                const v_boat = getRandomInt(5, 10); // V лодки > V течения
+                const v_river = getRandomInt(2, 4);
+                const width = getRandomInt(100, 200);
+                
+                const sin_alpha = v_river / v_boat;
+                const angle_rad = Math.asin(sin_alpha);
+                const angle_deg = angle_rad * 180 / Math.PI;
+                const v_res = v_boat * Math.cos(angle_rad); // = sqrt(v_boat² - v_river²)
+                const t_cross = width / v_res;
+
+                const answer = `Угол ${formatNum(angle_deg, 1)}° (против течения), t = ${formatNum(t_cross, 1)} с`;
+                return {
+                    text: `Лодка V=${v_boat} м/с (отн. воды) должна переплыть реку ${width} м (V теч. = ${v_river} м/с) и попасть ровно напротив. Под каким углом к ⟂ надо плыть? За какое t?`,
+                    answer: answer,
+                    solution: `1. Чтобы попасть напротив, V_лодки (||) должна = -V_теч.
+2. V_лодки_|| = V_лодки * sin(α) (где α - угол к ⟂).
+3. V_теч = V_лодки * sin(α)  =>  ${v_river} = ${v_boat} * sin(α).
+4. sin(α) = ${v_river} / ${v_boat} = ${formatNum(sin_alpha, 3)}.
+5. α = arcsin(${formatNum(sin_alpha, 3)}) = ${formatNum(angle_deg, 1)}° (против течения).
+6. V_рез_⟂ = V_лодки * cos(α) = ${v_boat} * ${formatNum(Math.cos(angle_rad), 3)} = ${formatNum(v_res, 2)} м/с.
+7. t = Ширина / V_рез_⟂ = ${width} / ${formatNum(v_res, 2)} = ${formatNum(t_cross, 1)} с.`
+                };
+            }
+          },
+          {
+            topic: "Угловое ускорение (найти t)",
+            generate: () => {
+                const w0 = getRandomInt(1, 5);
+                const alpha = getRandomInt(1, 3);
+                const w_final = w0 + alpha * getRandomInt(3, 8);
+                const t = (w_final - w0) / alpha;
+                const answer = `${formatNum(t)} с`;
+                return {
+                    text: `Тело вращается с ω₀=${w0} рад/с и α=${alpha} рад/с². За какое t его ω достигнет ${w_final} рад/с?`,
+                    answer: answer,
+                    solution: `1. ω₀ = ${w0}, α = ${alpha}, ω = ${w_final}.
+2. ω = ω₀ + α*t.
+3. t = (ω - ω₀) / α = (${w_final} - ${w0}) / ${alpha} = ${formatNum(t)} с.`
+                };
+            }
+          },
+          {
+            topic: "Угловое ускорение (найти α)",
+            generate: () => {
+                const w0 = getRandomInt(10, 20);
+                const t = getRandomInt(4, 10);
+                const w_final = getRandomInt(0, 5); // Торможение
+                const alpha = (w_final - w0) / t;
+                const answer = `${formatNum(alpha, 2)} рад/с²`;
+                return {
+                    text: `За ${t} с угловая скорость тела упала с ω₀=${w0} рад/с до ω=${w_final} рад/с. Найти α.`,
+                    answer: answer,
+                    solution: `1. ω₀ = ${w0}, ω = ${w_final}, t = ${t}.
+2. ω = ω₀ + α*t.
+3. α = (ω - ω₀) / t = (${w_final} - ${w0}) / ${t} = ${formatNum(alpha, 2)} рад/с².`
+                };
+            }
+          },
+          {
+            topic: "Угловое ускорение (найти α по θ)",
+            generate: () => {
+                const t = getRandomInt(3, 8);
+                const theta_revs = getRandomInt(5, 20);
+                const theta_rad = theta_revs * 2 * Math.PI;
+                const alpha = (2 * theta_rad) / t**2;
+                const answer = `${formatNum(alpha, 2)} рад/с²`;
+                return {
+                    text: `Вращаясь из покоя, тело за ${t} с совершило ${theta_revs} оборотов. Найти α. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. ω₀ = 0, t = ${t}, θ = ${theta_revs} об.
+2. θ (рад) = ${theta_revs} * 2 * 3.14 = ${formatNum(theta_rad, 2)} рад.
+3. θ = ω₀*t + (α*t²)/2  =>  θ = (α*t²)/2.
+4. α = (2 * θ) / t² = (2 * ${formatNum(theta_rad, 2)}) / ${t}² = ${formatNum(alpha, 2)} рад/с².`
+                };
+            }
+          },
+          {
+            topic: "Погоня (V=const догоняет V₀=0, a)",
+            generate: () => {
+                const vA = getRandomInt(15, 30); // Догоняющий
+                const aB = getRandomInt(1, 3); // Убегающий
+                const D = getRandomInt(50, 150);
+                // S_A = vA * t
+                // S_B = 0.5 * aB * t²
+                // S_A = D + S_B  =>  vA*t = D + 0.5*aB*t²
+                // 0.5*aB*t² - vA*t + D = 0
+                const a = 0.5 * aB;
+                const b = -vA;
+                const c = D;
+                const discriminant = b**2 - 4*a*c;
+                
+                if (discriminant < 0) { // Не догонит
+                    return { text: `Авто A (V=${vA} м/с) отстает на ${D} м от авто B (V₀=0, a=${aB} м/с²). Догонит ли?`, answer: "Нет", solution: `1. S_A(t) = ${vA}t. S_B(t) = ${D} + ${a}t².
+2. ${vA}t = ${D} + ${a}t²  =>  ${a}t² - ${vA}t + ${D} = 0.
+3. D (дискр.) = b² - 4ac = (${-vA})² - 4*${a}*${D} = ${discriminant}.
+4. Дискриминант < 0, решений нет. Не догонит.` };
+                }
+                
+                const t1 = (-b - Math.sqrt(discriminant)) / (2*a);
+                const answer = `t = ${formatNum(t1, 1)} с`;
+                return {
+                    text: `Авто A (V=${vA} м/с) отстает на ${D} м от авто B (V₀=0, a=${aB} м/с²). Через какое t A догонит B?`,
+                    answer: answer,
+                    solution: `1. S_A(t) = ${vA}*t. S_B(t) = ${D} + 0.5*${aB}*t².
+2. ${vA}t = ${D} + ${formatNum(0.5*aB, 1)}t²  =>  ${formatNum(0.5*aB, 1)}t² - ${vA}t + ${D} = 0.
+3. D (дискр.) = (${-vA})² - 4*${formatNum(0.5*aB, 1)}*${D} = ${formatNum(discriminant, 2)}.
+4. t = (${vA} - √D) / (2*${formatNum(0.5*aB, 1)}) = ${formatNum(t1, 1)} с. (Берем 1й, меньший корень)`
+                };
+            }
+          },
+          {
+            topic: "Встреча (ускор. с V₀)",
+            generate: () => {
+                const S = getRandomInt(200, 500);
+                const v1 = getRandomInt(5, 15);
+                const a1 = getRandomInt(1, 3);
+                const v2 = getRandomInt(-10, -5); // Движется навстречу
+                const a2 = getRandomInt(0, 1); // Может и тормозить
+                // x1 = v1*t + a1*t²/2
+                // x2 = S + v2*t + a2*t²/2
+                // x1 = x2  =>  v1*t + 0.5*a1*t² = S + v2*t + 0.5*a2*t²
+                // 0.5*(a1-a2)t² + (v1-v2)t - S = 0
+                const a = 0.5 * (a1 - a2);
+                const b = v1 - v2;
+                const c = -S;
+                const t = (-b + Math.sqrt(b**2 - 4*a*c)) / (2*a);
+                const x1 = v1*t + 0.5*a1*t**2;
+
+                const answer = `t = ${formatNum(t, 2)} с, x = ${formatNum(x1, 1)} м`;
+                return {
+                    text: `Тела x₁= ${v1}t + ${formatNum(0.5*a1, 1)}t² и x₂= ${S} ${v2}t + ${formatNum(0.5*a2, 1)}t² движутся навстречу. Найти t и x встречи.`,
+                    answer: answer,
+                    solution: `1. x₁ = x₂
+2. ${v1}t + ${formatNum(0.5*a1, 1)}t² = ${S} ${v2}t + ${formatNum(0.5*a2, 1)}t²
+3. (${formatNum(0.5*(a1-a2), 2)})t² + (${v1-v2})t - ${S} = 0
+4. a=${formatNum(a,2)}, b=${b}, c=${c}
+5. t = [-b + √(b²-4ac)] / 2a = ${formatNum(t, 2)} с.
+6. x = ${v1}*${formatNum(t,2)} + ${formatNum(0.5*a1, 1)}*${formatNum(t,2)}² = ${formatNum(x1, 1)} м.`
+                };
+            }
+          },
+{
+            topic: "Равноускоренное (Найти a)",
+            generate: () => {
+                const v0 = getRandomInt(1, 10);
+                const t = getRandomInt(2, 10);
+                const v = v0 + getRandomInt(1, 5) * t; // Гарантируем целое 'a'
+                const a = (v - v0) / t;
+                const answer = `${formatNum(a)} м/с²`;
+                return {
+                    text: `Скорость тела за ${t} с равномерно изменилась с ${v0} м/с до ${v} м/с. Найдите ускорение a.`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, V = ${v} м/с, t = ${t} с.
+2. V = V₀ + a*t.
+3. a = (V - V₀) / t = (${v} - ${v0}) / ${t} = ${formatNum(a)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Равноускоренное (Найти t)",
+            generate: () => {
+                const v0 = getRandomInt(1, 10);
+                const a = getRandomInt(1, 5);
+                const t = getRandomInt(2, 10);
+                const v = v0 + a * t;
+                const answer = `${formatNum(t)} с`;
+                return {
+                    text: `Тело (V₀=${v0} м/с, a=${a} м/с²) разгоняется. Через какое t его V достигнет ${v} м/с?`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, V = ${v} м/с, a = ${a} м/с².
+2. V = V₀ + a*t.
+3. t = (V - V₀) / a = (${v} - ${v0}) / ${a} = ${formatNum(t)} с.`
+                };
+            }
+          },
+          {
+            topic: "График a(t) (Найти V)",
+            generate: () => {
+                const a = getRandomInt(1, 5);
+                const v0 = getRandomInt(0, 10);
+                const t = getRandomInt(2, 10);
+                const v_final = v0 + a * t;
+                const answer = `${formatNum(v_final)} м/с`;
+                return {
+                    text: `График a(t) - горизонтальная линия a = ${a} м/с². Известно, что V₀=${v0} м/с. Найдите V в момент t = ${t} с.`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, a = ${a} м/с² (постоянно).
+2. V(t) = V₀ + a*t.
+3. V(${t}) = ${v0} + ${a} * ${t} = ${formatNum(v_final)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "График a(t) (Найти S)",
+            generate: () => {
+                const a = getRandomInt(1, 5);
+                const v0 = getRandomInt(0, 10);
+                const t = getRandomInt(2, 10);
+                const s = v0 * t + 0.5 * a * t**2;
+                const answer = `${formatNum(s)} м`;
+                return {
+                    text: `График a(t) - горизонтальная линия a = ${a} м/с². Известно, что V₀=${v0} м/с. Найдите S за t = ${t} с.`,
+                    answer: answer,
+                    solution: `1. V₀ = ${v0} м/с, a = ${a} м/с².
+2. S(t) = V₀t + (a*t²)/2.
+3. S(${t}) = (${v0} * ${t}) + (${a} * ${t}²) / 2 = ${v0 * t} + ${0.5 * a * t**2} = ${formatNum(s)} м.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (об/мин -> рад/с)",
+            generate: () => {
+                const rpm = getRandomInt(10, 60) * 10;
+                const rad_s = rpm * 2 * Math.PI / 60;
+                const answer = `${formatNum(rad_s, 2)} рад/с (≈ ${formatNum(rpm / 30)}π рад/с)`;
+                return {
+                    text: `Двигатель вращается с частотой ${rpm} об/мин (оборотов в минуту). Найдите угловую скорость ω. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. Частота f = ${rpm} об/мин = ${rpm} / 60 = ${formatNum(rpm/60, 1)} об/с (Гц).
+2. Угловая скорость ω = 2 * π * f.
+3. ω = 2 * 3.14 * ${formatNum(rpm/60, 1)} = ${formatNum(rad_s, 2)} рад/с.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (рад/с -> об/мин)",
+            generate: () => {
+                const rad_s = getRandomInt(10, 50);
+                const f = rad_s / (2 * Math.PI);
+                const rpm = f * 60;
+                const answer = `${formatNum(rpm, 1)} об/мин`;
+                return {
+                    text: `Угловая скорость вала ${rad_s} рад/с. Найдите частоту вращения в об/мин. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. ω = ${rad_s} рад/с.
+2. ω = 2 * π * f.
+3. f (Гц) = ω / (2π) = ${rad_s} / (2 * 3.14) = ${formatNum(f, 2)} об/с.
+4. f (об/мин) = f (Гц) * 60 = ${formatNum(f, 2)} * 60 = ${formatNum(rpm, 1)} об/мин.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (V по об/мин, R)",
+            generate: () => {
+                const rpm = getRandomInt(10, 60) * 10;
+                const r_cm = getRandomInt(10, 50);
+                const r_m = r_cm / 100;
+                const f_hz = rpm / 60;
+                const omega = 2 * Math.PI * f_hz;
+                const v = omega * r_m;
+                const answer = `${formatNum(v, 2)} м/с`;
+                return {
+                    text: `Точка на ободе колеса (R=${r_cm} см) вращается с частотой ${rpm} об/мин. Найдите ее линейную скорость V. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. R = ${r_cm} см = ${r_m} м.
+2. f = ${rpm} об/мин = ${formatNum(f_hz, 1)} Гц.
+3. V = ω * R = (2πf) * R.
+4. V = (2 * 3.14 * ${formatNum(f_hz, 1)}) * ${r_m} = ${formatNum(v, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Окружность (a_c по об/мин, R)",
+            generate: () => {
+                const rpm = getRandomInt(10, 60) * 10;
+                const r_cm = getRandomInt(10, 50);
+                const r_m = r_cm / 100;
+                const f_hz = rpm / 60;
+                const omega = 2 * Math.PI * f_hz;
+                const ac = omega**2 * r_m;
+                const answer = `${formatNum(ac, 2)} м/с²`;
+                return {
+                  ftext: `Точка на ободе (R=${r_cm} см) вращается с частотой ${rpm} об/мин. Найдите центростремительное ускорение a_c. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. R = ${r_cm} см = ${r_m} м.
+2. f = ${rpm} об/мин = ${formatNum(f_hz, 1)} Гц.
+3. ω = 2 * π * f = 2 * 3.14 * ${formatNum(f_hz, 1)} = ${formatNum(omega, 2)} рад/с.
+4. a_c = ω² * R = (${formatNum(omega, 2)})² * ${r_m} = ${formatNum(ac, 2)} м/с².`
+                };
+            }
+          },
+          {
+            topic: "Вертикальный бросок (t до h)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(20, 40);
+                const h_max = (v0**2) / (2 * g);
+                const h = getRandomInt(Math.floor(h_max / 3), Math.floor(h_max * 0.9));
+                // h = V₀t - gt²/2 => (g/2)t² - V₀t + h = 0
+                const a = g / 2;
+                const b = -v0;
+                const c = h;
+                const discriminant = b**2 - 4*a*c;
+                const t1 = (-b - Math.sqrt(discriminant)) / (2*a); // 1-й раз (подъем)
+                const t2 = (-b + Math.sqrt(discriminant)) / (2*a); // 2-й раз (спуск)
+                const answer = `t₁ = ${formatNum(t1, 2)} с (вверх), t₂ = ${formatNum(t2, 2)} с (вниз)`;
+                return {
+                    text: `Тело брошено верт. вверх с V₀=${v0} м/с. В какие моменты t оно будет на H=${h} м? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H = V₀t - (g*t²)/2. (Ось Y вверх).
+2. ${h} = ${v0}t - ${formatNum(g/2, 2)}t².
+3. ${formatNum(g/2, 2)}t² - ${v0}t + ${h} = 0.
+4. D (дискр.) = (${-v0})² - 4*${formatNum(g/2, 2)}*${h} = ${formatNum(discriminant, 2)}.
+5. t = [ ${v0} ± √D ] / (2 * ${formatNum(g/2, 2)})
+6. t₁ (меньший корень) = ${formatNum(t1, 2)} с.
+7. t₂ (больший корень) = ${formatNum(t2, 2)} с.`
+                };
+            }
+          },
+          {
+            topic: "Падение (h в момент t)",
+            generate: () => {
+                const g = 9.8;
+                const h_total = getRandomInt(100, 300);
+                const t_total = Math.sqrt(2 * h_total / g);
+                const t_find = getRandomInt(1, Math.floor(t_total) - 1);
+                const s_fallen = 0.5 * g * t_find**2;
+                const h_current = h_total - s_fallen;
+                const answer = `${formatNum(h_current, 1)} м (от земли)`;
+                return {
+                    text: `Тело падает с H = ${h_total} м (V₀=0). На какой высоте от земли оно будет через t = ${t_find} с? (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. H_общ = ${h_total} м, t = ${t_find} с.
+2. Путь, пройденный вниз: S_вниз = (g*t²)/2 = (${g} * ${t_find}²) / 2 = ${formatNum(s_fallen, 1)} м.
+3. Высота от земли: H_тек = H_общ - S_вниз.
+4. H_тек = ${h_total} - ${formatNum(s_fallen, 1)} = ${formatNum(h_current, 1)} м.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (V на H_max)",
+            generate: () => {
+                const v0 = getRandomInt(20, 50);
+                const angle_deg = getRandomInt(30, 60);
+                const angle_rad = angle_deg * Math.PI / 180;
+                const v_x = v0 * Math.cos(angle_rad);
+                const answer = `${formatNum(v_x, 2)} м/с`;
+                return {
+                    text: `Тело брошено со V₀=${v0} м/с под углом ${angle_deg}° к горизонту. Какова V тела в верхней точке (H_max)?`,
+                    answer: answer,
+                    solution: `1. В верхней точке Vᵧ (вертикальная) = 0.
+2. Vₓ (горизонтальная) постоянна: Vₓ = V₀ * cos(α).
+3. V(H_max) = Vₓ = ${v0} * cos(${angle_deg}°) = ${v0} * ${formatNum(Math.cos(angle_rad), 3)} = ${formatNum(v_x, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (V в t)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(20, 50);
+                const angle_deg = getRandomInt(30, 75);
+                const angle_rad = angle_deg * Math.PI / 180;
+                const t_total = (2 * v0 * Math.sin(angle_rad)) / g;
+                const t_find = getRandomInt(1, Math.floor(t_total*0.8) + 1);
+                
+                const v_x = v0 * Math.cos(angle_rad);
+                const v_y_0 = v0 * Math.sin(angle_rad);
+                const v_y_t = v_y_0 - g * t_find;
+                const v_total = Math.sqrt(v_x**2 + v_y_t**2);
+                
+                const answer = `${formatNum(v_total, 2)} м/с`;
+                return {
+                    text: `Тело брошено со V₀=${v0} м/с под углом ${angle_deg}° к горизонту. Найдите V тела в t = ${t_find} с. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Vₓ = V₀ * cos(${angle_deg}°) = ${v0} * ${formatNum(Math.cos(angle_rad), 3)} = ${formatNum(v_x, 2)} м/с.
+2. Vᵧ(t) = V₀ᵧ - g*t = (V₀ * sin(${angle_deg}°)) - g*t.
+3. V₀ᵧ = ${v0} * ${formatNum(Math.sin(angle_rad), 3)} = ${formatNum(v_y_0, 2)} м/с.
+4. Vᵧ(${t_find}) = ${formatNum(v_y_0, 2)} - ${g} * ${t_find} = ${formatNum(v_y_t, 2)} м/с.
+5. V_total = √(Vₓ² + Vᵧ²) = √(${formatNum(v_x, 2)}² + ${formatNum(v_y_t, 2)}²) = ${formatNum(v_total, 2)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "Бросок под углом (X, Y в t)",
+            generate: () => {
+                const g = 9.8;
+                const v0 = getRandomInt(20, 50);
+                const angle_deg = getRandomInt(30, 75);
+                const angle_rad = angle_deg * Math.PI / 180;
+                const t_total = (2 * v0 * Math.sin(angle_rad)) / g;
+                const t_find = getRandomInt(1, Math.floor(t_total*0.9) + 1);
+                
+                const v_x = v0 * Math.cos(angle_rad);
+                const v_y_0 = v0 * Math.sin(angle_rad);
+                
+                const x_t = v_x * t_find;
+                const y_t = v_y_0 * t_find - 0.5 * g * t_find**2;
+                
+                const answer = `x = ${formatNum(x_t, 1)} м, y = ${formatNum(y_t, 1)} м`;
+                return {
+                    text: `Тело брошено из (0,0) со V₀=${v0} м/с под углом ${angle_deg}°. Найдите (x, y) в t = ${t_find} с. (g ≈ ${g} м/с²)`,
+                    answer: answer,
+                    solution: `1. Vₓ = V₀ * cos(${angle_deg}°) = ${formatNum(v_x, 2)} м/с.
+2. V₀ᵧ = V₀ * sin(${angle_deg}°) = ${formatNum(v_y_0, 2)} м/с.
+3. x(t) = Vₓ * t = ${formatNum(v_x, 2)} * ${t_find} = ${formatNum(x_t, 1)} м.
+4. y(t) = V₀ᵧ*t - (g*t²)/2 = (${formatNum(v_y_0, 2)} * ${t_find}) - (${g} * ${t_find}² / 2) = ${formatNum(y_t, 1)} м.`
+                };
+            }
+          },
+          {
+            topic: "Встреча (2 броска вверх)",
+            generate: () => {
+                const g = 9.8;
+                let v1 = getRandomInt(20, 40);
+                const v2 = getRandomInt(15, v1 - 2); // v2 < v1
+                const t_delay = getRandomInt(1, 3);
+                // Убедимся, что встреча возможна (знаменатель > 0)
+                if (v1 - v2 <= g * t_delay) { v1 = v2 + Math.ceil(g * t_delay) + 5; }
+                
+                const t = (v2*t_delay + 0.5*g*t_delay**2) / (v1 - v2 - g*t_delay);
+                const h = v1 * t - 0.5 * g * t**2;
+                
+                const answer = `t = ${formatNum(t, 2)} с (после 1-го), H = ${formatNum(h, 1)} м`;
+                return {
+                    text: `Тело 1 брошено вверх (V₀=${v1} м/с). Через ${t_delay} с брошено тело 2 (V₀=${v2} м/с). Найти t и H встречи. (g ≈ ${g} м/с²)`,
+                    answer: (t < 0 || h < 0) ? "Встреча не состоится" : answer,
+                    solution: `1. y₁(t) = ${v1}t - ${formatNum(g/2)}t²
+2. y₂(t) = ${v2}(t-${t_delay}) - ${formatNum(g/2)}(t-${t_delay})²
+3. y₁ = y₂. Решая уравнение, получаем:
+   t * (${v1} - ${v2} - ${g}*${t_delay}) = ${v2}*${t_delay} + 0.5*${g}*${t_delay}²
+   t = ${formatNum(v2*t_delay + 0.5*g*t_delay**2, 2)} / ${formatNum(v1 - v2 - g*t_delay, 2)} = ${formatNum(t, 2)} с.
+4. H = ${v1}*${formatNum(t,2)} - ${formatNum(g/2)}*${formatNum(t**2, 2)} = ${formatNum(h, 1)} м.
+(Если t < 0, встреча невозможна).`
+                };
+            }
+          },
+          {
+            topic: "Относительная V (Эскалатор, +)",
+            generate: () => {
+                const v_esc = getRandomInt(1, 3);
+                const v_man = getRandomInt(1, 2);
+                const L = getRandomInt(30, 60);
+                const v_total = v_esc + v_man;
+                const t = L / v_total;
+                const answer = `${formatNum(t, 1)} с`;
+                return {
+                    text: `Человек идет вверх по эскалатору (V=${v_esc} м/с, L=${L} м) со V=${v_man} м/с (отн. эскалатора). За какое t он поднимется?`,
+                    answer: answer,
+                    solution: `1. V эскалатора V_э = ${v_esc} м/с.
+2. V человека V_ч = ${v_man} м/с.
+3. V_общ (отн. земли) = V_э + V_ч = ${v_esc} + ${v_man} = ${v_total} м/с.
+4. t = L / V_общ = ${L} / ${v_total} = ${formatNum(t, 1)} с.`
+                };
+            }
+          },
+          {
+            topic: "Относительная V (Эскалатор, -)",
+            generate: () => {
+                const v_esc = getRandomInt(2, 4);
+                const v_man = getRandomInt(1, v_esc - 1); // V_man < V_esc
+                const L = getRandomInt(30, 60);
+                const v_total = v_esc - v_man;
+                const t = L / v_total;
+                const answer = `${formatNum(t, 1)} с (поднимется)`;
+                return {
+                    text: `Человек идет вниз по эскалатору (V=${v_esc} м/с, L=${L} м), который едет вверх. V чел.=${v_man} м/с. За какое t он доберется до *верха*?`,
+                    answer: answer,
+                    solution: `1. Эскалатор едет вверх V_э = ${v_esc} м/с.
+2. Человек идет вниз V_ч = ${v_man} м/с.
+3. V_общ (отн. земли) = V_э - V_ч = ${v_esc} - ${v_man} = ${v_total} м/с (направлена вверх).
+4. t = L / V_общ = ${L} / ${v_total} = ${formatNum(t, 1)} с.`
+                };
+            }
+          },
+          {
+            topic: "Угловое перемещение (ω₀, ω, t)",
+            generate: () => {
+                const w0 = getRandomInt(1, 5);
+                const w_final = getRandomInt(w0 + 5, w0 + 15);
+                const t = getRandomInt(2, 8);
+                const theta = (w0 + w_final) / 2 * t;
+                const answer = `${formatNum(theta, 1)} рад`;
+                return {
+                    text: `За ${t} с угловая скорость тела равномерно выросла с ${w0} рад/с до ${w_final} рад/с. Найдите угол поворота θ.`,
+                    answer: answer,
+                    solution: `1. ω₀ = ${w0}, ω = ${w_final}, t = ${t}.
+2. Применяем формулу, аналогичную S = (V₀ + V)/2 * t.
+3. θ = (ω₀ + ω) / 2 * t.
+4. θ = (${w0} + ${w_final}) / 2 * ${t} = ${formatNum(theta, 1)} рад.`
+                };
+            }
+          },
+          {
+            topic: "Угловое ускорение (ω₀, ω, θ)",
+            generate: () => {
+                const w0 = getRandomInt(1, 5);
+                const w_final = getRandomInt(w0 + 5, w0 + 15);
+                const theta_rev = getRandomInt(2, 10);
+                const theta_rad = theta_rev * 2 * Math.PI;
+                const alpha = (w_final**2 - w0**2) / (2 * theta_rad);
+                const answer = `${formatNum(alpha, 2)} рад/с²`;
+                return {
+                    text: `Совершив ${theta_rev} оборотов, тело увеличило ω с ${w0} рад/с до ${w_final} рад/с. Найдите α. (π ≈ 3.14)`,
+                    answer: answer,
+                    solution: `1. ω₀ = ${w0}, ω = ${w_final}.
+2. θ = ${theta_rev} об = ${theta_rev} * 2 * 3.14 = ${formatNum(theta_rad, 2)} рад.
+3. Применяем формулу, аналогичную S = (V² - V₀²) / 2a.
+4. θ = (ω² - ω₀²) / (2α).
+5. α = (ω² - ω₀²) / (2θ) = (${w_final**2} - ${w0**2}) / (2 * ${formatNum(theta_rad, 2)}) = ${formatNum(alpha, 2)} рад/с².`
+                };
+            }
+          },
+          {
+            topic: "График X(t) (Найти V)",
+            generate: () => {
+                const x0 = getRandomInt(0, 10);
+                const t1 = getRandomInt(1, 5);
+                const x1 = x0 + getRandomInt(2, 10) * t1;
+                const v = (x1 - x0) / t1;
+                const answer = `${formatNum(v)} м/с`;
+                return {
+                    text: `График X(t) - прямая, проходящая через (t=0, x=${x0}) и (t=${t1}, x=${x1}). Найдите скорость V.`,
+                    answer: answer,
+                    solution: `1. Движение равномерное (график X(t) - прямая).
+2. Скорость V = Δx / Δt = (x₁ - x₀) / (t₁ - t₀).
+3. V = (${x1} - ${x0}) / (${t1} - 0) = ${formatNum(v)} м/с.`
+                };
+            }
+          },
+          {
+            topic: "График V(t) (Найти S, V₀≠0)",
+            generate: () => {
+                const v0 = getRandomInt(2, 8);
+                const t = getRandomInt(3, 10);
+                const v_final = v0 + getRandomInt(1, 5) * t;
+                const s = (v0 + v_final) / 2 * t;
+                const answer = `${formatNum(s)} м`;
+                return {
+                    text: `График V(t) - прямая, идущая от (t=0, V=${v0}) до (t=${t}, V=${v_final}). Найдите путь S за ${t} с.`,
+                    answer: answer,
+                    solution: `1. Путь S - это площадь под графиком V(t).
+2. График - трапеция с основаниями V₀=${v0}, V=${v_final} и высотой t=${t}.
+3. S = (V₀ + V) / 2 * t.
+4. S = (${v0} + ${v_final}) / 2 * ${t} = ${formatNum(s)} м.`
+                };
+            }
+          },
+{
+            topic: "График V(t) (Путь и Перемещение)",
+            generate: () => {
+                const v0 = getRandomInt(4, 10);
+                const t1 = getRandomInt(2, 5); // Время до V=0
+                const a = -v0 / t1; // Ускорение (отрицательное)
+                const t_delta = getRandomInt(2, 5);
+                const t2 = t1 + t_delta; // Общее время
+                const v_t2 = a * t_delta; // Скорость в t2 (относительно t1)
+                
+                const s1 = (v0 * t1) / 2; // S (0 -> t1), положительная
+                const s2 = (v_t2 * t_delta) / 2; // S (t1 -> t2), отрицательная
+                
+                const sx_total = s1 + s2; // Перемещение
+                const s_total = s1 + Math.abs(s2); // Путь
+                
+                const answer = `Перемещение = ${formatNum(sx_total, 1)} м, Путь = ${formatNum(s_total, 1)} м`;
+                return {
+                    text: `График V(t) - прямая, идущая от (t=0, V=${v0}) до (t=${t2}, V=${formatNum(v_t2, 1)}), пересекая ось t в ${t1} с. Найти **перемещение** и **путь** за ${t2} с.`,
+                    answer: answer,
+                    solution: `1. График состоит из двух треугольников.
+2. S₁ (площадь над осью, 0-${t1}с) = (1/2) * ${t1} * ${v0} = ${formatNum(s1, 1)} м.
+3. S₂ (площадь под осью, ${t1}-${t2}с) = (1/2) * (${t_delta}) * (${formatNum(v_t2, 1)}) = ${formatNum(s2, 1)} м.
+4. **Перемещение** (алгебраическая сумма) = S₁ + S₂ = ${formatNum(s1, 1)} + (${formatNum(s2, 1)}) = ${formatNum(sx_total, 1)} м.
+5. **Путь** (сумма модулей) = |S₁| + |S₂| = ${formatNum(s1, 1)} + |${formatNum(s2, 1)}| = ${formatNum(s_total, 1)} м.`
+                };
+            }
+          }
+        ];
+
+        // --- 3. ЛОГИКА ПРИЛОЖЕНИЯ ---
+        
+        // Перемешиваем массив генераторов при загрузке страницы!
+        shuffleArray(problemGenerators);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Получаем ссылки на элементы DOM
+            const problemTitle = document.getElementById('problem-title');
+            const problemText = document.getElementById('problem-text');
+            const problemImage = document.getElementById('problem-image');
+            const problemAnswer = document.getElementById('problem-answer');
+            const problemSolution = document.getElementById('problem-solution');
+            const solutionContainer = document.getElementById('solution-container');
+            const showSolutionBtn = document.getElementById('show-solution-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const randomBtn = document.getElementById('random-btn');
+            const problemCounter = document.getElementById('problem-counter');
+
+            let currentProblemIndex = 0;
+            const totalProblems = problemGenerators.length;
+            
+            let currentGeneratedProblem = null;
+
+            function loadProblem(index) {
+                const generator = problemGenerators[index];
+                
+                currentGeneratedProblem = generator.generate();
+
+                problemTitle.textContent = `Задача №${index + 1} (Тема: ${generator.topic})`;
+                problemText.textContent = currentGeneratedProblem.text;
+                
+                if (currentGeneratedProblem.image) {
+                    problemImage.src = currentGeneratedProblem.image;
+                    problemImage.style.display = 'block';
+                } else {
+                    problemImage.style.display = 'none';
+                }
+
+                solutionContainer.classList.add('hidden');
+                showSolutionBtn.textContent = 'Показать решение';
+                problemAnswer.textContent = ""; 
+                problemSolution.textContent = ""; 
+
+                // Обновляем счетчик
+                problemCounter.textContent = `${index + 1} / ${totalProblems}`;
+                
+                prevBtn.disabled = (index === 0);
+                nextBtn.disabled = (index === totalProblems - 1);
+            }
+
+            // --- Обработчики событий ---
+
+            showSolutionBtn.addEventListener('click', () => {
+                if (currentGeneratedProblem) {
+                    problemAnswer.textContent = currentGeneratedProblem.answer;
+                    problemSolution.textContent = currentGeneratedProblem.solution;
+                }
+            
+                solutionContainer.classList.toggle('hidden');
+                if (solutionContainer.classList.contains('hidden')) {
+                    showSolutionBtn.textContent = 'Показать решение';
+                } else {
+                    showSolutionBtn.textContent = 'Скрыть решение';
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentProblemIndex < totalProblems - 1) {
+                    currentProblemIndex++;
+                    loadProblem(currentProblemIndex);
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentProblemIndex > 0) {
+                    currentProblemIndex--;
+                    loadProblem(currentProblemIndex);
+                }
+            });
+
+            randomBtn.addEventListener('click', () => {
+                const randomIndex = Math.floor(Math.random() * totalProblems);
+                if (randomIndex === currentProblemIndex && totalProblems > 1) {
+                    currentProblemIndex = (randomIndex + 1) % totalProblems; 
+                } else {
+                    currentProblemIndex = randomIndex;
+                }
+                loadProblem(currentProblemIndex);
+            });
+
+            // Загружаем первую (уже случайную) задачу при запуске
+            loadProblem(currentProblemIndex);
+        });
+    </script>
+
+</body>
+</html>

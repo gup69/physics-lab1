@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ғылыми Клуб: Қызып кету қаупі</title>
+    
+    <style>
+        /* Стили остаются без изменений */
+        body { background-color: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 1280px; height: 720px; background-color: #000; background-size: cover; background-position: center; border-radius: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
+        #stats-display { position: absolute; top: 20px; left: 20px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 8px; font-size: 22px; z-index: 30; }
+        #stats-display span { margin-right: 20px; }
+        #character-sprite { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); height: 95%; max-width: 800px; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; opacity: 0; z-index: 10; }
+        #dialogue-box { position: absolute; bottom: 20px; left: 5%; width: 90%; min-height: 200px; background-color: rgba(10, 20, 40, 0.9); border: 2px solid #6c91d9; border-radius: 15px; padding: 20px; box-sizing: border-box; z-index: 21; }
+        #dialogue-text.task-text { font-size: 26px; color: #ffc107; text-align: center; }
+        #character-name { font-size: 28px; font-weight: bold; color: #ffc107; margin-bottom: 15px; }
+        #dialogue-text { font-size: 24px; line-height: 1.4; margin: 0; }
+        .term { color: cyan; text-decoration: underline; cursor: pointer; }
+        #choices-container { position: absolute; bottom: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 22; }
+        .choice-button { width: 70%; padding: 18px; font-size: 20px; font-weight: bold; background-color: rgba(40, 80, 150, 0.9); color: #fff; border: 2px solid #a8c1ff; border-radius: 30px; cursor: pointer; text-align: center; transition: background-color 0.2s, transform 0.2s; }
+        .choice-button:hover { background-color: rgba(60, 110, 200, 1); transform: scale(1.02); }
+        #glossary-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 40; color: white; font-size: 1.2em; }
+        .glossary-box { display: flex; position: relative; width: 80%; max-width: 900px; padding: 30px; box-sizing: border-box; border: 2px solid cyan; background-color: rgba(10, 20, 30, 0.95); border-radius: 10px; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        .close-button { position: absolute; top: 10px; right: 20px; color: #ff4500; font-size: 3em; line-height: 1; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-button:hover { color: #ff7733; }
+        #glossary-title { font-size: 2em; color: #ffc107; margin-bottom: 20px; padding-right: 40px; }
+        #glossary-text { font-size: 1.4em; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 Т: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Кейіпкер">
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            chapter2_scene1: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: 'assets/sprites/alex_smirk.png', character: 'Алекс',
+                text: 'Естідім, сен мұнда дрон аулапсың. Жаңадан келген үшін жаман емес. Бірақ қазір іс маңыздырақ. Бас реакторда қысым ойнап тұр.',
+                choices: [{ text: 'Не болды?', nextSceneId: 'chapter2_scene2' }]
+            },
+            chapter2_scene2: {
+                 background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'Доктор Белова',
+                 text: 'Алекс, әңгімеге уақыт жоқ! Салқындату контурындағы қысым __P__ Паскальға дейін өсті! Егер оны түсірмесек, герметизация бұзылады!',
+                 choices: [{ text: 'Не істейміз?', nextSceneId: 'chapter2_act1_choice' }]
+            },
+            chapter2_act1_choice: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: null, character: 'ӘДІС:',
+                text: 'Газдың температурасын шұғыл анықтау керек. Қалай әрекет етеміз?',
+                choices: [
+                    { text: '🧠 Идеал газ күйінің теңдеуін пайдалану.', nextSceneId: 'chapter2_act1_quiz' },
+                    { text: '🛠️ (Алекс) Есептеулер ұзақ! Газдың бір бөлігін шығарып жіберейік, қысым түседі!', nextSceneId: 'chapter2_act1_bad_choice' }
+                ]
+            },
+            chapter2_act1_bad_choice: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'Доктор Белова',
+                text: 'Ешқашан! Біз жүйедегі зат мөлшерін өзгертіп, нақты есептеулер жүргізе алмай қаламыз. Хаттама бойынша әрекет етеміз!',
+                choices: [{ text: 'Сіздікі дұрыс. Есептеулерге кірісемін.', stat: 'practice', nextSceneId: 'chapter2_act1_quiz' }]
+            },
+            chapter2_act1_quiz: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: null, character: 'ТАПСЫРМА: ИДЕАЛ ГАЗ', isTask: true,
+                text: '<span class="term" data-term="idealgas">Менделеев-Клапейрон теңдеуін</span> қолданып, газдың <span class="term" data-term="temperature">температурасын</span> (T) есептеңіз: PV = νRT.<br>P = __P__ Па, V = __V__ м³, ν = __NU__ моль, R ≈ 8.31 Дж/(моль·К)',
+                choices: 'CHOICES_CH2_ACT1'
+            },
+            chapter2_act1_fail: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ҚАТЕ',
+                text: 'Дұрыс емес! Температураны табу үшін оны формуладан өрнектеу керек: T = PV / (νR). Есептеулеріңізді тексеріңіз.',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter2_act1_quiz'}]
+            },
+            chapter2_act1_success: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Дұрыс! Температура __T__ Кельвин... Бұл критикалық деңгейден 15%-ға жоғары! Кеш болмай тұрғанда, жүйені шұғыл салқындатуымыз керек!',
+                choices: [{ text: 'Екінші кезеңге көшеміз.', nextSceneId: 'chapter2_act2_scene1'}]
+            },
+            chapter2_act2_scene1: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/max_neutral.png', character: 'Инженер Орлов',
+                text: 'Температураны төмендету үшін газдың <span class="term" data-term="internal_energy">ішкі энергиясын</span> __DELTA_U__ Джоульге азайтуымыз керек. Салқындату жүйесі жылуды алып тастай алады, немесе газды жұмыс істетуге мәжбүрлей аламыз.',
+                choices: [{ text: 'Қайсысы дұрыс?', nextSceneId: 'chapter2_act2_choice'}]
+            },
+            chapter2_act2_choice: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: null, character: 'ТАПСЫРМА: ТЕРМОДИНАМИКАНЫҢ I ЗАҢЫ', isTask: true,
+                text: '<span class="term" data-term="first_law">Термодинамиканың бірінші заңына</span> (Q = ΔU + A) сәйкес, ішкі энергияны __DELTA_U__ Дж-ге азайту үшін изохоралық салқындату (жұмыс A = 0) кезінде жүйеден қанша жылу мөлшерін (Q) алып тастау керек?',
+                choices: 'CHOICES_CH2_ACT2'
+            },
+            chapter2_act2_fail: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ҚАТЕ',
+                text: 'Дәл емес. Ішкі энергия АЗАЯДЫ, яғни ΔU теріс. Ал жылу мөлшері Q-ды біз АЛЫП ТАСТАЙМЫЗ, яғни жүйе оны жоғалтады, демек Q да теріс. Таңбалар туралы ойланыңыз!',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter2_act2_choice'}]
+            },
+            chapter2_act2_success: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Дәл солай! Жылу алмастырғыштарды __DELTA_U__ Джоуль жылуды алып тастауға іске қосамын. Қысым мен температура тұрақтанды!',
+                choices: [{ text: 'Керемет! Мәселе шешілді ме?', nextSceneId: 'chapter2_act3_scene1'}]
+            },
+            chapter2_act3_scene1: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: 'assets/sprites/alex_smirk.png', character: 'Алекс',
+                text: 'Сіз тек тесікті жамадыңыз. Негізгі салқындату жүйесі істен шыққан, біз қосалқы жүйеде жұмыс істеп жатырмыз. Оның нақты ПӘК-і бар болғаны __ETA_REAL__%. Бұл жеткіліксіз болуы мүмкін.',
+                choices: [{ text: 'Оның тиімділігін тексеру керек.', nextSceneId: 'chapter2_act3_quiz'}]
+            },
+            chapter2_act3_quiz: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: null, character: 'ТАПСЫРМА: ПӘК', isTask: true,
+                text: 'Егер қыздырғыштың (реактордың) температурасы __T_H__ K, ал тоңазытқыштың (атмосфераның) температурасы __T_C__ K болса, Карно циклі бойынша идеалды <span class="term" data-term="efficiency">ПӘК-ті (η)</span> есептеңіз.<br>η = (Tқыз - Tсуық) / Tқыз',
+                choices: 'CHOICES_CH2_ACT3'
+            },
+            chapter2_act3_fail: {
+                background: 'assets/backgrounds/reactor_hall_alarm.jpg', sprite: 'assets/sprites/alex_neutral.png', character: 'Алекс',
+                text: 'Дұрыс емес. Температураны Кельвинмен қолданғаныңа және формулада қыздырғыш пен тоңазытқышты шатастырмағаныңа көз жеткіз. Қайталап көр.',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter2_act3_quiz'}]
+            },
+            chapter2_act3_success: {
+                background: 'assets/backgrounds/reactor_hall.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Дәл солай! Идеалды ПӘК - __ETA_IDEAL__%. Біздің жүйе шегіне жақын жұмыс істеп тұр. Бұл жөндеуді күтуге жеткілікті. Тамаша жұмыс, команда!',
+                choices: [{ text: 'Миссияны аяқтау', nextSceneId: 'ending_ch2'}]
+            },
+            ending_ch2: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'НӘТИЖЕ',
+                text: 'Құттықтаймыз! Сіз қызып кету қаупін жойып, термодинамика негіздерін меңгердіңіз. Миссия аяқталды!',
+                choices: [
+                    { text: 'Миссиялар тізіміне', href: 'missions_kz.html', onComplete: 'mission2' }
+                ]
+            }
+        };
+
+        const glossary = {
+            temperature: { title: "Температура (T)", text: "Зат бөлшектерінің орташа кинетикалық энергиясының өлшемі. Термодинамикада Кельвинмен (К) өлшенеді. 0°C = 273.15 K." },
+            idealgas: { title: "Менделеев-Клапейрон теңдеуі", text: "Идеал газдың қысымын (P), көлемін (V) және абсолютті температурасын (T) зат мөлшерімен (ν) және универсал газ тұрақтысымен (R) байланыстырады. Формула: PV = νRT." },
+            internal_energy: { title: "Ішкі энергия (U)", text: "Жүйенің барлық бөлшектерінің хаосты қозғалысының кинетикалық энергиясы мен олардың өзара әрекеттесуінің потенциалдық энергиясының қосындысы. Идеал газ үшін тек температураға тәуелді." },
+            first_law: { title: "Термодинамиканың бірінші заңы", text: "Жүйеге берілген жылу мөлшері (Q) оның ішкі энергиясын (ΔU) өзгертуге және жүйенің сыртқы күштерге қарсы жұмыс (A) істеуіне жұмсалады. Формула: Q = ΔU + A." },
+            efficiency: { title: "ПӘК (η)", text: "Пайдалы әсер коэффициенті. Қыздырғыштан алынған энергияның қандай бөлігі пайдалы жұмысқа айналатынын көрсетеді. Жылу машинасы үшін идеалды (максималды мүмкін) ПӘК Карно циклімен сипатталады." }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... (весь JavaScript-движок без изменений)
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name');
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {});
+            }
+
+            function generateProblemData() {
+                const p = {};
+                p.P = 200000 + Math.floor(Math.random() * 50000);
+                p.V = 10 + Math.floor(Math.random() * 5);
+                p.NU = 80 + Math.floor(Math.random() * 41);
+                const R = 8.31;
+                const T_correct = (p.P * p.V) / (p.NU * R);
+                const T_wrong1 = (p.P * p.V) / p.NU;
+                const T_wrong2 = T_correct - 273.15;
+                p.T = Math.round(T_correct);
+                p.CHOICES_CH2_ACT1 = [
+                    { text: `${Math.round(T_correct)} K`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter2_act1_success' },
+                    { text: `${Math.round(T_wrong1)} K`, isCorrect: false, nextSceneId: 'chapter2_act1_fail' },
+                    { text: `${Math.round(T_wrong2)} K`, isCorrect: false, nextSceneId: 'chapter2_act1_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                p.DELTA_U = 50000 + Math.floor(Math.random() * 20000);
+                p.CHOICES_CH2_ACT2 = [
+                    { text: `Q = -${p.DELTA_U} Дж`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter2_act2_success' },
+                    { text: `Q = ${p.DELTA_U} Дж`, isCorrect: false, nextSceneId: 'chapter2_act2_fail' },
+                    { text: `Q = 0 Дж`, isCorrect: false, nextSceneId: 'chapter2_act2_fail' }
+                ].sort(() => Math.random() - 0.5);
+                
+                p.T_C = 290 + Math.floor(Math.random() * 11);
+                p.T_H = p.T + Math.floor(Math.random() * 50);
+                const eta_ideal = (p.T_H - p.T_C) / p.T_H;
+                const eta_wrong1 = (p.T_H - p.T_C) / p.T_C;
+                const eta_wrong2 = 1 - (p.T_C / p.T_H) * 100;
+                p.ETA_IDEAL = Math.round(eta_ideal * 100);
+                p.ETA_REAL = p.ETA_IDEAL - (5 + Math.floor(Math.random() * 6));
+                p.CHOICES_CH2_ACT3 = [
+                    { text: `${Math.round(eta_ideal * 100)} %`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter2_act3_success' },
+                    { text: `${Math.round(eta_wrong1 * 100)} %`, isCorrect: false, nextSceneId: 'chapter2_act3_fail' },
+                    { text: `${Math.round(eta_wrong2)} %`, isCorrect: false, nextSceneId: 'chapter2_act3_fail' }
+                ].sort(() => Math.random() - 0.5);
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'chapter2_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object' && typeof gameState.problemData[key] !== 'function') {
+                        const value = gameState.problemData[key];
+                        const roundedValue = Number.isInteger(value) ? value : value.toFixed(1);
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), roundedValue);
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.innerHTML = choice.text;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play().catch(e => {});
+                    audioMusic.play().catch(e => {});
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

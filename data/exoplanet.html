@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Экзопланеты | ORBITSHIELD Обсерватория</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; width: 100%; max-width: 1100px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between;}
+
+    /* АНИМАЦИЯ ТРАНЗИТА (Визуал) */
+    .transit-visual { width: 100%; height: 120px; background: #000; border-radius: 8px; margin-bottom: 15px; position: relative; overflow: hidden; border: 1px solid #475569; display: flex; justify-content: center; align-items: center;}
+    .star { width: 80px; height: 80px; background: radial-gradient(circle, #FEF08A 0%, #F59E0B 70%, #B45309 100%); border-radius: 50%; box-shadow: 0 0 40px #F59E0B; position: relative; }
+    .planet-shadow { width: 15px; height: 15px; background: #0F172A; border-radius: 50%; position: absolute; top: 50%; left: -50px; transform: translateY(-50%); box-shadow: inset -2px -2px 4px rgba(255,255,255,0.2); }
+
+    /* ГРАФИК КРИВОЙ БЛЕСКА (SVG) */
+    .graph-container { position: relative; width: 100%; height: 250px; background: #000; border-radius: 8px; border: 1px solid #475569; overflow: hidden; }
+    .grid-bg { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.2) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(56, 189, 248, 0.2) 1px, transparent 1px),
+            linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+        background-size: 10% 20%, 10% 20%, 2% 4%, 2% 4%; /* 100 дней по X, 0.05 по Y */
+    }
+    
+    svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; overflow: visible;}
+    .light-curve { fill: none; stroke: #F59E0B; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 5px #F59E0B); }
+
+    /* Трекинг-маркеры на графике */
+    .marker-y { position: absolute; left: 0; width: 100%; height: 0; border-top: 2px dashed #EF4444; z-index: 3; pointer-events: none; }
+    .marker-x { position: absolute; top: 0; height: 100%; width: 0; border-left: 2px dashed #10B981; z-index: 3; pointer-events: none; }
+    
+    .marker-label { position: absolute; background: rgba(0,0,0,0.7); font-family: monospace; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; }
+    .label-y { right: 5px; top: -20px; color: #EF4444; }
+    .label-x { bottom: 5px; left: 5px; color: #10B981; }
+    
+    /* Оси графиков */
+    .axis-label { position: absolute; font-family: monospace; font-size: 0.8rem; color: #94A3B8; z-index: 1;}
+    .axis-x-label { bottom: -20px; right: 0; }
+    .axis-y-label { top: -20px; left: 0; }
+
+    /* Инструменты измерения (Ползунки) */
+    .tools { margin-top: 25px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; }
+    .tool-row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+    .tool-row label { width: 120px; font-size: 0.9rem; color: #CBD5E1; font-family: monospace; }
+    input[type=range] { flex-grow: 1; accent-color: #38BDF8; cursor: pointer; }
+    .tool-val { width: 60px; font-family: monospace; color: #38BDF8; font-weight: bold; text-align: right; }
+
+    /* Панель данных и расчетов */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 0.95rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    /* Сетка инпутов */
+    .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.85rem; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    /* ИИ Консоль */
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 160px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8;}
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } 
+
+    /* Формулы */
+    .formulas { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 0.85rem; color: #94A3B8; }
+    .formulas b { color: #38BDF8; }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Охотник за экзопланетами" data-kk="Экзопланеталарды іздеуші" data-en="Exoplanet Hunter">Охотник за экзопланетами</h1>
+      <p data-ru="Транзитный метод. Законы Кеплера." data-kk="Транзиттік әдіс. Кеплер заңдары." data-en="Transit method. Kepler's laws.">Транзитный метод. Законы Кеплера.</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ТЕЛЕСКОП И ИЗМЕРЕНИЯ -->
+    <div class="panel">
+      <h2>
+        <span data-ru="Оптический телескоп (Спектрометр)" data-kk="Оптикалық телескоп (Спектрометр)" data-en="Optical Telescope (Spectrometer)">Оптический телескоп (Спектрометр)</span>
+        <span style="color: #F59E0B; font-family: monospace;">Target: Kepler-X</span>
+      </h2>
+      
+      <!-- Визуализация пролета -->
+      <div class="transit-visual">
+          <div class="star"></div>
+          <div class="planet-shadow" id="anim-planet"></div>
+      </div>
+
+      <!-- График -->
+      <div class="graph-container">
+        <div class="grid-bg"></div>
+        <div class="axis-label axis-y-label" data-ru="Светимость (I)" data-kk="Жарқырау (I)" data-en="Flux (I)">Светимость (I)</div>
+        <div class="axis-label axis-x-label" data-ru="Время (Дни)" data-kk="Уақыт (Күн)" data-en="Time (Days)">Время (Дни)</div>
+        
+        <svg viewBox="0 0 1000 250" preserveAspectRatio="none">
+            <!-- Линия нормальной светимости (1.00) -->
+            <line x1="0" y1="50" x2="1000" y2="50" stroke="#475569" stroke-width="2" stroke-dasharray="5,5"/>
+            <!-- Сама кривая -->
+            <polyline class="light-curve" id="curve" points="0,50 1000,50"></polyline>
+        </svg>
+
+        <!-- Маркеры -->
+        <div class="marker-y" id="m-depth" style="top: 50px;">
+            <div class="marker-label label-y">ΔI/I = <span id="lbl-depth">0.000</span></div>
+        </div>
+        <div class="marker-x" id="m-t1" style="left: 0%;">
+            <div class="marker-label label-x">t₁=<span id="lbl-t1">0</span></div>
+        </div>
+        <div class="marker-x" id="m-t2" style="left: 0%;">
+            <div class="marker-label label-x">t₂=<span id="lbl-t2">0</span></div>
+        </div>
+      </div>
+
+      <!-- Инструменты -->
+      <div class="tools">
+          <div class="tool-row">
+              <label style="color:#EF4444" data-ru="Глубина (ΔI/I)" data-kk="Тереңдік (ΔI/I)" data-en="Depth (ΔI/I)">Глубина (ΔI/I)</label>
+              <input type="range" id="slide-depth" min="0" max="0.04" step="0.001" value="0">
+          </div>
+          <div class="tool-row">
+              <label style="color:#10B981" data-ru="Маркер t₁ (дни)" data-kk="Маркер t₁ (күн)" data-en="Marker t₁ (days)">Маркер t₁ (дни)</label>
+              <input type="range" id="slide-t1" min="0" max="100" step="1" value="10">
+          </div>
+          <div class="tool-row">
+              <label style="color:#10B981" data-ru="Маркер t₂ (дни)" data-kk="Маркер t₂ (күн)" data-en="Marker t₂ (days)">Маркер t₂ (дни)</label>
+              <input type="range" id="slide-t2" min="0" max="100" step="1" value="90">
+          </div>
+      </div>
+    </div>
+
+    <!-- ВВОД ДАННЫХ И ИИ -->
+    <div class="panel">
+      <h2 data-ru="База данных и Расчеты" data-kk="Деректер базасы және Есептеулер" data-en="Database & Calculations">База данных и Расчеты</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+          <div class="data-row">
+            <span data-ru="Радиус звезды (Rs):" data-kk="Жұлдыз радиусы (Rs):" data-en="Star Radius (Rs):">Радиус звезды (Rs):</span>
+            <strong>120 R⊕ <span style="font-size:0.75rem; color:#64748B">(рад. Земли)</span></strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Масса звезды (Ms):" data-kk="Жұлдыз массасы (Ms):" data-en="Star Mass (Ms):">Масса звезды (Ms):</span>
+            <strong>1.1 M☉ <span style="font-size:0.75rem; color:#64748B">(масс Солнца)</span></strong>
+          </div>
+      </div>
+
+      <div class="formulas">
+          <div data-ru="<b>Радиус планеты:</b> Rp = Rs * √(ΔI/I)" 
+               data-kk="<b>Планета радиусы:</b> Rp = Rs * √(ΔI/I)" 
+               data-en="<b>Planet Radius:</b> Rp = Rs * √(ΔI/I)"><b>Радиус планеты:</b> Rp = Rs * √(ΔI/I)</div>
+          <div style="margin-top:5px" 
+               data-ru="<b>Орбита:</b> a = ³√(Ms * (T/365)²)" 
+               data-kk="<b>Орбита:</b> a = ³√(Ms * (T/365)²)" 
+               data-en="<b>Orbit:</b> a = ³√(Ms * (T/365)²)"><b>Орбита:</b> a = ³√(Ms * (T/365)²)</div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="in-depth" placeholder="Измеренное падение ΔI/I" data-ru="Измеренное падение ΔI/I" data-kk="Өлшенген төмендеу ΔI/I" data-en="Measured depth ΔI/I" step="0.001">
+        <input type="number" id="in-t" placeholder="Измеренный период T (дни)" data-ru="Измеренный период T (дни)" data-kk="Өлшенген период T (күн)" data-en="Measured period T (days)" step="1">
+        <input type="number" id="in-rp" placeholder="Вычисленный радиус Rp (R⊕)" data-ru="Вычисленный радиус Rp (R⊕)" data-kk="Есептелген радиус Rp (R⊕)" data-en="Calculated radius Rp (R⊕)" step="0.1">
+        <input type="number" id="in-a" placeholder="Орбитальный радиус a (А.Е.)" data-ru="Орбитальный радиус a (А.Е.)" data-kk="Орбиталық радиус a (А.Б.)" data-en="Orbital radius a (AU)" step="0.01">
+      </div>
+
+      <button class="btn-submit" onclick="analyzePlanet()" data-ru="КЛАССИФИЦИРОВАТЬ ПЛАНЕТУ (АИ)" data-kk="ПЛАНЕТАНЫ КЛАССИФИКАЦИЯЛАУ (ЖИ)" data-en="CLASSIFY PLANET (AI)">КЛАССИФИЦИРОВАТЬ ПЛАНЕТУ (АИ)</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD ASTRO готов. Наведите маркеры на кривую блеска.</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD ASTRO дайын. Маркерлерді жарқырау қисығына бағыттаңыз.</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD ASTRO ready. Align markers with the light curve.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ФИЗИЧЕСКАЯ МОДЕЛЬ (Константы и генерация)
+    const R_s = 120; // Радиус звезды в радиусах Земли
+    const M_s = 1.1; // Масса звезды в массах Солнца
+    
+    // Генерация случайной экзопланеты
+    const actual_T = Math.floor(Math.random() * 40) + 20; // Период от 20 до 60 дней
+    const actual_depth = (Math.floor(Math.random() * 20) + 5) / 1000; // Падение от 0.005 до 0.025
+    
+    // Скрытые вычисления (эталон)
+    const actual_Rp = R_s * Math.sqrt(actual_depth);
+    const T_years = actual_T / 365;
+    const actual_a = Math.pow(M_s * Math.pow(T_years, 2), 1/3);
+
+    // ПОСТРОЕНИЕ ГРАФИКА
+    // viewBox: X от 0 до 1000 (100 дней = 1 день/10px). Y от 0 до 250 (1.00 = 50px, 0.95 = 250px).
+    // Следовательно: каждые 0.01 падения = 40px вниз.
+    const pxPerDrop = 4000; 
+
+    function generateCurve() {
+        let points = [];
+        let t1 = 20; // Первое затмение (дни)
+        let t2 = t1 + actual_T; // Второе затмение (дни)
+        
+        let dipY = 50 + (actual_depth * pxPerDrop); // Пиксель дна графика
+
+        for(let x = 0; x <= 100; x += 1) {
+            let px = x * 10;
+            let py = 50; // Базовая линия 1.00
+
+            // Транзит 1
+            if (x >= t1 - 2 && x <= t1 + 2) {
+                if (x === t1 - 2 || x === t1 + 2) py = 50;
+                else if (x === t1 - 1 || x === t1 + 1) py = dipY - 5;
+                else py = dipY;
+            }
+            // Транзит 2
+            if (x >= t2 - 2 && x <= t2 + 2) {
+                if (x === t2 - 2 || x === t2 + 2) py = 50;
+                else if (x === t2 - 1 || x === t2 + 1) py = dipY - 5;
+                else py = dipY;
+            }
+            points.push(`${px},${py}`);
+        }
+        document.getElementById('curve').setAttribute('points', points.join(' '));
+        
+        // Анимация CSS для транзита (чисто визуал, подстроенный под T)
+        let animSpeed = actual_T * 0.1; // Условно, для визуала
+        document.getElementById('anim-planet').style.animation = `transitAnim ${animSpeed}s infinite linear`;
+    }
+
+    // СТИЛЬ АНИМАЦИИ
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes transitAnim {
+        0% { left: -50px; }
+        10% { left: 50%; }
+        20% { left: 120%; }
+        100% { left: 120%; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // УПРАВЛЕНИЕ МАРКЕРАМИ
+    const sDepth = document.getElementById('slide-depth');
+    const sT1 = document.getElementById('slide-t1');
+    const sT2 = document.getElementById('slide-t2');
+    
+    const mDepth = document.getElementById('m-depth');
+    const mT1 = document.getElementById('m-t1');
+    const mT2 = document.getElementById('m-t2');
+    
+    const lDepth = document.getElementById('lbl-depth');
+    const lT1 = document.getElementById('lbl-t1');
+    const lT2 = document.getElementById('lbl-t2');
+
+    sDepth.addEventListener('input', (e) => {
+        let val = parseFloat(e.target.value);
+        lDepth.innerText = val.toFixed(3);
+        mDepth.style.top = `${50 + (val * pxPerDrop)}px`;
+    });
+
+    sT1.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value);
+        lT1.innerText = val;
+        mT1.style.left = `${val}%`;
+    });
+
+    sT2.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value);
+        lT2.innerText = val;
+        mT2.style.left = `${val}%`;
+    });
+
+    // ИНИЦИАЛИЗАЦИЯ
+    generateCurve();
+
+    // ЛОГИКА АНАЛИЗА
+    function validateInput(studentVal, trueVal, margin) {
+        return Math.abs(studentVal - trueVal) <= margin;
+    }
+
+    function analyzePlanet() {
+        const iD = parseFloat(document.getElementById('in-depth').value);
+        const iT = parseFloat(document.getElementById('in-t').value);
+        const iRp = parseFloat(document.getElementById('in-rp').value);
+        const iA = parseFloat(document.getElementById('in-a').value);
+        
+        if (isNaN(iD) || isNaN(iT) || isNaN(iRp) || isNaN(iA)) {
+            printAI("ОШИБКА: Введите все параметры.", "ҚАТЕ: Барлық параметрлерді енгізіңіз.", "ERROR: Enter all parameters.", "error");
+            return;
+        }
+
+        let errRU = [], errKK = [], errEN = [];
+
+        if (!validateInput(iD, actual_depth, 0.002)) { errRU.push("Падение (ΔI/I)"); errKK.push("Төмендеу (ΔI/I)"); errEN.push("Depth (ΔI/I)"); }
+        if (!validateInput(iT, actual_T, 2)) { errRU.push("Период (T)"); errKK.push("Период (T)"); errEN.push("Period (T)"); }
+        
+        // Валидация вычислений (учитываем, что ученик мог считать от своих погрешностей)
+        let expected_Rp = R_s * Math.sqrt(iD);
+        let expected_a = Math.pow(M_s * Math.pow(iT/365, 2), 1/3);
+
+        if (!validateInput(iRp, expected_Rp, expected_Rp * 0.05)) { errRU.push("Радиус (Rp)"); errKK.push("Радиус (Rp)"); errEN.push("Radius (Rp)"); }
+        if (!validateInput(iA, expected_a, expected_a * 0.05)) { errRU.push("Орбита (a)"); errKK.push("Орбита (a)"); errEN.push("Orbit (a)"); }
+
+        if (errRU.length === 0) {
+            // Классификация планеты
+            let typeRU = iRp > 8 ? "Газовый гигант (Горячий Юпитер)" : "Суперземля (Скалистая)";
+            let typeKK = iRp > 8 ? "Газ алыбы (Ыстық Юпитер)" : "Супержер (Тасты)";
+            let typeEN = iRp > 8 ? "Gas Giant (Hot Jupiter)" : "Super-Earth (Rocky)";
+
+            printAI(`ПОДТВЕРЖДЕНО. Открыта новая экзопланета!<br>Радиус: ${iRp.toFixed(1)} R⊕ | Орбита: ${iA.toFixed(3)} А.Е.<br>Класс: <b>${typeRU}</b>`,
+                    `РАСТАЛДЫ. Жаңа экзопланета ашылды!<br>Радиусы: ${iRp.toFixed(1)} R⊕ | Орбитасы: ${iA.toFixed(3)} А.Б.<br>Класы: <b>${typeKK}</b>`,
+                    `CONFIRMED. New exoplanet discovered!<br>Radius: ${iRp.toFixed(1)} R⊕ | Orbit: ${iA.toFixed(3)} AU.<br>Class: <b>${typeEN}</b>`,
+                    "success");
+        } else {
+            printAI(`СБОЙ ТЕЛЕМЕТРИИ.<br>Ошибки в параметрах: <b>${errRU.join(", ")}</b>.<br>Уточните маркеры на графике и проверьте формулы.`,
+                    `ТЕЛЕМЕТРИЯ АҚАУЫ.<br>Параметрлердегі қателер: <b>${errKK.join(", ")}</b>.<br>Графиктегі маркерлерді дәлдеп, формулаларды тексеріңіз.`,
+                    `TELEMETRY FAILURE.<br>Errors in parameters: <b>${errEN.join(", ")}</b>.<br>Adjust markers on the graph and check formulas.`,
+                    "error");
+        }
+    }
+
+    // ВЫВОД И ПЕРЕВОД
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        document.getElementById('ai-output').prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const lang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            span.style.display = span.getAttribute('data-lang-text') === lang ? 'inline' : 'none';
+        });
+    }
+
+    applyLogLanguage();
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        applyLogLanguage();
+      });
+    });
+  </script>
+</body>
+</html>

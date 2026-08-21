@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сила Лоренца: Лабораторная работа</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #e91e63; /* Pink for Magnetism */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+            --warning: #ffbb33;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 8px; background: #000; 
+            border: 1px solid #444; color: white; border-radius: 4px; 
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 450px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            cursor: crosshair;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Overlays */
+        .coord-display {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.8); padding: 5px 10px;
+            border-radius: 4px; font-family: monospace; color: var(--accent);
+            font-size: 1.2em; border: 1px solid var(--accent);
+        }
+        .field-indicator {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 2em; color: #333; font-weight: bold;
+            user-select: none;
+        }
+
+        /* Table */
+        .lab-table-container {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+        table.lab-table {
+            width: 100%; border-collapse: collapse; color: #fff; font-size: 0.9em;
+        }
+        table.lab-table th, table.lab-table td {
+            border: 1px solid #444; padding: 8px; text-align: center;
+        }
+        table.lab-table th { background: #2c2c2c; color: var(--accent); }
+        table.lab-table input { width: 100px; background: #111; border: 1px solid #555; text-align: center; color: white; }
+        .row-btn {
+            padding: 5px 10px; font-size: 0.8em; background: #2196F3;
+            border: none; border-radius: 3px; color: white; cursor: pointer;
+        }
+        .row-btn:disabled { background: #555; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel); padding: 30px;
+            border: 2px solid var(--accent); border-radius: 10px;
+            width: 90%; max-width: 600px; text-align: center; color: white;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-score { font-size: 3em; margin: 10px 0; font-weight: bold; }
+        .result-row-correct { color: var(--success); }
+        .result-row-wrong { color: var(--danger); }
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Сила Лоренца</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headParams">2. Параметры выстрела</div>
+            
+            <div class="control-group">
+                <label data-lang="lblParticle">Частица:</label>
+                <select id="particle-select">
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНАЯ ***</option>
+                    <option value="proton" data-lang="optProton">Протон (p+)</option>
+                    <option value="alpha" data-lang="optAlpha">Альфа-частица (α)</option>
+                </select>
+                <div style="font-size:0.8em; color:orange; margin-top:5px;" data-lang="hintParticle">Для задания выберите "НЕИЗВЕСТНАЯ"</div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblB">Индукция поля (B):</span> <span class="val"><span id="val-b">0.5</span> Тл</span></label>
+                <input type="range" id="slider-b" min="0.1" max="2.0" step="0.1" value="0.5">
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblV">Скорость (v):</span> <span class="val"><span id="val-v">2.0</span> ·10⁶ м/с</span></label>
+                <input type="range" id="slider-v" min="1.0" max="5.0" step="0.1" value="2.0">
+            </div>
+
+            <button class="action-btn" id="shoot-btn" data-lang="btnShoot">ВЫСТРЕЛ</button>
+            <button class="action-btn" id="clear-btn" style="background:#555; margin-top:10px;" data-lang="btnClear">ОЧИСТИТЬ ЭКРАН</button>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column;">
+        <div class="panel">
+            <div class="visualizer" id="vis-container">
+                <canvas id="sim-canvas" width="900" height="450"></canvas>
+                <div class="field-indicator">× × × × × B</div>
+                <div class="coord-display" id="ruler-readout">D: 0.0 см</div>
+            </div>
+            <div style="margin-top:10px; color:#888; font-size:0.9em;" data-lang="lblHintRuler">Наведите курсор на вершину дуги, чтобы измерить Диаметр (D) и найти Радиус (R = D/2). 1 клетка = 1 см.</div>
+        </div>
+
+        <div class="lab-table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 data-lang="lblTableTitle" style="margin:0; color:var(--accent);">Таблица результатов (4 опыта)</h3>
+                <button id="finish-btn" style="background:var(--success); border:none; padding:10px 20px; color:white; font-weight:bold; border-radius:5px; cursor:pointer;" disabled data-lang="btnFinish">ОЦЕНИТЬ РАБОТУ</button>
+            </div>
+
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th data-lang="colTrial">№</th>
+                        <th>v (10⁶ м/с)</th>
+                        <th>B (Тл)</th>
+                        <th data-lang="colAction">Действие</th>
+                        <th data-lang="colCalc">q/m (10⁶ Кл/кг)</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-body">
+                    </tbody>
+            </table>
+            <p style="color:#aaa; font-size:0.9em; margin-top:10px;" data-lang="tableHint">Инструкция: 1. Настройте v, B. 2. Выстрел. 3. Измерьте R. 4. Нажмите "Записать". 5. Вычислите q/m = v / (R·B).</p>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат Лабораторной Работы</h2>
+        <div style="text-align:left; margin-bottom:10px;">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+        </div>
+        
+        <div class="modal-score" id="res-score-val">0</div>
+        <div id="res-details" style="text-align:left; background:#111; padding:10px; border-radius:5px; margin-bottom:10px;"></div>
+        
+        <div style="color:orange; font-size:0.9em; margin-bottom:10px;" data-lang="resIdentity">Идентифицированная частица: ???</div>
+
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Сила Лоренца",
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headParams: "2. Параметры выстрела", lblParticle: "Частица:", optProton: "Протон (p+)", optAlpha: "Альфа-частица (α)", optUnknown: "*** НЕИЗВЕСТНАЯ ***", hintParticle: "Для задания выберите 'НЕИЗВЕСТНАЯ'",
+            lblB: "Индукция (B):", lblV: "Скорость (v):",
+            btnShoot: "ВЫСТРЕЛ", btnClear: "ОЧИСТИТЬ ТРАЕКТОРИИ",
+            headTask: "3. Ответ", 
+            lblHintRuler: "Наведите курсор на вершину дуги. Значение Y = Диаметр (D). Радиус R = D / 2 (см). Переведите в метры!",
+            alertName: "Введите имя и класс!", alertEmpty: "Заполните все 4 строки!",
+            lblTableTitle: "Таблица результатов (4 опыта)", btnFinish: "ОЦЕНИТЬ РАБОТУ",
+            colTrial: "№", colAction: "Действие", colCalc: "ОТВЕТ: q/m (10⁶ Кл/кг)",
+            btnRecord: "Записать параметры", tableHint: "Настройте v, B -> Выстрел -> Измерьте R -> Записать -> Вычислите q/m = v / (R·B)",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ",
+            resRow: "Опыт {n}: Ваш ответ {ans}. Верно: {true}. {status}", resIdentity: "Частица скорее всего: "
+        },
+        kz: {
+            mainTitle: "Лоренц күші",
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headParams: "2. Параметрлер", lblParticle: "Бөлшек:", optProton: "Протон (p+)", optAlpha: "Альфа-бөлшек (α)", optUnknown: "*** БЕЛГІСІЗ ***", hintParticle: "Тапсырма үшін 'БЕЛГІСІЗ' таңдаңыз",
+            lblB: "Индукция (B):", lblV: "Жылдамдық (v):",
+            btnShoot: "АТУ", btnClear: "ТАЗАРТУ",
+            headTask: "3. Жауап", 
+            lblHintRuler: "Курсорды доғаның төбесіне апарыңыз. Y = Диаметр (D). Радиус R = D / 2 (см). Метрге айналдырыңыз!",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertEmpty: "Барлық 4 жолды толтырыңыз!",
+            lblTableTitle: "Нәтижелер кестесі (4 тәжірибе)", btnFinish: "БАҒАЛАУ",
+            colTrial: "№", colAction: "Әрекет", colCalc: "ЖАУАП: q/m (10⁶ Кл/кг)",
+            btnRecord: "Жазу", tableHint: "v, B баптау -> Ату -> R өлшеу -> Жазу -> q/m есептеу",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ",
+            resRow: "Тәжірибе {n}: Жауап {ans}. Дұрыс: {true}. {status}", resIdentity: "Бөлшек:"
+        },
+        en: {
+            mainTitle: "Lorentz Force",
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headParams: "2. Parameters", lblParticle: "Particle:", optProton: "Proton (p+)", optAlpha: "Alpha Particle (α)", optUnknown: "*** UNKNOWN ***", hintParticle: "Select 'UNKNOWN' for the task",
+            lblB: "Magnetic Field (B):", lblV: "Velocity (v):",
+            btnShoot: "SHOOT", btnClear: "CLEAR SCREEN",
+            headTask: "3. Answer", 
+            lblHintRuler: "Hover over the arc peak. Y = Diameter (D). Radius R = D / 2 (cm). Convert to meters!",
+            alertName: "Enter Name and Class!", alertEmpty: "Fill all 4 rows!",
+            lblTableTitle: "Results Table (4 Trials)", btnFinish: "GRADE WORK",
+            colTrial: "#", colAction: "Action", colCalc: "ANSWER: q/m (10⁶ C/kg)",
+            btnRecord: "Record Params", tableHint: "Set v, B -> Shoot -> Measure R -> Record -> Calc q/m = v / (R·B)",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resScoreLabel: "Score:", btnRestart: "FINISH",
+            resRow: "Trial {n}: Your ans {ans}. Correct: {true}. {status}", resIdentity: "Particle is likely: "
+        }
+    };
+
+    let currentLang = 'ru';
+    let particles = [];
+    
+    // Physics Constants
+    // q/m values in 10^6 C/kg
+    const PARTICLES_DATA = {
+        'proton': { qm: 95.8, name: "Proton" }, 
+        'alpha':  { qm: 47.9, name: "Alpha" },
+        'unknown': { qm: 0, name: "Unknown" } 
+    };
+
+    const state = {
+        B: 0.5, 
+        v: 2.0,
+        type: 'unknown',
+        unknownQM: 0 
+    };
+
+    // Visual Scaling: 1 cm = 40 px
+    const PX_PER_CM = 40; 
+
+    // Table Data
+    const trials = [
+        { id: 1, v: 0, B: 0, trueQM: 0, userAns: null, filled: false },
+        { id: 2, v: 0, B: 0, trueQM: 0, userAns: null, filled: false },
+        { id: 3, v: 0, B: 0, trueQM: 0, userAns: null, filled: false },
+        { id: 4, v: 0, B: 0, trueQM: 0, userAns: null, filled: false }
+    ];
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        const sel = document.getElementById('particle-select');
+        sel.options[0].text = t.optUnknown;
+        sel.options[1].text = t.optProton;
+        sel.options[2].text = t.optAlpha;
+
+        document.querySelectorAll('.row-btn').forEach(btn => btn.innerText = t.btnRecord);
+    }
+
+    function updateUI() {
+        document.getElementById('val-b').innerText = state.B.toFixed(1);
+        document.getElementById('val-v').innerText = state.v.toFixed(1);
+    }
+
+    function calculateRadiusCm(qm, v, B) {
+        // R (m) = (v * 10^6) / ((qm * 10^6) * B) = v / (qm * B)
+        const R_m = v / (qm * B);
+        return R_m * 100; // cm
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+    const startY = cvs.height / 2;
+
+    function drawGrid() {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+        for(let x=0; x<cvs.width; x+=PX_PER_CM) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cvs.height); ctx.stroke(); }
+        for(let y=0; y<cvs.height; y+=PX_PER_CM) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cvs.width,y); ctx.stroke(); }
+        
+        ctx.fillStyle = '#333'; ctx.font = "10px Arial";
+        for(let x=20; x<cvs.width; x+=80) for(let y=20; y<cvs.height; y+=80) ctx.fillText("×", x, y);
+
+        ctx.strokeStyle = '#444'; ctx.setLineDash([5,5]);
+        ctx.beginPath(); ctx.moveTo(0, startY); ctx.lineTo(cvs.width, startY); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawParticles() {
+        particles.forEach(p => {
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            if (p.path.length > 0) {
+                ctx.moveTo(p.path[0].x, p.path[0].y);
+                for(let i=1; i<p.path.length; i++) ctx.lineTo(p.path[i].x, p.path[i].y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
+        });
+    }
+
+    function animate() {
+        drawGrid();
+        let active = false;
+        particles.forEach(p => {
+            if(!p.finished) {
+                active = true;
+                p.time += 0.05; 
+                const angle = (p.v / p.R_px) * p.time; 
+                if (angle < Math.PI) { 
+                    p.x = p.R_px * Math.sin(angle);
+                    p.y = startY - p.R_px * (1 - Math.cos(angle)); 
+                    p.path.push({x: p.x, y: p.y});
+                } else {
+                    p.finished = true;
+                }
+            }
+        });
+        drawParticles();
+        if(active) requestAnimationFrame(animate);
+    }
+
+    function shoot() {
+        let qm = (state.type === 'unknown') ? parseFloat(state.unknownQM) : PARTICLES_DATA[state.type].qm;
+        const R_cm = calculateRadiusCm(qm, state.v, state.B);
+        const R_px = R_cm * PX_PER_CM;
+        
+        const color = (state.type === 'proton') ? '#ff4444' : (state.type === 'alpha') ? '#ffbb33' : '#00e5ff';
+
+        particles.push({
+            x: 0, y: startY,
+            v: state.v * 5, 
+            R_px: R_px, color: color, path: [{x:0, y:startY}], time: 0, finished: false
+        });
+        animate();
+    }
+
+    // --- Mouse ---
+    document.getElementById('vis-container').addEventListener('mousemove', (e) => {
+        const rect = cvs.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        // Distance from axis = Diameter (if at peak)
+        const dy_px = Math.abs(y - startY);
+        const dy_cm = dy_px / PX_PER_CM;
+        document.getElementById('ruler-readout').innerText = `Y: ${dy_cm.toFixed(1)} см`;
+    });
+
+    // --- Table ---
+    function initTable() {
+        const tbody = document.getElementById('tasks-body');
+        tbody.innerHTML = '';
+        trials.forEach(trial => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trial.id}</td>
+                <td id="v-${trial.id}">-</td>
+                <td id="b-${trial.id}">-</td>
+                <td><button class="row-btn" onclick="recordTrial(${trial.id})">Записать</button></td>
+                <td><input type="text" id="ans-${trial.id}" placeholder="..." disabled></td>
+            `;
+            tbody.appendChild(row);
+        });
+        updateLanguage(currentLang);
+    }
+
+    window.recordTrial = function(id) {
+        const t = trials[id-1];
+        t.v = state.v;
+        t.B = state.B;
+        // Store the TRUE q/m for this specific shot configuration (based on current selected particle)
+        t.trueQM = (state.type === 'unknown') ? parseFloat(state.unknownQM) : PARTICLES_DATA[state.type].qm;
+        t.filled = true;
+
+        document.getElementById(`v-${id}`).innerText = t.v.toFixed(1);
+        document.getElementById(`b-${id}`).innerText = t.B.toFixed(1);
+        
+        const inp = document.getElementById(`ans-${id}`);
+        inp.disabled = false;
+        inp.focus();
+        
+        event.target.disabled = true;
+        event.target.style.background = "#555";
+
+        checkAllFilled();
+    }
+
+    function checkAllFilled() {
+        const allFilled = trials.every(t => t.filled);
+        document.getElementById('finish-btn').disabled = !allFilled;
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        // Generate random unknown q/m (between 30 and 100)
+        state.unknownQM = (Math.random() * (100 - 30) + 30).toFixed(1);
+        console.log("Teacher Info: Unknown q/m = " + state.unknownQM);
+
+        initTable();
+        updateLanguage('ru');
+        drawGrid();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('slider-b').oninput = (e) => { state.B = parseFloat(e.target.value); updateUI(); };
+        document.getElementById('slider-v').oninput = (e) => { state.v = parseFloat(e.target.value); updateUI(); };
+        document.getElementById('particle-select').onchange = (e) => { state.type = e.target.value; };
+
+        document.getElementById('shoot-btn').onclick = shoot;
+        document.getElementById('clear-btn').onclick = () => { particles = []; drawGrid(); };
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+            
+            // Set to Unknown for task context, though user can change it
+            document.getElementById('particle-select').value = 'unknown';
+            state.type = 'unknown';
+        };
+
+        // Grading
+        document.getElementById('finish-btn').onclick = () => {
+            let correctCount = 0;
+            let detailsHTML = "";
+            const t = LANG[currentLang];
+
+            trials.forEach(trial => {
+                const userAns = parseFloat(document.getElementById(`ans-${trial.id}`).value.replace(',','.'));
+                const trueAns = trial.trueQM;
+                
+                let isRight = false;
+                // Tolerance 5% because of visual measurement of R - user requested 5% specifically
+                if (!isNaN(userAns) && Math.abs(userAns - trueAns) / trueAns < 0.05) {
+                    correctCount++;
+                    isRight = true;
+                }
+
+                const statusText = isRight ? "OK" : "FAIL";
+                let rowText = t.resRow
+                    .replace('{n}', trial.id)
+                    .replace('{ans}', userAns)
+                    .replace('{true}', trueAns.toFixed(1))
+                    .replace('{status}', statusText);
+
+                detailsHTML += `<div class="${isRight?'result-row-correct':'result-row-wrong'}">${rowText}</div>`;
+            });
+
+            let finalScore = 0;
+            if (correctCount === 4) finalScore = 10;
+            else if (correctCount === 3) finalScore = 8;
+            else if (correctCount === 2) finalScore = 5;
+            else if (correctCount === 1) finalScore = 3;
+
+            document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+            document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+            document.getElementById('res-score-val').innerText = finalScore + " / 10";
+            document.getElementById('res-details').innerHTML = detailsHTML;
+            
+            // Identification Hint
+            let identity = "???";
+            if (Math.abs(state.unknownQM - 95.8) < 5) identity = "Proton-like";
+            else if (Math.abs(state.unknownQM - 47.9) < 5) identity = "Alpha-like";
+            else identity = "Exotic Particle";
+            
+            document.querySelector('[data-lang="resIdentity"]').innerText = t.resIdentity + identity;
+
+            document.getElementById('result-modal').style.display = 'flex';
+        };
+    };
+</script>
+
+</body>
+</html>

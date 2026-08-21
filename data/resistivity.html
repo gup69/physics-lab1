@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Измерение удельного сопротивления проводника</title>
+  
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --bg: #F0F4FF;
+      --text: #1E293B;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.9);
+      --wire: #71717A;
+      --multimeter: #334155;
+      --screen: #86EFAC;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+    
+    .top-bar { width: 100%; max-width: 1200px; display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255, 255, 255, 0.5); padding: 4px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.8); }
+    .lang-btn { background: transparent; border: none; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { color: #4F46E5; }
+    .lang-btn.active { background: #FFFFFF; color: #4F46E5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .header { text-align: center; margin-bottom: 30px; max-width: 800px; }
+    .header h1 { font-size: 2rem; color: #0F172A; margin-bottom: 10px; line-height: 1.2; }
+    .app-container { display: flex; flex-wrap: wrap; gap: 30px; max-width: 1200px; width: 100%; justify-content: center; }
+    .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(31, 38, 135, 0.05); }
+
+    .lab-setup { flex: 1; min-width: 500px; display: flex; flex-direction: column; align-items: center; }
+    
+    /* Блок мультиметров */
+    .meters-container { display: flex; gap: 20px; margin-bottom: 30px; width: 100%; justify-content: center; }
+    .meter { background: var(--multimeter); padding: 15px; border-radius: 16px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); text-align: center; width: 160px; position: relative; }
+    .meter-title { color: #94A3B8; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+    .meter-screen { background: var(--screen); border: inset 3px #4ADE80; border-radius: 8px; padding: 10px; font-family: 'Courier New', monospace; font-size: 1.8rem; font-weight: bold; color: #064E3B; text-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+    .meter-unit { position: absolute; bottom: 22px; right: 25px; font-size: 1rem; font-weight: bold; color: #064E3B; opacity: 0.7; }
+
+    /* Провод и линейка */
+    .experiment-area { width: 100%; position: relative; margin-top: 20px; padding: 20px 0; }
+    .wire-track { width: 100%; height: 8px; background: #CBD5E1; border-radius: 4px; position: relative; }
+    .wire-active { height: 100%; background: var(--wire); border-radius: 4px; transition: width 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .contact-slider { position: absolute; top: -10px; width: 12px; height: 28px; background: #EF4444; border-radius: 4px; cursor: pointer; transition: left 0.3s; transform: translateX(-50%); box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+    .contact-slider::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 6px 0; border-style: solid; border-color: #EF4444 transparent transparent transparent; }
+    
+    .ruler { display: flex; justify-content: space-between; margin-top: 15px; border-top: 2px solid #94A3B8; padding-top: 5px; position: relative; }
+    .ruler-tick { width: 2px; height: 10px; background: #64748B; position: relative; }
+    .ruler-tick::after { content: attr(data-val); position: absolute; top: 12px; left: -10px; font-size: 11px; color: #475569; }
+
+    .wire-info { margin-top: 30px; padding: 12px 20px; background: #E0E7FF; border: 1px solid #C7D2FE; border-radius: 12px; color: #3730A3; font-weight: 600; text-align: center; width: 100%; }
+
+    .controls { margin-top: 30px; display: flex; gap: 15px; align-items: center; width: 100%; background: #FFFFFF; padding: 15px 20px; border-radius: 16px; border: 1px solid #E2E8F0; flex-wrap: wrap; }
+    .slider-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+    .slider-group label { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #475569; }
+    input[type=range] { width: 100%; cursor: pointer; }
+
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #2563EB; }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn-clear { background: #64748B; }
+    .btn-clear:hover { background: #475569; }
+
+    .data-table { flex: 1; min-width: 400px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #FFFFFF; border-radius: 12px; overflow: hidden; }
+    th, td { border: 1px solid #E2E8F0; padding: 10px; text-align: center; font-size: 0.95rem; }
+    th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    
+    .formula-box { margin-top: 20px; background: #EFF6FF; padding: 15px; border-radius: 12px; border: 1px dashed #93C5FD; font-size: 0.9rem; color: #1E3A8A; line-height: 1.6; }
+
+    .verification-box { margin-top: 20px; background: #FFFFFF; padding: 20px; border-radius: 16px; border: 1px solid #E2E8F0; display: none; }
+    .verification-box h3 { font-size: 1.1rem; margin-bottom: 15px; color: #0F172A; }
+    .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .input-group label { font-weight: 600; font-size: 0.9rem; }
+    .input-group input { width: 110px; padding: 8px; border-radius: 8px; border: 1px solid #CBD5E1; text-align: center; font-size: 1rem; }
+    
+    .feedback-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: none; }
+    .feedback-success { background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FBBF24; }
+    .feedback-error { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+    .attempts-info { font-size: 0.85rem; color: #64748B; margin-top: 10px; text-align: right; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 data-i18n="title">Измерение удельного сопротивления проводника</h1>
+    <p data-i18n="desc">Установите длину проводника <b>l</b>, снимите показания приборов и проведите 5 измерений. В расчетах примите $\pi \approx 3.14$.</p>
+  </div>
+
+  <div class="app-container">
+    <div class="glass-panel lab-setup">
+      
+      <div class="meters-container">
+        <div class="meter">
+          <div class="meter-title" data-i18n="voltmeter">ВОЛЬТМЕТР</div>
+          <div class="meter-screen" id="v-display">0.00</div>
+          <div class="meter-unit">V</div>
+        </div>
+        <div class="meter">
+          <div class="meter-title" data-i18n="ammeter">АМПЕРМЕТР</div>
+          <div class="meter-screen" id="a-display">0.00</div>
+          <div class="meter-unit">A</div>
+        </div>
+      </div>
+
+      <div class="experiment-area">
+        <div class="wire-track">
+          <div class="wire-active" id="wire"></div>
+          <div class="contact-slider" id="contact"></div>
+        </div>
+        <div class="ruler">
+          <div class="ruler-tick" data-val="0"></div>
+          <div class="ruler-tick" data-val="0.2"></div>
+          <div class="ruler-tick" data-val="0.4"></div>
+          <div class="ruler-tick" data-val="0.6"></div>
+          <div class="ruler-tick" data-val="0.8"></div>
+          <div class="ruler-tick" data-val="1.0"></div>
+        </div>
+      </div>
+      
+      <div class="wire-info">
+        <span data-i18n="wireD">Диаметр провода $d$ = </span> <span id="d-display">0.0</span> <span data-i18n="mm">мм</span>
+      </div>
+
+      <div class="controls">
+        <div class="slider-group">
+          <label><span data-i18n="lenLabel">Длина l, м:</span> <span id="l-val">0.5</span> <span data-i18n="meter">м</span></label>
+          <input type="range" id="l-slider" min="0.2" max="1.0" step="0.1">
+        </div>
+        <button class="btn" id="btn-measure" data-i18n="measure">ИЗМЕРИТЬ</button>
+        <button class="btn btn-clear" id="btn-clear" data-i18n="newExp">НОВЫЙ ОПЫТ</button>
+      </div>
+    </div>
+
+    <div class="glass-panel data-table">
+      <h3 data-i18n="tableTitle">Таблица измерений</h3>
+      <table>
+        <thead><tr><th>№</th><th data-i18n="tableL">Длина $l$, м</th><th data-i18n="tableU">Напряжение $U$, В</th><th data-i18n="tableI">Ток $I$, А</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+
+      <div class="formula-box">
+        <span data-i18n="formTitle">Формулы для расчета:</span><br>
+        1. $\rho_i = \frac{\pi \cdot d^2 \cdot U_i}{4 \cdot I_i \cdot l_i}$<br>
+        2. $\rho_{cp} = \frac{\rho_1 + \rho_2 + \rho_3 + \rho_4 + \rho_5}{5}$<br>
+        3. $\Delta \rho = |\rho_{cp} - \rho_i|$<br>
+        4. $\varepsilon = \frac{\Delta \rho_{cp}}{\rho_{cp}} \cdot 100\%$
+      </div>
+
+      <div class="verification-box" id="verify-box">
+        <h3 data-i18n="verifTitle">Проверка вычислений</h3>
+        <div class="input-group">
+          <label data-i18n="avgRes">Ср. уд. сопротивление ($\rho_{cp}$), $\frac{Ом \cdot мм^2}{м}$:</label>
+          <input type="number" id="input-rho" step="0.01" placeholder="0.00">
+        </div>
+        <div class="input-group">
+          <label data-i18n="relErr">Отн. погрешность ($\varepsilon$), %:</label>
+          <input type="number" id="input-e" step="0.1" placeholder="0.0">
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px;" id="btn-check" data-i18n="checkBtn">ПРОВЕРИТЬ</button>
+        
+        <div class="attempts-info"><span data-i18n="attempts">Осталось попыток:</span> <span id="attempts-left">3</span></div>
+        <div class="feedback-box" id="feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const translations = {
+      ru: {
+        title: "Измерение удельного сопротивления проводника",
+        desc: "Установите длину проводника <b>l</b>, снимите показания приборов и проведите 5 измерений. В расчетах примите $\\pi \\approx 3.14$.",
+        voltmeter: "ВОЛЬТМЕТР", ammeter: "АМПЕРМЕТР",
+        wireD: "Диаметр провода $d$ = ", mm: "мм", lenLabel: "Длина l, м:", meter: "м",
+        measure: "ИЗМЕРИТЬ", newExp: "НОВЫЙ ОПЫТ",
+        tableTitle: "Таблица измерений", tableL: "Длина $l$, м", tableU: "Напряжение $U$, В", tableI: "Ток $I$, А",
+        formTitle: "Формулы для расчета:", verifTitle: "Проверка вычислений",
+        avgRes: "Ср. уд. сопротивление ($\\rho_{cp}$), $\\frac{Ом \\cdot мм^2}{м}$:", relErr: "Отн. погрешность ($\\varepsilon$), %:",
+        checkBtn: "ПРОВЕРИТЬ", attempts: "Осталось попыток:"
+      },
+      kk: {
+        title: "Өткізгіштің меншікті кедергісін өлшеу",
+        desc: "Өткізгіштің ұзындығын <b>l</b> орнатыңыз, аспаптардың көрсеткіштерін алыңыз және 5 өлшеу жүргізіңіз. Есептеулерде $\\pi \\approx 3.14$ деп алыңыз.",
+        voltmeter: "ВОЛЬТМЕТР", ammeter: "АМПЕРМЕТР",
+        wireD: "Сымның диаметрі $d$ = ", mm: "мм", lenLabel: "Ұзындық l, м:", meter: "м",
+        measure: "ӨЛШЕУ", newExp: "ЖАҢА ТӘЖІРИБЕ",
+        tableTitle: "Өлшеулер кестесі", tableL: "Ұзындық $l$, м", tableU: "Кернеу $U$, В", tableI: "Ток $I$, А",
+        formTitle: "Есептеу формулалары:", verifTitle: "Есептеулерді тексеру",
+        avgRes: "Орт. меншікті кедергі ($\\rho_{cp}$), $\\frac{Ом \\cdot мм^2}{м}$:", relErr: "Сал. қателік ($\\varepsilon$), %:",
+        checkBtn: "ТЕКСЕРУ", attempts: "Қалған мүмкіндіктер:"
+      },
+      en: {
+        title: "Measurement of the resistivity of a conductor",
+        desc: "Set the conductor length <b>l</b>, take instrument readings and conduct 5 measurements. Use $\\pi \\approx 3.14$ in your calculations.",
+        voltmeter: "VOLTMETER", ammeter: "AMMETER",
+        wireD: "Wire diameter $d$ = ", mm: "mm", lenLabel: "Length l, m:", meter: "m",
+        measure: "MEASURE", newExp: "NEW EXP",
+        tableTitle: "Measurement Table", tableL: "Length $l$, m", tableU: "Voltage $U$, V", tableI: "Current $I$, A",
+        formTitle: "Formulas for calculation:", verifTitle: "Verification",
+        avgRes: "Avg. resistivity ($\\rho_{cp}$), $\\frac{\\Omega \\cdot mm^2}{m}$:", relErr: "Rel. error ($\\varepsilon$), %:",
+        checkBtn: "CHECK", attempts: "Attempts left:"
+      }
+    };
+
+    const feedbackDict = {
+      ru: {
+        grade: "Оценка", perfect: "Отличный результат!", good: "Хорошо. Ошибка исправлена.", satisfactory: "Удовлетворительно.",
+        calcErr: "Ошибка в вычислениях. Попробуйте еще раз.", fail: "Оценка: 2/10. Правильные ответы:", unit: "Ом·мм²/м", enterNums: "Введите числовые значения."
+      },
+      kk: {
+        grade: "Баға", perfect: "Керемет нәтиже!", good: "Жақсы. Қате түзетілді.", satisfactory: "Қанағаттанарлық.",
+        calcErr: "Есептеуде қате бар. Қайта көріңіз.", fail: "Баға: 2/10. Дұрыс жауаптар:", unit: "Ом·мм²/м", enterNums: "Сандық мәндерді енгізіңіз."
+      },
+      en: {
+        grade: "Grade", perfect: "Excellent result!", good: "Good. Error corrected.", satisfactory: "Satisfactory.",
+        calcErr: "Calculation error. Try again.", fail: "Grade: 2/10. Correct answers:", unit: "Ω·mm²/m", enterNums: "Please enter numeric values."
+      }
+    };
+
+    let currentLang = 'ru';
+    let fbState = { type: null, grade: 0, realR: 0, realE: 0 };
+    const feedback = document.getElementById('feedback');
+
+    function renderFeedback() {
+      if (!fbState.type) {
+        feedback.style.display = 'none';
+        return;
+      }
+      
+      let dict = feedbackDict[currentLang];
+      if (fbState.type === 'success') {
+        let msg = fbState.grade === 10 ? dict.perfect : (fbState.grade === 8 ? dict.good : dict.satisfactory);
+        feedback.innerHTML = `${dict.grade}: ${fbState.grade}/10.<br>${msg}`;
+        feedback.className = 'feedback-box feedback-success';
+      } else if (fbState.type === 'warning') {
+        feedback.innerHTML = dict.calcErr;
+        feedback.className = 'feedback-box feedback-warning';
+      } else if (fbState.type === 'error') {
+        feedback.innerHTML = `${dict.fail}<br>$\\rho_{cp} \\approx ${fbState.realR.toFixed(2)}$ ${dict.unit}<br>$\\varepsilon \\approx ${fbState.realE.toFixed(1)}\\%$`;
+        feedback.className = 'feedback-box feedback-error';
+        if (typeof MathJax !== 'undefined') MathJax.typesetPromise([feedback]);
+      }
+      feedback.style.display = 'block';
+    }
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const elements = document.querySelectorAll('[data-i18n]');
+      elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) el.innerHTML = translations[lang][key];
+      });
+      renderFeedback();
+      if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+    }
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        changeLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
+    const vDisplay = document.getElementById('v-display');
+    const aDisplay = document.getElementById('a-display');
+    const wire = document.getElementById('wire');
+    const contact = document.getElementById('contact');
+    const lSlider = document.getElementById('l-slider');
+    const lVal = document.getElementById('l-val');
+    const dDisplay = document.getElementById('d-display');
+    
+    const btnMeasure = document.getElementById('btn-measure');
+    const btnClear = document.getElementById('btn-clear');
+    const tableBody = document.getElementById('table-body');
+    const verifyBox = document.getElementById('verify-box');
+    const btnCheck = document.getElementById('btn-check');
+    const spanAttempts = document.getElementById('attempts-left');
+    
+    let diameterMM; 
+    let trueRho; 
+    let attemptCount = 0;
+    let recordedData = []; 
+    let checksLeft = 3;
+
+    function initSetup() {
+      // Генерируем случайный диаметр от 0.3 до 0.7 мм
+      diameterMM = (Math.floor(Math.random() * 5) + 3) / 10;
+      dDisplay.innerText = diameterMM.toFixed(1);
+      
+      // Генерируем случайное сопротивление от 0.4 до 1.2 Ом*мм^2/м
+      trueRho = (Math.floor(Math.random() * 81) + 40) / 100; 
+      
+      lSlider.value = 0.5;
+      updateVisuals();
+    }
+
+    function updateVisuals() {
+      let l = parseFloat(lSlider.value);
+      lVal.innerText = l.toFixed(1);
+      
+      // Визуализация провода (0.0 м = 0%, 1.0 м = 100%)
+      let percent = (l / 1.0) * 100;
+      wire.style.width = `${percent}%`;
+      contact.style.left = `${percent}%`;
+      
+      // Сбрасываем дисплеи, пока не нажата кнопка "Измерить"
+      vDisplay.innerText = "0.00";
+      aDisplay.innerText = "0.00";
+    }
+
+    lSlider.addEventListener('input', () => { if(attemptCount < 5) updateVisuals(); });
+
+    function initTable() {
+      tableBody.innerHTML = '';
+      for(let i = 1; i <= 5; i++) {
+        tableBody.innerHTML += `<tr><td>${i}</td><td id="l-${i}">-</td><td id="u-${i}">-</td><td id="i-${i}">-</td></tr>`;
+      }
+    }
+    
+    window.onload = () => { initSetup(); initTable(); };
+
+    btnMeasure.addEventListener('click', () => {
+      if (attemptCount >= 5) return;
+      
+      let l = parseFloat(lSlider.value);
+      let S = (Math.PI * Math.pow(diameterMM, 2)) / 4; // Площадь в мм^2
+      let R_wire = (trueRho * l) / S; // Сопротивление куска провода
+      
+      let EMF = 4.5; // Напряжение источника
+      let R_circuit = 2.0; // Внутреннее сопротивление и провода
+      
+      let I_exact = EMF / (R_wire + R_circuit);
+      let U_exact = I_exact * R_wire;
+      
+      // Добавляем шум измерительных приборов (±2-3%)
+      let I_meas = I_exact * (1 + (Math.random() * 0.04 - 0.02));
+      let U_meas = U_exact * (1 + (Math.random() * 0.06 - 0.03));
+      
+      vDisplay.innerText = U_meas.toFixed(2);
+      aDisplay.innerText = I_meas.toFixed(2);
+      
+      recordResult(l, U_meas, I_meas);
+    });
+
+    function recordResult(l, u, i) {
+      attemptCount++;
+      document.getElementById(`l-${attemptCount}`).innerText = l.toFixed(2);
+      document.getElementById(`u-${attemptCount}`).innerText = u.toFixed(2);
+      document.getElementById(`i-${attemptCount}`).innerText = i.toFixed(2);
+      recordedData.push({ l: l, u: u, i: i });
+
+      if (attemptCount >= 5) {
+        btnMeasure.disabled = true;
+        lSlider.disabled = true;
+        verifyBox.style.display = 'block'; 
+      }
+    }
+
+    btnClear.addEventListener('click', () => {
+      attemptCount = 0;
+      recordedData = [];
+      checksLeft = 3;
+      fbState = { type: null, grade: 0, realR: 0, realE: 0 };
+      
+      initSetup();
+      lSlider.disabled = false;
+      btnMeasure.disabled = false;
+      btnCheck.disabled = false;
+      
+      verifyBox.style.display = 'none';
+      document.getElementById('input-rho').value = '';
+      document.getElementById('input-e').value = '';
+      renderFeedback();
+      spanAttempts.innerText = checksLeft;
+      initTable();
+    });
+
+    btnCheck.addEventListener('click', () => {
+      if (checksLeft <= 0) return;
+      const userRho = parseFloat(document.getElementById('input-rho').value);
+      const userE = parseFloat(document.getElementById('input-e').value);
+
+      if (isNaN(userRho) || isNaN(userE)) {
+        feedback.innerHTML = feedbackDict[currentLang].enterNums;
+        feedback.className = 'feedback-box feedback-warning';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      // Точный расчет как в тетради (используя Пи = 3.14)
+      const PI_SCHOOL = 3.14;
+      
+      let rhoValues = recordedData.map(d => {
+        return (PI_SCHOOL * Math.pow(diameterMM, 2) * d.u) / (4 * d.i * d.l);
+      });
+      
+      let realRhoCpExact = rhoValues.reduce((a, b) => a + b, 0) / 5;
+      let absErrorsExact = rhoValues.map(r => Math.abs(realRhoCpExact - r));
+      let realDeltaExact = absErrorsExact.reduce((a, b) => a + b, 0) / 5;
+      let realEExact = (realDeltaExact / realRhoCpExact) * 100;
+
+      // Расчет с промежуточными округлениями до сотых
+      let rhoRounded = rhoValues.map(r => Math.round(r * 100) / 100);
+      let realRhoCpRounded = Math.round((rhoRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let absErrorsRounded = rhoRounded.map(r => Math.round(Math.abs(realRhoCpRounded - r) * 100) / 100);
+      let realDeltaRounded = Math.round((absErrorsRounded.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+      let realERounded = (realDeltaRounded / realRhoCpRounded) * 100;
+
+      // Допуски
+      const marginRho = 0.05;
+      const marginE = 2.0; 
+
+      const isRhoCorrect = Math.abs(userRho - realRhoCpExact) <= marginRho || Math.abs(userRho - realRhoCpRounded) <= marginRho;
+      const isECorrect = Math.abs(userE - realEExact) <= marginE || Math.abs(userE - realERounded) <= marginE;
+
+      checksLeft--;
+      spanAttempts.innerText = checksLeft;
+
+      if (isRhoCorrect && isECorrect) {
+        fbState.type = 'success';
+        fbState.grade = checksLeft === 2 ? 10 : (checksLeft === 1 ? 8 : 5);
+        btnCheck.disabled = true;
+      } else {
+        if (checksLeft > 0) {
+          fbState.type = 'warning';
+        } else {
+          fbState.type = 'error';
+          fbState.realR = realRhoCpRounded;
+          fbState.realE = realERounded;
+          btnCheck.disabled = true;
+        }
+      }
+      renderFeedback();
+    });
+  </script>
+</body>
+</html>

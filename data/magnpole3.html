@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Команда 3: 3D Маневр (Светлая тема)</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f4f6f9; color: #333; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        
+        #main-container { display: flex; flex-direction: column; height: 100vh; }
+        #canvas-container { flex: 1; position: relative; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
+        
+        /* Панель управления снизу */
+        #controls-panel { 
+            height: 230px;
+            background: rgba(255, 255, 255, 0.98); 
+            border-top: 2px solid #e0e5ec;
+            padding: 15px 30px; 
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            display: flex; gap: 30px; align-items: center;
+        }
+        
+        .col { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%;}
+        
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; text-align: center; border-bottom: 2px solid #e0e5ec; padding-bottom: 8px; color: #112; text-transform: uppercase; letter-spacing: 1px;}
+        
+        /* Стили счетчика */
+        .counter-box { display: flex; justify-content: space-between; align-items: center; background: #eef2f7; padding: 10px 15px; border-radius: 8px; margin-bottom: 12px; font-weight: bold; border: 1px solid #d1d9e6;}
+        #attemptVal { color: #d35400; font-size: 1.4rem; }
+
+        .info-box { background: rgba(0, 85, 255, 0.05); padding: 12px 15px; border-radius: 8px; border-left: 4px solid #0055ff; font-size: 0.95rem; line-height: 1.5; color: #444;}
+        .info-box b { color: #000; }
+        .hl { color: #0055ff; font-weight: bold; font-size: 1.1rem; }
+        
+        /* Панель телеметрии */
+        .telemetry { background: #eef2f7; border: 1px solid #d1d9e6; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 1.1rem;}
+        .telemetry div { margin-bottom: 8px; color: #555; }
+        .telemetry span { float: right; color: #112; font-weight: bold; }
+        .telemetry .ratio { font-size: 1.2rem; border-top: 1px solid #d1d9e6; padding-top: 8px; margin-top: 8px; font-weight: bold;}
+        
+        label { display: block; margin-top: 5px; font-size: 0.9rem; color: #555; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        input[type="range"] { width: 100%; margin-top: 10px; accent-color: #0055ff; cursor: pointer; }
+        
+        .btn { width: 100%; padding: 14px; margin-top: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #launchBtn { background: linear-gradient(135deg, #0055ff, #00aaff); color: white; margin-top: 15px; box-shadow: 0 4px 15px rgba(0, 85, 255, 0.3);}
+        #launchBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 85, 255, 0.4); }
+        #launchBtn:disabled { background: #ccc; color: #888; cursor: not-allowed; box-shadow: none; transform: none;}
+        
+        #status { margin-top: 15px; padding: 10px; text-align: center; font-weight: bold; border-radius: 6px; font-size: 0.95rem; opacity: 0; transition: 0.3s; }
+        .fail { background: #fdeaea; border: 1px solid #e74c3c; color: #c0392b; opacity: 1 !important; }
+        .success { background: #eafaf1; border: 1px solid #2ecc71; color: #27ae60; opacity: 1 !important; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="main-container">
+        <div id="canvas-container"></div>
+
+        <div id="controls-panel">
+            <div class="col">
+                <h2>Контур 3: 3D Маневр</h2>
+                
+                <div class="counter-box">
+                    <span>Попытка:</span>
+                    <span id="attemptVal">0</span>
+                </div>
+
+                <div class="info-box">
+                    <b>Частица:</b> $\alpha$-частица ($q > 0$)<br>
+                    <b>Поле (B):</b> 1.0 Тл (вдоль оси Z)<br>
+                    <b>Задача:</b> Обогнуть препятствие.<br>
+                    <hr style="border:0; border-top:1px solid #d1d9e6; margin:8px 0;">
+                    <b>Цель:</b> Отношение Радиуса (R) к шагу спирали (h) должно быть строго равно <b>3.0</b>.
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="telemetry">
+                    <div>Радиус (R): <span id="rVal">0.00 см</span></div>
+                    <div>Шаг винта (h): <span id="hVal">0.00 см</span></div>
+                    <div class="ratio">Отношение R/h: <span id="ratioVal">0.00</span></div>
+                </div>
+            </div>
+
+            <div class="col">
+                <label>Угол влета $\alpha$: <span id="alphaTxt" class="hl">80.0</span>°</label>
+                <input type="range" id="alphaSld" min="70.0" max="89.9" value="80.0" step="0.1">
+                
+                <button id="launchBtn" class="btn">ЗАПУСК СПИРАЛИ</button>
+                <div id="status">ОЖИДАНИЕ</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация 3D сцены
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        scene.background = new THREE.Color(0xf4f6f9);
+        scene.fog = new THREE.FogExp2(0xf4f6f9, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+        camera.position.set(20, 15, 30); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.offsetWidth, container.offsetHeight);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // Векторы магнитного поля
+        const fieldGroup = new THREE.Group();
+        const bDir = new THREE.Vector3(0, 0, 1);
+        for(let x = -15; x <= 15; x += 10) {
+            for(let y = -15; y <= 15; y += 10) {
+                const arrow = new THREE.ArrowHelper(bDir, new THREE.Vector3(x, y, -25), 50, 0x3498db, 1.5, 0.8);
+                arrow.line.material.opacity = 0.3; arrow.line.material.transparent = true;
+                arrow.cone.material.opacity = 0.3; arrow.cone.material.transparent = true;
+                fieldGroup.add(arrow);
+            }
+        }
+        scene.add(fieldGroup);
+
+        // Препятствие (Цилиндр)
+        const obstacleRadius = 3.5; 
+        const obsGeo = new THREE.CylinderGeometry(obstacleRadius, obstacleRadius, 60, 32);
+        obsGeo.rotateX(Math.PI / 2); 
+        const obsMat = new THREE.MeshPhongMaterial({ color: 0xbdc3c7, transparent: true, opacity: 0.6, wireframe: false });
+        const obstacle = new THREE.Mesh(obsGeo, obsMat);
+        scene.add(obstacle);
+        
+        const wireframe = new THREE.LineSegments( new THREE.WireframeGeometry( obsGeo ), new THREE.LineBasicMaterial( { color: 0x2c3e50, opacity: 0.15, transparent: true } ) );
+        obstacle.add( wireframe );
+
+        // Физика
+        const M = 6.64e-27; 
+        const Q = 3.2e-19;  
+        const B = 1.0;
+        const V_MAG = 2e6; 
+
+        let state = 'IDLE';
+        let attempts = 0; // Переменная счетчика
+        let trajectoryLine = null;
+        let particleMesh = null;
+        let animPoints = [];
+        let drawCount = 0;
+
+        function resize() {
+            camera.aspect = container.offsetWidth / container.offsetHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.offsetWidth, container.offsetHeight);
+        }
+        window.addEventListener('resize', resize);
+
+        function updateTelemetry(R, h, ratio) {
+            document.getElementById('rVal').innerText = (R * 100).toFixed(2) + " см";
+            document.getElementById('hVal').innerText = (h * 100).toFixed(2) + " см";
+            
+            const ratioEl = document.getElementById('ratioVal');
+            ratioEl.innerText = ratio.toFixed(2);
+            
+            if (Math.abs(ratio - 3.0) <= 0.06) ratioEl.style.color = "#27ae60";
+            else ratioEl.style.color = "#c0392b";
+        }
+
+        document.getElementById('alphaSld').addEventListener('input', (e) => {
+            const alphaDeg = parseFloat(e.target.value);
+            document.getElementById('alphaTxt').innerText = alphaDeg.toFixed(1);
+            
+            const alphaRad = alphaDeg * Math.PI / 180;
+            const v_perp = V_MAG * Math.sin(alphaRad);
+            const v_par = V_MAG * Math.cos(alphaRad);
+            const omega = (Q * B) / M;
+            const R = v_perp / omega;
+            const T = 2 * Math.PI / omega;
+            const h = v_par * T;
+            updateTelemetry(R, h, R/h);
+            
+            if(state !== 'RUN') {
+                if(trajectoryLine) scene.remove(trajectoryLine);
+                if(particleMesh) scene.remove(particleMesh);
+                document.getElementById('status').style.opacity = 0;
+            }
+        });
+
+        document.getElementById('alphaSld').dispatchEvent(new Event('input'));
+
+        document.getElementById('launchBtn').onclick = () => {
+            if(trajectoryLine) scene.remove(trajectoryLine);
+            if(particleMesh) scene.remove(particleMesh);
+            
+            // Увеличиваем счетчик при каждом запуске
+            attempts++;
+            document.getElementById('attemptVal').innerText = attempts;
+            
+            document.getElementById('launchBtn').disabled = true;
+            document.getElementById('status').style.opacity = 0;
+
+            const alphaDeg = parseFloat(document.getElementById('alphaSld').value);
+            const alphaRad = alphaDeg * Math.PI / 180;
+            
+            const v_perp = V_MAG * Math.sin(alphaRad);
+            const v_par = V_MAG * Math.cos(alphaRad);
+            const omega = (Q * B) / M;
+            const R = v_perp / omega;
+            const T = 2 * Math.PI / omega;
+            const h = v_par * T;
+            const ratio = R / h;
+
+            const scale = 100;
+            const R_scene = R * scale;
+            const v_par_scene = v_par * scale;
+
+            animPoints = [];
+            const maxTurns = 5; 
+            const dt = T / 100; 
+            
+            for (let t = 0; t <= T * maxTurns; t += dt) {
+                const x = R_scene * Math.cos(omega * t);
+                const y = R_scene * Math.sin(omega * t);
+                const z = v_par_scene * t - 20; 
+                animPoints.push(new THREE.Vector3(x, y, z));
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(animPoints);
+            geometry.setDrawRange(0, 0); 
+            
+            const isSuccess = Math.abs(ratio - 3.0) <= 0.06;
+            const color = isSuccess ? 0x27ae60 : 0xe74c3c;
+            
+            const material = new THREE.LineBasicMaterial({ color: color, linewidth: 3 });
+            trajectoryLine = new THREE.Line(geometry, material);
+            scene.add(trajectoryLine);
+
+            const pGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            const pMat = new THREE.MeshBasicMaterial({ color: color });
+            particleMesh = new THREE.Mesh(pGeo, pMat);
+            scene.add(particleMesh);
+
+            drawCount = 0;
+            state = 'RUN';
+
+            function animatePath() {
+                if (state !== 'RUN') return;
+                
+                drawCount += 2; 
+                trajectoryLine.geometry.setDrawRange(0, drawCount);
+                
+                if (drawCount < animPoints.length) {
+                    particleMesh.position.copy(animPoints[drawCount]);
+                    requestAnimationFrame(animatePath);
+                } else {
+                    state = 'DONE';
+                    document.getElementById('launchBtn').disabled = false;
+                    const statusEl = document.getElementById('status');
+                    
+                    if (isSuccess) {
+                        statusEl.innerText = "УСПЕХ: МАНЕВР ВЫПОЛНЕН";
+                        statusEl.className = 'success';
+                    } else {
+                        statusEl.innerText = "АВАРИЯ: НЕВЕРНЫЙ ШАГ ВИНТА";
+                        statusEl.className = 'fail';
+                    }
+                }
+            }
+            animatePath();
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            
+            if(state === 'IDLE' || state === 'DONE') {
+                scene.rotation.y += 0.001;
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

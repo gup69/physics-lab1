@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер: Радиоактивный Распад</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 10px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 900px; width: 100%; }
+        h2 { color: #2c3e50; margin: 0 0 10px 0; text-align: center; }
+        
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .atom-box {
+            position: relative;
+            background: #2c3e50;
+            border-radius: 8px;
+            height: 400px; /* Фиксированная высота */
+            width: 100%;
+            display: flex; /* Центровка канваса */
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        canvas#atomCanvas {
+            /* Канвас заполняет блок */
+            width: 100%;
+            height: 100%; 
+        }
+
+        .info-panel {
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        
+        .stats {
+            background: #ecf0f1; padding: 15px; border-radius: 8px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            font-weight: bold; color: #2c3e50;
+        }
+        .stat-val { font-size: 1.2em; color: #e74c3c; }
+        
+        .controls {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            background: #f8f9fa; padding: 10px; border-radius: 8px;
+        }
+        
+        button {
+            padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s;
+        }
+        .btn-start { background: #27ae60; } .btn-start:hover { background: #2ecc71; }
+        .btn-reset { background: #e67e22; } .btn-reset:hover { background: #d35400; }
+        
+        input[type=range] { width: 150px; }
+
+        @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Закон Радиоактивного Распада</h2>
+    
+    <div class="controls">
+        <button class="btn-start" onclick="toggleSim()" id="btnStart">Старт</button>
+        <button class="btn-reset" onclick="resetSim()">Сброс</button>
+        
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+            <label>Период (T½): <span id="halfLifeVal">5</span> с</label>
+            <input type="range" id="halfLifeSlider" min="1" max="10" value="5" oninput="updateHalfLife(this.value)">
+        </div>
+    </div>
+
+    <div class="layout" style="margin-top: 20px;">
+        <div class="atom-box">
+            <canvas id="atomCanvas"></canvas>
+            <div style="position: absolute; top: 10px; left: 10px; color: white; font-size: 12px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px;">
+                Синие = Активные<br>Серые = Распавшиеся
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="stats">
+                <div>Ядер (N): <div id="nCount" class="stat-val">2500</div></div>
+                <div>Время (t): <div id="timeVal" class="stat-val" style="color: #2980b9">0.0</div> c</div>
+                <div>Активность (A): <div id="actVal" class="stat-val" style="color: #8e44ad">0</div></div>
+                <div>Распад: <div id="percentVal" class="stat-val" style="color: #7f8c8d">0%</div></div>
+            </div>
+            
+            <div style="height: 250px;">
+                <canvas id="chartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- НАСТРОЙКИ ---
+    const TOTAL_ATOMS = 2500; // 50x50 grid
+    let atoms = []; // {x, y, active}
+    let halfLife = 5; // Секунды
+    let time = 0;
+    let isRunning = false;
+    let timerId = null;
+    let chart;
+    const dt = 0.1; // Шаг симуляции (сек)
+
+    // Канвас атомов
+    const atomCanvas = document.getElementById('atomCanvas');
+    const ctx = atomCanvas.getContext('2d');
+    
+    // Инициализация
+    function init() {
+        // Настройка размера канваса атомов
+        const box = document.querySelector('.atom-box');
+        atomCanvas.width = box.clientWidth;
+        atomCanvas.height = box.clientHeight;
+        
+        // Создаем атомы
+        atoms = [];
+        const cols = 50;
+        const rows = 50;
+        const pad = 4; // отступы
+        // Вычисляем размер точки, чтобы всё влезло
+        const w = (atomCanvas.width - pad*2) / cols;
+        const h = (atomCanvas.height - pad*2) / rows;
+        const radius = Math.min(w, h) * 0.4;
+
+        for(let i=0; i<TOTAL_ATOMS; i++) {
+            let c = i % cols;
+            let r = Math.floor(i / cols);
+            atoms.push({
+                x: pad + c * w + w/2,
+                y: pad + r * h + h/2,
+                r: radius,
+                active: true
+            });
+        }
+
+        initChart();
+        drawAtoms();
+        updateStats(TOTAL_ATOMS, 0);
+    }
+
+    // --- ЛОГИКА СИМУЛЯЦИИ ---
+    function step() {
+        if (!isRunning) return;
+        
+        time += dt;
+        
+        // Вероятность распада за время dt: P = 1 - 2^(-dt/T)
+        // Или через лямбду: lambda = ln(2)/T; P = 1 - exp(-lambda * dt)
+        const lambda = 0.693 / halfLife;
+        const prob = 1 - Math.exp(-lambda * dt);
+        
+        let decayedNow = 0;
+        let activeCount = 0;
+
+        // Проходим по атомам
+        for (let atom of atoms) {
+            if (atom.active) {
+                // Бросаем кубик
+                if (Math.random() < prob) {
+                    atom.active = false;
+                    decayedNow++;
+                } else {
+                    activeCount++;
+                }
+            }
+        }
+
+        // Обновляем данные
+        drawAtoms();
+        updateStats(activeCount, decayedNow);
+        
+        // Добавляем точку на график (каждые 0.5 сек для производительности или каждый шаг)
+        if (Math.round(time * 10) % 5 === 0) {
+            chart.data.labels.push(time.toFixed(1));
+            chart.data.datasets[0].data.push(activeCount);
+            
+            // Теоретическая кривая N = N0 * 2^(-t/T)
+            const theory = TOTAL_ATOMS * Math.pow(2, -time/halfLife);
+            chart.data.datasets[1].data.push(theory);
+            
+            chart.update('none'); // 'none' для плавной анимации без перерисовки осей
+        }
+
+        if (activeCount === 0) toggleSim(); // Стоп, если все распались
+    }
+
+    // --- ОТРИСОВКА ---
+    function drawAtoms() {
+        ctx.clearRect(0, 0, atomCanvas.width, atomCanvas.height);
+        
+        for (let atom of atoms) {
+            ctx.beginPath();
+            ctx.arc(atom.x, atom.y, atom.r, 0, Math.PI*2);
+            if (atom.active) {
+                ctx.fillStyle = '#3498db'; // Синий (активный)
+            } else {
+                ctx.fillStyle = '#bdc3c7'; // Серый (мертвый)
+            }
+            ctx.fill();
+        }
+    }
+
+    function updateStats(n, decayedNow) {
+        document.getElementById('nCount').innerText = n;
+        document.getElementById('timeVal').innerText = time.toFixed(1);
+        
+        // Активность = распады в секунду. У нас шаг dt, значит A = decayedNow / dt
+        let activity = Math.round(decayedNow / dt);
+        document.getElementById('actVal').innerText = activity + " Бк";
+        
+        let percent = ((TOTAL_ATOMS - n) / TOTAL_ATOMS * 100).toFixed(0);
+        document.getElementById('percentVal').innerText = percent + "%";
+    }
+
+    function initChart() {
+        const ctxChart = document.getElementById('chartCanvas').getContext('2d');
+        if(chart) chart.destroy();
+        
+        chart = new Chart(ctxChart, {
+            type: 'line',
+            data: {
+                labels: [0],
+                datasets: [
+                    {
+                        label: 'Эксперимент N(t)',
+                        data: [TOTAL_ATOMS],
+                        borderColor: '#e74c3c',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Теория (Идеал)',
+                        data: [TOTAL_ATOMS],
+                        borderColor: '#2ecc71',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { title: {display: true, text: 'Время (с)'} },
+                    y: { min: 0, max: TOTAL_ATOMS }
+                },
+                plugins: {
+                    legend: { display: true }
+                }
+            }
+        });
+    }
+
+    // --- УПРАВЛЕНИЕ ---
+    function toggleSim() {
+        if (isRunning) {
+            clearInterval(timerId);
+            isRunning = false;
+            document.getElementById('btnStart').innerText = "Старт";
+            document.getElementById('btnStart').style.background = "#27ae60";
+        } else {
+            timerId = setInterval(step, dt * 1000); // реальное время
+            isRunning = true;
+            document.getElementById('btnStart').innerText = "Пауза";
+            document.getElementById('btnStart').style.background = "#e67e22";
+        }
+    }
+
+    function resetSim() {
+        clearInterval(timerId);
+        isRunning = false;
+        time = 0;
+        document.getElementById('btnStart').innerText = "Старт";
+        document.getElementById('btnStart').style.background = "#27ae60";
+        init();
+    }
+
+    function updateHalfLife(val) {
+        halfLife = parseFloat(val);
+        document.getElementById('halfLifeVal').innerText = halfLife;
+        // Если меняем на ходу, график теории сломается, лучше сделать сброс
+        if (time > 0) resetSim();
+    }
+
+    // Запуск при загрузке
+    init();
+    window.addEventListener('resize', () => {
+        // Пересчитываем только если не идет симуляция, иначе собьются координаты
+        if(!isRunning && time === 0) init();
+    });
+
+</script>
+
+</body>
+</html>

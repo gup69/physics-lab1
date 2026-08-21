@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Баллистический тест композитной брони | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    
+    .header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; width: 100%; max-width: 1000px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* VIEWPORT (Виртуальная лаборатория) */
+    .viewport { position: relative; width: 100%; height: 350px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #475569; }
+    
+    /* Сетка координат */
+    .grid-bg { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px);
+        background-size: 50px 50px; opacity: 0.5;
+    }
+    .grid-axis { position: absolute; bottom: 50px; left: 0; width: 100%; height: 2px; background: #38BDF8; }
+    
+    /* Шкала высоты (Y) */
+    .y-scale { position: absolute; left: 5px; bottom: 50px; color: #38BDF8; font-family: monospace; font-size: 0.8rem; display: flex; flex-direction: column-reverse; gap: 36px; }
+    .y-scale span { display: block; position: relative; }
+    .y-scale span::after { content: ''; position: absolute; left: 25px; top: 50%; width: 10px; height: 1px; background: #38BDF8; }
+
+    /* Объекты симуляции */
+    .pendulum-string { position: absolute; top: 0; left: 50%; width: 2px; background: #94A3B8; transform-origin: top center; z-index: 2; }
+    .armor-block { position: absolute; width: 80px; height: 80px; background: #475569; border: 2px solid #94A3B8; border-radius: 4px; left: calc(50% - 40px); transform-origin: top center; z-index: 3; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-family: monospace;}
+    .debris { position: absolute; width: 15px; height: 15px; background: #EF4444; border-radius: 50%; bottom: 82px; z-index: 4; box-shadow: 0 0 10px #EF4444; }
+
+    /* Управление плеером */
+    .player-controls { margin-top: 15px; display: flex; align-items: center; gap: 15px; }
+    input[type=range] { flex-grow: 1; accent-color: #38BDF8; cursor: pointer; }
+    .time-display { font-family: monospace; color: #38BDF8; font-size: 1.1rem; width: 60px; }
+
+    /* Панель данных и расчетов */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: monospace; font-size: 1rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    .calc-input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1.2rem; border-radius: 8px; margin-top: 15px; text-align: center; outline: none;}
+    .calc-input::placeholder { color: #475569; font-size: 0.9rem;}
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    /* ИИ Консоль */
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 200px; font-family: monospace; color: #10B981; font-size: 0.9rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 4px; }
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #38BDF8; }
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Трекинг высокоскоростного удара" data-kk="Жоғары жылдамдықты соққы трекингі" data-en="High-Velocity Impact Tracking">Трекинг высокоскоростного удара</h1>
+      <p data-ru="Анализ кинематики баллистического маятника" data-kk="Баллистикалық маятник кинематикасын талдау" data-en="Analysis of ballistic pendulum kinematics">Анализ кинематики баллистического маятника</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ВИДЕО-АНАЛИЗАТОР -->
+    <div class="panel">
+      <h2 data-ru="Сенсоры камеры (Измерение отклонения)" data-kk="Камера сенсорлары (Ауытқуды өлшеу)" data-en="Camera Sensors (Deflection Measurement)">Сенсоры камеры (Измерение отклонения)</h2>
+      
+      <div class="viewport" id="viewport">
+        <div class="grid-bg"></div>
+        <div class="grid-axis"></div>
+        <div class="y-scale">
+          <span>0m</span><span>0.1m</span><span>0.2m</span><span>0.3m</span><span>0.4m</span><span>0.5m</span>
+        </div>
+        
+        <!-- Подвес и блок -->
+        <div class="pendulum-string" id="string" style="height: 250px;"></div>
+        <div class="armor-block" id="block" style="top: 210px;"><span style="margin-top: 20px">M</span></div>
+        <div class="debris" id="debris" style="left: -20px;"></div>
+      </div>
+
+      <div class="player-controls">
+        <span data-ru="Кадр:" data-kk="Кадр:" data-en="Frame:">Кадр:</span>
+        <input type="range" id="timeline" min="0" max="100" value="0">
+        <div class="time-display" id="time-display">t=0.0s</div>
+      </div>
+      <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 10px;" data-ru="* Используйте сетку для измерения максимальной высоты подъема блока (h). 1 клетка = 0.1 м." data-kk="* Блоктың максималды көтерілу биіктігін (h) өлшеу үшін торды пайдаланыңыз. 1 тор = 0.1 м." data-en="* Use the grid to measure the maximum height (h) of the block. 1 square = 0.1 m.">* Используйте сетку для измерения максимальной высоты подъема блока (h). 1 клетка = 0.1 м.</p>
+    </div>
+
+    <!-- ВВОД ДАННЫХ И ИИ -->
+    <div class="panel">
+      <h2 data-ru="Исходные данные (Константы)" data-kk="Бастапқы деректер (Тұрақтылар)" data-en="Initial Data (Constants)">Исходные данные (Константы)</h2>
+      
+      <div class="data-row">
+        <span data-ru="Масса бронеблока (M):" data-kk="Бронь блогының массасы (M):" data-en="Armor block mass (M):">Масса бронеблока (M):</span>
+        <strong id="mass-block">1.95 кг</strong>
+      </div>
+      <div class="data-row">
+        <span data-ru="Масса мусора (m):" data-kk="Қоқыс массасы (m):" data-en="Debris mass (m):">Масса мусора (m):</span>
+        <strong id="mass-debris">0.05 кг</strong>
+      </div>
+      <div class="data-row">
+        <span>Ускорение (g):</span>
+        <strong>9.8 м/с²</strong>
+      </div>
+
+      <h2 style="margin-top: 20px" data-ru="Расчетно-аналитический модуль" data-kk="Есептеу-аналитикалық модуль" data-en="Calculation & Analysis Module">Расчетно-аналитический модуль</h2>
+      <input type="number" id="student-velocity" class="calc-input" placeholder="Введите V0 осколка (м/с)" step="0.1">
+      <button class="btn-submit" onclick="analyzeResult()" data-ru="ПЕРЕДАТЬ ИИ ДЛЯ АНАЛИЗА БРОНИ" data-kk="ЖИ-ГЕ БРОНЬДЫ ТАЛДАУҒА БЕРУ" data-en="SUBMIT TO AI FOR ARMOR ANALYSIS">ПЕРЕДАТЬ ИИ ДЛЯ АНАЛИЗА БРОНИ</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">ORBITSHIELD AI Ready...<br>Ожидание вычислений инженера.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ФИЗИЧЕСКАЯ МОДЕЛЬ (Скрыта от ученика)
+    // Ученик должен вычислить V_initial сам.
+    // Выбираем случайную высоту подъема от 0.1 до 0.35 м, чтобы результат был красивым.
+    const h_actual = (Math.floor(Math.random() * 25) + 10) / 100; // от 0.10 до 0.35 м
+    const g = 9.8;
+    const M = 1.95; // кг
+    const m = 0.05; // кг
+    
+    // Скрытые вычисления для проверки
+    const u_block = Math.sqrt(2 * g * h_actual); // скорость блока после удара
+    const V_initial = (u_block * (M + m)) / m; // начальная скорость мусора
+
+    // Анимационные параметры
+    const timeline = document.getElementById('timeline');
+    const block = document.getElementById('block');
+    const debris = document.getElementById('debris');
+    const timeDisplay = document.getElementById('time-display');
+    const aiOutput = document.getElementById('ai-output');
+
+    // 1 клетка сетки = 50px = 0.1м. Значит 1м = 500px.
+    const pxPerMeter = 500; 
+
+    // Логика раскадровки (Tracker)
+    timeline.addEventListener('input', function() {
+        let t = parseInt(this.value); // 0 до 100
+        timeDisplay.innerText = `t=${(t * 0.01).toFixed(2)}s`;
+
+        if (t < 30) {
+            // Кадры до удара (мусор летит)
+            let progress = t / 30; // 0 to 1
+            // Начальная позиция X: -50px, конечная: центр блока (calc(50% - 7.5px))
+            debris.style.left = `calc(${progress * 50}% - 7.5px)`;
+            debris.style.bottom = `90px`; // на уровне центра блока
+            
+            // Блок висит ровно
+            block.style.transform = `translateY(0px)`;
+            debris.style.opacity = "1";
+        } 
+        else if (t >= 30) {
+            // Удар произошел
+            let swingProgress = (t - 30) / 70; // 0 to 1 (от удара до максимума)
+            // Функция синуса для замедления маятника в верхней точке
+            let factor = Math.sin(swingProgress * Math.PI / 2); 
+            
+            let currentH = h_actual * factor;
+            let pixelOffset = currentH * pxPerMeter; // переводим метры в пиксели
+            
+            // Поднимаем блок (минус по Y, так как ось Y в вебе идет вниз)
+            block.style.transform = `translateY(-${pixelOffset}px)`;
+            
+            // Мусор внутри брони (прячем или двигаем вместе)
+            debris.style.opacity = "0";
+        }
+    });
+
+    // Функция ИИ-анализа
+    function analyzeResult() {
+        const studentV = parseFloat(document.getElementById('student-velocity').value);
+        const currentLang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        
+        if (isNaN(studentV)) {
+            printAI("ОШИБКА: Пустые данные.", "ҚАТЕ: Деректер жоқ.", "ERROR: Empty data.", "error");
+            return;
+        }
+
+        // Погрешность 2% допустима из-за округления g=9.8 или визуального считывания
+        const margin = V_initial * 0.02; 
+        
+        if (Math.abs(studentV - V_initial) <= margin) {
+            // Правильно
+            const E_k = (m * Math.pow(studentV, 2)) / 2; // Кинетическая энергия осколка
+            
+            let status = E_k < 500 ? 
+                (currentLang === 'ru' ? "УЩЕРБ МИНИМАЛЕН. Броня в норме." : (currentLang === 'kk' ? "ЗАҚЫМ МИНИМАЛДЫ. Бронь қалыпты." : "MINIMAL DAMAGE. Armor optimal.")) : 
+                (currentLang === 'ru' ? "КРИТИЧЕСКИЙ УДАР. Требуется замена модуля." : (currentLang === 'kk' ? "КРИТИКАЛЫҚ СОҚҚЫ. Модульді ауыстыру қажет." : "CRITICAL HIT. Module replacement required."));
+            
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Телеметрия подтверждает скорость: ${studentV.toFixed(1)} м/с.<br>--------------------<br>Вычисление энергии удара...<br>Кинетическая энергия: ${E_k.toFixed(0)} Дж.<br>ВЕРДИКТ: ${status}`, 
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Телеметрия жылдамдықты растайды: ${studentV.toFixed(1)} м/с.<br>--------------------<br>Соққы энергиясын есептеу...<br>Кинетикалық энергия: ${E_k.toFixed(0)} Дж.<br>ВЕРДИКТ: ${status}`,
+                    `SYNC SUCCESSFUL.<br>Telemetry confirms velocity: ${studentV.toFixed(1)} m/s.<br>--------------------<br>Calculating impact energy...<br>Kinetic energy: ${E_k.toFixed(0)} J.<br>VERDICT: ${status}`,
+                    "success");
+        } else {
+            // Неправильно
+            printAI(`ОШИБКА РАСЧЕТА.<br>Введенная скорость: ${studentV} м/с не соответствует профилю удара.<br>Рекомендация: Проверьте формулу V = (M+m)/m * sqrt(2gh). Убедитесь, что высота (h) измерена верно.`, 
+                    `ЕСЕПТЕУ ҚАТЕСІ.<br>Енгізілген жылдамдық: ${studentV} м/с соққы профиліне сәйкес келмейді.<br>Ұсыныс: V = (M+m)/m * sqrt(2gh) формуласын тексеріңіз. Биіктік (h) дұрыс өлшенгеніне көз жеткізіңіз.`,
+                    `CALCULATION ERROR.<br>Entered velocity: ${studentV} m/s does not match impact profile.<br>Recommendation: Check formula V = (M+m)/m * sqrt(2gh). Ensure height (h) is measured correctly.`,
+                    "error");
+        }
+    }
+
+    function printAI(ru, kk, en, type) {
+        const currentLang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        let text = ru;
+        if (currentLang === 'kk') text = kk;
+        if (currentLang === 'en') text = en;
+        
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `[AI]: ${text}`;
+        aiOutput.prepend(div);
+    }
+
+    // Логика языков
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+      });
+    });
+
+  </script>
+</body>
+</html>

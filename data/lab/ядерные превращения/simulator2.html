@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ядролық Түрленулер Симуляторы</title>
+
+    <style>
+       
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #004a99;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+            padding: 0.5rem;
+        }
+        .nav-button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #777;
+        }
+        .nav-button.active {
+            background-color: #007bff;
+        }
+        main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .content-section {
+            display: none; 
+            animation: fadeIn 0.5s;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .task-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #canvas-container {
+            position: relative; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            background-color: #fafafa;
+            min-height: 300px;
+            overflow: hidden; 
+        }
+        .formula-overlay {
+            position: absolute;
+            top: 20px; 
+            left: 0;
+            right: 0;
+            z-index: 10; 
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none; 
+        }
+        .formula-overlay.active {
+            display: block;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .control-button {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .control-button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .simulation-nav {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .sim-button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            margin: 5px; 
+            border-radius: 5px;
+        }
+        .sim-button:hover {
+            background-color: #e0e0e0;
+        }
+        .sim-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        /* Тест стильдері */
+        #user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #user-info div {
+            margin-bottom: 10px;
+        }
+        #user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+        #start-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-quiz:hover {
+            background-color: #0056b3;
+        }
+        .question-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-left: 5px solid #007bff;
+            background: #fdfdfd;
+        }
+        .question-block p {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 0;
+        }
+        .question-block label {
+            display: block;
+            margin: 5px 0 5px 20px;
+            cursor: pointer;
+        }
+        #submit-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; 
+            margin-top: 20px;
+        }
+        
+        /* Модальды терезе стильдері */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .modal-content h3 {
+            color: #004a99;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+        }
+        .modal-content #result-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        .modal-content .close-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        #save-results-button {
+            background-color: #28a745;
+            margin-right: 10px;
+        }
+
+        /* "Есеп" бетінің стильдері */
+        .task-generator {
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        #task-equation {
+            font-size: 2rem; 
+            font-family: 'Times New Roman', Times, serif;
+            margin: 20px 0;
+            padding: 25px;
+            min-height: 50px;
+            line-height: 1.5;
+        }
+        #task-inputs-nucleus {
+            margin-bottom: 20px;
+        }
+        #task-inputs-nucleus span {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        #task-inputs-nucleus input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin: 0 10px;
+            -moz-appearance: textfield;
+        }
+        #task-inputs-nucleus input::-webkit-outer-spin-button,
+        #task-inputs-nucleus input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #task-inputs-particle {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #task-inputs-particle input[type="radio"] {
+            display: none; 
+        }
+        #task-inputs-particle label {
+            padding: 10px 20px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-family: 'Times New Roman', Times, serif;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        #task-inputs-particle input[type="radio"]:checked + label {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        #task-inputs-particle label:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .task-controls {
+            margin-top: 15px;
+        }
+        #task-feedback {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 1.5rem;
+            margin-top: 15px;
+        }
+        #task-feedback.correct {
+            color: #28a745;
+        }
+        #task-feedback.incorrect {
+            color: #dc3545;
+        }
+        #check-task-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #new-task-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #task-user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #task-user-info div {
+            margin-bottom: 10px;
+        }
+        #task-user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #task-user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+    </style>
+
+</head>
+<body>
+
+    <header>
+        <h1>Виртуалды БҚ: Ядролық түрленулер</h1>
+    </header>
+    <nav>
+        <button class="nav-button active" data-target="theory">Теория</button>
+        <button class="nav-button" data-target="model">Виртуалды модель</button>
+        <button class="nav-button" data-target="questions">Бақылау сұрақтары</button>
+        <button class="nav-button" data-target="task">Есеп</button>
+    </nav>
+    <main>
+        
+        <section id="theory" class="content-section active">
+            <h2>Теория: Радиоактивті ыдыраулар</h2>
+            <p>Радиоактивтілік — бұл кейбір атом ядроларының басқа ядроларға өздігінен айналуы, бұл процесс әртүрлі бөлшектер мен сәулелердің шығарылуымен қатар жүреді.</p>
+            
+            <hr>
+            <h3>Сәулеленудің негізгі ұғымдары мен қасиеттері</h3>
+            
+            <h4>Өткіштік қабілеті</h4>
+            <p>Сәулеленудің әртүрлі түрлері затпен әрқалай әрекеттеседі, бұл олардың өткіштік қабілетін анықтайды. Бұл радиацияның маңызды сипаттамаларының бірі, ол қорғану әдістеріне әсер етеді.</p>
+            
+
+[Image of penetrating power of alpha, beta, and gamma radiation]
+
+            <ul>
+                <li><strong>Альфа-бөлшектер (α):</strong> Бұл ауыр, оң зарядталған бөлшектер (гелий ядролары). Олар зат атомдарымен соқтығысқанда тез энергиясын жоғалтады және <strong>ең төменгі</strong> өткіштік қабілетке ие. Альфа-сәулеленуді қағаз парағы немесе тіпті терінің сыртқы қабаты толығымен тоқтатады.</li>
+                <li><strong>Бета-бөлшектер (β⁻, β⁺):</strong> Бұл жеңіл зарядталған бөлшектер (электрондар немесе позитрондар). Олардың өткіштік қабілеті <strong>орташа</strong>. Олар қағаздан еркін өтеді, бірақ жұқа металл қабатымен (мысалы, бірнеше миллиметр алюминий) немесе қалың пластикпен тиімді тоқтатылады.</li>
+                <li><strong>Гамма-кванттар (γ):</strong> Бұл массасы мен заряды жоқ, өте жоғары энергиялы фотондар (электромагниттік сәулелену). Олар <strong>ең жоғары</strong> өткіштік қабілетке ие және тығыз материалдардың қалың қабаттарынан өте алады. Олардан қорғану үшін қорғасынның немесе бетонның қалың қабаттары қажет.</li>
+            </ul>
+
+            <h4>Электронды қармау кезіндегі электрон көзі</h4>
+            <p>Электронды қармау (К-қармау деп те атайды) кезінде ядро бөлшек шығармайды, керісінше, <strong>өз атомының электрондарының бірін қармап алады</strong>. Көбінесе бұл ядроға ең жақын орналасқан <strong>K-қабатындағы</strong> электрон. Сирек жағдайда L немесе M қабаттарынан да электрондар қармалуы мүмкін.</p>
+            <p>K-қабаты жиі таңдалады, өйткені оның электрондарының ядро ішінде 'табылу' ықтималдығы жоғары. Қармап алғаннан кейін ядродағы протон нейтронға айналады, ал электрондық қабаттағы бос орынды жоғарғы деңгейлерден келген электрондар дереу толтырады. Бұл ауысу тән рентген сәулесінің шығуымен қатар жүреді.</p>
+
+            <h4>Нейтрино (ν) және Антинейтрино (ν̄)</h4>
+            <p>Нейтрино және оның антибөлшегі, антинейтрино — бұл өте аз, бірақ нөлге тең емес массасы бар және электр заряды жоқ іргелі бөлшектер. Олар тек әлсіз ядролық әрекеттесуге (және гравитацияға) қатысады, соның салдарынан олар затпен <strong>өте әлсіз</strong> әрекеттеседі. Олар бүкіл планетаны бірде-бір атоммен соқтығыспай өтіп кете алады, сол үшін оларды 'елес бөлшектер' деп атайды.</p>
+            <p>Олар бета-ыдырау процестерінде 'дүниеге келеді' және энергия мен импульстің сақталу заңдарын орындау үшін қажет. Оларсыз есептеулер ыдырау кезінде энергияның бір бөлігі жай ғана жоғалып кететінін көрсетті. Нейтрино мен антинейтрино осы жетіспейтін энергияны 'алып кетеді':</p>
+            <ul>
+                <li><strong>β⁻-ыдырау</strong> кезінде (нейтрон протон мен электронға айналады) <strong>антинейтрино (ν̄ₑ)</strong> шығарылады.</li>
+                <li><strong>β⁺-ыдырау</strong> кезінде (протон нейтрон мен позитронға айналады) <strong>нейтрино (νₑ)</strong> шығарылады.</li>
+                <li><strong>Электронды қармау</strong> кезінде (протон электронды қармап, нейтронға айналады) <strong>нейтрино (νₑ)</strong> шығарылады.</li>
+            </ul>
+            
+            <hr>
+            <h3>1. Альфа-ыдырау (α-ыдырау)</h3>
+            <p><strong>Ығысу ережесі: Элемент Менделеев кестесінің басына 2 торкөз <ins>жақынырақ</ins> орналасқан жаңа элементке айналады.</strong></p>
+            <div class="formula"><sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He</div>
+            <hr>
+            <h3>2. Бета-ыдырау (β⁻-ыдырау)</h3>
+            <p><strong>Ығысу ережесі: Элемент Менделеев кестесінің соңына қарай 1 торкөз <ins>алысырақ</ins> орналасқан жаңа элементке айналады.</strong></p>
+            <div class="formula"><sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e + ν̄ₑ</div>
+            <hr>
+            <h3>3. Позитронды ыдырау (β⁺-ыдырау)</h3>
+            <p><strong>Ығысу ережесі: Элемент Менделеев кестесінің басына 1 торкөз <ins>жақынырақ</ins> орналасқан жаңа элементке айналады.</strong></p>
+            <div class="formula"><sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e + νₑ</div>
+            <hr>
+            <h3>4. Электронды қармау (K-қармау)</h3>
+            <p><strong>Ығысу ережесі: Элемент Менделеев кестесінің басына 1 торкөз <ins>жақынырақ</ins> орналасқан жаңа элементке айналады.</strong></p>
+            <div class="formula"><sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar + νₑ</div>
+            <hr>
+            <h3>5. Гамма-ыдырау (γ-ыдырау)</h3>
+            <p><strong>Ығысу ережесі: Элементтің айналуы болмайды. Элемент <ins>сол орнында қалады</ins>.</strong></p>
+            <div class="formula"><sup>60</sup><sub>27</sub>Co* &rarr; <sup>60</sup><sub>27</sub>Co + γ</div>
+        </section>
+
+        <section id="model" class="content-section">
+            <h2>Ядролық түрленулердің виртуалды моделі</h2>
+            <p>Симуляция үшін ыдырау түрін таңдаңыз. Холстта таңдалған ядролық түрленудің анимациясы көрсетіледі.</p>
+            
+            <div class="simulation-nav">
+                <button class="sim-button" data-sim="alpha">α-ыдырау (U-238)</button>
+                <button class="sim-button" data-sim="beta">β⁻-ыдырау (C-14)</button>
+                <button class="sim-button" data-sim="gamma">γ-ыдырау (Co-60*)</button>
+                <button class="sim-button" data-sim="positron">β⁺-ыдырау (Na-22)</button>
+                <button class="sim-button" data-sim="capture">Эл. қармау (K-40)</button>
+            </div>
+            <div id="canvas-container">
+                <div id="alpha-formula" class="formula-overlay">
+                    <sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He
+                </div>
+                <div id="beta-formula" class="formula-overlay">
+                    <sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e
+                </div>
+                <div id="positron-formula" class="formula-overlay">
+                    <sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e
+                </div>
+                <div id="capture-formula" class="formula-overlay">
+                    <sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar
+                </div>
+                <div id="gamma-formula" class="formula-overlay">
+                    <sup>60</sup><sub>27</sub>Co* &rarr; <sup>60</sup><sub>27</sub>Co + &gamma;
+                </div>
+            </div>
+            <div class="controls">
+                <button id="start-button" class="control-button">Бастау</button>
+                <button id="reset-button" class="control-button">Қайта іске қосу</button>
+            </div>
+        </section>
+        
+        <section id="questions" class="content-section">
+            <h2>Бақылау сұрақтары</h2>
+            <div id="user-info">
+                <p>Тестті бастау үшін деректеріңізді енгізіңіз (10 кездейсоқ сұрақ).</p>
+                <div>
+                    <label for="student-name">Аты-жөні (Т.А.Ә.):</label>
+                    <input type="text" id="student-name" placeholder="Мысалы, Асанов Асан Асанұлы">
+                </div>
+                <div>
+                    <label for="student-group">Топ:</label>
+                    <input type="text" id="student-group" placeholder="Мысалы, ФЗ-21">
+                </div>
+                <button id="start-quiz">Тестті бастау</button>
+            </div>
+            <div id="quiz-container"></div>
+            <button id="submit-quiz">Жауаптарды тексеру</button>
+            
+            <div id="results-modal" class="modal">
+                <div class="modal-content">
+                    <h3>Тест нәтижелері</h3>
+                    <p><strong>Студент:</strong> <span id="result-name"></span></p>
+                    <p><strong>Топ:</strong> <span id="result-group"></span></p>
+                    <p>Сіздің нәтижеңіз:</p>
+                    <div id="result-score">0%</div>
+                    <button id="save-results-button" class="close-button">Файлға сақтау</button>
+                    <button id="close-modal-btn" class="close-button">Жабу</button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="task" class="content-section">
+            <h2>Есеп: Теңдеуді аяқтаңыз</h2>
+            
+            <div id="task-user-info">
+                <p>Есеп шығару сессиясын бастау үшін деректеріңізді енгізіңіз.</p>
+                <div>
+                    <label for="task-student-name">Аты-жөні (Т.А.Ә.):</label>
+                    <input type="text" id="task-student-name" placeholder="Мысалы, Асанов Асан Асанұлы">
+                </div>
+                <div>
+                    <label for="task-student-group">Топ:</label>
+                    <input type="text" id="task-student-group" placeholder="Мысалы, ФЗ-21">
+                </div>
+                <button id="start-task-session" class="control-button" style="background-color: #007bff; color: white;">Бастау</button>
+            </div>
+
+            <div id="task-container-main" class="task-generator hidden">
+                <p>Жетіспейтін элементті (<sup>?</sup><sub>??</sub>X) немесе бөлшекті (?) анықтаңыз.</p>
+                
+                <div id="task-equation" class="formula">
+                    ...
+                </div>
+                
+                <div id="task-inputs-nucleus">
+                    <span>A = </span>
+                    <input type="number" id="task-ans-a" placeholder="?">
+                    <span>Z = </span>
+                    <input type="number" id="task-ans-z" placeholder="??">
+                </div>
+                
+                <div id="task-inputs-particle" class="hidden">
+                    <input type="radio" name="task-particle" id="part-alpha" value="alpha">
+                    <label for="part-alpha">α (<sup>4</sup><sub>2</sub>He)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-m" value="beta-">
+                    <label for="part-beta-m">β⁻ (<sup>0</sup><sub>-1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-p" value="beta+">
+                    <label for="part-beta-p">β⁺ (<sup>0</sup><sub>+1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-capture" value="capture">
+                    <label for="part-capture">e⁻ (қармау)</label>
+                </div>
+                
+                <div class="task-controls">
+                    <button id="new-task-btn" class="control-button">Жаңа есеп</button>
+                    <button id="check-task-btn" class="control-button">Жауапты тексеру</button>
+                    <button id="save-task-btn" class="control-button" style="background-color: #28a745; color: white;">Аяқтау және сақтау</button>
+                </div>
+                
+                <div id="task-feedback"></div>
+            </div>
+        </section>
+    </main>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+   
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        let isSimulationInitialized = false;
+        // let isTaskInitialized = false; // (Енді қажет емес, себебі есеп түйме арқылы басталады)
+
+        const navButtons = document.querySelectorAll('.nav-button');
+        const contentSections = document.querySelectorAll('.content-section');
+        
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const targetId = button.dataset.target;
+                
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                const targetSection = document.getElementById(targetId);
+                targetSection.classList.add('active');
+
+                
+                if (targetId === 'model' && !isSimulationInitialized) {
+                    document.querySelector('.sim-button[data-sim="alpha"]').click();
+                    isSimulationInitialized = true;
+                }
+            });
+        });
+
+        
+       
+        const startButton = document.getElementById('start-button');
+        const resetButton = document.getElementById('reset-button');
+        const simButtons = document.querySelectorAll('.sim-button');
+        const formulaOverlays = document.querySelectorAll('.formula-overlay');
+        let myp5; // p5 данасын сақтау үшін
+
+        
+        class Particle {
+            constructor(x, y, size, label, color) { this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.size = size; this.label = label; this.color = color; }
+            move() { this.x += this.vx; this.y += this.vy; }
+            draw(p) { p.fill(this.color); p.stroke(0); p.strokeWeight(2); p.ellipse(this.x, this.y, this.size, this.size); p.fill(0); p.noStroke(); p.textSize(this.size > 50 ? 18 : 14); p.textAlign(p.CENTER, p.CENTER); p.text(this.label, this.x, this.y); }
+        }
+        
+        
+        class GammaRay { 
+            constructor(x, y, angle) { this.x = x; this.y = y; this.angle = angle; this.vx = 4 * Math.cos(angle); this.vy = 4 * Math.sin(angle); this.length = 0; this.amplitude = 10; this.frequency = 0.5; }
+            move() { this.length += 4; }
+            draw(p) { p.noFill(); p.stroke(255, 200, 0); p.strokeWeight(2); p.beginShape(); for (let i = 0; i < this.length; i++) { let offset = this.amplitude * Math.sin(i * this.frequency); let x = this.x + (i * Math.cos(this.angle)) + (offset * -Math.sin(this.angle)); let y = this.y + (i * Math.sin(this.angle)) + (offset * Math.cos(this.angle)); p.vertex(x, y); } p.endShape(); let endX = this.x + (this.length * Math.cos(this.angle)); let endY = this.y + (this.length * Math.sin(this.angle)); p.fill(0); p.noStroke(); p.textSize(16); p.text("γ", endX, endY); }
+        }
+        
+        
+        let createAlphaSketch = (p) => { 
+            let uranium, thorium, alphaParticle; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': uranium.draw(p); break; 
+                    case 'decaying': thorium.move(); alphaParticle.move(); thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); if (p.dist(p.width / 2, p.height / 2, alphaParticle.x, alphaParticle.y) > stopDistance) { decayState = 'after'; thorium.vx = 0; thorium.vy = 0; alphaParticle.vx = 0; alphaParticle.vy = 0; } break; 
+                    case 'after': thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; uranium = new Particle(startX, startY, 120, "U-238", p.color(0, 0, 255)); thorium = new Particle(startX, startY, 90, "Th-234", p.color(0, 100, 200)); alphaParticle = new Particle(startX, startY, 30, "α", p.color(255, 0, 0)); let alphaSpeed = 3, thoriumSpeed = 3; let angle_alpha = -p.PI / 4, angle_thorium = angle_alpha + p.PI; alphaParticle.vx = alphaSpeed * p.cos(angle_alpha); alphaParticle.vy = alphaSpeed * p.sin(angle_alpha); thorium.vx = thoriumSpeed * p.sin(angle_thorium); thorium.vy = thoriumSpeed * p.sin(angle_thorium); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createBetaSketch = (p) => { 
+            let carbon, nitrogen, electron; let decayState; let stopDistance = 180;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': carbon.draw(p); break; 
+                    case 'decaying': electron.move(); nitrogen.move(); electron.draw(p); nitrogen.draw(p); carbon.draw(p); if (p.dist(p.width / 2, p.height / 2, electron.x, electron.y) > stopDistance) { decayState = 'after'; electron.vx = 0; electron.vy = 0; nitrogen.vx = 0; nitrogen.vy = 0; } break; 
+                    case 'after': electron.draw(p); nitrogen.draw(p); carbon.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; carbon = new Particle(startX, startY, 100, "C-14", p.color(100, 100, 100)); nitrogen = new Particle(startX, startY, 100, "N-14", p.color(0, 150, 0)); electron = new Particle(startX, startY, 20, "e⁻", p.color(255, 255, 0)); let electronSpeed = 3; let recoilSpeed = 2.3; let angle_electron = -p.PI / 4; let angle_recoil = angle_electron + p.PI; electron.vx = electronSpeed * p.cos(angle_electron); electron.vy = electronSpeed * p.sin(angle_electron); nitrogen.vx = recoilSpeed * p.sin(angle_recoil); nitrogen.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createGammaSketch = (p) => { 
+            let cobaltStar, cobalt, gamma; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': let x = cobaltStar.x + p.random(-1, 1); let y = cobaltStar.y + p.random(-1, 1); p.fill(cobaltStar.color); p.stroke(0); p.strokeWeight(2); p.ellipse(x, y, cobaltStar.size, cobaltStar.size); p.fill(0); p.noStroke(); p.textSize(18); p.textAlign(p.CENTER, p.CENTER); p.text(cobaltStar.label, cobaltStar.x, cobaltStar.y); break; case 'decaying': gamma.move(); gamma.draw(p); cobalt.draw(p); if (gamma.length > stopDistance) { decayState = 'after'; } break; case 'after': gamma.draw(p); cobalt.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; cobaltStar = new Particle(startX, startY, 110, "Co-60*", p.color(200, 0, 200)); cobalt = new Particle(startX, startY, 110, "Co-60", p.color(150, 0, 150)); gamma = new GammaRay(startX, startY, -p.PI / 4); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createPositronSketch = (p) => {
+            let sodium, neon, positron; let decayState; let stopDistance = 110;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': sodium.draw(p); break; 
+                    case 'decaying': positron.move(); neon.move(); positron.draw(p); neon.draw(p); sodium.draw(p); if (p.dist(p.width / 2, p.height / 2, positron.x, positron.y) > stopDistance) { decayState = 'after'; positron.vx = 0; positron.vy = 0; neon.vx = 0; neon.vy = 0; } break; 
+                    case 'after': positron.draw(p); neon.draw(p); sodium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; sodium = new Particle(startX, startY, 100, "Na-22", p.color(200, 100, 0)); neon = new Particle(startX, startY, 100, "Ne-22", p.color(255, 150, 0)); positron = new Particle(startX, startY, 20, "e⁺", p.color(0, 200, 200)); let positronSpeed = 3; let recoilSpeed = 3; let angle_positron = -p.PI / 4; let angle_recoil = angle_positron + p.PI; positron.vx = positronSpeed * p.cos(angle_positron); positron.vy = positronSpeed * p.sin(angle_positron); neon.vx = recoilSpeed * p.sin(angle_recoil); neon.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        let createCaptureSketch = (p) => {
+            let potassium, argon, electron; let decayState; let stopDistance = 150;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': potassium.draw(p); electron.x = p.width / 2 + p.cos(p.frameCount * 0.05) * (stopDistance / 2); electron.y = p.height / 2 + p.sin(p.frameCount * 0.05) * (stopDistance / 2); electron.draw(p); break; case 'decaying': electron.move(); potassium.draw(p); electron.draw(p); if (p.dist(potassium.x, potassium.y, electron.x, electron.y) < potassium.size / 2) { decayState = 'after'; } break; case 'after': argon.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; potassium = new Particle(startX, startY, 110, "K-40", p.color(0, 150, 150)); argon = new Particle(startX, startY, 110, "Ar-40", p.color(100, 50, 150)); let electronStartX = startX + stopDistance; let electronStartY = startY; electron = new Particle(electronStartX, electronStartY, 20, "e⁻", p.color(255, 255, 0)); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { let angle = p.atan2(potassium.y - electron.y, potassium.x - electron.x); let speed = 4; electron.vx = speed * p.cos(angle); electron.vy = speed * p.sin(angle); decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        
+        simButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                simButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                if (myp5) { myp5.remove(); } 
+                formulaOverlays.forEach(overlay => overlay.classList.remove('active'));
+                const simType = button.dataset.sim;
+                let targetFormulaId;
+                
+                if (simType === 'alpha') { myp5 = new p5(createAlphaSketch); targetFormulaId = 'alpha-formula'; } 
+                else if (simType === 'beta') { myp5 = new p5(createBetaSketch); targetFormulaId = 'beta-formula'; } 
+                else if (simType === 'gamma') { myp5 = new p5(createGammaSketch); targetFormulaId = 'gamma-formula'; } 
+                else if (simType === 'positron') { myp5 = new p5(createPositronSketch); targetFormulaId = 'positron-formula'; } 
+                else if (simType === 'capture') { myp5 = new p5(createCaptureSketch); targetFormulaId = 'capture-formula'; }
+                
+                if(targetFormulaId) { document.getElementById(targetFormulaId).classList.add('active'); }
+                setTimeout(() => { resetButton.click(); }, 100); 
+            });
+        });
+        
+        startButton.addEventListener('click', () => { if (myp5) myp5.startDecay(); });
+        resetButton.addEventListener('click', () => { if (myp5) myp5.resetSimulation(); });
+        
+
+        
+               const questionBank = [
+           
+            { question: "Альфа-бөлшек дегеніміз не?", answers: [{ text: "Гелий атомының ядросы (2 протон, 2 нейтрон)", correct: true }, { text: "Жылдам электрон", correct: false }, { text: "Жоғары энергиялы фотон", correct: false }, { text: "Позитрон", correct: false }] },
+            { question: "Альфа-ыдырау кезінде ядроның заряды қалай өзгереді?", answers: [{ text: "2-ге азаяды", correct: true }, { text: "1-ге артады", correct: false }, { text: "Өзгермейді", correct: false }, { text: "1-ге азаяды", correct: false }] },
+            { question: "Альфа-ыдырау кезінде массалық сан (A) қалай өзгереді?", answers: [{ text: "4-ке азаяды", correct: true }, { text: "2-ге азаяды", correct: false }, { text: "Өзгермейді", correct: false }, { text: "1-ге артады", correct: false }] },
+            { question: "Уран-238 (<sub>92</sub>U) альфа-ыдырауға ұшырағанда қандай элемент пайда болады?", answers: [{ text: "Торий-234 (<sub>90</sub>Th)", correct: true }, { text: "Протактиний-238 (<sub>91</sub>Pa)", correct: false }, { text: "Радий-234 (<sub>88</sub>Ra)", correct: false }, { text: "Уран-234 (<sub>92</sub>U)", correct: false }] },
+            { question: "Альфа-бөлшектің заряды қандай?", answers: [{ text: "+2e", correct: true }, { text: "-1e", correct: false }, { text: "0", correct: false }, { text: "+1e", correct: false }] },
+            { question: "Қай сәулеленудің өткіштік қабілеті ең төмен және қағаз парағымен тоқтатылады?", answers: [{ text: "Альфа-сәулелену", correct: true }, { text: "Бета-сәулелену", correct: false }, { text: "Гамма-сәулелену", correct: false }, { text: "Нейтрондық сәулелену", correct: false }] },
+            { question: "Полоний-210 (<sub>84</sub>Po) альфа-ыдыраудан кейін қандай элементке айналады?", answers: [{ text: "Қорғасын-206 (<sub>82</sub>Pb)", correct: true }, { text: "Висмут-210 (<sub>83</sub>Bi)", correct: false }, { text: "Радон-214 (<sub>86</sub>Rn)", correct: false }, { text: "Астат-210 (<sub>85</sub>At)", correct: false }] },
+            { question: "Торий-234 (<sub>90</sub>Th) ядросында қанша протон бар?", answers: [{ text: "90", correct: true }, { text: "234", correct: false }, { text: "144", correct: false }, { text: "92", correct: false }] },
+            { question: "<sup>4</sup><sub>2</sub>He ядросында қанша нейтрон бар?", answers: [{ text: "2", correct: true }, { text: "4", correct: false }, { text: "0", correct: false }, { text: "1", correct: false }] },
+            { question: "Альфа-ыдырау үшін ығысу ережесі бойынша элемент...", answers: [{ text: "Менделеев кестесінің басына 2 торкөзге ығысады", correct: true }, { text: "Менделеев кестесінің соңына 1 торкөзге ығысады", correct: false }, { text: "Менделеев кестесінің басына 4 торкөзге ығысады", correct: false }, { text: "Ығыспайды", correct: false }] },
+            
+            
+            { question: "Бета-минус (β⁻) бөлшегі дегеніміз не?", answers: [{ text: "Электрон", correct: true }, { text: "Протон", correct: false }, { text: "Позитрон", correct: false }, { text: "Нейтрон", correct: false }] },
+            { question: "β⁻-ыдырау кезінде нейтронмен не болады?", answers: [{ text: "Протонға айналады", correct: true }, { text: "Позитронға айналады", correct: false }, { text: "Ядродан шығып кетеді", correct: false }, { text: "Электронды қармап алады", correct: false }] },
+            { question: "β⁻-ыдырау кезінде ядроның заряды (Z) қалай өзгереді?", answers: [{ text: "1-ге артады", correct: true }, { text: "1-ге азаяды", correct: false }, { text: "Өзгермейді", correct: false }, { text: "2-ге азаяды", correct: false }] },
+            { question: "β⁻-ыдырау кезінде массалық сан (A) қалай өзгереді?", answers: [{ text: "Өзгермейді", correct: true }, { text: "1-ге азаяды", correct: false }, { text: "1-ге артады", correct: false }, { text: "4-ке азаяды", correct: false }] },
+            { question: "β⁻-ыдырау кезінде электронмен бірге қандай бөлшек шығарылады?", answers: [{ text: "Антинейтрино", correct: true }, { text: "Нейтрино", correct: false }, { text: "Протон", correct: false }, { text: "Гамма-квант", correct: false }] },
+            { question: "β⁻-ыдырау үшін ығысу ережесі бойынша элемент...", answers: [{ text: "Менделеев кестесінің соңына 1 торкөзге ығысады", correct: true }, { text: "Менделеев кестесінің басына 1 торкөзге ығысады", correct: false }, { text: "Менделеев кестесінің басына 2 торкөзге ығысады", correct: false }, { text: "Ығыспайды", correct: false }] },
+            { question: "Торий-234 (<sub>90</sub>Th) β⁻-ыдыраудан кейін қандай элементке айналады?", answers: [{ text: "Протактиний-234 (<sub>91</sub>Pa)", correct: true }, { text: "Радий-234 (<sub>88</sub>Ra)", correct: false }, { text: "Уран-234 (<sub>92</sub>U)", correct: false }, { text: "Актиний-234 (<sub>89</sub>Ac)", correct: false }] },
+            { question: "Көміртек-14 (<sub>6</sub>C) β⁻-ыдырауға ұшырағанда қандай элемент пайда болады?", answers: [{ text: "Азот-14 (<sub>7</sub>N)", correct: true }, { text: "Бор-14 (<sub>5</sub>B)", correct: false }, { text: "Көміртек-13 (<sub>6</sub>C)", correct: false }, { text: "Оттегі-15 (<sub>8</sub>O)", correct: false }] },
+            { question: "β⁻-бөлшегінің заряды қандай?", answers: [{ text: "-1e", correct: true }, { text: "+1e", correct: false }, { text: "0", correct: false }, { text: "+2e", correct: false }] },
+            { question: "Қай сәулеленуді алюминий пластинасы тоқтатады, бірақ қағаздан өтеді?", answers: [{ text: "Бета-сәулелену", correct: true }, { text: "Альфа-сәулелену", correct: false }, { text: "Гамма-сәулелену", correct: false }, { text: "Барлық жауап дұрыс", correct: false }] },
+
+            
+            { question: "Позитрон (β⁺) дегеніміз не?", answers: [{ text: "Электронның антибөлшегі", correct: true }, { text: "Оң зарядталған протон", correct: false }, { text: "Гелий ядросы", correct: false }, { text: "Бейтарап бөлшек", correct: false }] },
+            { question: "β⁺-ыдырау кезінде протонмен не болады?", answers: [{ text: "Нейтронға айналады", correct: true }, { text: "Электронға айналады", correct: false }, { text: "Ядродан шығып кетеді", correct: false }, { text: "Нейтронды қармап алады", correct: false }] },
+            { question: "β⁺-ыдырау кезінде ядроның заряды (Z) қалай өзгереді?", answers: [{ text: "1-ге азаяды", correct: true }, { text: "1-ге артады", correct: false }, { text: "Өзгермейді", correct: false }, { text: "2-ге азаяды", correct: false }] },
+            { question: "β⁺-ыдырау кезінде позитронмен бірге қандай бөлшек шығарылады?", answers: [{ text: "Нейтрино", correct: true }, { text: "Антинейтрино", correct: false }, { text: "Электрон", correct: false }, { text: "Гамма-квант", correct: false }] },
+            { question: "Натрий-22 (<sub>11</sub>Na) β⁺-ыдыраудан кейін қандай элементке айналады?", answers: [{ text: "Неон-22 (<sub>10</sub>Ne)", correct: true }, { text: "Магний-22 (<sub>12</sub>Mg)", correct: false }, { text: "Фтор-22 (<sub>9</sub>F)", correct: false }, { text: "Натрий-21 (<sub>11</sub>Na)", correct: false }] },
+
+            
+            { question: "Электронды қармау кезінде не болады?", answers: [{ text: "Протон электронды қармап, нейтронға айналады", correct: true }, { text: "Нейтрон электронды қармап, протонға айналады", correct: false }, { text: "Ядро электрон шығарады", correct: false }, { text: "Ядро протонды қармап алады", correct: false }] },
+            { question: "Ядро электронды қайдан қармап алады?", answers: [{ text: "Атомның ішкі электрондық қабаттарының бірінен", correct: true }, { text: "Басқа атомнан", correct: false }, { text: "Плазмадан", correct: false }, { text: "Вакуумнан", correct: false }] },
+            { question: "Электронды қармау кезінде ядроның заряды (Z) қалай өзгереді?", answers: [{ text: "1-ге азаяды", correct: true }, { text: "1-ге артады", correct: false }, { text: "Өзгермейді", correct: false }, { text: "2-ге азаяды", correct: false }] },
+            { question: "A және Z үшін электронды қармаумен бірдей нәтиже беретін процесс қандай?", answers: [{ text: "Позитронды ыдырау", correct: true }, { text: "Альфа-ыдырау", correct: false }, { text: "Бета-минус ыдырау", correct: false }, { text: "Гамма-ыдырау", correct: false }] },
+            { question: "Калий-40 (<sub>19</sub>K) электронды қармаудан кейін қандай элементке айналады?", answers: [{ text: "Аргон-40 (<sub>18</sub>Ar)", correct: true }, { text: "Кальций-40 (<sub>20</sub>Ca)", correct: false }, { text: "Хлор-40 (<sub>17</sub>Cl)", correct: false }, { text: "Калий-39 (<sub>19</sub>K)", correct: false }] },
+
+            
+            { question: "Гамма-квант (γ) дегеніміз не?", answers: [{ text: "Өте жоғары энергиялы фотон", correct: true }, { text: "Заряды +1 болатын бөлшек", correct: false }, { text: "Массасы 4 болатын бөлшек", correct: false }, { text: "Ядродан шыққан электрон", correct: false }] },
+            { question: "Гамма-ыдырау кезінде ядроның массалық саны (A) мен заряды (Z) қалай өзгереді?", answers: [{ text: "A өзгермейді, Z өзгермейді", correct: true }, { text: "A 4-ке азаяды, Z 2-ге азаяды", correct: false }, { text: "A өзгермейді, Z 1-ге артады", correct: false }, { text: "A өзгермейді, Z 1-ге азаяды", correct: false }] },
+            { question: "Гамма-ыдырау неліктен болады?", answers: [{ text: "Ядро қозған күйде болады және артық энергияны шығарады", correct: true }, { text: "Ядро тым ауыр", correct: false }, { text: "Ядрода нейтрондар тым көп", correct: false }, { text: "Ядрода протондар тым көп", correct: false }] },
+            { question: "Қай сәулеленудің өткіштік қабілеті ең жоғары?", answers: [{ text: "Гамма-сәулелену", correct: true }, { text: "Альфа-сәулелену", correct: false }, { text: "Бета-сәулелену", correct: false }, { text: "Көрінетін жарық", correct: false }] },
+            { question: "Co-60* белгісі нені білдіреді?", answers: [{ text: "Кобальт-60 қозған ядросы", correct: true }, { text: "Кобальт-60 ионы", correct: false }, { text: "Кобальт-59 изотопы", correct: false }, { text: "Кобальттың өте сирек изотопы", correct: false }] },
+
+            
+            { question: "Радиоактивтілік дегеніміз не?", answers: [{ text: "Тұрақсыз ядролардың басқа ядроларға өздігінен айналуы", correct: true }, { text: "Ауыр ядролардың нейтрондар әсерінен бөліну процесі", correct: false }, { text: "Жеңіл ядролардың бірігу процесі", correct: false }, { text: "Энергия бөлінетін химиялық реакция", correct: false }] },
+            { question: "Ыдыраудың қай түрі химиялық элементтің өзгеруіне әкелмейді?", answers: [{ text: "Гамма-ыдырау", correct: true }, { text: "Альфа-ыдырау", correct: false }, { text: "Бета-ыдырау", correct: false }, { text: "Электронды қармау", correct: false }] },
+            { question: "Ыдыраудың қай түрі ядродағы протондар санының артуына әкеледі?", answers: [{ text: "Бета-минус (β⁻) ыдырау", correct: true }, { text: "Альфа-ыдырау", correct: false }, { text: "Позитронды (β⁺) ыдырау", correct: false }, { text: "Электронды қармау", correct: false }] },
+            { question: "Ыдыраудың қандай ЕКІ түрі ядродағы протондар санының азаюына әкеледі?", answers: [{ text: "Позитронды ыдырау және Электронды қармау", correct: true }, { text: "Альфа-ыдырау және Бета-минус ыдырау", correct: false }, { text: "Гамма-ыдырау және Альфа-ыдырау", correct: false }, { text: "Бета-минус ыдырау және Гамма-ыдырау", correct: false }] },
+            { question: "Нуклон дегеніміз не?", answers: [{ text: "Протон мен нейтронның жалпы атауы", correct: true }, { text: "Тек протон", correct: false }, { text: "Тек нейтрон", correct: false }, { text: "Ядроны айналатын бөлшек", correct: false }] },
+            { question: "<sup>A</sup><sub>Z</sub>X белгісіндегі 'Z' нені білдіреді?", answers: [{ text: "Зарядтық сан (протондар саны)", correct: true }, { text: "Массалық сан (нуклондар саны)", correct: false }, { text: "Нейтрондар саны", correct: false }, { text: "Химиялық таңба", correct: false }] },
+            { question: "<sup>A</sup><sub>Z</sub>X белгісіндегі 'A' нені білдіреді?", answers: [{ text: "Массалық сан (нуклондар саны)", correct: true }, { text: "Зарядтық сан (протондар саны)", correct: false }, { text: "Нейтрондар саны", correct: false }, { text: "Электрондар саны", correct: false }] },
+            { question: "Ядродағы нейтрондар санын (N) қалай табуға болады?", answers: [{ text: "N = A - Z", correct: true }, { text: "N = A + Z", correct: false }, { text: "N = Z", correct: false }, { text: "N = A", correct: false }] },
+            { question: "Уран-238 (<sup>238</sup><sub>92</sub>U) ядросында қанша нейтрон бар?", answers: [{ text: "146", correct: true }, { text: "92", correct: false }, { text: "238", correct: false }, { text: "330", correct: false }] },
+            { question: "Ядро <sup>210</sup><sub>83</sub>Bi β⁻-ыдырауға ұшырады. Нәтижесінде не пайда болды?", answers: [{ text: "<sup>210</sup><sub>84</sub>Po", correct: true }, { text: "<sup>206</sup><sub>81</sub>Tl", correct: false }, { text: "<sup>210</sup><sub>82</sub>Pb", correct: false }, { text: "<sup>211</sup><sub>83</sub>Bi", correct: false }] },
+            { question: "Ядро <sup>226</sup><sub>88</sub>Ra α-ыдырауға ұшырады. Нәтижесінде не пайда болды?", answers: [{ text: "<sup>222</sup><sub>86</sub>Rn", correct: true }, { text: "<sup>222</sup><sub>87</sub>Fr", correct: false }, { text: "<sup>226</sup><sub>89</sub>Ac", correct: false }, { text: "<sup>222</sup><sub>84</sub>Po", correct: false }] },
+            { question: "Ядро <sup>13</sup><sub>7</sub>N β⁺-ыдырауға ұшырады. Нәтижесінде не пайда болды?", answers: [{ text: "<sup>13</sup><sub>6</sub>C", correct: true }, { text: "<sup>13</sup><sub>8</sub>O", correct: false }, { text: "<sup>12</sup><sub>6</sub>C", correct: false }, { text: "<sup>14</sup><sub>7</sub>N", correct: false }] },
+            { question: "Ядро <sup>7</sup><sub>4</sub>Be электронды қармауға ұшырады. Нәтижесінде не пайда болды?", answers: [{ text: "<sup>7</sup><sub>3</sub>Li", correct: true }, { text: "<sup>7</sup><sub>5</sub>B", correct: false }, { text: "<sup>8</sup><sub>4</sub>Be", correct: false }, { text: "<sup>6</sup><sub>3</sub>Li", correct: false }] },
+            { question: "'Ығысу ережесі' дегеніміз не?", answers: [{ text: "Элементтің Менделеев кестесінде қанша торкөзге ығысатынын сипаттайтын ереже", correct: true }, { text: "Ыдырау энергиясын есептеу ережесі", correct: false }, { text: "Жартылай ыдырау периодын есептеу ережесі", correct: false }, { text: "Ядроны құру ережесі", correct: false }] },
+            { question: "'Нейтрино' және 'антинейтрино' дегеніміз не?", answers: [{ text: "Өте жеңіл (немесе массасыз) бейтарап бөлшектер", correct: true }, { text: "Оң және теріс электрондар", correct: false }, { text: "Альфа-бөлшектің компоненттері", correct: false }, { text: "Нейтронның синонимдері", correct: false }] }
+        ];
+
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function downloadFile(filename, text) {
+            const element = document.createElement('a');
+            const bom = "\uFEFF"; // Windows Блокнотында кириллицаны дұрыс көрсету үшін
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(bom + text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        
+        const userInfoDiv = document.getElementById('user-info');
+        const startQuizBtn = document.getElementById('start-quiz');
+        const quizContainer = document.getElementById('quiz-container');
+        const submitQuizBtn = document.getElementById('submit-quiz');
+        const resultsModal = document.getElementById('results-modal');
+        const resultName = document.getElementById('result-name');
+        const resultGroup = document.getElementById('result-group');
+        const resultScore = document.getElementById('result-score');
+        const saveResultsBtn = document.getElementById('save-results-button');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        
+        let studentName = "";
+        let studentGroup = "";
+
+        
+        startQuizBtn.addEventListener('click', () => {
+            studentName = document.getElementById('student-name').value;
+            studentGroup = document.getElementById('student-group').value;
+            if (studentName.trim() === "" || studentGroup.trim() === "") {
+                alert("Аты-жөніңізді (Т.А.Ә.) және Тобыңызды толтырыңыз.");
+                return;
+            }
+            userInfoDiv.style.display = 'none';
+            loadTest();
+        });
+
+        function loadTest() {
+            const questionsToShow = shuffleArray([...questionBank]).slice(0, 10);
+            let quizHTML = "";
+            questionsToShow.forEach((q, index) => {
+                const shuffledAnswers = shuffleArray([...q.answers]);
+                let answersHTML = "";
+                shuffledAnswers.forEach(answer => {
+                    answersHTML += `<label><input type="radio" name="question${index}" value="${answer.correct}"> ${answer.text}</label>`;
+                });
+                quizHTML += `<div class="question-block"><p>${index + 1}. ${q.question}</p>${answersHTML}</div>`;
+            });
+            quizContainer.innerHTML = quizHTML;
+            submitQuizBtn.style.display = 'block';
+        }
+
+        submitQuizBtn.addEventListener('click', () => {
+            let correctAnswers = 0;
+            const totalQuestions = 10;
+            for (let i = 0; i < totalQuestions; i++) {
+                const selectedAnswer = document.querySelector(`input[name="question${i}"]:checked`);
+                if (selectedAnswer && selectedAnswer.value === 'true') {
+                    correctAnswers++;
+                }
+            }
+            const score = (correctAnswers / totalQuestions) * 100;
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('kk-KZ'); // Қазақша формат
+            const newResultEntry = `
+--------------------------------
+Күні: ${dateTimeString}
+Студент: ${studentName}
+Топ: ${studentGroup}
+Нәтиже: ${score.toFixed(0)}%
+--------------------------------
+`;
+            
+            let allResults = localStorage.getItem('quizResults') || "=== Тестілеу нәтижелерінің тарихы ===";
+            allResults += newResultEntry;
+            localStorage.setItem('quizResults', allResults);
+
+            resultName.textContent = studentName;
+            resultGroup.textContent = studentGroup;
+            resultScore.textContent = `${score.toFixed(0)}%`;
+            resultsModal.style.display = 'block';
+        });
+        
+        saveResultsBtn.addEventListener('click', () => {
+            const resultsToSave = localStorage.getItem('quizResults');
+            if (resultsToSave) {
+                downloadFile('test_natizheleri.txt', resultsToSave);
+            } else {
+                alert('Сақтау үшін нәтижелер жоқ.');
+            }
+        });
+        
+        closeModalBtn.addEventListener('click', () => {
+            resultsModal.style.display = 'none'; 
+            quizContainer.innerHTML = ''; 
+            submitQuizBtn.style.display = 'none'; 
+            userInfoDiv.style.display = 'block'; 
+        });
+
+        
+       
+        const taskUserInfo = document.getElementById('task-user-info');
+        const taskStudentName = document.getElementById('task-student-name');
+        const taskStudentGroup = document.getElementById('task-student-group');
+        const startTaskSessionBtn = document.getElementById('start-task-session');
+        const taskContainerMain = document.getElementById('task-container-main');
+        
+        const taskEquation = document.getElementById('task-equation');
+        const taskInputsNucleus = document.getElementById('task-inputs-nucleus');
+        const taskInputsParticle = document.getElementById('task-inputs-particle');
+        const taskAnsA = document.getElementById('task-ans-a');
+        const taskAnsZ = document.getElementById('task-ans-z');
+        
+        const newTaskBtn = document.getElementById('new-task-btn');
+        const checkTaskBtn = document.getElementById('check-task-btn');
+        const saveTaskBtn = document.getElementById('save-task-btn');
+        
+        const taskFeedback = document.getElementById('task-feedback');
+        
+        
+        let currentTaskType = 'findProduct'; // Есеп түрі
+        let currentTaskSolution = { A: 0, Z: 0 }; // Дұрыс жауап (A және Z)
+        let currentParticleSolution = ''; // Дұрыс жауап (бөлшек)
+        
+        let currentTaskStudentName = ""; // Есеп сессиясы үшін студенттің аты-жөні
+        let currentTaskStudentGroup = ""; // Есеп сессиясы үшін студенттің тобы
+        let correctTaskCount = 0; // Дұрыс жауаптар санауышы
+        let incorrectTaskCount = 0; // Қате жауаптар санауышы
+        
+        
+        const taskTemplates = [
+            { type: 'alpha',   parent: {A: 238, Z: 92, X: 'U'},  particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 226, Z: 88, X: 'Ra'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 210, Z: 84, X: 'Po'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 232, Z: 90, X: 'Th'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'beta-',   parent: {A: 14,  Z: 6,  X: 'C'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 60,  Z: 27, X: 'Co'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 90,  Z: 38, X: 'Sr'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 234, Z: 90, X: 'Th'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta+',   parent: {A: 22,  Z: 11, X: 'Na'}, particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 13,  Z: 7,  X: 'N'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 18,  Z: 9,  X: 'F'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'capture', parent: {A: 40,  Z: 19, X: 'K'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 7,   Z: 4,  X: 'Be'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 55,  Z: 26, X: 'Fe'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' }
+        ];
+
+        
+        function generateTask() {
+           
+            const task = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
+            const parent = task.parent;
+            
+            
+            const taskTypeRoll = Math.random();
+            if (taskTypeRoll < 0.45) {
+                currentTaskType = 'findProduct'; // Өнімді табу
+            } else if (taskTypeRoll < 0.8) {
+                currentTaskType = 'findParent'; // Бастапқы элементті табу
+            } else {
+                currentTaskType = 'findParticle'; // Бөлшекті табу
+            }
+            
+            
+            if (currentTaskType === 'findParticle') {
+                taskInputsNucleus.classList.add('hidden');
+                taskInputsParticle.classList.remove('hidden');
+            } else {
+                taskInputsNucleus.classList.remove('hidden');
+                taskInputsParticle.classList.add('hidden');
+            }
+
+            let solutionA = 0;
+            let solutionZ = 0;
+            let taskHTML = "";
+            const unknownNucleus = "<sup>?</sup><sub>??</sub>X";
+            const knownParticle = task.particle;
+            const parentHTML = `<sup>${parent.A}</sup><sub>${parent.Z}</sub>${parent.X}`;
+            
+            
+            switch (task.type) {
+                case 'alpha':
+                    solutionA = parent.A - 4;
+                    solutionZ = parent.Z - 2;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta-':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z + 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta+':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'capture':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} + ${knownParticle} &rarr; ${unknownNucleus}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} + ${knownParticle} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} + ? &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+            }
+            
+            
+            taskEquation.innerHTML = taskHTML;
+            taskFeedback.textContent = `(Дұрысы: ${correctTaskCount}, Қатесі: ${incorrectTaskCount})`;
+            taskFeedback.className = "";
+            taskAnsA.value = "";
+            taskAnsZ.value = "";
+            document.querySelectorAll('input[name="task-particle"]').forEach(radio => radio.checked = false);
+        }
+
+        
+        function checkTask() {
+            let isCorrect = false; 
+            
+            
+            if (currentTaskType === 'findParticle') {
+                
+                const selectedParticle = document.querySelector('input[name="task-particle"]:checked');
+                if (!selectedParticle) {
+                    taskFeedback.textContent = "Ыдырау түрін таңдаңыз.";
+                    taskFeedback.className = "incorrect";
+                    return; 
+                }
+                isCorrect = (selectedParticle.value === currentParticleSolution);
+
+            } else {
+                
+                const userA = parseInt(taskAnsA.value, 10);
+                const userZ = parseInt(taskAnsZ.value, 10);
+                
+                if (isNaN(userA) || isNaN(userZ)) {
+                    taskFeedback.textContent = "Екі санды да (A және Z) енгізіңіз.";
+                    taskFeedback.className = "incorrect";
+                    return; 
+                }
+                isCorrect = (userA === currentTaskSolution.A && userZ === currentTaskSolution.Z);
+            }
+            
+            
+            if (isCorrect) {
+                correctTaskCount++;
+                taskFeedback.textContent = `Дұрыс! (Дұрысы: ${correctTaskCount}, Қатесі: ${incorrectTaskCount})`;
+                taskFeedback.className = "correct";
+            } else {
+                incorrectTaskCount++;
+                taskFeedback.textContent = `Қате. (Дұрысы: ${correctTaskCount}, Қатесі: ${incorrectTaskCount})`;
+                if (currentTaskType !== 'findParticle') {
+                    if (parseInt(taskAnsA.value, 10) !== currentTaskSolution.A) taskFeedback.textContent += " A тексеріңіз. ";
+                    if (parseInt(taskAnsZ.value, 10) !== currentTaskSolution.Z) taskFeedback.textContent += " Z тексеріңіз.";
+                }
+                taskFeedback.className = "incorrect";
+            }
+        }
+        
+        
+        startTaskSessionBtn.addEventListener('click', () => {
+            currentTaskStudentName = taskStudentName.value;
+            currentTaskStudentGroup = taskStudentGroup.value;
+            
+            if (currentTaskStudentName.trim() === "" || currentTaskStudentGroup.trim() === "") {
+                alert("Аты-жөніңізді (Т.А.Ә.) және Тобыңызды толтырыңыз.");
+                return;
+            }
+
+            correctTaskCount = 0;
+            incorrectTaskCount = 0;
+            
+            taskUserInfo.classList.add('hidden');
+            taskContainerMain.classList.remove('hidden');
+            
+            generateTask();
+        });
+
+       
+        newTaskBtn.addEventListener('click', generateTask);
+        
+        
+        checkTaskBtn.addEventListener('click', checkTask);
+        
+        
+        saveTaskBtn.addEventListener('click', () => {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('kk-KZ'); // Қазақша формат
+            
+            const newResultEntry = `
+--------------------------------
+Күні: ${dateTimeString}
+Студент: ${currentTaskStudentName}
+Топ: ${currentTaskStudentGroup}
+---
+Дұрысы: ${correctTaskCount}
+Қатесі: ${incorrectTaskCount}
+--------------------------------
+`;
+            
+            let allResults = localStorage.getItem('taskResults') || "=== Есептерді шығару тарихы ===";
+            allResults += newResultEntry;
+            localStorage.setItem('taskResults', allResults);
+            
+            
+            downloadFile('esep_natizheleri.txt', allResults);
+
+            
+            taskContainerMain.classList.add('hidden');
+            taskUserInfo.classList.remove('hidden');
+            
+            taskStudentName.value = "";
+            taskStudentGroup.value = "";
+            taskEquation.innerHTML = "Есепті бастау үшін 'Бастау' түймесін басыңыз";
+            taskFeedback.textContent = "";
+            taskFeedback.className = "";
+        });
+
+
+    }); 
+    </script>
+</body>
+</html>

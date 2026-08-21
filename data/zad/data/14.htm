@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v17.0 (Механические и ЭМ волны)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                    </div>
+                    <p id="mission-question">...</p>
+                </div>
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- (НОВЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (МЕХАНИЧЕСКИЕ И ЭМ ВОЛНЫ) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Длина волны (по T)", scenario: "Механическая волна распространяется со скоростью v. Период колебаний в ней T. Рассчитайте длину волны.", data: { v: "Скорость (м/с)", T: "Период (с)" }, question: "Задача: Введите длину волны (λ) в метрах (м)." },
+                    { title: "Миссия 2: Длина волны (по ν)", scenario: "Источник создает волны с частотой ν, которые распространяются в среде со скоростью v. Рассчитайте длину волны.", data: { v: "Скорость (м/с)", nu: "Частота (Гц)" }, question: "Задача: Введите длину волны (λ) в метрах (м)." },
+                    { title: "Миссия 3: Скорость волны", scenario: "Длина волны равна λ, а ее частота ν. Рассчитайте скорость распространения волны.", data: { lambda: "Длина волны (м)", nu: "Частота (Гц)" }, question: "Задача: Введите скорость волны (v) в м/с." },
+                    { title: "Миссия 4: Частота ЭМ волны", scenario: "Радиостанция вещает на длине волны λ. Рассчитайте частоту этой электромагнитной волны в вакууме.", data: { lambda: "Длина волны (м)" }, question: "Задача: Введите частоту (ν) в мегагерцах (МГц)." },
+                    { title: "Миссия 5: Длина ЭМ волны", scenario: "Передатчик работает на частоте ν. Рассчитайте длину электромагнитной волны, которую он излучает в вакууме.", data: { nu: "Частота (МГц)" }, question: "Задача: Введите длину волны (λ) в метрах (м)." },
+                    { title: "Миссия 6: Волновое число", scenario: "Длина волны равна λ. Рассчитайте волновое число (k) для этой волны.", data: { lambda: "Длина волны (м)" }, question: "Задача: Введите волновое число (k) в рад/м." },
+                    { title: "Миссия 7: Показатель преломления", scenario: "Свет распространяется в прозрачной среде со скоростью v. Рассчитайте абсолютный показатель преломления этой среды.", data: { v: "Скорость света в среде (×10⁸ м/с)" }, question: "Задача: Введите показатель преломления (n)." },
+                    { title: "Миссия 8: Длина волны в среде", scenario: "Свет с длиной волны λ (в вакууме) переходит в среду с показателем преломления n. Рассчитайте длину волны света в этой среде.", data: { lambda_vac: "Длина волны в вакууме (нм)", n: "Показатель преломления" }, question: "Задача: Введите длину волны (λ_ср) в нанометрах (нм)." },
+                    { title: "Миссия 9: Циклическая частота", scenario: "Период колебаний в волне равен T. Рассчитайте циклическую (угловую) частоту колебаний.", data: { T: "Период (мс)" }, question: "Задача: Введите циклическую частоту (ω) в рад/с." },
+                    { title: "Миссия 10: Скорость в среде", scenario: "Абсолютный показатель преломления среды равен n. Рассчитайте скорость света в этой среде.", data: { n: "Показатель преломления" }, question: "Задача: Введите скорость (v) в км/с." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Толқын ұзындығы (T бойынша)", scenario: "Механикалық толқын v жылдамдықпен таралады. Ондағы тербеліс периоды T. Толқын ұзындығын есептеңіз.", data: { v: "Жылдамдық (м/с)", T: "Период (с)" }, question: "Тапсырма: Толқын ұзындығын (λ) метрмен (м) енгізіңіз." },
+                    { title: "Миссия 2: Толқын ұзындығы (ν бойынша)", scenario: "Көз ν жиіліктегі толқындарды тудырады, олар ортада v жылдамдықпен таралады. Толқын ұзындығын есептеңіз.", data: { v: "Жылдамдық (м/с)", nu: "Жиілік (Гц)" }, question: "Тапсырма: Толқын ұзындығын (λ) метрмен (м) енгізіңіз." },
+                    { title: "Миссия 3: Толқын жылдамдығы", scenario: "Толқын ұзындығы λ, ал оның жиілігі ν. Толқынның таралу жылдамдығын есептеңіз.", data: { lambda: "Толқын ұзындығы (м)", nu: "Жиілік (Гц)" }, question: "Тапсырма: Толқын жылдамдығын (v) м/с-пен енгізіңіз." },
+                    { title: "Миссия 4: ЭМ толқын жиілігі", scenario: "Радиостанция λ толқын ұзындығында хабар таратады. Осы электромагниттік толқынның вакуумдағы жиілігін есептеңіз.", data: { lambda: "Толқын ұзындығы (м)" }, question: "Тапсырма: Жиілікті (ν) мегагерцпен (МГц) енгізіңіз." },
+                    { title: "Миссия 5: ЭМ толқын ұзындығы", scenario: "Таратқыш ν жиілікте жұмыс істейді. Оның вакуумда шығаратын электромагниттік толқынының ұзындығын есептеңіз.", data: { nu: "Жиілік (МГц)" }, question: "Тапсырма: Толқын ұзындығын (λ) метрмен (м) енгізіңіз." },
+                    { title: "Миссия 6: Толқындық сан", scenario: "Толқын ұзындығы λ. Осы толқын үшін толқындық санды (k) есептеңіз.", data: { lambda: "Толқын ұзындығы (м)" }, question: "Тапсырма: Толқындық санды (k) рад/м-мен енгізіңіз." },
+                    { title: "Миссия 7: Сыну көрсеткіші", scenario: "Жарық мөлдір ортада v жылдамдықпен таралады. Осы ортаның абсолютті сыну көрсеткішін есептеңіз.", data: { v: "Ортадағы жарық жылдамдығы (×10⁸ м/с)" }, question: "Тапсырма: Сыну көрсеткішін (n) енгізіңіз." },
+                    { title: "Миссия 8: Ортадағы толқын ұзындығы", scenario: "Толқын ұзындығы λ (вакуумда) жарық, сыну көрсеткіші n ортаға өтеді. Осы ортадағы жарықтың толқын ұзындығын есептеңіз.", data: { lambda_vac: "Вакуумдағы толқын ұзындығы (нм)", n: "Сыну көрсеткіші" }, question: "Тапсырма: Толқын ұзындығын (λ_орт) нанометрмен (нм) енгізіңіз." },
+                    { title: "Миссия 9: Циклдік жиілік", scenario: "Толқындағы тербеліс периоды T. Тербелістердің циклдік (бұрыштық) жиілігін есептеңіз.", data: { T: "Период (мс)" }, question: "Тапсырма: Циклдік жиілікті (ω) рад/с-пен енгізіңіз." },
+                    { title: "Миссия 10: Ортадағы жылдамдық", scenario: "Ортаның абсолютті сыну көрсеткіші n. Осы ортадағы жарық жылдамдығын есептеңіз.", data: { n: "Сыну көрсеткіші" }, question: "Тапсырма: Жылдамдықты (v) км/с-пен енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct Answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Wavelength (from T)", scenario: "A mechanical wave propagates at a speed v. The period of oscillation is T. Calculate the wavelength.", data: { v: "Speed (m/s)", T: "Period (s)" }, question: "Task: Enter the wavelength (λ) in meters (m)." },
+                    { title: "Mission 2: Wavelength (from ν)", scenario: "A source creates waves with frequency ν, which propagate in a medium at speed v. Calculate the wavelength.", data: { v: "Speed (m/s)", nu: "Frequency (Hz)" }, question: "Task: Enter the wavelength (λ) in meters (m)." },
+                    { title: "Mission 3: Wave Speed", scenario: "The wavelength is λ and its frequency is ν. Calculate the propagation speed of the wave.", data: { lambda: "Wavelength (m)", nu: "Frequency (Hz)" }, question: "Task: Enter the wave speed (v) in m/s." },
+                    { title: "Mission 4: EM Wave Frequency", scenario: "A radio station broadcasts on a wavelength λ. Calculate the frequency of this electromagnetic wave in a vacuum.", data: { lambda: "Wavelength (m)" }, question: "Task: Enter the frequency (ν) in megahertz (MHz)." },
+                    { title: "Mission 5: EM Wavelength", scenario: "A transmitter operates at a frequency ν. Calculate the wavelength of the electromagnetic wave it emits in a vacuum.", data: { nu: "Frequency (MHz)" }, question: "Task: Enter the wavelength (λ) in meters (m)." },
+                    { title: "Mission 6: Wave Number", scenario: "The wavelength is λ. Calculate the angular wave number (k) for this wave.", data: { lambda: "Wavelength (m)" }, question: "Task: Enter the wave number (k) in rad/m." },
+                    { title: "Mission 7: Refractive Index", scenario: "Light propagates in a transparent medium at a speed v. Calculate the absolute refractive index of this medium.", data: { v: "Speed of light in medium (×10⁸ m/s)" }, question: "Task: Enter the refractive index (n)." },
+                    { title: "Mission 8: Wavelength in Medium", scenario: "Light with a wavelength λ (in vacuum) enters a medium with a refractive index n. Calculate the wavelength of light in this medium.", data: { lambda_vac: "Wavelength in vacuum (nm)", n: "Refractive index" }, question: "Task: Enter the wavelength (λ_med) in nanometers (nm)." },
+                    { title: "Mission 9: Angular Frequency", scenario: "The period of oscillation in a wave is T. Calculate the angular frequency of the oscillations.", data: { T: "Period (ms)" }, question: "Task: Enter the angular frequency (ω) in rad/s." },
+                    { title: "Mission 10: Speed in Medium", scenario: "The absolute refractive index of a medium is n. Calculate the speed of light in this medium.", data: { n: "Refractive index" }, question: "Task: Enter the speed (v) in km/s." }
+                ]
+            }
+        };
+
+
+        // --- (НОВЫЕ) Глобальные Константы и Состояние ---
+        const C_LIGHT = 3e8; // Скорость света в вакууме (м/с)
+
+        const TOLERANCE = 0.03; // Погрешность (3%)
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        let missionTitle, missionScenario, missionData, missionQuestion,
+            userAnswerInput, submitButton, newDataButton, feedbackMessage,
+            navButtons, progressList, langButtons, progressTitle, inputLabel;
+
+
+        // --- Утилиты (Без изменений) ---
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов (Без изменений) ---
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+
+            const t = translations[currentLang];
+            if (!t) {
+                console.error("Переводы для языка не найдены:", lang);
+                return;
+            }
+
+            if (t.ui) {
+                submitButton.textContent = t.ui.submit;
+                newDataButton.textContent = t.ui.newData;
+                inputLabel.textContent = t.ui.inputLabel;
+                userAnswerInput.placeholder = t.ui.placeholder;
+            } else {
+                 console.error("Секция 'ui' в переводах отсутствует для:", lang);
+            }
+
+            if (t.progress) {
+                 updateProgressWindow();
+            } else {
+                console.error("Секция 'progress' в переводах отсутствует для:", lang);
+            }
+           
+            if (t.missions && missionLoaders[currentMissionId]) {
+                missionLoaders[currentMissionId]();
+            } else {
+                 if (missionLoaders.length > 0) {
+                    console.error("Секция 'missions' в переводах отсутствует или загрузчик миссии не найден для:", lang, currentMissionId);
+                 }
+            }
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            
+            const t = translations[currentLang].progress;
+            if (!t) {
+                console.error("Переводы 'progress' не найдены для:", currentLang);
+                return;
+            }
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress || !missionProgress[i]) {
+                    console.error("Объект прогресса отсутствует для миссии:", i);
+                    continue; 
+                }
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                    <span class="correct">${progress.correct} ✔</span> /
+                                    <span class="incorrect">${progress.incorrect} ❌</span>
+                                </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    console.error("Кнопка не найдена для миссии:", i);
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (НОВЫЕ) Загрузчики Миссий (Механические и ЭМ волны) ---
+
+        function loadMission1() { // λ = v * T
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const v = getRandom(10, 100, 0); // м/с
+            const T = getRandom(0.1, 2, 2);  // с
+            
+            currentCorrectAnswer = v * T; // Ответ в м
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.v}: ${v} м/с</p><p>${t.data.T}: ${T} с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() { // λ = v / ν
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const v = getRandom(300, 1500, 0); // м/с
+            const nu = getRandom(100, 1000, 0); // Гц
+            
+            currentCorrectAnswer = v / nu; // Ответ в м
+
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.v}: ${v} м/с</p><p>${t.data.nu}: ${nu} Гц</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() { // v = λ * ν
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const lambda = getRandom(0.5, 5, 2); // м
+            const nu = getRandom(50, 500, 0);   // Гц
+            
+            currentCorrectAnswer = lambda * nu; // Ответ в м/с
+
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda} м</p><p>${t.data.nu}: ${nu} Гц</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() { // ν = c / λ (ЭМ волна)
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const lambda = getRandom(2, 300, 0); // м
+            
+            const nu_Hz = C_LIGHT / lambda;
+            currentCorrectAnswer = nu_Hz / 1e6; // Ответ в МГц
+
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda} м</p><p>(c &approx; 3&times;10⁸ м/с)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() { // λ = c / ν (ЭМ волна)
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const nu_MHz = getRandom(88, 108, 1); // МГц
+            const nu_Hz = nu_MHz * 1e6;         // Гц
+            
+            currentCorrectAnswer = C_LIGHT / nu_Hz; // Ответ в м
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.nu}: ${nu_MHz} МГц</p><p>(c &approx; 3&times;10⁸ м/с)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() { // k = 2π / λ
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const lambda = getRandom(0.5, 10, 2); // м
+            
+            currentCorrectAnswer = (2 * Math.PI) / lambda; // Ответ в рад/м
+
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda}: ${lambda} м</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() { // n = c / v
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const v_display = getRandom(1.5, 2.5, 2); // ×10⁸ м/с
+            const v_calc = v_display * 1e8;         // м/с
+            
+            currentCorrectAnswer = C_LIGHT / v_calc; // Ответ (безразмерный)
+
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.v}: ${v_display} &times; 10⁸ м/с</p><p>(c &approx; 3&times;10⁸ м/с)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() { // λ_ср = λ_вак / n
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const lambda_vac = getRandom(400, 700, 0); // нм
+            const n = getRandom(1.3, 2.0, 2);        // показатель преломления
+            
+            currentCorrectAnswer = lambda_vac / n; // Ответ в нм
+
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.lambda_vac}: ${lambda_vac} нм</p><p>${t.data.n}: ${n}</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() { // ω = 2π / T
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const T_ms = getRandom(1, 10, 1); // мс
+            const T_s = T_ms / 1000.0;      // с
+            
+            currentCorrectAnswer = (2 * Math.PI) / T_s; // Ответ в рад/с
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.T}: ${T_ms} мс</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() { // v = c / n
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const n = getRandom(1.3, 2.5, 2); // показатель преломления
+            
+            const v_ms = C_LIGHT / n;
+            currentCorrectAnswer = v_ms / 1000.0; // Ответ в км/с
+
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n}</p><p>(c &approx; 3&times;10⁸ м/с)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+
+        // --- Обработчик Проверки (Без изменений) ---
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                missionProgress[currentMissionId].incorrect++;
+                const t_feedback = translations[currentLang].feedback;
+                feedbackMessage.textContent = `${t_feedback.incorrect} (${t_feedback.correctAnswer}: ${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+
+        // --- Инициализация Игры (Исправлено в v15.1, без изменений) ---
+        function initializeGame() {
+            
+            // Назначаем DOM-элементы
+            missionTitle = document.getElementById('mission-title');
+            missionScenario = document.getElementById('mission-scenario');
+            missionData = document.getElementById('mission-data');
+            missionQuestion = document.getElementById('mission-question');
+            userAnswerInput = document.getElementById('user-answer');
+            submitButton = document.getElementById('submit-button');
+            newDataButton = document.getElementById('new-data-button');
+            feedbackMessage = document.getElementById('feedback-message');
+            navButtons = document.querySelectorAll('.mission-nav button');
+            progressList = document.getElementById('progress-list');
+            langButtons = document.querySelectorAll('.lang-btn');
+            progressTitle = document.getElementById('progress-title');
+            inputLabel = document.getElementById('input-label');
+            
+            // (ИЗМЕНЕНО) Заполняем массив НОВЫМИ загрузчиками миссий
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            // (Без изменений) Инициализируем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true 
+                };
+            }
+
+            // (Без изменений) Назначаем слушателей
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Загрузчик миссии не найден для ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                if (missionLoaders[currentMissionId]) {
+                    missionLoaders[currentMissionId](); 
+                }
+            });
+            
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // (Без изменений) Запускаем игру с языком по умолчанию
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

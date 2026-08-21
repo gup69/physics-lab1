@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тренажер: Спектрометрическая Трасса</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f4f6f9; color: #333; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        
+        #main-container { display: flex; flex-direction: column; height: 100vh; }
+        #canvas-container { flex: 1; position: relative; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
+        
+        /* Панель управления (3 колонки) */
+        #controls-panel { 
+            height: 200px;
+            background: rgba(255, 255, 255, 0.98); 
+            border-top: 2px solid #e0e5ec;
+            padding: 15px 30px; 
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            display: flex; gap: 30px; align-items: center;
+        }
+        
+        .col { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%;}
+        .col-center { flex: 1.2; }
+        
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; text-align: center; border-bottom: 2px solid #e0e5ec; padding-bottom: 8px; color: #112; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .counter-box { display: flex; justify-content: space-between; align-items: center; background: #eef2f7; padding: 10px 15px; border-radius: 8px; margin-bottom: 12px; font-weight: bold; border: 1px solid #d1d9e6;}
+        #attemptVal { color: #d35400; font-size: 1.4rem; }
+
+        .info-box { background: rgba(0, 85, 255, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #0055ff; font-size: 0.95rem; line-height: 1.6;}
+        .hl { color: #0055ff; font-weight: bold; font-size: 1.1rem; }
+        .hl-target { color: #27ae60; font-weight: bold; font-size: 1.1rem; }
+        
+        label { display: block; margin-top: 5px; font-size: 0.9rem; color: #555; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        input[type="range"] { width: 100%; margin-top: 10px; accent-color: #0055ff; cursor: pointer; }
+        
+        .btn { width: 100%; padding: 14px; margin-top: 10px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #scanBtn { background: #fff; color: #8e44ad; border: 2px solid #8e44ad; margin-top: auto;}
+        #scanBtn:hover { background: #f4e8f8; }
+        #launchBtn { background: linear-gradient(135deg, #0055ff, #00aaff); color: white; margin-top: 20px; box-shadow: 0 4px 15px rgba(0, 85, 255, 0.3);}
+        #launchBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 85, 255, 0.4); }
+        #launchBtn:disabled { background: #ccc; color: #888; cursor: not-allowed; box-shadow: none; transform: none;}
+        
+        #status { margin-top: 15px; padding: 12px; text-align: center; font-weight: bold; border-radius: 6px; font-size: 0.95rem; opacity: 0; transition: 0.3s; }
+        .fail { background: #fdeaea; border: 1px solid #e74c3c; color: #c0392b; opacity: 1 !important; }
+        .success { background: #eafaf1; border: 1px solid #2ecc71; color: #27ae60; opacity: 1 !important; }
+    </style>
+</head>
+<body>
+
+    <div id="main-container">
+        <div id="canvas-container">
+            <canvas id="sim"></canvas>
+        </div>
+
+        <div id="controls-panel">
+            <div class="col">
+                <h2>Спектрометр</h2>
+                <div class="counter-box">
+                    <span>Попытка:</span>
+                    <span id="attemptVal">0</span>
+                </div>
+                <button id="scanBtn" class="btn">СКАНИРОВАТЬ ПОЛЕ</button>
+            </div>
+
+            <div class="col col-center">
+                <div class="info-box">
+                    <b>Частица:</b> Электрон ($q < 0$)<br>
+                    <b>B₁ (Зона 1):</b> <span id="b1Txt" class="hl">--</span> Тл (✖)<br>
+                    <b>B₂ (Зона 2):</b> <span id="b2Txt" class="hl">--</span> Тл (●)<br>
+                    <b>B₃ (Зона 3):</b> <span id="b3Txt" class="hl">--</span> Тл (✖)<br>
+                    <hr style="border:0; border-top:1px solid #e0e5ec; margin:8px 0;">
+                    <b>Цель (Координата X):</b> <span id="targetTxt" class="hl-target">--</span> мкм
+                </div>
+            </div>
+
+            <div class="col">
+                <label>Скорость v: <span id="vTxt" style="color:#0055ff; font-size: 1.2rem; font-weight:bold;">5.0</span> · 10⁶ м/с</label>
+                <input type="range" id="vSld" min="1.0" max="10.0" value="5.0" step="0.1">
+                <button id="launchBtn" class="btn">ЗАПУСК ЧАСТИЦЫ</button>
+                <div id="status">ОЖИДАНИЕ</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cvs = document.getElementById('sim');
+        const ctx = cvs.getContext('2d');
+        
+        // Масштаб: 1 пиксель = 2.5 микрометра
+        const PIXELS_PER_METER = 400000; 
+        
+        // Физика
+        const M = 9.11e-31; 
+        const Q = -1.6e-19; 
+        
+        let B1_mag, B2_mag, B3_mag;
+        let TARGET_X = 0; 
+        let X_SPLIT = 0;
+        const TARGET_WIDTH = 80e-6; // Ширина ловушки 80 мкм
+        const START_POS = { x: 0, y: 0 };
+
+        let attempts = 0;
+        let state = 'IDLE'; 
+        let part = { x:0, y:0, vx:0, vy:0, active: false };
+        let trail = [];
+        let boomSize = 0;
+        let animId = null;
+
+        function resize() {
+            const container = document.getElementById('canvas-container');
+            cvs.width = container.offsetWidth;
+            cvs.height = container.offsetHeight;
+            render();
+        }
+        window.addEventListener('resize', resize);
+
+        function toScreen(x, y) {
+            return { 
+                x: 100 + x * PIXELS_PER_METER, 
+                y: cvs.height/2 - y * PIXELS_PER_METER 
+            };
+        }
+
+        function getBField(x, y) {
+            if (y >= 0) return (x < X_SPLIT) ? -B1_mag : -B3_mag; 
+            else return B2_mag; 
+        }
+
+        // --- ГЕНЕРАТОР ЗАДАЧ ---
+        function generatePuzzle() {
+            let valid = false;
+            let loops = 0;
+            let b1, b2, b3, v_target, x_target, x_split;
+            
+            // Подбираем параметры, чтобы решение точно находилось на экране
+            while(!valid && loops < 1000) {
+                loops++;
+                b1 = (Math.floor(Math.random() * 16) + 5) / 100; // от 0.05 до 0.20
+                b2 = (Math.floor(Math.random() * 16) + 5) / 100;
+                b3 = (Math.floor(Math.random() * 16) + 5) / 100;
+                v_target = (Math.floor(Math.random() * 50) + 30) / 10; // Целевая скорость от 3.0 до 8.0
+                
+                let v = v_target * 1e6;
+                let r1 = (M * v) / (Math.abs(Q) * b1);
+                let r2 = (M * v) / (Math.abs(Q) * b2);
+                let r3 = (M * v) / (Math.abs(Q) * b3);
+                
+                x_target = 2*r1 + 2*r2 + 2*r3;
+                x_split = 2*r1 + r2; // Граница между Зонами 1 и 3
+                
+                // Проверяем, чтобы трасса помещалась в холст и радиусы были видимыми
+                if (x_target > 1200e-6 && x_target < 2800e-6 && r1 > 100e-6 && r2 > 100e-6 && r3 > 100e-6) {
+                    valid = true;
+                }
+            }
+            
+            B1_mag = b1; B2_mag = b2; B3_mag = b3;
+            TARGET_X = Math.round(x_target * 1e6) * 1e-6; // Округляем до микрометров
+            X_SPLIT = x_split;
+            
+            // Обновляем панель управления
+            document.getElementById('b1Txt').innerText = B1_mag.toFixed(2);
+            document.getElementById('b2Txt').innerText = B2_mag.toFixed(2);
+            document.getElementById('b3Txt').innerText = B3_mag.toFixed(2);
+            document.getElementById('targetTxt').innerText = Math.round(TARGET_X * 1e6);
+            
+            reset(true);
+        }
+
+        // --- ГРАФИКА ---
+        function render() {
+            ctx.clearRect(0,0, cvs.width, cvs.height);
+            
+            const origin = toScreen(0,0);
+            const split = toScreen(X_SPLIT, 0);
+            const target = toScreen(TARGET_X, 0);
+
+            // 1. Фоны зон
+            ctx.fillStyle = "rgba(0, 85, 255, 0.04)";
+            ctx.fillRect(origin.x, 0, split.x - origin.x, origin.y);
+            ctx.fillStyle = "rgba(46, 204, 113, 0.04)";
+            ctx.fillRect(split.x, 0, cvs.width - split.x, origin.y);
+            ctx.fillStyle = "rgba(214, 48, 49, 0.04)";
+            ctx.fillRect(origin.x, origin.y, cvs.width - origin.x, cvs.height - origin.y);
+
+            // 2. Крестики и Точки
+            ctx.lineWidth = 1;
+            for(let i = 80; i < cvs.width; i += 40) {
+                for(let j = 20; j < cvs.height; j += 40) {
+                    let physX = (i - 100) / PIXELS_PER_METER;
+                    let physY = (cvs.height/2 - j) / PIXELS_PER_METER;
+                    let b = getBField(physX, physY);
+                    
+                    if (b < 0) { 
+                        ctx.strokeStyle = (physX < X_SPLIT) ? "rgba(0, 85, 255, 0.2)" : "rgba(46, 204, 113, 0.3)";
+                        ctx.beginPath(); ctx.moveTo(i-4, j-4); ctx.lineTo(i+4, j+4);
+                        ctx.moveTo(i+4, j-4); ctx.lineTo(i-4, j+4); ctx.stroke();
+                    } else { 
+                        ctx.fillStyle = "rgba(214, 48, 49, 0.3)";
+                        ctx.beginPath(); ctx.arc(i, j, 3, 0, 7); ctx.fill();
+                    }
+                }
+            }
+
+            // Осевая линия
+            ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
+            ctx.beginPath(); ctx.moveTo(0, origin.y); ctx.lineTo(cvs.width, origin.y); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Подписи зон
+            ctx.fillStyle = "rgba(0, 85, 255, 0.8)"; ctx.font = "bold 13px sans-serif";
+            ctx.fillText("ЗОНА 1", origin.x + 20, 25);
+            ctx.fillStyle = "rgba(46, 204, 113, 0.8)";
+            ctx.fillText("ЗОНА 3", split.x + 20, 25);
+            ctx.fillStyle = "rgba(214, 48, 49, 0.8)";
+            ctx.fillText("ЗОНА 2", origin.x + 20, origin.y + 25);
+
+            // Граница между 1 и 3
+            ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.beginPath();
+            ctx.moveTo(split.x, 0); ctx.lineTo(split.x, origin.y); ctx.stroke();
+
+            // 3. Приемник
+            let r_width_px = TARGET_WIDTH * PIXELS_PER_METER;
+            ctx.fillStyle = (state === 'WIN') ? "#2ecc71" : "#f1c40f";
+            ctx.fillRect(target.x - r_width_px/2, origin.y - 12, r_width_px, 24);
+            ctx.strokeStyle = "#c0392b"; ctx.lineWidth = 2;
+            ctx.strokeRect(target.x - r_width_px/2, origin.y - 12, r_width_px, 24);
+            ctx.fillStyle = "#333"; ctx.font = "bold 11px sans-serif";
+            ctx.fillText("ПРИЕМНИК", target.x - 32, origin.y - 18);
+
+            // 4. Траектория частицы
+            if(trail.length > 1) {
+                ctx.beginPath();
+                let s = toScreen(trail[0].x, trail[0].y); ctx.moveTo(s.x, s.y);
+                for(let p of trail) { let m = toScreen(p.x, p.y); ctx.lineTo(m.x, m.y); }
+                ctx.strokeStyle = "#333"; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            // Инжектор
+            ctx.fillStyle = '#636e72';
+            ctx.fillRect(origin.x - 10, origin.y - 5, 20, 20);
+            ctx.fillStyle = '#000'; ctx.fillText("СТАРТ", origin.x - 15, origin.y + 30);
+
+            // Частица
+            if(part.active) {
+                let p = toScreen(part.x, part.y);
+                ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 7); 
+                ctx.fillStyle = "#e74c3c"; ctx.fill();
+            }
+
+            // Взрыв
+            if(state === 'CRASH' && boomSize > 0) {
+                let p = toScreen(part.x, part.y);
+                ctx.beginPath(); ctx.arc(p.x, p.y, boomSize, 0, 7);
+                ctx.fillStyle = `rgba(231, 76, 60, ${1 - boomSize/60})`; ctx.fill();
+            }
+        }
+
+        // --- ЛОГИКА ---
+        function reset(clearTrail) {
+            if(animId) cancelAnimationFrame(animId);
+            state = 'IDLE'; boomSize = 0; part.active = false;
+            if(clearTrail) trail = [];
+            document.getElementById('status').className = '';
+            document.getElementById('status').style.opacity = 0;
+            document.getElementById('launchBtn').disabled = false;
+            render();
+        }
+
+        document.getElementById('scanBtn').onclick = generatePuzzle;
+        
+        document.getElementById('vSld').oninput = (e) => { 
+            document.getElementById('vTxt').innerText = parseFloat(e.target.value).toFixed(1); 
+            if(state !== 'RUN') reset(false); 
+        };
+
+        document.getElementById('launchBtn').onclick = () => {
+            reset(true);
+            attempts++; document.getElementById('attemptVal').innerText = attempts;
+            document.getElementById('launchBtn').disabled = true;
+
+            const vel = parseFloat(document.getElementById('vSld').value) * 1e6;
+            
+            part = { x: START_POS.x, y: START_POS.y, vx: 0, vy: vel, active: true };
+            state = 'RUN';
+            trail.push({x: part.x, y: part.y});
+            animId = requestAnimationFrame(loop);
+        };
+
+        const dt = 5e-14; // Высочайшая точность интегрирования
+        
+        function loop() {
+            if(state !== 'RUN') {
+                if(state === 'CRASH' && boomSize < 60) { boomSize += 4; render(); animId = requestAnimationFrame(loop); }
+                return;
+            }
+
+            // 15000 шагов за кадр
+            for(let i=0; i<15000; i++) {
+                let B_z = getBField(part.x, part.y);
+                
+                let ax = (Q * part.vy * B_z) / M;
+                let ay = (-Q * part.vx * B_z) / M;
+                
+                part.vx += ax * dt; part.vy += ay * dt;
+                part.x += part.vx * dt; part.y += part.vy * dt;
+                
+                if (i % 75 === 0) trail.push({x: part.x, y: part.y});
+
+                // Выход за пределы камеры
+                if(part.x < -0.0005 || part.y > 0.005 || part.y < -0.005 || part.x > 0.005) {
+                    state = 'CRASH'; boomSize = 1;
+                    document.getElementById('status').innerText = "АВАРИЯ:\nВЫХОД ЗА ЗОНУ"; 
+                    document.getElementById('status').className = 'fail';
+                    document.getElementById('launchBtn').disabled = false;
+                    break;
+                }
+
+                // Проверка приемника: частица должна пересекать ось X сверху вниз (vy < 0) в Зоне 3
+                if(part.y <= 0 && part.vy < 0 && trail.length > 2 && trail[trail.length-2].y > 0 && part.x > X_SPLIT) {
+                    if (Math.abs(part.x - TARGET_X) <= TARGET_WIDTH/2) {
+                        state = 'WIN'; 
+                        document.getElementById('status').innerText = "УСПЕХ:\nТОЧНОЕ ПОПАДАНИЕ!"; 
+                        document.getElementById('status').className = 'success';
+                        document.getElementById('launchBtn').disabled = false;
+                        part.active = false; 
+                        break;
+                    } else {
+                        state = 'CRASH'; boomSize = 1;
+                        document.getElementById('status').innerText = "АВАРИЯ:\nПРОМАХ!"; 
+                        document.getElementById('status').className = 'fail';
+                        document.getElementById('launchBtn').disabled = false;
+                        break;
+                    }
+                }
+            }
+            
+            render();
+            if(state === 'RUN' || state === 'CRASH') animId = requestAnimationFrame(loop);
+        }
+
+        // Старт системы
+        resize();
+        generatePuzzle();
+    </script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ғылыми Клуб: Энергетикалық дағдарыс</title>
+    
+    <style>
+        /* Стили остаются без изменений */
+        body { background-color: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 1280px; height: 720px; background-color: #000; background-size: cover; background-position: center; border-radius: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
+        #stats-display { position: absolute; top: 20px; left: 20px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 8px; font-size: 22px; z-index: 30; }
+        #stats-display span { margin-right: 20px; }
+        #character-sprite { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); height: 95%; max-width: 800px; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; opacity: 0; z-index: 10; }
+        #dialogue-box { position: absolute; bottom: 20px; left: 5%; width: 90%; min-height: 200px; background-color: rgba(10, 20, 40, 0.9); border: 2px solid #6c91d9; border-radius: 15px; padding: 20px; box-sizing: border-box; z-index: 21; }
+        #dialogue-text.task-text { font-size: 26px; color: #ffc107; text-align: center; }
+        #character-name { font-size: 28px; font-weight: bold; color: #ffc107; margin-bottom: 15px; }
+        #dialogue-text { font-size: 24px; line-height: 1.4; margin: 0; }
+        .term { color: cyan; text-decoration: underline; cursor: pointer; }
+        #choices-container { position: absolute; bottom: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 22; }
+        .choice-button { width: 70%; padding: 18px; font-size: 20px; font-weight: bold; background-color: rgba(40, 80, 150, 0.9); color: #fff; border: 2px solid #a8c1ff; border-radius: 30px; cursor: pointer; text-align: center; transition: background-color 0.2s, transform 0.2s; }
+        .choice-button:hover { background-color: rgba(60, 110, 200, 1); transform: scale(1.02); }
+        #glossary-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 40; color: white; font-size: 1.2em; }
+        .glossary-box { display: flex; position: relative; width: 80%; max-width: 900px; padding: 30px; box-sizing: border-box; border: 2px solid cyan; background-color: rgba(10, 20, 30, 0.95); border-radius: 10px; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        .close-button { position: absolute; top: 10px; right: 20px; color: #ff4500; font-size: 3em; line-height: 1; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-button:hover { color: #ff7733; }
+        #glossary-title { font-size: 2em; color: #ffc107; margin-bottom: 20px; padding-right: 40px; }
+        #glossary-text { font-size: 1.4em; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 Т: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Кейіпкер">
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            chapter3_scene1: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/elena_neutral.png', character: 'Елена',
+                text: 'Сәлем, ғалым. Біздің электр станциясында өндіріс төмендеп кетті. Сіздің тәжірибеңіз керек. Бас контурда бірдеңе дұрыс емес.',
+                choices: [{ text: 'Нақтырақ айтсаңыз?', nextSceneId: 'chapter3_scene2' }]
+            },
+            chapter3_scene2: {
+                 background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена',
+                 text: 'Кернеу __U__ Вольтқа дейін түсіп кетті, ал ток секіріп тұр! <span class="term" data-term="resistance">Кедергіде</span> не мәселе екенін түсіну керек. Әйтпесе жарықсыз қаламыз!',
+                 choices: [{ text: 'Қалай әрекет етеміз?', nextSceneId: 'chapter3_act1_choice' }]
+            },
+            chapter3_act1_choice: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: null, character: 'ӘДІС:',
+                text: 'Тізбектегі ақауды қалай анықтауға болады?',
+                choices: [
+                    { text: '🧠 Ом заңы бойынша кедергіні есептеу.', nextSceneId: 'chapter3_act1_quiz' },
+                    { text: '🛠️ (Алекс) Кернеуді көтерейік, мүмкін, көмектесер!', nextSceneId: 'chapter3_act1_bad_choice' }
+                ]
+            },
+            chapter3_act1_bad_choice: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена',
+                text: 'Жоқ, Алекс! Бұл шамадан тыс жүктемеге және өртке әкелуі мүмкін. Бізге соқыр әдіс емес, нақты есептеулер керек!',
+                choices: [{ text: 'Есептеулерге кірісемін.', stat: 'practice', nextSceneId: 'chapter3_act1_quiz' }]
+            },
+            chapter3_act1_quiz: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: null, character: 'ТАПСЫРМА: ОМ ЗАҢЫ', isTask: true,
+                text: '<span class="term" data-term="ohms_law">Ом заңын</span> (I = U/R) қолданып, тізбектің <span class="term" data-term="resistance">кедергісін</span> (R) есептеңіз.<br>Берілгені: U = __U__ В, I = __I__ А.',
+                choices: 'CHOICES_CH3_ACT1'
+            },
+            chapter3_act1_fail: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'ҚАТЕ',
+                text: 'Дұрыс емес! Кедергі R = U / I. Есептеулеріңізді және өлшем бірліктеріңізді тексеріңіз.',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter3_act1_quiz'}]
+            },
+            chapter3_act1_success: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/elena_neutral.png', character: 'Елена',
+                text: 'Тамаша! Кедергі __R__ Ом. Бұл нормадан едәуір жоғары. Мүмкін, бір жерде жанасу нашар немесе оқшаулау зақымдалған.',
+                choices: [{ text: 'Келесі кезеңге көшеміз.', nextSceneId: 'chapter3_act2_scene1'}]
+            },
+            chapter3_act2_scene1: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/max_neutral.png', character: 'Инженер Орлов',
+                text: 'Бізде екі қосалқы резистор бар: __R1__ Ом және __R2__ Ом. Нормаға ең жақын жалпы <span class="term" data-term="total_resistance">кедергіні</span> алу үшін оларды қалай жалғау керек? Норма: __R_NORM__ Ом.',
+                choices: [{ text: 'Нұсқаларды есептеу керек.', nextSceneId: 'chapter3_act2_choice'}]
+            },
+            chapter3_act2_choice: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: null, character: 'ТАПСЫРМА: ЖАЛҒАНУ', isTask: true,
+                text: '__R_NORM__ Ом-ға жақын кедергі алу үшін екі резисторды (R1 = __R1__ Ом, R2 = __R2__ Ом) қалай жалғау керек?',
+                choices: 'CHOICES_CH3_ACT2'
+            },
+            chapter3_act2_fail: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'ҚАТЕ',
+                text: 'Дұрыс емес! Тізбектей (Rжалпы = R1 + R2) және параллель (1/Rжалпы = 1/R1 + 1/R2) жалғау формулаларын еске түсіріңіз. Қайсысы қажетті мәнді береді?',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter3_act2_choice'}]
+            },
+            chapter3_act2_success: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Дұрыс! Бұл жалғау __R_CALC__ Ом береді. Бұл іс жүзінде мінсіз сәйкестік. Элементтерді ауыстыруды бастаймын!',
+                choices: [{ text: 'Тұрақтылыққа қол жеткізілді!', nextSceneId: 'chapter3_act3_scene1'}]
+            },
+            chapter3_act3_scene1: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'Доктор Белова',
+                text: 'Сіз кедергіні теңестірдіңіз, бірақ қандай бағамен? Бас реактор төмендеуді өтеу үшін шегіне жетті. Ол қанша <span class="term" data-term="power">қуат</span> тұтынды?',
+                choices: [{ text: 'Анықтау керек.', nextSceneId: 'chapter3_act3_quiz'}]
+            },
+            chapter3_act3_quiz: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: null, character: 'ТАПСЫРМА: ҚУАТ', isTask: true,
+                text: 'Егер жөндеуге дейін кернеу __U_OLD__ В, ал ток __I_OLD__ А болса, тізбектің тұтынған <span class="term" data-term="power">қуатын</span> (P) есептеңіз.<br>P = U * I',
+                choices: 'CHOICES_CH3_ACT3'
+            },
+            chapter3_act3_fail: {
+                background: 'assets/backgrounds/power_plant_alarm.jpg', sprite: 'assets/sprites/alex_neutral.png', character: 'Алекс',
+                text: 'Ей, бұл оңай ғой! Қуат = Кернеу * Ток. Көбейтуден қателеспе!',
+                choices: [{ text: 'Тапсырмаға оралу', nextSceneId: 'chapter3_act3_quiz'}]
+            },
+            chapter3_act3_success: {
+                background: 'assets/backgrounds/power_plant.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Міне! Тұтынылған қуат __P_OLD__ Ватт болды. Бұл өте жоғары көрсеткіш. Апаттың алдын алу бойынша тамаша жұмыс!',
+                choices: [{ text: 'Миссия орындалды!', nextSceneId: 'ending_ch3'}]
+            },
+            ending_ch3: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'НӘТИЖЕ',
+                text: 'Құттықтаймыз! Сіз энергетикалық дағдарыстың алдын алып, электр негіздерін меңгердіңіз. Миссия аяқталды!',
+                choices: [
+                    { text: 'Миссиялар тізіміне', href: 'missions_kz.html', onComplete: 'mission3' }
+                ]
+            }
+        };
+
+        const glossary = {
+            resistance: { title: "Кедергі (R)", text: "Электр тогына қарсы әрекеттің өлшемі. Оммен (Ом) өлшенеді. Кедергі неғұрлым жоғары болса, ток тізбектен соғұрлым қиын өтеді." },
+            ohms_law: { title: "Ом заңы", text: "Электр тізбегіндегі ток күшін (I), кернеуді (U) және кедергіні (R) байланыстырады: I = U/R." },
+            total_resistance: {
+                title: "Жалпы кедергі",
+                text: "Резисторларды тізбектей жалғағанда: R_жалпы = R1 + R2 + ...\nРезисторларды параллель жалғағанда: 1/R_жалпы = 1/R1 + 1/R2 + ..."
+            },
+            power: { title: "Қуат (P)", text: "Электр энергиясының басқа энергия түрлеріне (мысалы, жылу немесе жарық) айналу жылдамдығы. Ваттпен (Вт) өлшенеді. Формула: P = U * I." }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... (весь JavaScript-движок без изменений)
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name');
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {});
+            }
+
+            function generateProblemData() {
+                const p = {};
+                p.U = 200 + Math.floor(Math.random() * 51);
+                p.I = 5 + Math.floor(Math.random() * 6);
+                const R_correct_act1 = p.U / p.I;
+                const R_wrong1_act1 = p.U * p.I;
+                const R_wrong2_act1 = p.I / p.U;
+                p.R = Math.round(R_correct_act1 * 10) / 10;
+                p.CHOICES_CH3_ACT1 = [
+                    { text: `${p.R} Ом`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter3_act1_success' },
+                    { text: `${Math.round(R_wrong1_act1 * 10) / 10} Ом`, isCorrect: false, nextSceneId: 'chapter3_act1_fail' },
+                    { text: `${Math.round(R_wrong2_act1 * 10) / 10} Ом`, isCorrect: false, nextSceneId: 'chapter3_act1_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                p.R_NORM = 40 + Math.floor(Math.random() * 21);
+                p.R1 = 20 + Math.floor(Math.random() * 11);
+                p.R2 = 25 + Math.floor(Math.random() * 11);
+                const R_series = p.R1 + p.R2;
+                const R_parallel = (p.R1 * p.R2) / (p.R1 + p.R2);
+                let correctChoiceType, correctR_calc;
+                if (Math.abs(R_series - p.R_NORM) <= Math.abs(R_parallel - p.R_NORM)) {
+                    correctChoiceType = 'тізбектей';
+                    correctR_calc = R_series;
+                } else {
+                    correctChoiceType = 'параллель';
+                    correctR_calc = R_parallel;
+                }
+                p.R_CALC = Math.round(correctR_calc * 10) / 10;
+                p.CHOICES_CH3_ACT2 = [
+                    { text: `Тізбектей жалғау (Rжалпы ≈ ${Math.round(R_series * 10) / 10} Ом)`, 
+                      isCorrect: (correctChoiceType === 'тізбектей'), stat: 'theory', nextSceneId: 'chapter3_act2_success' },
+                    { text: `Параллель жалғау (Rжалпы ≈ ${Math.round(R_parallel * 10) / 10} Ом)`, 
+                      isCorrect: (correctChoiceType === 'параллель'), stat: 'theory', nextSceneId: 'chapter3_act2_success' },
+                    { text: `Тек R1 пайдалану (${p.R1} Ом)`, isCorrect: false, nextSceneId: 'chapter3_act2_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                p.U_OLD = 210 + Math.floor(Math.random() * 41);
+                p.I_OLD = 12 + Math.floor(Math.random() * 6);
+                const P_correct_act3 = p.U_OLD * p.I_OLD;
+                const P_wrong1_act3 = p.U_OLD / p.I_OLD;
+                const P_wrong2_act3 = p.U_OLD + p.I_OLD;
+                p.P_OLD = P_correct_act3;
+                p.CHOICES_CH3_ACT3 = [
+                    { text: `${P_correct_act3} Вт`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter3_act3_success' },
+                    { text: `${Math.round(P_wrong1_act3 * 10) / 10} Вт`, isCorrect: false, nextSceneId: 'chapter3_act3_fail' },
+                    { text: `${Math.round(P_wrong2_act3 * 10) / 10} Вт`, isCorrect: false, nextSceneId: 'chapter3_act3_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'chapter3_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object' && typeof gameState.problemData[key] !== 'function') {
+                        const value = gameState.problemData[key];
+                        const roundedValue = Number.isInteger(value) ? value : value.toFixed(1);
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), roundedValue);
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.innerHTML = choice.text;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play().catch(e => {});
+                    audioMusic.play().catch(e => {});
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

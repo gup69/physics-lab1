@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный Клуб: Проект ИКАР (v21 - Меню миссий)</title>
+    
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        #stats-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 22px;
+            z-index: 30;
+        }
+        #stats-display span {
+            margin-right: 20px;
+        }
+
+        #character-sprite {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 95%;
+            max-width: 800px;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        #dialogue-box {
+            position: absolute;
+            bottom: 20px;
+            left: 5%;
+            width: 90%;
+            min-height: 200px;
+            background-color: rgba(10, 20, 40, 0.9);
+            border: 2px solid #6c91d9;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 21;
+        }
+        
+        #dialogue-text.task-text {
+            font-size: 26px;
+            color: #ffc107;
+            text-align: center;
+        }
+
+        #character-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffc107;
+            margin-bottom: 15px;
+        }
+
+        #dialogue-text {
+            font-size: 24px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .term {
+            color: cyan;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #choices-container {
+            position: absolute;
+            bottom: 240px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 22;
+        }
+
+        .choice-button {
+            width: 70%;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: rgba(40, 80, 150, 0.9);
+            color: #fff;
+            border: 2px solid #a8c1ff;
+            border-radius: 30px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .choice-button:hover {
+            background-color: rgba(60, 110, 200, 1);
+            transform: scale(1.02);
+        }
+
+        #visual-model-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        #glossary-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 40;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .visual-model, .glossary-box {
+            display: flex;
+            position: relative;
+            width: 80%;
+            max-width: 900px;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 2px solid cyan;
+            background-color: rgba(10, 20, 30, 0.95);
+            border-radius: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .glossary-box {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #ff4500;
+            font-size: 3em;
+            line-height: 1;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-button:hover {
+            color: #ff7733;
+        }
+
+        #glossary-title {
+            font-size: 2em;
+            color: #ffc107;
+            margin-bottom: 20px;
+            padding-right: 40px;
+        }
+
+        #glossary-text {
+            font-size: 1.4em;
+            line-height: 1.5;
+        }
+        
+        #model-trajectory canvas { width: 100%; height: 100%; }
+
+        #model-forces img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        #model-net .drone-model {
+            position: absolute; width: 60px; height: 60px;
+            background-color: #a8c1ff; border-radius: 5px;
+            top: 50%; left: 5%; transform: translateY(-50%);
+            transition: left 2s ease-in-out;
+        }
+        #model-net .net-model {
+            position: absolute; width: 20px; height: 100%;
+            background-color: #ff4500; top: 0; right: 5%;
+            transition: width 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 T: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Персонаж">
+        <div id="visual-model-container">
+            <div id="model-trajectory" class="visual-model"><canvas id="trajectory-canvas"></canvas></div>
+            <div id="model-forces" class="visual-model">
+                <img src="assets/sprites/1.png" alt="Диаграмма сил дрона">
+            </div>
+            <div id="model-net" class="visual-model">
+                <div class="drone-model"></div><div class="net-model"></div>
+            </div>
+        </div>
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            act1_scene1: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/max_worried.png', character: 'Инженер Орлов',
+                text: 'Черт! Это "Икар-3"! Он перестал отвечать на команды, один из маршевых двигателей работает с перебоями!',
+                choices: [{ text: 'Что происходит?', nextSceneId: 'act1_scene2' }]
+            },
+            act1_scene2: {
+                background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'Доктор Белова',
+                text: 'Телеметрия показывает начальную высоту __Y0__ м и вертикальную скорость __V0Y__ м/с. Мы должны предсказать, где он будет через __T__ секунд!',
+                choices: [{ text: 'Как будем действовать?', nextSceneId: 'act1_method_choice' }]
+            },
+            act1_method_choice: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'МЕТОД:', text: 'Как спрогнозировать точку падения дрона?',
+                choices: 'CHOICES_ACT1'
+            },
+            act1_practice_run_model: {
+                visualModel: 'trajectory',
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Запускаю симуляцию... Вот как он полетит! Теперь, когда вы это увидели, давайте вернемся к расчетам для точного ответа.',
+                choices: [{ text: 'Понятно. Возвращаюсь к расчетам.', stat: 'practice', nextSceneId: 'act1_theory_quiz' }]
+            },
+            act1_theory_quiz: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'ЗАДАЧА: КИНЕМАТИКА', isTask: true,
+                text: 'Используя формулу y = y₀ + v₀t + gt²/2, рассчитайте конечную высоту дрона.<br>Дано: y₀ = __Y0__ м, v₀ = __V0Y__ м/с, t = __T__ с, <span class="term" data-term="gravity">g ≈ -9.8 м/с²</span>',
+                choices: 'CHOICES_ACT1_QUIZ'
+            },
+            act1_theory_fail: {
+                background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Неверный расчет! Вспомните, что ускорение свободного падения `g` направлено вниз, поэтому оно отрицательное. Также не забудьте про квадрат времени (`t*t`) и множитель `1/2` в последней части формулы. Попробуйте снова!',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'act1_theory_quiz' }]
+            },
+            act1_theory_success: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Идеально! Расчеты верны. Отрицательная высота означает, что дрон уже давно бы столкнулся с полом. Теперь мы точно знаем, где и когда активировать силовые поля!',
+                choices: [{ text: 'Мы выиграли время!', nextSceneId: 'act1_bonus_question' }]
+            },
+            act1_bonus_question: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'КВАНТ: Бонусный вопрос', isTask: true,
+                text: 'А что, если бы начальная скорость дрона была направлена не вверх, а вниз? Как бы это изменило расчет?',
+                choices: [
+                    { text: '`v₀` стало бы отрицательным', isCorrect: true, nextSceneId: 'act1_bonus_success' },
+                    { text: '`g` стало бы положительным', isCorrect: false, nextSceneId: 'act1_bonus_fail' },
+                    { text: 'Ничего бы не изменилось', isCorrect: false, nextSceneId: 'act1_bonus_fail' }
+                ]
+            },
+            act1_bonus_fail: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'КВАНТ',
+                text: 'Не совсем. `g` всегда направлено вниз и остается отрицательным. А вот знак `v₀` зависит от направления движения относительно оси Y. Подумайте еще раз!',
+                choices: [{ text: 'Вернуться к вопросу', nextSceneId: 'act1_bonus_question'}]
+            },
+            act1_bonus_success: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'КВАНТ',
+                text: 'Верно! Начальная скорость `v₀` стала бы отрицательной, так как вектор скорости был бы сонаправлен с вектором `g`. Отличное замечание!',
+                choices: [{ text: 'Продолжить', nextSceneId: 'act1_bridge'}]
+            },
+            act1_bridge: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'Доктор Белова',
+                text: 'Падение предотвращено. Теперь нужно понять ПОЧЕМУ он вышел из строя. Переходим к динамике.',
+                choices: [{ text: 'Начинаем второй этап.', nextSceneId: 'act2_scene1' }]
+            },
+            act2_scene1: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_worried1.png', character: 'Инженер Орлов',
+                text: 'Дрон летит по спирали. Его <span class="term" data-term="mass">масса</span> __MASS__ кг, боковое <span class="term" data-term="acceleration">ускорение</span> __ACCEL__ м/с². Причина - неуравновешенная сила.',
+                choices: [{ text: 'Как это исправить?', nextSceneId: 'act2_method_choice' }]
+            },
+            act2_method_choice: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'МЕТОД:', text: 'Как проанализировать проблему?',
+                choices: 'CHOICES_ACT2'
+            },
+            act2_practice_run_model: {
+                visualModel: 'forces',
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Смотрите. Сбойный двигатель создает две компоненты силы: F1 вниз и F2 вбок. Они не скомпенсированы. Теперь вернемся к цифрам.',
+                choices: [{ text: 'Теперь всё наглядно, спасибо.', stat: 'practice', nextSceneId: 'act2_theory_quiz' }]
+            },
+            act2_theory_quiz: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'ЗАДАЧА: ДИНАМИКА', isTask: true,
+                text: 'Какая компенсирующая <span class="term" data-term="force">сила</span> F нужна, если m = __MASS__ кг и a = __ACCEL__ м/с²?',
+                choices: 'CHOICES_ACT2_QUIZ'
+            },
+            act2_theory_fail: {
+                background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Неверный расчет! Второй закон Ньютона: F = m * a. Нужно умножить массу на ускорение. Попробуйте снова!',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'act2_theory_quiz' }]
+            },
+            act2_theory_success: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Блестяще! Формула дала точное значение. Корректирующий импульс отправлен, дрон завис на месте!',
+                choices: [{ text: 'Дрон стабилизирован!', nextSceneId: 'act2_bonus_question' }]
+            },
+            act2_bonus_question: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_neutral.png', character: 'КВАНТ: Бонусный вопрос', isTask: true,
+                text: 'Если бы этот дрон находился на Луне, где `g` в 6 раз меньше, что бы изменилось?',
+                choices: [
+                    { text: 'Его масса стала бы меньше', isCorrect: false, nextSceneId: 'act2_bonus_fail' },
+                    { text: 'Его вес стал бы меньше', isCorrect: true, nextSceneId: 'act2_bonus_success' },
+                    { text: 'Ничего бы не изменилось', isCorrect: false, nextSceneId: 'act2_bonus_fail' }
+                ]
+            },
+            act2_bonus_fail: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'КВАНТ',
+                text: 'Не совсем. Масса — это внутренняя характеристика тела. А вот вес — это сила, которая зависит от гравитации.',
+                choices: [{ text: 'Вернуться к вопросу', nextSceneId: 'act2_bonus_question'}]
+            },
+            act2_bonus_success: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'КВАНТ',
+                text: 'Именно! Масса — это мера инертности, она постоянна. А вес (P = mg) — это сила, с которой тело давит на опору, и она бы уменьшилась.',
+                choices: [{ text: 'Продолжить', nextSceneId: 'act2_bridge'}]
+            },
+            act2_bridge: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_neutral.png', character: 'Инженер Орлов',
+                text: 'Он висит, но на борту хрупкий груз... Резкий удар его разрушит. Нужно остановить дрон максимально плавно.',
+                choices: [{ text: 'Какой план?', nextSceneId: 'act3_scene1' }]
+            },
+            act3_scene1: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'Доктор Белова',
+                text: 'Масса дрона __MASS__ кг, а его скорость __VEL__ м/с. Сначала нам нужно рассчитать его <span class="term" data-term="energy">кинетическую энергию (Eк)</span>.',
+                choices: [{ text: 'Приступить к расчету', nextSceneId: 'act3_method_choice' }]
+            },
+            act3_method_choice: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'МЕТОД:', text: 'Как будем действовать?',
+                choices: 'CHOICES_ACT3'
+            },
+            act3_practice_run_model: {
+                 visualModel: 'net',
+                 background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                 text: 'Активирую симуляцию... Смотрите, как скорость влияет на энергию. Теперь давайте вычислим точное значение.',
+                 choices: [{ text: 'Продолжить', stat: 'practice', nextSceneId: 'act3_theory_quiz' }]
+            },
+            act3_theory_quiz: {
+                 background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'ЗАДАЧА 1/2: ЭНЕРГИЯ', isTask: true,
+                text: 'Какова <span class="term" data-term="energy">кинетическая энергия (Eк)</span> дрона?<br>Eк = 1/2 * m * v²<br>Дано: m = __MASS__ кг, v = __VEL__ м/с.',
+                choices: 'CHOICES_ACT3_THEORY_QUIZ'
+            },
+            act3_theory_fail: {
+                 background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Ошибка в расчете! Не забудьте возвести скорость в квадрат (v*v) и умножить на 0.5 (или разделить на 2).',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'act3_theory_quiz' }]
+            },
+            act3_practice_quiz: {
+                 background: 'assets/backgrounds/hangar.jpg', sprite: null, character: 'ЗАДАЧА 2/2: ВЫБОР СЕТИ', isTask: true,
+                text: 'Отлично! Энергия дрона - __ENERGY__ Дж. Какую сеть выбрать, чтобы гарантированно его остановить?',
+                choices: 'CHOICES_ACT3_PRACTICE_QUIZ'
+            },
+            act3_practice_fail_1: {
+                 background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/max_worried.png', character: 'ОШИБКА',
+                text: 'Опасно! Энергия дрона больше, чем сеть может выдержать. Она просто порвется! Выбирайте с запасом прочности.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'act3_practice_quiz' }]
+            },
+            act3_practice_fail_2: {
+                 background: 'assets/backgrounds/hangar_alarm.jpg', sprite: 'assets/sprites/max_worried.png', character: 'ОШИБКА',
+                text: 'Слишком жестко! Эта сеть остановит дрон, но очень резко. Удар будет почти как о стену, груз не выдержит. Нужна более эластичная.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'act3_practice_quiz' }]
+            },
+            act3_practice_success: {
+                background: 'assets/backgrounds/hangar.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Сеть сработала как надо! <span class="term" data-term="energy">Кинетическая энергия</span> перешла в <span class="term" data-term="potential_energy">потенциальную энергию упругой деформации</span>, и дрон остановился очень плавно. Груз цел!',
+                choices: [{ text: 'Завершить главу', nextSceneId: 'ending' }]
+            },
+            ending: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'ИТОГ',
+                text: 'Поздравляем! Вы успешно применили знания по механике и спасли "Проект Икар". Первая глава пройдена!',
+                choices: [
+                    { text: 'Начать заново', isRestart: true },
+                    { text: 'К списку миссий', href: 'missions.html', onComplete: 'mission1' } // <-- Добавлена новая опция onComplete
+                ]
+            }
+        };
+
+        const glossary = {
+            gravity: {
+                title: "Ускорение свободного падения (g)",
+                text: "Это ускорение, с которым падает любое тело вблизи поверхности планеты под действием её гравитации. На Земле оно примерно равно 9.8 м/с². Знак 'минус' используется, чтобы показать, что оно направлено вниз."
+            },
+            mass: {
+                title: "Масса (m)",
+                text: "Это мера инертности тела, то есть его 'сопротивления' изменению скорости. Масса измеряется в килограммах (кг) и не зависит от того, где находится тело — на Земле или на Луне."
+            },
+            acceleration: {
+                title: "Ускорение (a)",
+                text: "Это величина, показывающая, как быстро меняется скорость тела. Измеряется в метрах на секунду в квадрате (м/с²). Ускорение возникает под действием силы."
+            },
+            force: {
+                title: "Сила (F)",
+                text: "Это физическая величина, которая является причиной изменения скорости тела (то есть причиной ускорения). Измеряется в Ньютонах (Н). Второй закон Ньютона связывает силу, массу и ускорение: F = ma."
+            },
+            energy: {
+                title: "Кинетическая энергия (Eк)",
+                text: "Это энергия, которой обладает тело вследствие своего движения. Она зависит от массы тела и квадрата его скорости (Eк = 1/2 * m * v²). Чем быстрее и массивнее объект, тем больше его кинетическая энергия."
+            },
+            potential_energy: {
+                title: "Потенциальная энергия упругой деформации (Еп)",
+                text: "Это энергия, которую накапливает упругое тело (например, пружина или растянутая сеть) при его деформации. Она зависит от жесткости тела (k) и величины его растяжения/сжатия (x). Формула: Еп = kx²/2."
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name');
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const visualModelContainer = document.getElementById('visual-model-container');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play();
+            }
+
+            function generateProblemData() {
+                const p = {};
+                const g = -9.8;
+                p.Y0 = 80 + Math.floor(Math.random() * 21);
+                p.V0Y = 10 + Math.floor(Math.random() * 21);
+                p.T = 15 + Math.floor(Math.random() * 11);
+                p.CHOICES_ACT1 = [
+                    { text: '🧠 Рассчитать по формулам кинематики.', nextSceneId: 'act1_theory_quiz' },
+                    { text: '🛠️ Посмотреть траекторию на симуляторе.', leadsToModel: 'trajectory', nextSceneId: 'act1_practice_run_model' }
+                ];
+                const y_correct = p.Y0 + p.V0Y * p.T + (g * p.T * p.T) / 2;
+                const y_wrong1 = p.Y0 + p.V0Y * p.T + (Math.abs(g) * p.T * p.T) / 2;
+                const y_wrong2 = p.Y0 + p.V0Y * p.T;
+                p.CHOICES_ACT1_QUIZ = [
+                    { text: `${Math.round(y_correct)} м`, isCorrect: true, stat: 'theory', nextSceneId: 'act1_theory_success' },
+                    { text: `${Math.round(y_wrong1)} м`, isCorrect: false, nextSceneId: 'act1_theory_fail' },
+                    { text: `${Math.round(y_wrong2)} м`, isCorrect: false, nextSceneId: 'act1_theory_fail' }
+                ].sort(() => Math.random() - 0.5);
+                
+                p.MASS = 400 + Math.floor(Math.random() * 201);
+                p.ACCEL = 2 + Math.random() * 2;
+                const correctAnswerF = p.MASS * p.ACCEL;
+                p.CHOICES_ACT2 = [
+                    { text: '🧠 Рассчитать силу по II Закону Ньютона.', nextSceneId: 'act2_theory_quiz' },
+                    { text: '🛠️ Посмотреть диаграмму сил на модели.', leadsToModel: 'forces', nextSceneId: 'act2_practice_run_model' }
+                ];
+                p.CHOICES_ACT2_QUIZ = [
+                    { text: `${Math.round(correctAnswerF)} Н`, isCorrect: true, stat: 'theory', nextSceneId: 'act2_theory_success' },
+                    { text: `${Math.round(p.MASS / p.ACCEL)} Н`, isCorrect: false, nextSceneId: 'act2_theory_fail' },
+                    { text: `${Math.round(p.MASS * 1.5)} Н`, isCorrect: false, nextSceneId: 'act2_theory_fail' }
+                ].sort(() => Math.random() - 0.5);
+                
+                p.VEL = 8 + Math.floor(Math.random() * 5);
+                p.ENERGY = Math.round(0.5 * p.MASS * p.VEL * p.VEL);
+                p.CHOICES_ACT3 = [
+                     { text: '🧠 Рассчитать энергию и выбрать сеть.', nextSceneId: 'act3_theory_quiz' },
+                     { text: '🛠️ Посмотреть симуляцию мягкой остановки.', leadsToModel: 'net', nextSceneId: 'act3_practice_run_model' }
+                ];
+                const energy_wrong1 = Math.round(0.5 * p.MASS * p.VEL);
+                const energy_wrong2 = Math.round(p.MASS * p.VEL);
+                p.CHOICES_ACT3_THEORY_QUIZ = [
+                    { text: `${p.ENERGY} Дж`, isCorrect: true, stat: 'theory', nextSceneId: 'act3_practice_quiz' },
+                    { text: `${energy_wrong1} Дж`, isCorrect: false, nextSceneId: 'act3_theory_fail' },
+                    { text: `${energy_wrong2} Дж`, isCorrect: false, nextSceneId: 'act3_theory_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                const NET1 = Math.round(p.ENERGY * (0.6 + Math.random() * 0.2));
+                const NET2 = Math.round(p.ENERGY * (1.2 + Math.random() * 0.4));
+                const NET3 = NET2 * 3;
+                p.CHOICES_ACT3_PRACTICE_QUIZ = [
+                    { text: `Сеть "Паутина-1" (Макс. ${NET1} Дж)`, isCorrect: false, nextSceneId: 'act3_practice_fail_1' },
+                    { text: `Сеть "Титан-3" (Макс. ${NET2} Дж)`, isCorrect: true, stat: 'practice', nextSceneId: 'act3_practice_success' },
+                    { text: `Сеть "Бастион-5" (Макс. ${NET3} Дж, жесткая)`, isCorrect: false, nextSceneId: 'act3_practice_fail_2' }
+                ].sort(() => Math.random() - 0.5);
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'act1_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object' && typeof gameState.problemData[key] !== 'function') {
+                        const value = gameState.problemData[key];
+                        const roundedValue = Number.isInteger(value) ? value : value.toFixed(1);
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), roundedValue);
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    if (choice.leadsToModel && gameState.viewedModels[choice.leadsToModel]) {
+                        return;
+                    }
+                    const button = document.createElement('button');
+                    button.innerHTML = choice.text;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                visualModelContainer.style.display = 'none';
+                document.querySelectorAll('.visual-model').forEach(m => { m.style.display = 'none' });
+
+                if (currentScene.visualModel) {
+                    visualModelContainer.style.display = 'flex';
+                    const modelElement = document.getElementById(`model-${currentScene.visualModel}`);
+                    if (modelElement) {
+                        modelElement.style.display = 'flex';
+                        if (currentScene.visualModel === 'trajectory') runTrajectoryModel();
+                        if (currentScene.visualModel === 'net') runNetModel();
+                    }
+                }
+
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play();
+                    audioMusic.play();
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.isRestart) {
+                    initGame();
+                    return;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+
+                if (choice.leadsToModel) {
+                    gameState.viewedModels[choice.leadsToModel] = true;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+
+            function runTrajectoryModel() {
+                const canvas = document.getElementById('trajectory-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+                let x = 30, y = canvas.height - 50, vx = 5, vy = -10, g = 0.2;
+                function animate() {
+                    if (gameState.currentSceneId !== 'act1_practice_run_model') return;
+                    ctx.fillStyle = 'rgba(10, 20, 30, 0.3)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = 'cyan'; ctx.fill();
+                    x += vx; y += vy; vy += g;
+                    if (x < canvas.width) requestAnimationFrame(animate);
+                }
+                animate();
+            }
+
+            function runNetModel() {
+                const drone = document.querySelector('#model-net .drone-model');
+                const net = document.querySelector('#model-net .net-model');
+                drone.style.transition = 'none'; net.style.transition = 'none';
+                drone.style.left = '5%'; net.style.width = '20px';
+                setTimeout(() => {
+                    drone.style.transition = 'left 2s ease-in-out';
+                    drone.style.left = '90%';
+                    setTimeout(() => {
+                        net.style.transition = 'width 0.5s ease-out';
+                        net.style.width = '60px';
+                    }, 1900);
+                }, 100);
+            }
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

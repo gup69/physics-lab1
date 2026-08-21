@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Баллистический тест брони | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1050px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1050px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* VIEWPORT (Виртуальная лаборатория) */
+    .viewport { position: relative; width: 100%; height: 350px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #475569; }
+    
+    /* Сетка координат с промежуточными делениями */
+    .grid-bg { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+            /* Главные линии (0.1 м = 50px) */
+            linear-gradient(rgba(56, 189, 248, 0.3) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(56, 189, 248, 0.3) 1px, transparent 1px),
+            /* Мелкие линии (0.02 м = 10px) */
+            linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+        background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px; 
+    }
+    
+    /* Нулевая ось Y (находится в 50px от низа = 300px от верха) */
+    .grid-axis { position: absolute; top: 300px; left: 0; width: 100%; height: 2px; background: #38BDF8; z-index: 2;}
+    
+    /* Шкала высоты (Y) */
+    .y-scale { position: absolute; left: 5px; bottom: 50px; width: 45px; height: 300px; color: #38BDF8; font-family: monospace; font-size: 0.8rem; pointer-events: none; z-index: 2;}
+    
+    /* Промежуточные штрихи на оси */
+    .y-ticks { position: absolute; left: 40px; bottom: 0; width: 5px; height: 100%; background-image: repeating-linear-gradient(to top, rgba(56,189,248,0.5) 0, rgba(56,189,248,0.5) 1px, transparent 1px, transparent 10px); }
+    
+    .y-scale span { position: absolute; left: 0; transform: translateY(50%); text-shadow: 1px 1px 2px #000; font-weight: bold;}
+    .y-scale span::after { content: ''; position: absolute; left: 35px; top: 50%; width: 10px; height: 2px; background: #38BDF8; }
+
+    /* Система маятника */
+    #pendulum-system { position: absolute; top: 0; left: 50%; transform-origin: top center; z-index: 3; }
+    .pendulum-string { width: 2px; height: 260px; background: #94A3B8; margin: 0 auto; }
+    .armor-block { width: 80px; height: 80px; background: #475569; border: 2px solid #94A3B8; border-radius: 4px; margin-left: -40px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-family: monospace; }
+    
+    /* Пуля */
+    .bullet { position: absolute; width: 12px; height: 6px; background: #F59E0B; border-radius: 50%; top: 297px; z-index: 4; box-shadow: 0 0 10px #F59E0B; }
+
+    /* Трекинг-линия */
+    #tracker-line { position: absolute; left: 0; width: 100%; height: 0; border-top: 2px dashed #10B981; top: 300px; opacity: 0; z-index: 1; pointer-events: none; }
+    .tracker-label { position: absolute; right: 10px; top: -20px; color: #10B981; font-family: monospace; font-size: 0.9rem; font-weight: bold; }
+
+    /* Управление плеером */
+    .player-controls { margin-top: 15px; display: flex; align-items: center; gap: 15px; }
+    input[type=range] { flex-grow: 1; accent-color: #38BDF8; cursor: pointer; }
+    .time-display { font-family: monospace; color: #38BDF8; font-size: 1.1rem; width: 60px; }
+
+    /* Панель данных и расчетов */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 0.95rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    /* Сетка инпутов */
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.85rem; }
+    .calc-full { grid-column: span 2; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    /* ИИ Консоль */
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 180px; font-family: monospace; font-size: 0.9rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8;}
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } /* Для перевода логов */
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Трекинг высокоскоростного удара" data-kk="Жоғары жылдамдықты соққы трекингі" data-en="High-Velocity Impact Tracking">Трекинг высокоскоростного удара</h1>
+      <p data-ru="Анализ кинематики баллистического маятника" data-kk="Баллистикалық маятник кинематикасын талдау" data-en="Analysis of ballistic pendulum kinematics">Анализ кинематики баллистического маятника</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ВИДЕО-АНАЛИЗАТОР -->
+    <div class="panel">
+      <h2 data-ru="Сенсоры камеры (Измерение отклонения)" data-kk="Камера сенсорлары (Ауытқуды өлшеу)" data-en="Camera Sensors (Deflection Measurement)">Сенсоры камеры (Измерение отклонения)</h2>
+      
+      <div class="viewport" id="viewport">
+        <div class="grid-bg"></div>
+        <div class="grid-axis"></div>
+        <div class="y-scale">
+          <div class="y-ticks"></div>
+          <span style="bottom: 0px">0m</span>
+          <span style="bottom: 50px">0.1m</span>
+          <span style="bottom: 100px">0.2m</span>
+          <span style="bottom: 150px">0.3m</span>
+          <span style="bottom: 200px">0.4m</span>
+          <span style="bottom: 250px">0.5m</span>
+        </div>
+        
+        <!-- Трекинг-линия -->
+        <div id="tracker-line"><div class="tracker-label">h-marker</div></div>
+
+        <!-- Подвес и блок (вращающаяся система) -->
+        <div id="pendulum-system">
+           <div class="pendulum-string" id="string"></div>
+           <div class="armor-block" id="block">M</div>
+        </div>
+        
+        <!-- Пуля -->
+        <div class="bullet" id="bullet" style="left: -20px;"></div>
+      </div>
+
+      <div class="player-controls">
+        <span data-ru="Кадр:" data-kk="Кадр:" data-en="Frame:">Кадр:</span>
+        <input type="range" id="timeline" min="0" max="100" value="0">
+        <div class="time-display" id="time-display">t=0.0s</div>
+      </div>
+      <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 10px;" 
+         data-ru="* Используйте h-marker для точного измерения высоты подъема центра масс (h). 1 крупная клетка = 0.1 м, 1 мелкая клетка = 0.02 м." 
+         data-kk="* Масса центрінің көтерілу биіктігін (h) дәл өлшеу үшін h-marker пайдаланыңыз. 1 үлкен тор = 0.1 м, 1 кіші тор = 0.02 м." 
+         data-en="* Use the h-marker for accurate measurement of the center of mass height (h). 1 large square = 0.1 m, 1 small square = 0.02 m.">* Используйте h-marker для точного измерения высоты подъема центра масс (h). 1 крупная клетка = 0.1 м, 1 мелкая клетка = 0.02 м.</p>
+    </div>
+
+    <!-- ВВОД ДАННЫХ И ИИ -->
+    <div class="panel">
+      <h2 data-ru="Константы и расчетный модуль" data-kk="Тұрақтылар және есептеу модулі" data-en="Constants and Calculation Module">Константы и расчетный модуль</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+          <div class="data-row">
+            <span data-ru="Масса бронеблока (M):" data-kk="Бронь блогының массасы (M):" data-en="Armor block mass (M):">Масса бронеблока (M):</span>
+            <strong>1.95 кг</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Масса пули (m):" data-kk="Оқ массасы (m):" data-en="Bullet mass (m):">Масса пули (m):</span>
+            <strong>0.05 кг</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Ускорение (g):" data-kk="Үдеу (g):" data-en="Acceleration (g):">Ускорение (g):</span>
+            <strong>9.8 м/с²</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Длина подвеса до ЦМ (L):" data-kk="МЦ-не дейінгі аспа ұзындығы (L):" data-en="Pendulum length to CM (L):">Длина подвеса до ЦМ (L):</span>
+            <strong>0.6 м</strong>
+          </div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="input-h" placeholder="Высота h (м)" data-ru="Высота h (м)" data-kk="Биіктік h (м)" data-en="Height h (m)" step="0.01">
+        <input type="number" id="input-angle" placeholder="Угол θ (град)" data-ru="Угол θ (град)" data-kk="Бұрыш θ (град)" data-en="Angle θ (deg)" step="0.1">
+        
+        <input type="number" id="input-ep" placeholder="Ep системы (Дж)" data-ru="Ep системы (Дж)" data-kk="Жүйенің Ep (Дж)" data-en="System Ep (J)" step="0.1">
+        <input type="number" id="input-v0" placeholder="Скорость пули V0 (м/с)" data-ru="Скорость пули V0 (м/с)" data-kk="Оқтың V0 жылдамдығы (м/с)" data-en="Bullet V0 (m/s)" step="0.1">
+        
+        <input type="number" id="input-ek" class="calc-full" placeholder="Кинетическая энергия пули Ek (Дж)" data-ru="Кинетическая энергия пули Ek (Дж)" data-kk="Оқтың кинетикалық энергиясы Ek (Дж)" data-en="Bullet Kinetic Energy Ek (J)" step="0.1">
+      </div>
+
+      <button class="btn-submit" onclick="analyzeResult()" data-ru="ПЕРЕДАТЬ ИИ ДЛЯ АНАЛИЗА" data-kk="ЖИ-ГЕ ТАЛДАУҒА БЕРУ" data-en="SUBMIT TO AI FOR ANALYSIS">ПЕРЕДАТЬ ИИ ДЛЯ АНАЛИЗА</button>
+
+      <div class="ai-console" id="ai-output">
+        <!-- Первичное сообщение -->
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD готов. Ожидание данных...</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD дайын. Деректер күтілуде...</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD ready. Awaiting data...</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ФИЗИЧЕСКАЯ МОДЕЛЬ
+    const pxPerMeter = 500; // 1 крупная клетка = 50px = 0.1м, мелкая = 10px = 0.02м
+    const g = 9.8;
+    const M = 1.95; // кг
+    const m = 0.05; // кг
+    const L_px = 300; 
+    const L_meters = L_px / pxPerMeter; // 0.6 м
+
+    // Генерация случайной высоты h от 0.05 до 0.25 м
+    const h_actual = (Math.floor(Math.random() * 20) + 5) / 100;
+    
+    // Скрытые физические вычисления
+    const theta_max_rad = Math.acos(1 - (h_actual / L_meters)); 
+    const theta_max_deg = theta_max_rad * (180 / Math.PI);
+    const Ep_system = (M + m) * g * h_actual;
+    const u_block = Math.sqrt(2 * g * h_actual); 
+    const V_initial = (u_block * (M + m)) / m; 
+    const Ek_bullet = 0.5 * m * Math.pow(V_initial, 2);
+
+    // DOM Элементы
+    const timeline = document.getElementById('timeline');
+    const pendulumSystem = document.getElementById('pendulum-system');
+    const bullet = document.getElementById('bullet');
+    const timeDisplay = document.getElementById('time-display');
+    const aiOutput = document.getElementById('ai-output');
+    const trackerLine = document.getElementById('tracker-line');
+
+    // Логика раскадровки
+    timeline.addEventListener('input', function() {
+        let t = parseInt(this.value); 
+        timeDisplay.innerText = `t=${(t * 0.01).toFixed(2)}s`;
+
+        if (t < 30) {
+            // Движение пули до удара
+            let progress = t / 30; // от 0 до 1
+            bullet.style.left = `calc(${progress * 50}% - 6px)`;
+            pendulumSystem.style.transform = `rotate(0rad)`;
+            bullet.style.opacity = "1";
+            trackerLine.style.opacity = "0";
+        } 
+        else if (t >= 30) {
+            // Удар и отклонение вправо
+            let swingProgress = (t - 30) / 70; 
+            let factor = Math.sin(swingProgress * Math.PI / 2); 
+            
+            let currentTheta = theta_max_rad * factor;
+            
+            // ВАЖНО: Отрицательный угол вращает маятник вправо (против часовой стрелки в логике CSS)
+            pendulumSystem.style.transform = `rotate(-${currentTheta}rad)`; 
+            bullet.style.opacity = "0"; 
+            
+            // Линия-трекер для высоты
+            let currentH_meters = L_meters * (1 - Math.cos(currentTheta));
+            let currentH_px = currentH_meters * pxPerMeter;
+            trackerLine.style.top = `${300 - currentH_px}px`; 
+            trackerLine.style.opacity = "1";
+        }
+    });
+
+    // Функция проверки расчетов
+    function validateInput(studentVal, trueVal, margin) {
+        return Math.abs(studentVal - trueVal) <= margin;
+    }
+
+    function analyzeResult() {
+        const studentH = parseFloat(document.getElementById('input-h').value);
+        const studentAngle = parseFloat(document.getElementById('input-angle').value);
+        const studentEp = parseFloat(document.getElementById('input-ep').value);
+        const studentV = parseFloat(document.getElementById('input-v0').value);
+        const studentEk = parseFloat(document.getElementById('input-ek').value);
+        
+        if (isNaN(studentH) || isNaN(studentAngle) || isNaN(studentEp) || isNaN(studentV) || isNaN(studentEk)) {
+            printAI("ОШИБКА: Заполните все поля расчетов.", 
+                    "ҚАТЕ: Барлық есептеу өрістерін толтырыңыз.", 
+                    "ERROR: Fill in all calculation fields.", "error");
+            return;
+        }
+
+        let errorsRU = [];
+        let errorsKK = [];
+        let errorsEN = [];
+
+        // Проверка с погрешностями
+        if (!validateInput(studentH, h_actual, 0.02)) {
+            errorsRU.push("Высота (h)"); errorsKK.push("Биіктік (h)"); errorsEN.push("Height (h)");
+        }
+        if (!validateInput(studentAngle, theta_max_deg, 0.5)) {
+            errorsRU.push("Угол (θ)"); errorsKK.push("Бұрыш (θ)"); errorsEN.push("Angle (θ)");
+        }
+        if (!validateInput(studentEp, Ep_system, Ep_system * 0.05)) {
+            errorsRU.push("Энергия (Ep)"); errorsKK.push("Энергия (Ep)"); errorsEN.push("Energy (Ep)");
+        }
+        if (!validateInput(studentV, V_initial, V_initial * 0.03)) {
+            errorsRU.push("Скорость (V0)"); errorsKK.push("Жылдамдық (V0)"); errorsEN.push("Velocity (V0)");
+        }
+        if (!validateInput(studentEk, Ek_bullet, Ek_bullet * 0.05)) {
+            errorsRU.push("Энергия пули (Ek)"); errorsKK.push("Оқ энергиясы (Ek)"); errorsEN.push("Bullet energy (Ek)");
+        }
+
+        if (errorsRU.length === 0) {
+            // Все верно
+            let statusRU = Ek_bullet < 150 ? "Броня выдержала удар." : "ПРОБИТИЕ. Броня разрушена.";
+            let statusKK = Ek_bullet < 150 ? "Бронь соққыға төтеп берді." : "ТЕСІЛУ. Бронь бұзылды.";
+            let statusEN = Ek_bullet < 150 ? "Armor withstood the impact." : "PENETRATION. Armor destroyed.";
+
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Ошибок не обнаружено.<br>Кинетическая энергия удара: ${Ek_bullet.toFixed(1)} Дж.<br>ВЕРДИКТ: ${statusRU}`,
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Қателер табылған жоқ.<br>Соққының кинетикалық энергиясы: ${Ek_bullet.toFixed(1)} Дж.<br>ВЕРДИКТ: ${statusKK}`,
+                    `SYNC SUCCESSFUL.<br>No errors detected.<br>Impact kinetic energy: ${Ek_bullet.toFixed(1)} J.<br>VERDICT: ${statusEN}`,
+                    "success");
+        } else {
+            // Есть ошибки
+            printAI(`ОТКЛОНЕНИЕ В РАСЧЕТАХ.<br>Ошибки найдены в параметрах: <b>${errorsRU.join(", ")}</b>.<br>Проверьте формулы и повторите.`,
+                    `ЕСЕПТЕУЛЕРДЕГІ АУЫТҚУ.<br>Келесі параметрлерде қателер табылды: <b>${errorsKK.join(", ")}</b>.<br>Формулаларды тексеріп, қайталаңыз.`,
+                    `CALCULATION DEVIATION.<br>Errors found in parameters: <b>${errorsEN.join(", ")}</b>.<br>Check formulas and retry.`,
+                    "error");
+        }
+    }
+
+    // Функция печати в лог с поддержкой мультиязычности
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        aiOutput.prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const currentLang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            if(span.getAttribute('data-lang-text') === currentLang) {
+                span.style.display = 'inline';
+            } else {
+                span.style.display = 'none';
+            }
+        });
+    }
+
+    // Инициализация языка логов при загрузке
+    applyLogLanguage();
+
+    // Логика переключения языков интерфейса
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        
+        // Перевод статических текстов
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        
+        // Перевод логов
+        applyLogLanguage();
+      });
+    });
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сила Ампера: Лабораторная работа</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ff5252; /* Red for Ampere/Force */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+            --warning: #ffbb33;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 8px; background: #000; 
+            border: 1px solid #444; color: white; border-radius: 4px; 
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 400px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; justify-content: center; align-items: center;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Dynamometer Display */
+        .sensor-display {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); padding: 15px;
+            border: 2px solid var(--accent); border-radius: 8px;
+            text-align: center; font-family: monospace;
+        }
+        .sensor-val { font-size: 2em; color: var(--accent); font-weight: bold; }
+        .sensor-unit { color: #aaa; font-size: 0.9em; }
+
+        /* Table */
+        .lab-table-container {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+        table.lab-table {
+            width: 100%; border-collapse: collapse; color: #fff; font-size: 0.9em;
+        }
+        table.lab-table th, table.lab-table td {
+            border: 1px solid #444; padding: 8px; text-align: center;
+        }
+        table.lab-table th { background: #2c2c2c; color: var(--accent); }
+        table.lab-table input { width: 100px; background: #111; border: 1px solid #555; text-align: center; color: white; }
+        .row-btn {
+            padding: 5px 10px; font-size: 0.8em; background: #2196F3;
+            border: none; border-radius: 3px; color: white; cursor: pointer;
+        }
+        .row-btn:disabled { background: #555; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel); padding: 30px;
+            border: 2px solid var(--accent); border-radius: 10px;
+            width: 90%; max-width: 600px; text-align: center; color: white;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-score { font-size: 3em; margin: 10px 0; font-weight: bold; }
+        .result-row-correct { color: var(--success); }
+        .result-row-wrong { color: var(--danger); }
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Сила Ампера</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headParams">2. Параметры цепи</div>
+            
+            <div class="control-group">
+                <label data-lang="lblMagnet">Магнит:</label>
+                <select id="magnet-select">
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНЫЙ ***</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblI">Сила тока (I):</span> <span class="val"><span id="val-i">2.0</span> А</span></label>
+                <input type="range" id="slider-i" min="0" max="5.0" step="0.1" value="2.0">
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblL">Длина проводника (L):</span> <span class="val"><span id="val-l">10</span> см</span></label>
+                <input type="range" id="slider-l" min="5" max="20" step="1" value="10">
+            </div>
+            
+            <div class="control-group">
+                <label style="font-size:0.8em; color:#888;" data-lang="lblAngle">Угол α = 90° (sin 90° = 1)</label>
+            </div>
+
+            <button class="action-btn" id="measure-btn" data-lang="btnMeasure">ИЗМЕРИТЬ СИЛУ</button>
+            <button class="action-btn" id="reset-btn" style="background:#555; margin-top:10px;" data-lang="btnReset">НОВЫЙ МАГНИТ</button>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column;">
+        <div class="panel">
+            <div class="visualizer">
+                <canvas id="sim-canvas" width="800" height="400"></canvas>
+                <div class="sensor-display">
+                    <div class="sensor-val" id="force-display">0.00</div>
+                    <div class="sensor-unit" data-lang="unitMN">мН</div>
+                    <div style="font-size:0.6em; color:#888; margin-top:5px;" data-lang="lblDynamometer">Датчик силы</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 data-lang="lblTableTitle" style="margin:0; color:var(--accent);">Таблица результатов (4 опыта)</h3>
+                <button id="finish-btn" style="background:var(--success); border:none; padding:10px 20px; color:white; font-weight:bold; border-radius:5px; cursor:pointer;" disabled data-lang="btnFinish">ОЦЕНИТЬ РАБОТУ</button>
+            </div>
+
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th data-lang="colTrial">№</th>
+                        <th>I (А)</th>
+                        <th>L (см)</th>
+                        <th>F (мН)</th>
+                        <th data-lang="colAction">Действие</th>
+                        <th data-lang="colCalc">ОТВЕТ: B (Тл)</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-body">
+                    </tbody>
+            </table>
+            <p style="color:#aaa; font-size:0.9em; margin-top:10px;" data-lang="tableHint">Инструкция: 1. Установите I и L. 2. Измерьте F. 3. Нажмите "Записать". 4. Вычислите B (переведите см в метры, мН в Ньютоны!).</p>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат Лабораторной Работы</h2>
+        <div style="text-align:left; margin-bottom:10px;">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+        </div>
+        
+        <div class="modal-score" id="res-score-val">0</div>
+        <div id="res-details" style="text-align:left; background:#111; padding:10px; border-radius:5px; margin-bottom:10px;"></div>
+        
+        <div style="color:orange; font-size:0.9em; margin-bottom:10px;"><span data-lang="resTrueB">Истинная индукция B:</span> <strong id="res-true-val"></strong> Тл</div>
+
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Сила Ампера",
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headParams: "2. Параметры цепи", lblMagnet: "Магнит:", optUnknown: "*** НЕИЗВЕСТНЫЙ ***",
+            lblI: "Сила тока (I):", lblL: "Длина проводника (L):", lblAngle: "Угол α = 90° (sin 90° = 1)",
+            btnMeasure: "ИЗМЕРИТЬ СИЛУ", btnReset: "НОВЫЙ МАГНИТ",
+            unitMN: "мН", lblDynamometer: "Датчик силы (F)",
+            alertName: "Введите имя и класс!", alertEmpty: "Заполните все 4 строки!",
+            lblTableTitle: "Таблица результатов (4 опыта)", btnFinish: "ОЦЕНИТЬ РАБОТУ",
+            colTrial: "№", colAction: "Действие", colCalc: "ОТВЕТ: B (Тл)",
+            btnRecord: "Записать", tableHint: "Настройте I, L -> Измерьте F -> Записать -> Вычислите B = F / (I·L). Внимание на единицы измерения!",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ",
+            resRow: "Опыт {n}: Ваш ответ {ans}. Верно: {true}. {status}", resTrueB: "Истинная индукция B:"
+        },
+        kz: {
+            mainTitle: "Ампер күші",
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headParams: "2. Тізбек параметрлері", lblMagnet: "Магнит:", optUnknown: "*** БЕЛГІСІЗ ***",
+            lblI: "Ток күші (I):", lblL: "Өткізгіш ұзындығы (L):", lblAngle: "Бұрыш α = 90°",
+            btnMeasure: "КҮШТІ ӨЛШЕУ", btnReset: "ЖАҢА МАГНИТ",
+            unitMN: "мН", lblDynamometer: "Күш датчигі (F)",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertEmpty: "Барлық 4 жолды толтырыңыз!",
+            lblTableTitle: "Нәтижелер кестесі (4 тәжірибе)", btnFinish: "БАҒАЛАУ",
+            colTrial: "№", colAction: "Әрекет", colCalc: "ЖАУАП: B (Тл)",
+            btnRecord: "Жазу", tableHint: "I, L баптау -> F өлшеу -> Жазу -> B = F / (I·L) есептеу. Бірліктерге назар аударыңыз!",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ",
+            resRow: "Тәжірибе {n}: Жауап {ans}. Дұрыс: {true}. {status}", resTrueB: "Дұрыс индукция B:"
+        },
+        en: {
+            mainTitle: "Ampere's Force",
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headParams: "2. Circuit Parameters", lblMagnet: "Magnet:", optUnknown: "*** UNKNOWN ***",
+            lblI: "Current (I):", lblL: "Wire Length (L):", lblAngle: "Angle α = 90°",
+            btnMeasure: "MEASURE FORCE", btnReset: "NEW MAGNET",
+            unitMN: "mN", lblDynamometer: "Force Sensor (F)",
+            alertName: "Enter Name and Class!", alertEmpty: "Fill all 4 rows!",
+            lblTableTitle: "Results Table (4 Trials)", btnFinish: "GRADE WORK",
+            colTrial: "#", colAction: "Action", colCalc: "ANSWER: B (T)",
+            btnRecord: "Record", tableHint: "Set I, L -> Measure F -> Record -> Calc B = F / (I·L). Watch the units!",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resScoreLabel: "Score:", btnRestart: "FINISH",
+            resRow: "Trial {n}: Your ans {ans}. Correct: {true}. {status}", resTrueB: "True B Field:"
+        }
+    };
+
+    let currentLang = 'ru';
+    let isRunning = false;
+    
+    // Physics State
+    const state = {
+        B: 0.0, // Tesla (Randomized)
+        I: 2.0, // Amps
+        L: 10,  // cm
+        F: 0    // milliNewtons
+    };
+
+    // Table Data
+    const trials = [
+        { id: 1, I: 0, L: 0, F: 0, trueB: 0, userAns: null, filled: false },
+        { id: 2, I: 0, L: 0, F: 0, trueB: 0, userAns: null, filled: false },
+        { id: 3, I: 0, L: 0, F: 0, trueB: 0, userAns: null, filled: false },
+        { id: 4, I: 0, L: 0, F: 0, trueB: 0, userAns: null, filled: false }
+    ];
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        document.querySelectorAll('.row-btn').forEach(btn => btn.innerText = t.btnRecord);
+    }
+
+    function updateUI() {
+        document.getElementById('val-i').innerText = state.I.toFixed(1);
+        document.getElementById('val-l').innerText = state.L;
+    }
+
+    function randomizeB() {
+        // Random B between 0.1 and 0.5 Tesla
+        state.B = Math.random() * 0.4 + 0.1;
+        console.log("Teacher Info: True B = " + state.B.toFixed(3) + " T");
+    }
+
+    function calculateForce() {
+        // F = I * L * B
+        // L in meters -> state.L / 100
+        // F in Newtons
+        const F_newtons = state.I * (state.L / 100) * state.B;
+        // Convert to mN
+        state.F = F_newtons * 1000;
+        
+        // Add slight noise for realism
+        if (state.F > 0) {
+            state.F += (Math.random() - 0.5) * 0.5; // +/- 0.25 mN noise
+        }
+        
+        document.getElementById('force-display').innerText = state.F.toFixed(2);
+        draw();
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+
+        const cx = cvs.width / 2;
+        const cy = cvs.height / 2;
+
+        // Draw Magnet Poles
+        // N Pole (Red) top, S Pole (Blue) bottom
+        ctx.fillStyle = '#d32f2f'; // Red
+        ctx.fillRect(cx - 100, 50, 200, 80);
+        ctx.fillStyle = 'white';
+        ctx.font = "bold 40px Arial";
+        ctx.fillText("N", cx - 15, 105);
+
+        ctx.fillStyle = '#1976d2'; // Blue
+        ctx.fillRect(cx - 100, 270, 200, 80);
+        ctx.fillStyle = 'white';
+        ctx.fillText("S", cx - 15, 325);
+
+        // Magnetic Field Lines (N -> S, Down)
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 2;
+        for(let x = cx - 80; x <= cx + 80; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, 130);
+            ctx.lineTo(x, 270);
+            ctx.stroke();
+            // Arrow head down
+            ctx.beginPath();
+            ctx.moveTo(x, 200); ctx.lineTo(x-3, 195); ctx.lineTo(x+3, 195);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fill();
+        }
+        ctx.setLineDash([]);
+
+        // Wire (Conductor)
+        // Drawn as a thick horizontal line/rod in 3D-ish perspective
+        // Perspective: wire goes "into" screen? Or left-right?
+        // Let's say B is DOWN. Force is usually Left or Right or Front/Back.
+        // Left Hand Rule: B (Index) Down. I (Middle) -> Let's say I is Right.
+        // Force (Thumb) -> Into Screen.
+        // This is hard to draw 2D.
+        
+        // Alternative view:
+        // B is INTO SCREEN (Crosses).
+        // Wire is vertical. I is UP.
+        // Force is LEFT.
+        
+        // Let's stick to the visual:
+        // Magnet Poles Left (N) and Right (S). B is Right.
+        // Wire hangs down (I is down).
+        // Force is Out (towards viewer).
+        
+        // Let's draw simple schematics that matches school books:
+        // Wire section horizontal.
+        // Current is flowing through it.
+        
+        // Let's use "Visual Indication" of force vector.
+        
+        const wireY = 200;
+        ctx.fillStyle = '#aaa'; // Wire
+        // Length visualization
+        const visualLen = state.L * 15; // scale
+        ctx.fillRect(cx - visualLen/2, wireY - 5, visualLen, 10);
+        
+        // Connectors
+        ctx.strokeStyle = '#ffd700'; // Copper
+        ctx.beginPath(); 
+        ctx.moveTo(cx - visualLen/2, wireY); ctx.lineTo(cx - visualLen/2 - 50, wireY); // Left wire
+        ctx.moveTo(cx + visualLen/2, wireY); ctx.lineTo(cx + visualLen/2 + 50, wireY); // Right wire
+        ctx.stroke();
+
+        // Current Arrow
+        if (state.I > 0) {
+            ctx.fillStyle = '#ffeb3b';
+            ctx.fillText("I →", cx - 10, wireY - 15);
+        }
+
+        // Force Vector
+        // B is Down (N top, S bottom). I is Right. Force is INTO screen.
+        // Let's change B direction for better 2D.
+        // Let B be INTO screen (Crosses background). I is Right. Force is UP.
+        // But we drew magnets Top/Bottom.
+        
+        // Okay, standard setup:
+        // B is Down. I is Right. Force is "Away" (perspective).
+        // Let's just draw a big Arrow labeled F that grows.
+        
+        if (state.F > 0) {
+            const forceScale = state.F / 5; // scaling
+            ctx.strokeStyle = 'var(--accent)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            // Draw vector from center of wire "outwards" or up/down for simplicity
+            // Let's draw it pointing UP or DOWN to simulate "Weighing" method
+            // Usually Ampere force adds to gravity or subtracts.
+            
+            ctx.moveTo(cx, wireY);
+            ctx.lineTo(cx, wireY + forceScale);
+            ctx.stroke();
+            
+            // Arrow head
+            ctx.fillStyle = 'var(--accent)';
+            ctx.beginPath();
+            ctx.moveTo(cx, wireY + forceScale);
+            ctx.lineTo(cx - 5, wireY + forceScale - 10);
+            ctx.lineTo(cx + 5, wireY + forceScale - 10);
+            ctx.fill();
+            
+            ctx.font = "bold 16px Arial";
+            ctx.fillText("F_A", cx + 10, wireY + forceScale/2);
+        }
+    }
+
+    // --- Table Logic ---
+    function initTable() {
+        const tbody = document.getElementById('tasks-body');
+        tbody.innerHTML = '';
+        trials.forEach(trial => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trial.id}</td>
+                <td id="i-${trial.id}">-</td>
+                <td id="l-${trial.id}">-</td>
+                <td id="f-${trial.id}">-</td>
+                <td><button class="row-btn" onclick="recordTrial(${trial.id})">Записать</button></td>
+                <td><input type="text" id="ans-${trial.id}" placeholder="..." disabled></td>
+            `;
+            tbody.appendChild(row);
+        });
+        updateLanguage(currentLang);
+    }
+
+    window.recordTrial = function(id) {
+        const t = trials[id-1];
+        t.I = state.I;
+        t.L = state.L;
+        t.F = state.F;
+        t.trueB = state.B; // The B at this moment (it's constant though)
+        t.filled = true;
+
+        document.getElementById(`i-${id}`).innerText = t.I.toFixed(1);
+        document.getElementById(`l-${id}`).innerText = t.L;
+        document.getElementById(`f-${id}`).innerText = t.F.toFixed(2);
+        
+        const inp = document.getElementById(`ans-${id}`);
+        inp.disabled = false;
+        inp.focus();
+        
+        event.target.disabled = true;
+        event.target.style.background = "#555";
+
+        checkAllFilled();
+    }
+
+    function checkAllFilled() {
+        const allFilled = trials.every(t => t.filled);
+        document.getElementById('finish-btn').disabled = !allFilled;
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        randomizeB();
+        initTable();
+        updateLanguage('ru');
+        draw();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('slider-i').oninput = (e) => { state.I = parseFloat(e.target.value); updateUI(); };
+        document.getElementById('slider-l').oninput = (e) => { state.L = parseInt(e.target.value); updateUI(); };
+
+        document.getElementById('measure-btn').onclick = calculateForce;
+
+        document.getElementById('reset-btn').onclick = () => {
+            randomizeB();
+            document.getElementById('force-display').innerText = "0.00";
+            state.F = 0;
+            draw();
+            // Reset table visual is hard without reload, but we can keep old rows
+            // Usually reset means new magnet -> new trueB.
+            // Better to just alert user "Magnet changed".
+            alert("Магнит заменен! Индукция B изменилась.");
+        };
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+        };
+
+        // Grading
+        document.getElementById('finish-btn').onclick = () => {
+            let correctCount = 0;
+            let detailsHTML = "";
+            const t = LANG[currentLang];
+
+            trials.forEach(trial => {
+                const userAns = parseFloat(document.getElementById(`ans-${trial.id}`).value.replace(',','.'));
+                // True B = B
+                // Formula used by student: B = F / (I * L)
+                // F is in mN, L in cm.
+                // B = (F * 10^-3) / (I * (L * 10^-2)) = (F/ (I*L)) * 0.1
+                // We verify against the logic, not just state.B (though they should match)
+                
+                // Tolerance 5%
+                const trueAns = trial.trueB;
+                
+                let isRight = false;
+                if (!isNaN(userAns) && Math.abs(userAns - trueAns) / trueAns < 0.05) {
+                    correctCount++;
+                    isRight = true;
+                }
+
+                const statusText = isRight ? "OK" : "FAIL";
+                let rowText = t.resRow
+                    .replace('{n}', trial.id)
+                    .replace('{ans}', userAns)
+                    .replace('{true}', trueAns.toFixed(3))
+                    .replace('{status}', statusText);
+
+                detailsHTML += `<div class="${isRight?'result-row-correct':'result-row-wrong'}">${rowText}</div>`;
+            });
+
+            let finalScore = 0;
+            if (correctCount === 4) finalScore = 10;
+            else if (correctCount === 3) finalScore = 8;
+            else if (correctCount === 2) finalScore = 5;
+            else if (correctCount === 1) finalScore = 3;
+
+            document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+            document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+            document.getElementById('res-score-val').innerText = finalScore + " / 10";
+            document.getElementById('res-details').innerHTML = detailsHTML;
+            document.getElementById('res-true-val').innerText = state.B.toFixed(3);
+
+            document.getElementById('result-modal').style.display = 'flex';
+        };
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Физические величины: Тематический контроль</title>
+    <style>
+        :root { --primary: #3B82F6; --bg: #F0F4FF; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); padding: 20px; color: #1E293B; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 800px; width: 100%; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        h1 { text-align: center; margin-bottom: 20px; }
+        .section { margin-bottom: 30px; border-top: 2px solid #E2E8F0; padding-top: 20px; }
+        .task { background: #F8FAFC; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #E2E8F0; }
+        .btn { background: var(--primary); color: #fff; padding: 15px; width: 100%; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .correct { color: green; font-weight: bold; }
+        .wrong { color: red; font-weight: bold; }
+        select, input { padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <a href="index7.html">← Назад</a>
+        <div>
+            <button onclick="setLang('ru')">РУС</button>
+            <button onclick="setLang('kk')">ҚАЗ</button>
+            <button onclick="setLang('en')">ENG</button>
+        </div>
+    </div>
+
+    <h1 id="title"></h1>
+    <div id="content"></div>
+    <button class="btn" id="check-btn" onclick="checkAll()">ПРОВЕРИТЬ</button>
+    <div id="score" style="text-align:center; font-size:1.4rem; margin-top:20px; font-weight:bold;"></div>
+</div>
+
+<script>
+const lang = localStorage.getItem('preferredLang') || 'ru';
+
+// 1. БАЗА ДАННЫХ
+const DB = {
+    ru: {
+        title: "Физические величины и измерения",
+        t: [
+            {q: "Цена деления прибора равна:", o: ["Разности двух соседних штрихов, деленной на число делений", "Сумме штрихов", "Ничему"], a: 0},
+            {q: "Какой прибор измеряет время?", o: ["Секундомер", "Линейка", "Мензурка"], a: 0},
+            {q: "Что такое плотность?", o: ["Масса деленная на объем", "Сила деленная на время", "Путь деленный на время"], a: 0},
+            {q: "Единица длины в СИ:", o: ["Метр", "Километр", "Сантиметр"], a: 0}
+        ],
+        m: [
+            {t: "Длина", v: ["метр", "секунда", "килограмм"]},
+            {t: "Время", v: ["секунда", "метр", "градус"]},
+            {t: "Масса", v: ["килограмм", "метр", "литр"]},
+            {t: "Объем", v: ["куб. метр", "ампер", "паскаль"]}
+        ],
+        c: "Ученик измерил длину стола, она составила [X] см. Переведите в метры."
+    },
+    kk: {
+        title: "Физикалық шамалар және өлшеулер",
+        t: [
+            {q: "Құралдың бөлік құны:", o: ["Екі көршілес сызықшалар айырмасын бөліктер санына бөлу", "Сызықшалар қосындысы", "Нөл"], a: 0},
+            {q: "Уақытты қандай құрал өлшейді?", o: ["Секундомер", "Сызғыш", "Мензурка"], a: 0},
+            {q: "Тығыздық дегеніміз не?", o: ["Массаның көлемге қатынасы", "Күштің уақытқа қатынасы", "Жолдың уақытқа қатынасы"], a: 0},
+            {q: "ХБЖ-дегі ұзындық бірлігі:", o: ["Метр", "Километр", "Сантиметр"], a: 0}
+        ],
+        m: [
+            {t: "Ұзындық", v: ["метр", "секунда", "килограмм"]},
+            {t: "Уақыт", v: ["секунда", "метр", "градус"]},
+            {t: "Масса", v: ["килограмм", "метр", "литр"]},
+            {t: "Көлем", v: ["куб. метр", "ампер", "паскаль"]}
+        ],
+        c: "Оқушы үстелдің ұзындығын өлшеді, ол [X] см болды. Метрмен өрнектеңіз."
+    },
+    en: {
+        title: "Physical Quantities and Measurements",
+        t: [
+            {q: "Scale division value is:", o: ["Difference between marks divided by number of divisions", "Sum of marks", "Zero"], a: 0},
+            {q: "Which instrument measures time?", o: ["Stopwatch", "Ruler", "Graduated cylinder"], a: 0},
+            {q: "What is density?", o: ["Mass divided by volume", "Force divided by time", "Distance divided by time"], a: 0},
+            {q: "SI unit for length:", o: ["Meter", "Kilometer", "Centimeter"], a: 0}
+        ],
+        m: [
+            {t: "Length", v: ["meter", "second", "kilogram"]},
+            {t: "Time", v: ["second", "meter", "degree"]},
+            {t: "Mass", v: ["kilogram", "meter", "liter"]},
+            {t: "Volume", v: ["cubic meter", "ampere", "pascal"]}
+        ],
+        c: "A student measured table length, it is [X] cm. Convert to meters."
+    }
+};
+
+const val = Math.floor(Math.random() * 50) + 10;
+
+function setLang(l) { localStorage.setItem('preferredLang', l); location.reload(); }
+
+function init() {
+    document.getElementById('title').innerText = DB[lang].title;
+    
+    // Рендер тестов (Часть 1)
+    let content = document.getElementById('content');
+    content.innerHTML += `<h2>${lang=='ru'?'Часть 1. Тесты':lang=='kk'?'1-бөлім. Тесттер':'Part 1. Tests'}</h2>`;
+    DB[lang].test.forEach((item, i) => {
+        let div = document.createElement('div'); div.className = 'task';
+        div.innerHTML = `<p>${item.q}</p>`;
+        item.o.forEach((opt, j) => {
+            div.innerHTML += `<label><input type="radio" name="t${i}" value="${j}" data-corr="${j === item.a}"> ${opt}</label><br>`;
+        });
+        content.appendChild(div);
+    });
+
+    // Рендер соответствий (Часть 2)
+    content.innerHTML += `<h2>${lang=='ru'?'Часть 2. Соответствия':lang=='kk'?'2-бөлім. Сәйкестендіру':'Part 2. Matching'}</h2>`;
+    DB[lang].m.forEach((item, i) => {
+        let div = document.createElement('div'); div.className = 'task';
+        div.innerHTML = `<span>${item.t}</span> <select class="m-select" data-corr="${item.v[0]}"><option value="">--</option>${item.v.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+        content.appendChild(div);
+    });
+
+    // Рендер задач (Часть 3)
+    content.innerHTML += `<h2>${lang=='ru'?'Часть 3. Задачи':lang=='kk'?'3-бөлім. Есептер':'Part 3. Tasks'}</h2>`;
+    content.innerHTML += `<div class="task"><p>${DB[lang].c.replace('[X]', val)}</p><input type="number" id="calc-ans" data-corr="${val/100}" step="0.001"></div>`;
+}
+
+function checkAll() {
+    let s = 0;
+    // Проверка тестов
+    document.querySelectorAll('input[type="radio"]:checked').forEach(el => {
+        if(el.dataset.corr === 'true') { s += 1; el.parentElement.innerHTML += ' ✅'; }
+        else { el.parentElement.innerHTML += ' ❌'; }
+    });
+    // Проверка соответствий
+    document.querySelectorAll('.m-select').forEach(el => {
+        if(el.value === el.dataset.corr) { s += 1; el.innerHTML += ' ✅'; }
+        else { el.innerHTML += ' ❌'; }
+    });
+    // Проверка задачи
+    let c = document.getElementById('calc-ans');
+    if(Math.abs(c.value - c.dataset.corr) < 0.001) { s += 2; c.style.borderColor = 'green'; }
+    else { c.style.borderColor = 'red'; }
+
+    document.getElementById('score').innerText = (lang=='ru'?'Оценка: ':(lang=='kk'?'Баға: ':'Score: ')) + s + ' / 10';
+    document.getElementById('check-btn').style.display = 'none';
+}
+init();
+</script>
+</body>
+</html>

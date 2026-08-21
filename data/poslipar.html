@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Соединение проводников (Final V2)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #ffeb3b; /* Yellow for Electricity */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+            --warning: #ff9800;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 8px; background: #000; 
+            border: 1px solid #444; color: white; border-radius: 4px; 
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: #000; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+        .visualizer {
+            position: relative; height: 550px; /* Увеличена высота */
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; justify-content: center; align-items: center;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        .lab-table-container {
+            background: var(--panel); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-top: 20px;
+        }
+        table.lab-table { width: 100%; border-collapse: collapse; color: #fff; font-size: 0.9em; }
+        table.lab-table th, table.lab-table td { border: 1px solid #444; padding: 8px; text-align: center; }
+        table.lab-table th { background: #2c2c2c; color: var(--accent); }
+        table.lab-table input { width: 100px; background: #111; border: 1px solid #555; text-align: center; color: white; }
+        .row-btn { padding: 5px 10px; font-size: 0.8em; background: #2196F3; border: none; border-radius: 3px; color: white; cursor: pointer; }
+        .row-btn:disabled { background: #555; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--panel); padding: 30px; border: 2px solid var(--accent); border-radius: 10px; width: 90%; max-width: 600px; text-align: center; color: white; }
+        .modal-score { font-size: 3em; margin: 10px 0; font-weight: bold; }
+        .result-row-correct { color: var(--success); }
+        .result-row-wrong { color: var(--danger); }
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Соединение проводников</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success); color:white;" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headSchema">2. Схема</div>
+            
+            <div class="control-group">
+                <label data-lang="lblMode">Тип соединения:</label>
+                <select id="mode-select">
+                    <option value="series" data-lang="optSeries">Последовательное (R1 + R2)</option>
+                    <option value="parallel" data-lang="optParallel">Параллельное (R1 || R2)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label data-lang="lblResistor">Второй резистор (R2):</label>
+                <select id="resistor-select">
+                    <option value="known" data-lang="optKnown">Известный (R2 = 10 Ом)</option>
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНЫЙ (Rx) ***</option>
+                </select>
+                <div style="font-size:0.8em; color:orange; margin-top:5px;" data-lang="hintTask">Для задания выберите "НЕИЗВЕСТНЫЙ"</div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblU">Напряжение источника (U):</span> <span class="val"><span id="val-u">10.0</span> В</span></label>
+                <input type="range" id="slider-u" min="1.0" max="24.0" step="0.5" value="10.0">
+            </div>
+            
+            <div class="control-group">
+                <label><span data-lang="lblR1">Резистор 1 (R1):</span> <span class="val"><span id="val-r1">10</span> Ом</span></label>
+                <input type="range" id="slider-r1" min="5" max="50" step="1" value="10">
+            </div>
+
+            <button class="action-btn" id="reset-btn" style="background:#555; margin-top:10px;" data-lang="btnReset">НОВЫЙ РЕЗИСТОР</button>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column;">
+        <div class="panel">
+            <div class="visualizer">
+                <canvas id="sim-canvas" width="900" height="550"></canvas>
+            </div>
+            <div style="margin-top:10px; color:#888; font-size:0.9em;" data-lang="lblHint">Следите за показаниями Амперметров (A) и Вольтметров (V).</div>
+        </div>
+
+        <div class="lab-table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 data-lang="lblTableTitle" style="margin:0; color:var(--accent);">Таблица результатов (4 опыта)</h3>
+                <button id="finish-btn" style="background:var(--success); border:none; padding:10px 20px; color:white; font-weight:bold; border-radius:5px; cursor:pointer;" disabled data-lang="btnFinish">ОЦЕНИТЬ РАБОТУ</button>
+            </div>
+
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th data-lang="colTrial">№</th>
+                        <th>Тип</th>
+                        <th>U общ (В)</th>
+                        <th>I общ (А)</th>
+                        <th data-lang="colAction">Действие</th>
+                        <th data-lang="colCalc">R_x (Ом)</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-body"></tbody>
+            </table>
+            <p style="color:#aaa; font-size:0.9em; margin-top:10px;" data-lang="tableHint">Инструкция: 1. Выберите тип и U. 2. Запишите U_общ и I_общ. 3. Вычислите Rx.</p>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div style="text-align:left; margin-bottom:10px;">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+        </div>
+        
+        <div class="modal-score" id="res-score-val">0</div>
+        <div id="res-details" style="text-align:left; background:#111; padding:10px; border-radius:5px; margin-bottom:10px;"></div>
+        
+        <div style="color:orange; font-size:0.9em; margin-bottom:10px;"><span data-lang="resTrueVal">Истинное сопротивление Rx:</span> <strong id="res-true-val-display"></strong> Ом</div>
+
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    const LANG = {
+        ru: {
+            mainTitle: "Соединение проводников",
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headSchema: "2. Схема", lblMode: "Тип соединения:", optSeries: "Последовательное (R1 + R2)", optParallel: "Параллельное (R1 || R2)",
+            lblResistor: "Второй резистор (R2):", optKnown: "Известный (R2 = 10 Ом)", optUnknown: "*** НЕИЗВЕСТНЫЙ (Rx) ***", hintTask: "Для задания выберите 'НЕИЗВЕСТНЫЙ'",
+            lblU: "Напряжение (U):", lblR1: "Резистор 1 (R1):", btnReset: "НОВЫЙ РЕЗИСТОР",
+            lblHint: "Схема обновляется автоматически. Следите за показаниями Амперметров (A) и Вольтметров (V).",
+            alertName: "Введите имя и класс!", alertEmpty: "Заполните все 4 строки!",
+            lblTableTitle: "Таблица результатов (4 опыта)", btnFinish: "ОЦЕНИТЬ РАБОТУ",
+            colTrial: "№", colAction: "Действие", colCalc: "ОТВЕТ: Rx (Ом)",
+            btnRecord: "Записать", tableHint: "Меняйте U или R1. Запишите U_общ и I_общ. Вычислите Rx. (Посл: R_общ - R1; Пар: 1/(1/R_общ - 1/R1))",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ",
+            resRow: "Опыт {n}: Ваш ответ {ans}. Верно: {true}. {status}", resTrueVal: "Скрытый Rx:"
+        },
+        kz: {
+            mainTitle: "Өткізгіштерді жалғау",
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headSchema: "2. Схема", lblMode: "Жалғау түрі:", optSeries: "Тізбектей (R1 + R2)", optParallel: "Параллель (R1 || R2)",
+            lblResistor: "Екінші резистор (R2):", optKnown: "Белгілі (R2 = 10 Ом)", optUnknown: "*** БЕЛГІСІЗ (Rx) ***", hintTask: "Тапсырма үшін 'БЕЛГІСІЗ' таңдаңыз",
+            lblU: "Кернеу (U):", lblR1: "Резистор 1 (R1):", btnReset: "ЖАҢА РЕЗИСТОР",
+            lblHint: "Схема автоматты түрде жаңартылады. Амперметр (A) және Вольтметр (V) көрсеткіштерін қараңыз.",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertEmpty: "Барлық 4 жолды толтырыңыз!",
+            lblTableTitle: "Нәтижелер кестесі (4 тәжірибе)", btnFinish: "БАҒАЛАУ",
+            colTrial: "№", colAction: "Әрекет", colCalc: "ЖАУАП: Rx (Ом)",
+            btnRecord: "Жазу", tableHint: "U немесе R1 өзгертіңіз. Жазу. Rx есептеңіз.",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ",
+            resRow: "Тәжірибе {n}: Жауап {ans}. Дұрыс: {true}. {status}", resTrueVal: "Жасырын Rx:"
+        },
+        en: {
+            mainTitle: "Circuit Connections",
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headSchema: "2. Circuit", lblMode: "Connection:", optSeries: "Series (R1 + R2)", optParallel: "Parallel (R1 || R2)",
+            lblResistor: "Second Resistor (R2):", optKnown: "Known (R2 = 10 Ohm)", optUnknown: "*** UNKNOWN (Rx) ***", hintTask: "Select 'UNKNOWN' for task",
+            lblU: "Source Voltage (U):", lblR1: "Resistor 1 (R1):", btnReset: "NEW RESISTOR",
+            lblHint: "Circuit updates automatically. Watch Ammeters (A) and Voltmeters (V).",
+            alertName: "Enter Name and Class!", alertEmpty: "Fill all 4 rows!",
+            lblTableTitle: "Results Table (4 Trials)", btnFinish: "GRADE WORK",
+            colTrial: "#", colAction: "Action", colCalc: "ANSWER: Rx (Ohm)",
+            btnRecord: "Record", tableHint: "Change U or R1. Record U_tot, I_tot. Calc Rx.",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resScoreLabel: "Score:", btnRestart: "FINISH",
+            resRow: "Trial {n}: Your ans {ans}. Correct: {true}. {status}", resTrueVal: "Hidden Rx:"
+        }
+    };
+
+    let currentLang = 'ru';
+    
+    const state = {
+        mode: 'series',
+        resistorType: 'unknown',
+        R1: 10,
+        U_source: 10.0,
+        R_unknown: 0,
+        I_total: 0, U_total: 0,
+        I1: 0, I2: 0, U1: 0, U2: 0
+    };
+
+    const trials = [
+        { id: 1, mode: '', U: 0, I: 0, R1: 0, trueRx: 0, userAns: null, filled: false },
+        { id: 2, mode: '', U: 0, I: 0, R1: 0, trueRx: 0, userAns: null, filled: false },
+        { id: 3, mode: '', U: 0, I: 0, R1: 0, trueRx: 0, userAns: null, filled: false },
+        { id: 4, mode: '', U: 0, I: 0, R1: 0, trueRx: 0, userAns: null, filled: false }
+    ];
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        const modeSel = document.getElementById('mode-select');
+        modeSel.options[0].text = t.optSeries;
+        modeSel.options[1].text = t.optParallel;
+
+        const resSel = document.getElementById('resistor-select');
+        resSel.options[0].text = t.optKnown;
+        resSel.options[1].text = t.optUnknown;
+
+        document.querySelectorAll('.row-btn').forEach(btn => btn.innerText = t.btnRecord);
+    }
+
+    function updateUI() {
+        document.getElementById('val-u').innerText = state.U_source.toFixed(1);
+        document.getElementById('val-r1').innerText = state.R1;
+        calculatePhysics();
+        draw();
+    }
+
+    function setRandomResistor() {
+        state.R_unknown = Math.floor(Math.random() * (30 - 5) + 5);
+        console.log("Rx = " + state.R_unknown + " Ohm");
+    }
+
+    function calculatePhysics() {
+        const R2 = (state.resistorType === 'unknown') ? state.R_unknown : 10;
+        const U = state.U_source;
+        const R1 = state.R1;
+
+        if (state.mode === 'series') {
+            const R_eq = R1 + R2;
+            state.I_total = U / R_eq;
+            state.I1 = state.I_total; state.I2 = state.I_total;
+            state.U1 = state.I_total * R1;
+            state.U2 = state.I_total * R2;
+            state.U_total = U; 
+        } else {
+            const R_eq = (R1 * R2) / (R1 + R2);
+            state.U_total = U;
+            state.I_total = U / R_eq;
+            state.U1 = U; state.U2 = U;
+            state.I1 = U / R1; state.I2 = U / R2;
+        }
+    }
+
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function drawMeter(x, y, val, unit, label, labelPos = 'top') {
+        ctx.fillStyle = '#222'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        
+        ctx.fillStyle = (unit === 'A') ? '#ff4444' : '#448aff';
+        ctx.font = "bold 16px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(val.toFixed(2), x, y - 5);
+        
+        ctx.fillStyle = '#aaa'; ctx.font = "12px sans-serif";
+        ctx.fillText(unit, x, y + 15);
+        
+        if (label) { 
+            ctx.fillStyle = '#fff'; 
+            ctx.font = "bold 14px sans-serif";
+            if (labelPos === 'bottom') {
+                 ctx.fillText(label, x, y + 55);
+            } else {
+                 ctx.fillText(label, x, y - 45); 
+            }
+        }
+    }
+
+    function drawResistor(x, y, label, color) {
+        const w = 80, h = 30;
+        // Resistor body drawn later to cover wires? No, we just need wires to not overlap the body visual zone
+        ctx.fillStyle = color; ctx.fillRect(x - w/2, y - h/2, w, h);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(x - w/2, y - h/2, w, h);
+        
+        ctx.fillStyle = '#fff'; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center";
+        // Draw Label ABOVE 
+        ctx.fillText(label, x, y - 25);
+    }
+
+    function drawSource(x, y) {
+        const w = 60, h = 40;
+        ctx.fillStyle = '#333'; ctx.fillRect(x - w/2, y - h/2, w, h);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(x - w/2, y - h/2, w, h);
+        ctx.fillStyle = '#fff'; ctx.font = "bold 16px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(state.U_source.toFixed(1)+"V", x, y);
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.strokeStyle = '#fdd835'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    
+    function drawThinLine(x1, y1, x2, y2) {
+        ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        const cx = cvs.width / 2;
+        const cy = cvs.height / 2;
+        
+        if (state.mode === 'series') {
+            // SERIES LAYOUT
+            // Source Left
+            drawSource(100, cy);
+            
+            // 1. Draw Wires FIRST
+            // Main loop
+            drawLine(100, cy-20, 100, 100);
+            drawLine(100, 100, 800, 100);
+            drawLine(800, 100, 800, cy+20);
+            drawLine(800, cy+20, 100, cy+20);
+            
+            // Thin wires for Voltmeters (Draw BEFORE resistors so they don't overlap)
+            // V1 Wires
+            // R1 is at 350. Body width 80 (310 to 390).
+            // Probes MUST be outside. Let's put them at 290 and 410.
+            // V1 at y=220 (moved down)
+            drawThinLine(290, 100, 290, 220);
+            drawThinLine(410, 100, 410, 220);
+            drawThinLine(290, 220, 410, 220);
+
+            // V2 Wires
+            // R2 at 650. Body width 80 (610 to 690).
+            // Probes at 590 and 710.
+            // V2 at y=220
+            drawThinLine(590, 100, 590, 220);
+            drawThinLine(710, 100, 710, 220);
+            drawThinLine(590, 220, 710, 220);
+            
+            // V_total Wires (Bottom)
+            drawThinLine(100, cy+20, 100, cy+100); 
+            drawThinLine(800, cy+20, 800, cy+100);
+            drawThinLine(100, cy+100, 415, cy+100); 
+            drawThinLine(485, cy+100, 800, cy+100);
+
+            // 2. Draw Resistors (ON TOP of wires)
+            drawResistor(350, 100, `R1=${state.R1}Ω`, '#5c6bc0');
+            const r2Label = state.resistorType==='unknown' ? "Rx" : "R2=10Ω";
+            drawResistor(650, 100, r2Label, '#ef5350');
+            
+            // 3. Draw Meters
+            drawMeter(200, 100, state.I_total, 'A', 'A_tot'); // Ammeter
+            drawMeter(350, 220, state.U1, 'V', 'V1', 'bottom'); // V1 moved down, label bottom
+            drawMeter(650, 220, state.U2, 'V', 'V2', 'bottom'); // V2 moved down, label bottom
+            drawMeter(450, cy+100, state.U_total, 'V', 'V_tot', 'bottom');
+
+        } else {
+            // PARALLEL LAYOUT (Compressed Vertical)
+            // yTop=50, yMid=180, yBot=310
+            const yTop = 50;
+            const yMid = 180;
+            const yBot = 310;
+            const xLeft = 150;
+            const xRight = 750;
+            
+            // 1. Wires
+            drawLine(150, yTop, 750, yTop); // Top
+            drawLine(xLeft, yTop, xLeft, yBot); // Left Rail
+            drawLine(xRight, yTop, xRight, yBot); // Right Rail
+            drawLine(xLeft, yMid, xRight, yMid); // Branch 1
+            drawLine(xLeft, yBot, xRight, yBot); // Branch 2
+            
+            // V_total Wires (Side connection)
+            // Connect to Rails at y=400 (below diagram)
+            // Extend rails
+            drawThinLine(xLeft, yBot, xLeft, 400);
+            drawThinLine(xRight, yBot, xRight, 400);
+            drawThinLine(xLeft, 400, 415, 400);
+            drawThinLine(485, 400, xRight, 400);
+
+            // 2. Components
+            drawSource(300, yTop);
+            drawMeter(600, yTop, state.I_total, 'A', 'A_tot');
+            
+            drawMeter(300, yMid, state.I1, 'A', 'A1');
+            drawResistor(600, yMid, `R1=${state.R1}Ω`, '#5c6bc0');
+            
+            drawMeter(300, yBot, state.I2, 'A', 'A2');
+            const r2Label = state.resistorType==='unknown' ? "Rx" : "R2=10Ω";
+            drawResistor(600, yBot, r2Label, '#ef5350');
+            
+            drawMeter(450, 400, state.U_total, 'V', 'V_tot', 'bottom');
+        }
+    }
+
+    function initTable() {
+        const tbody = document.getElementById('tasks-body');
+        tbody.innerHTML = '';
+        trials.forEach(trial => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trial.id}</td>
+                <td id="type-${trial.id}">-</td>
+                <td id="u-${trial.id}">-</td>
+                <td id="i-${trial.id}">-</td>
+                <td><button class="row-btn" onclick="recordTrial(${trial.id})">Записать</button></td>
+                <td><input type="text" id="ans-${trial.id}" placeholder="..." disabled></td>
+            `;
+            tbody.appendChild(row);
+        });
+        updateLanguage(currentLang);
+    }
+
+    window.recordTrial = function(id) {
+        const t = trials[id-1];
+        t.mode = state.mode;
+        t.U = state.U_source;
+        t.I = state.I_total;
+        t.R1 = state.R1;
+        t.trueRx = (state.resistorType === 'unknown') ? state.R_unknown : 10;
+        t.filled = true;
+
+        const tLang = LANG[currentLang];
+        const modeText = (t.mode === 'series') ? "Ser" : "Par";
+
+        document.getElementById(`type-${id}`).innerText = modeText;
+        document.getElementById(`u-${id}`).innerText = t.U.toFixed(1);
+        document.getElementById(`i-${id}`).innerText = t.I.toFixed(2);
+        
+        const inp = document.getElementById(`ans-${id}`);
+        inp.disabled = false;
+        inp.focus();
+        
+        event.target.disabled = true;
+        event.target.style.background = "#555";
+        checkAllFilled();
+    }
+
+    function checkAllFilled() {
+        const allFilled = trials.every(t => t.filled);
+        document.getElementById('finish-btn').disabled = !allFilled;
+    }
+
+    window.onload = () => {
+        setRandomResistor();
+        initTable();
+        updateLanguage('ru');
+        updateUI();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('mode-select').onchange = (e) => { state.mode = e.target.value; updateUI(); };
+        document.getElementById('resistor-select').onchange = (e) => { state.resistorType = e.target.value; updateUI(); };
+
+        document.getElementById('slider-u').oninput = (e) => { state.U_source = parseFloat(e.target.value); updateUI(); };
+        document.getElementById('slider-r1').oninput = (e) => { state.R1 = parseInt(e.target.value); updateUI(); };
+        
+        document.getElementById('reset-btn').onclick = () => {
+            setRandomResistor();
+            state.resistorType = 'unknown';
+            document.getElementById('resistor-select').value = 'unknown';
+            updateUI();
+            alert("Установлен новый неизвестный резистор!");
+        };
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+            
+            state.resistorType = 'unknown';
+            document.getElementById('resistor-select').value = 'unknown';
+            updateUI();
+        };
+
+        document.getElementById('finish-btn').onclick = () => {
+            let correctCount = 0;
+            let detailsHTML = "";
+            const t = LANG[currentLang];
+            
+            trials.forEach(trial => {
+                const userAns = parseFloat(document.getElementById(`ans-${trial.id}`).value.replace(',','.'));
+                const trueAns = trial.trueRx;
+                
+                let isRight = false;
+                if (!isNaN(userAns) && Math.abs(userAns - trueAns) / trueAns < 0.10) {
+                    correctCount++;
+                    isRight = true;
+                }
+
+                const statusText = isRight ? "OK" : "FAIL";
+                let rowText = t.resRow
+                    .replace('{n}', trial.id)
+                    .replace('{ans}', userAns)
+                    .replace('{true}', trueAns)
+                    .replace('{status}', statusText);
+
+                detailsHTML += `<div class="${isRight?'result-row-correct':'result-row-wrong'}">${rowText}</div>`;
+            });
+
+            let finalScore = 0;
+            if (correctCount === 4) finalScore = 10;
+            else if (correctCount === 3) finalScore = 8;
+            else if (correctCount === 2) finalScore = 5;
+            else if (correctCount === 1) finalScore = 3;
+
+            document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+            document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+            document.getElementById('res-score-val').innerText = finalScore + " / 10";
+            document.getElementById('res-details').innerHTML = detailsHTML;
+            
+            document.getElementById('res-true-val-display').innerText = state.R_unknown; 
+
+            document.getElementById('result-modal').style.display = 'flex';
+        };
+    };
+</script>
+
+</body>
+</html>

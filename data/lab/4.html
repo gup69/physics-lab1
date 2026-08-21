@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-key="title">ЛАБОРАТОРНАЯ РАБОТА: ИЗУЧЕНИЕ ГАММА-РАДИОАКТИВНЫХ ЭЛЕМЕНТОВ</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+    
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]  
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2a2a4e;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #4a4a7e;
+        }
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 2px solid #4a4a7e;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 {  
+            color: #ffffff;  
+            margin: 0;  
+            font-size: 1.8em;
+            text-align: left;  
+            flex-grow: 1; 
+        }
+
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .header-button:hover {
+            background-color: #0056b3;
+        }
+        #language-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+
+
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 15px;
+            padding: 20px;
+            background: #232342;
+            border-bottom: 2px solid #4a4a7e;
+        }
+        .student-id-area {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 15px;
+        }
+        .student-id-area .control-group {
+            flex: 1 1 45%;
+        }
+        .control-group {
+            flex: 1 1 200px;  
+            min-width: 180px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #a0a0ff;  
+        }
+        .control-group select, 
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 0;
+            margin-top: 5px;
+        }
+        .value-display {
+            font-size: 1.1em;
+            text-align: right;
+            color: #ffffff;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-basis: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .button-group button {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-basis: 200px;
+        }
+        .button-group button:disabled,
+        #record-journal-button:disabled,  
+        #clear-journal-button:disabled,  
+        #check-answer-button:disabled {
+            background-color: #4a4a7e !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #start-button { background-color: #28a745; color: white; }
+        #start-button:hover { background-color: #218838; }
+        #clear-spectrum-button { background-color: #dc3545; color: white; }
+        #clear-spectrum-button:hover { background-color: #c82333; }
+        #reset-button { background-color: #ffc107; color: #212529; }
+        #reset-button:hover { background-color: #e0a800; }
+
+        
+        .simulation-area {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+        }
+        .chart-container {
+            flex: 3 1 600px;  
+            min-width: 400px;
+            height: 450px;
+            background: #1a1a2e;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .sidebar-container {
+            flex: 1 1 200px;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .info-box {
+            min-width: 200px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+        }
+        .diagram-box {
+            min-width: 200px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+        }
+        .diagram-box h3 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        
+        #diagram-placeholder {
+            width: 100%;
+            min-height: 150px; 
+            background: #1a1a2e; 
+            border: 1px solid #4a4a7e; 
+            border-radius: 5px;
+            padding: 5px; 
+            box-sizing: border-box;
+        }
+        #diagram-placeholder img {
+            width: 100%; 
+            height: auto; 
+            display: block;
+            border-radius: 3px; 
+        }
+
+        .info-box h3 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        #spectrum-info {
+            font-family: "Courier New", Courier, monospace;
+            color: #39ff14;  
+            font-size: 1.2em;
+            font-weight: bold;
+            min-height: 50px;
+        }
+        
+        
+        .journal-area {
+            padding: 0 20px 20px 20px;
+        }
+        .journal-area h2 {
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        
+        #record-journal-button, #clear-journal-button {
+             padding: 10px 15px;
+             font-size: 1em;
+             font-weight: bold;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             margin-right: 10px;
+             margin-top: 5px;  
+        }
+        #record-journal-button { background-color: #007bff; color: white; }
+        #record-journal-button:hover { background-color: #0056b3; }
+        #clear-journal-button { background-color: #6c757d; color: white; }
+        #clear-journal-button:hover { background-color: #5a6268; }
+
+
+        #journal-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            font-size: 1.1em;
+        }
+        #journal-table th, #journal-table td {
+            border: 1px solid #4a4a7e;
+            padding: 10px;
+            text-align: center;
+        }
+        #journal-table th {
+            background-color: #232342;
+            color: #a0a0ff;
+        }
+        #journal-table tr:nth-child(even) {
+            background-color: #232342;
+        }
+
+        
+        .analysis-area {
+            padding: 0 20px 20px 20px;
+        }
+        .analysis-area h2 {
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        .analysis-container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0;
+            gap: 20px;
+        }
+        .chart-container-analysis {
+            flex: 3 1 600px;
+            min-width: 400px;
+            height: 350px;
+            background: #1a1a2e;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .info-box-analysis {
+            flex: 1 1 200px;
+            min-width: 200px;
+            padding: 20px;
+            background: #232342;
+            border-radius: 5px;
+            border: 1px solid #4a4a7e;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+        }
+        .info-box-analysis h3 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        #equation-display {
+            color: #39ff14;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;  
+        }
+        #point-count-display {  
+            color: #ffc107;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        
+        .identification-area {
+            padding: 0 20px 20px 20px;
+        }
+        .identification-area h2 {
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        #check-answer-button {
+            padding: 10px 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #007bff;
+            color: white;
+            margin-top: 10px;
+            width: 100%;
+        }
+        #check-answer-button:hover { background-color: #0056b3; }
+        #feedback-message {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .feedback-success {
+            background-color: rgba(57, 255, 20, 0.1);
+            color: #39ff14;
+        }
+        .feedback-fail {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #2a2a4e;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #4a4a7e;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        #result-content {
+            text-align: center;
+        }
+        #result-content h2 {
+            font-size: 2em;
+            color: #ffc107;
+            border-color: #ffc107;
+        }
+        #result-content p {
+            font-size: 1.4em;
+            margin: 10px 0;
+        }
+        .final-score {
+            font-size: 3em;
+            font-weight: bold;
+            color: #39ff14;
+            margin: 20px 0;
+        }
+        #print-button {
+            padding: 12px 25px;
+            background-color: #007bff;  
+            color: white;  
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 15px;
+            margin-right: 15px;  
+        }
+        #print-button:hover {
+            background-color: #0056b3;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #e0e0e0;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #a0a0ff;
+            border-bottom: 1px solid #4a4a7e;
+            padding-bottom: 5px;
+        }
+        .modal-content ol {
+            line-height: 1.8;
+            padding-left: 20px;  
+        }
+        .modal-content code {
+            background-color: #1a1a2e;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+            color: #39ff14;
+        }
+        
+        @media print {
+            .controls-panel,
+            .simulation-area,
+            .journal-area,
+            .analysis-area,
+            .identification-area,
+            #instructions-modal,
+            header button:not(#print-button),
+            #language-select,
+            #result-modal button {  
+                display: none !important;
+            }
+            body > .container {
+                box-shadow: none;
+                border: none;
+                background-color: white;
+                color: black;
+            }
+            #result-modal {
+                position: static;
+                display: block !important;
+                background: none;
+            }
+            #result-content {
+                width: 100%;
+                max-width: none;
+                background: none;
+                border: none;
+                box-shadow: none;
+                color: black;
+            }
+            #result-content h2 {
+                color: black;
+                border-color: black;
+            }
+            #result-content .final-score {
+                color: black;
+            }
+            body > *:not(#result-modal) {
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container dark-theme">
+        
+        <header>
+            <div class="header-controls">
+                <select id="language-select">
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                    <option value="kz">Қазақша</option>
+                </select>
+                <h1 data-key="header_title">ЛАБОРАТОРНАЯ РАБОТА: ИЗУЧЕНИЕ ГАММА-РАДИОАКТИВНЫХ ЭЛЕМЕНТОВ</h1>
+            </div>
+            <button id="open-instructions-button" class="header-button" data-key="button_instructions">ИНСТРУКЦИЯ</button>
+        </header>
+
+        <div class="controls-panel">
+            <div class="student-id-area">
+                <div class="control-group">
+                    <label for="student-name" data-key="label_name">Ф.И. (Обязательно):</label>
+                    <input type="text" id="student-name" data-key="placeholder_name" placeholder="Иванов И.И.">
+                </div>
+                <div class="control-group">
+                    <label for="student-group" data-key="label_group">Группа (Обязательно):</label>
+                    <input type="text" id="student-group" data-key="placeholder_group" placeholder="П-201">
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="source-select" data-key="label_source">1. ВЫБЕРИТЕ ИСТОЧНИК:</label>
+                <select id="source-select">
+                    <option value="Background" data-key="option_background">Фон (без источника)</option>
+                    <option value="Sample-X" data-key="option_sample_x">*** ОБРАЗЕЦ-X (НЕИЗВЕСТНЫЙ) ***</option>
+                    <optgroup data-key="optgroup_isotopes" label="--- Эталонные Изотопы ---">
+                        
+                        <option value="Zn-65">Цинк-65 (T1/2 = 0.67 л)</option>
+                        <option value="Mn-54">Марганец-54 (T1/2 = 0.86 л)</option>
+                        <option value="Cd-109">Кадмий-109 (T1/2 = 1.27 л)</option>
+                        <option value="Na-22">Натрий-22 (T1/2 = 2.60 л)</option>
+                        <option value="Co-60">Кобальт-60 (T1/2 = 5.27 л)</option>
+                        <option value="Ba-133">Барий-133 (T1/2 = 10.51 л)</option>
+                        <option value="Eu-152">Европий-152 (T1/2 = 13.54 л)</option>
+                        <option value="Cs-137">Цезий-137 (T1/2 = 30.17 л)</option>
+
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="time-input" data-key="label_time">2. ВРЕМЯ НАБОРА (СЕКУНД):</label>
+                <input type="number" id="time-input" min="1" value="60" step="1">
+            </div>
+
+            <div class="control-group" style="flex-basis: 400px;">
+                <label for="decay-time-slider" data-key="label_decay_time">3. ПРОШЕДШЕЕ ВРЕМЯ (ГОДЫ):</label>
+                <input type="range" id="decay-time-slider" min="0" max="30" value="0" step="0.5">
+                <div class="value-display" id="decay-time-value">0.0 лет</div>
+            </div>
+
+            <div class="button-group">
+                <button id="start-button" disabled data-key="button_start">СТАРТ НАБОРА</button>
+                <button id="clear-spectrum-button" disabled data-key="button_clear_spectrum">ОЧИСТИТЬ СПЕКТР</button>
+                <button id="reset-button" disabled data-key="button_reset">ОБЩИЙ СБРОС (НОВЫЙ "X")</button>
+            </div>
+        </div>
+
+        <div class="simulation-area">
+            <div class="chart-container">
+                <canvas id="spectrum-chart"></canvas>
+            </div>
+
+            <div class="sidebar-container">
+                
+                <div class="diagram-box">
+                    <h3 data-key="heading_setup_diagram">СХЕМА УСТАНОВКИ</h3>
+                    <div id="diagram-placeholder">
+                        <img src="img/im4.png" alt="Схема гамма-спектрометра">
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3 data-key="heading_data_energy">ДАННЫЕ ПО ЭНЕРГИИ</h3>
+                    <div id="spectrum-info" data-key="info_click_peak">
+                        (Кликните на пик)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="journal-area">
+            <h2 data-key="heading_journal">ЛАБОРАТОРНЫЙ ЖУРНАЛ</h2>
+            <button id="record-journal-button" disabled data-key="button_record">ЗАПИСАТЬ В ЖУРНАЛ (из инфо-блока)</button>
+            <button id="clear-journal-button" disabled data-key="button_clear_journal">ОЧИСТИТЬ ЖУРНАЛ</button>
+            
+            <table id="journal-table">
+                <thead>
+                    <tr>
+                        <th data-key="table_t">Прошло времени (t, годы)</th>
+                        <th data-key="table_n">Отсчеты в пике (N)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="analysis-area">
+            <h2 data-key="heading_analysis">АНАЛИЗ ДАННЫХ (ln(N) от t)</h2>
+            <div class="analysis-container">
+                <div class="chart-container-analysis">
+                    <canvas id="analysis-chart"></canvas>
+                </div>
+                <div class="info-box-analysis">
+                    <h3 data-key="heading_results">РЕЗУЛЬТАТЫ АНАЛИЗА</h3>
+                    <div id="equation-display" data-key="info_need_points">
+                        (Нужно >4 точек)
+                    </div>
+                    <div id="point-count-display" data-key="info_points_count">
+                        Точек в журнале: 0/5
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="identification-area">
+            <h2 data-key="heading_id_prefix">ИДЕНТИФИКАЦИЯ (ПОПЫТОК: <span id="attempt-counter">3</span>)</h2>
+            <div class="control-group">
+                <label for="isotope-guess" data-key="label_your_answer">Ваш ответ (Изотоп):</label>
+                <select id="isotope-guess">
+                    <option value="none" data-key="option_select_answer">--- Выберите ваш ответ ---</option>
+                    
+                    <option value="Zn-65" data-key="opt_Zn_65">Цинк-65</option>
+                    <option value="Mn-54" data-key="opt_Mn_54">Марганец-54</option>
+                    <option value="Cd-109" data-key="opt_Cd_109">Кадмий-109</option>
+                    <option value="Na-22" data-key="opt_Na_22">Натрий-22</option>
+                    <option value="Co-60" data-key="opt_Co_60">Кобальт-60</option>
+                    <option value="Ba-133" data-key="opt_Ba_133">Барий-133</option>
+                    <option value="Eu-152" data-key="opt_Eu_152">Европий-152</option>
+                    <option value="Cs-137" data-key="opt_Cs_137">Цезий-137</option>
+
+                </select>
+            </div>
+            <button id="check-answer-button" disabled data-key="button_check">ПРОВЕРИТЬ ОТВЕТ</button>
+            <div id="feedback-message"></div>
+        </div>
+    </div>
+
+    <div id="instructions-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button id="close-instructions-button" class="modal-close">&times;</button>
+            <h2 data-key="inst_h2">ИНСТРУКЦИЯ К РАБОТЕ</h2>
+            <div id="inst-content">
+                </div>
+        </div>
+    </div>
+
+   <div id="result-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" id="result-content">
+            <h2 data-key="res_h2">РЕЗУЛЬТАТ ЛАБОТОРНОЙ РАБОТЫ</h2>
+            
+            <p data-key="res_name">Студент: </p>
+<div class="name" id="result-name"></div>
+
+	    <p data-key="res_group">Группа: <span id="result-group"></span></p>
+<div class="group" id="result-group"></div>
+            <p data-key="res_attempts">Использовано попыток: <span id="result-attempts"></span></p>
+<div class="attempts" id="result-attempts"></div>
+            
+            <p data-key="res_final_score">Финальный результат:</p>
+            <div class="final-score" id="result-score"></div>
+            
+            <button id="print-button" data-key="button_print">РАСПЕЧАТАТЬ РЕЗУЛЬТАТ (PDF)</button>
+            <button id="close-result-button" class="header-button" style="margin-top: 20px;" data-key="button_close_window">ЗАКРЫТЬ ОКНО</button>
+        </div>
+    </div>
+
+    <script>
+        
+        function gaussian(x, A, mu, sigma) {
+            return A * Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)));
+        }
+        function poissonRandom(lambda) {
+            if (lambda < 30) {
+                let L = Math.exp(-lambda), k = 0, p = 1;
+                do { k++; p *= Math.random(); } while (p > L);
+                return k - 1;
+            } else {
+                let u1 = Math.random(), u2 = Math.random();
+                let z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                let result = Math.round(lambda + z * Math.sqrt(lambda));  
+                return Math.max(0, result);
+            }
+        }
+        
+       
+        const ISOTOPES = {
+            'Background': { name: "Фон", name_en: "Background", name_kz: "Фон", halfLife_years: Infinity, spectrum: [] },
+            'Zn-65': { name: "Цинк-65", name_en: "Zinc-65", name_kz: "Мырыш-65", halfLife_years: 0.67, spectrum: [ { energy: 1115.5, intensity: 0.50 } ] },
+            'Mn-54': { name: "Марганец-54", name_en: "Manganese-54", name_kz: "Марганец-54", halfLife_years: 0.86, spectrum: [ { energy: 834.8, intensity: 1.0 } ] },
+            'Cd-109': { name: "Кадмий-109", name_en: "Cadmium-109", name_kz: "Кадмий-109", halfLife_years: 1.27, spectrum: [ { energy: 88.0, intensity: 0.05 } ] },
+            'Na-22': { name: "Натрий-22", name_en: "Sodium-22", name_kz: "Натрий-22", halfLife_years: 2.60, spectrum: [ { energy: 511.0, intensity: 1.8 }, { energy: 1274.5, intensity: 1.0 } ] },
+            'Co-60': { name: "Кобальт-60", name_en: "Cobalt-60", name_kz: "Кобальт-60", halfLife_years: 5.27, spectrum: [ { energy: 1173.2, intensity: 1.0 }, { energy: 1332.5, intensity: 1.0 } ] },
+            'Ba-133': { name: "Барий-133", name_en: "Barium-133", name_kz: "Барий-133", halfLife_years: 10.51, spectrum: [ { energy: 81.0, intensity: 0.34 }, { energy: 356.0, intensity: 0.62 } ] },
+            'Eu-152': { name: "Европий-152", name_en: "Europium-152", name_kz: "Еуропий-152", halfLife_years: 13.54, spectrum: [ { energy: 121.8, intensity: 0.28 }, { energy: 344.3, intensity: 0.26 }, { energy: 1408.0, intensity: 0.21 } ] },
+            'Cs-137': { name: "Цезий-137", name_en: "Cesium-137", name_kz: "Цезий-137", halfLife_years: 30.17, spectrum: [ { energy: 661.7, intensity: 0.85 } ] }
+        };
+
+        
+        // ИСПРАВЛЕНИЕ: button_close_program -> button_close_window
+        const LANGUAGE_STRINGS = {
+            ru: {
+                title: "ЛАБОРАТОРНАЯ РАБОТА: ИЗУЧЕНИЕ ГАММА-РАДИОАКТИВНЫХ ЭЛЕМЕНТОВ", unit_years: "лет", res_no_data: "НЕТ ДАННЫХ",
+                header_title: "ЛАБОРАТОРНАЯ РАБОТА: ИЗУЧЕНИЕ ГАММА-РАДИОАКТИВНЫХ ЭЛЕМЕНТОВ", button_instructions: "ИНСТРУКЦИЯ", button_close_window: "ЗАКРЫТЬ ОКНО",
+                label_name: "Ф.И. (Обязательно):", placeholder_name: "Иванов И.И.", label_group: "Группа (Обязательно):", placeholder_group: "П-201", label_source: "1. ВЫБЕРИТЕ ИСТОЧНИК:", option_background: "Фон (без источника)", option_sample_x: "*** ОБРАЗЕЦ-X (НЕИЗВЕСТНЫЙ) ***", optgroup_isotopes: "--- Эталонные Изотопы ---", label_time: "2. ВРЕМЯ НАБОРА (СЕКУНД):", label_decay_time: "3. ПРОШЕДШЕЕ ВРЕМЯ (ГОДЫ):", button_start: "СТАРТ НАБОРА", button_sampling: "НАБОР...", button_clear_spectrum: "ОЧИСТИТЬ СПЕКТР", button_reset: "ОБЩИЙ СБРОС (НОВЫЙ 'X')",
+                heading_data_energy: "ДАННЫЕ ПО ЭНЕРГИИ", info_click_peak: "(Кликните на пик)", info_energy: "Энергия", info_energy_unit: "кэВ", info_counts: "Отсчеты",
+                heading_setup_diagram: "СХЕМА УСТАНОВКИ", text_diagram_placeholder: "Место для схемы установки",
+                heading_journal: "ЛАБОРАТОРНЫЙ ЖУРНАЛ", button_record: "ЗАПИСАТЬ В ЖУРНАЛ (из инфо-блока)", button_clear_journal: "ОЧИСТИТЬ ЖУРНАЛ", table_t: "Прошло времени (t, годы)", table_n: "Отсчеты в пике (N)",
+                heading_analysis: "АНАЛИЗ ДАННЫХ (ln(N) от t)", heading_results: "РЕЗУЛЬТАТЫ АНАЛИЗА", info_need_points: "(Нужно >4 точек)", info_need_points_text: "(Нужно >{N} точек)", info_points_count: "Точек в журнале: 0/5", info_points_count_prefix: "Точек в журнале",
+                error_positive_slope: '<span style="color: #dc3545;">ОШИБКА:</span><br>Данные показывают <span style="color: #ffc107;">возрастающий</span> тренд (m > 0).<br>Это физически невозможно.<br><br><span style="color: #007bff;">Решение:</span><br>Очистите журнал и соберите точки заново, кликая <span style="color: #ffc107;">точно</span> на один и тот же пик.',
+                calculate_half_life_hint: "Рассчитайте $\\lambda$ и T1/2, используя $m$",
+                heading_id_prefix: "ИДЕНТИФИКАЦИЯ (ПОПЫТОК: ", label_your_answer: "Ваш ответ (Изотоп):", option_select_answer: "--- Выберите ваш ответ ---", button_check: "ПРОВЕРИТЬ ОТВЕТ", feedback_correct: "ПРАВИЛЬНО! Вы определили изотоп с {N}-й попытки.", feedback_incorrect: "НЕПРАВИЛЬНО. Попробуйте пересчитать T1/2. Осталось попыток: {N}.", error_select_isotope: "Пожалуйста, выберите изотоп из списка.", error_click_peak: "Ошибка: Сначала кликните на пик, чтобы измерить отсчеты.",
+                res_h2: "РЕЗУЛЬТАТ ЛАБОТОРНОЙ РАБОТЫ", res_name: "Студент:", res_group: "Группа:", res_attempts: "Использовано попыток:", res_final_score: "Финальный результат:", button_print: "РАСПЕЧАТАТЬ РЕЗУЛЬТАТ (PDF)",
+                chart_counts_label: "Отсчеты", chart_x_energy: "Энергия (кэВ)", chart_y_counts: "Число Отсчетов", chart_data_ln_label: "Данные ln(N)", chart_trendline_label: "Линия тренда", chart_x_time: "Прошло времени (t, годы)", chart_y_ln: "Натуральный логарифм (ln(N))",
+                opt_Zn_65: "Цинк-65", opt_Mn_54: "Марганец-54", opt_Cd_109: "Кадмий-109", opt_Na_22: "Натрий-22", opt_Co_60: "Кобальт-60", opt_Ba_133: "Барий-133", opt_Eu_152: "Европий-152", opt_Cs_137: "Цезий-137",
+                instructions_content: `<ol><li><strong>Идентификация:</strong> Введите <strong>Ф.И.</strong> и <strong>Группу</strong>, чтобы активировать кнопки управления.</li><li><strong>Цель работы:</strong> Определить период полураспада (T<sub>1/2</sub>) неизвестного "Образца-Х" и идентифицировать его, сравнив T<sub>1/2</sub> с 8-ю известными эталонами.</li><li><strong>Подготовка и сбор данных:</strong><ul><li>Выберите <strong>"Образец-Х"</strong> в списке источников.</li><li>Установите <strong>"Время набора"</strong> (например, 60 секунд). <strong>Не меняйте</strong> это значение!</li><li>Установите ползунок <strong>"Прошедшее время"</strong> на **0.0 лет** и нажмите <strong>"СТАРТ НАБОРА"</strong>.</li><li>Кликните точно на вершину самого высокого пика, чтобы получить "Отсчеты". Нажмите <strong>"ЗАПИСАТЬ В ЖУРНАЛ"</strong>.</li><li>Повторите этот процесс для разных точек времени (например, 0, 5, 10, 15, 20, 25 лет). Требуется собрать <strong>минимум 5 точек</strong> для построения линии тренда.</li><li><strong>ВАЖНОЕ ПРИМЕЧАНИЕ:</strong> Если вы увидите "шумный" график, это естественный <strong>фоновый шум</strong>. Он означает, что активность вашего образца стала пренебрежимо малой, так как почти все радиоактивные атомы распались.</li></ul></li><li><strong>Анализ и расчет:</strong><ul><li>Закон распада: $A(t) = A_0 \\cdot e^{-\\lambda t}$.</li><li>Чтобы получить прямую линию, его нужно логарифмировать: $\\ln(A) = \\ln(A_0) - \\lambda t$.</li><li>Линия тренда и уравнение ( $\\ln(A) = \\ln(A_0) - \\lambda t$ ) будут построены автоматически, как только в журнале будет <strong>5 или более точек</strong>.</li><li><strong>Получение $\\lambda$:</strong> Угловой коэффициент $m$ в уравнении <code>y = mx + b</code> равен отрицательной постоянной распада: $\\lambda = -m$.</li><li><strong>Рассчитайте T<sub>1/2</sub>:</strong> Используйте формулу $T_{1/2} = \\ln(2) / \\lambda$ для расчета периода полураспада.</li></ul></li><li><strong>Проверка ответа и оценка:</strong><ul><li>У вас есть <strong>3 попытки</strong> для идентификации изотопа.</li><li>После 3-й попытки (правильной или неправильной) появится окно с финальным результатом.</li><li><strong>Система оценки:</strong> <ul><li>1 попытка (верно): 100%</li><li>2 попытки (верно): 80%</li><li>3 попытки (верно): 60%</li><li>3 попытки (неверно): 0%</li></ul></li></ul></li></ol>`
+            },
+            en: {
+                title: "LABORATORY WORK: STUDY OF GAMMA-RADIOACTIVE ELEMENTS", unit_years: "years", res_no_data: "NO DATA",
+                header_title: "LABORATORY WORK: STUDY OF GAMMA-RADIOACTIVE ELEMENTS", button_instructions: "INSTRUCTIONS", button_close_window: "CLOSE WINDOW",
+                label_name: "Name (Required):", placeholder_name: "John Doe", label_group: "Group (Required):", placeholder_group: "P-201", label_source: "1. SELECT SOURCE:", option_background: "Background (No source)", option_sample_x: "*** SAMPLE-X (UNKNOWN) ***", optgroup_isotopes: "--- Standard Isotopes ---", label_time: "2. ACQUISITION TIME (SECONDS):", label_decay_time: "3. ELAPSED TIME (YEARS):", button_start: "START ACQUISITION", button_sampling: "SAMPLING...", button_clear_spectrum: "CLEAR SPECTRUM", button_reset: "FULL RESET (NEW 'X')",
+                heading_data_energy: "ENERGY DATA", info_click_peak: "(Click on peak)", info_energy: "Energy", info_energy_unit: "keV", info_counts: "Counts",
+                heading_setup_diagram: "SETUP DIAGRAM", text_diagram_placeholder: "Placeholder for setup diagram",
+                heading_journal: "LABORATORY JOURNAL", button_record: "RECORD TO JOURNAL (from info-box)", button_clear_journal: "CLEAR JOURNAL", table_t: "Elapsed Time (t, years)", table_n: "Peak Counts (N)",
+                heading_analysis: "DATA ANALYSIS (ln(N) vs t)", heading_results: "ANALYSIS RESULTS", info_need_points: "(Need >4 points)", info_need_points_text: "(Need >{N} points)", info_points_count: "Points in journal: 0/5", info_points_count_prefix: "Points in journal",
+                error_positive_slope: '<span style="color: #dc3545;">ERROR:</span><br>Data shows an <span style="color: #ffc107;">increasing</span> trend (m > 0).<br>This is physically impossible.<br><br><span style="color: #007bff;">Solution:</span><br>Clear the journal and re-collect points, clicking <span style="color: #ffc107;">exactly</span> on the same peak.',
+                calculate_half_life_hint: "Calculate $\\lambda$ and T1/2 using $m$",
+                heading_id_prefix: "IDENTIFICATION (ATTEMPTS: ", label_your_answer: "Your Answer (Isotope):", option_select_answer: "--- Select your answer ---", button_check: "CHECK ANSWER", feedback_correct: "CORRECT! You identified the isotope on the {N} attempt.", feedback_incorrect: "INCORRECT. Try recalculating T1/2. Attempts left: {N}.", error_select_isotope: "Please select an isotope from the list.", error_click_peak: "Error: Click on a peak first to measure counts.",
+                res_h2: "LABORATORY WORK RESULT", res_name: "Student:", res_group: "Group:", res_attempts: "Attempts used:", res_final_score: "Final Score:", button_print: "PRINT RESULT (PDF)",
+                chart_counts_label: "Counts", chart_x_energy: "Energy (keV)", chart_y_counts: "Number of Counts", chart_data_ln_label: "ln(N) Data", chart_trendline_label: "Trendline", chart_x_time: "Elapsed Time (t, years)", chart_y_ln: "Natural Logarithm (ln(N))",
+                opt_Zn_65: "Zinc-65", opt_Mn_54: "Manganese-54", opt_Cd_109: "Cadmium-109", opt_Na_22: "Sodium-22", opt_Co_60: "Cobalt-60", opt_Ba_133: "Barium-133", opt_Eu_152: "Europium-152", opt_Cs_137: "Cesium-137",
+                instructions_content: `<ol><li><strong>Identification:</strong> Enter your <strong>Name</strong> and <strong>Group</strong> to activate control buttons.</li><li><strong>Objective:</strong> Determine the half-life (T<sub>1/2</sub>) of the unknown "Sample-X" and identify it by comparing T<sub>1/2</sub> with 8 known standards.</li><li><strong>Setup and Data Collection:</strong><ul><li>Select <strong>"Sample-X"</strong> from the source list.</li><li>Set the <strong>"Acquisition Time"</strong> (e.g., 60 seconds). <strong>Do not change</strong> this value!</li><li>Set the <strong>"Elapsed Time"</strong> slider to **0.0 years** and press <strong>"START ACQUISITION"</strong>.</li><li>Click precisely on the highest peak to get the "Counts". Press <strong>"RECORD TO JOURNAL"</strong>.</li><li>Repeat this process for 5-6 different time points (e.g., 0, 5, 10, 15, 20, 25 years). You must collect a <strong>minimum of 5 points</strong> to plot the trendline.</li><li><strong>IMPORTANT NOTE:</strong> If you set a very large "Elapsed Time", you will see the clear peaks disappear and the graph become "noisy" (like selecting "Background"). This is <strong>natural background noise</strong>, signifying the activity of your sample has become negligible as most radioactive atoms have decayed.</li></ul></li><li><strong>Analysis and Calculation:</strong><ul><li>The decay law is: $A(t) = A_0 \\cdot e^{-\\lambda t}$.</li><li>To obtain a straight line, it must be logarithmized: $\\ln(A) = \\ln(A_0) - \\lambda t$.</li><li>The trendline and equation ( $\\ln(A) = \\ln(A_0) - \\lambda t$ ) will be plotted automatically once there are <strong>5 or more points</strong> in the journal.</li><li><strong>Finding $\\lambda$:</strong> The slope $m$ in the equation <code>y = mx + b</code> is equal to the negative decay constant: $\\lambda = -m$.</li><li><strong>Calculate T<sub>1/2</sub>:</strong> Now, use the formula $T_{1/2} = \\ln(2) / \\lambda$ to calculate the half-life.</li></ul></li><li><strong>Answer Check and Grading:</strong><ul><li>You have <strong>3 attempts</strong> to identify the isotope.</li><li>After the 3rd attempt (correct or incorrect), a final results window will appear.</li><li><strong>Grading System:</strong> <ul><li>1 attempt (correct): 100%</li><li>2 attempts (correct): 80%</li><li>3 attempt (correct): 60%</li><li>3 attempts (incorrect): 0%</li></ul></li></ul></li></ol>`
+            },
+            kz: {
+                title: "ЗЕРТХАНАЛЫҚ ЖҰМЫС: ГАММА-РАДИОАКТИВТІ ЭЛЕМЕНТТЕРДІ ЗЕРТТЕУ", unit_years: "жыл", res_no_data: "ДЕРЕКТЕР ЖОҚ",
+                header_title: "ЗЕРТХАНАЛЫҚ ЖҰМЫС: ГАММА-РАДИОАКТИВТІ ЭЛЕМЕНТТЕРДІ ЗЕРТТЕУ", button_instructions: "НҰСҚАУЛЫҚ", button_close_window: "ТЕРЕЗЕНІ ЖАБУ",
+                label_name: "Аты-жөні (Міндетті):", placeholder_name: "Ахметов О.Н.", label_group: "Топ (Міндетті):", placeholder_group: "П-201", label_source: "1. КӨЗІН ТАҢДАҢЫЗ:", option_background: "Фон (Көзі жоқ)", option_sample_x: "*** ҮЛГІ-X (БЕЛГІСІЗ) ***", optgroup_isotopes: "--- Эталонды изотоптар ---", label_time: "2. ЖИНАУ УАҚЫТЫ (СЕКУНД):", label_decay_time: "3. ӨТКЕН УАҚЫТ (ЖЫЛ):", button_start: "ЖИНАУДЫ БАСТАУ", button_sampling: "ЖИНАЛУДА...", button_clear_spectrum: "СПЕКТРДІ ТАЗАРТУ", button_reset: "ЖАЛПЫ ҚАЛПЫНА КЕЛТІРУ (ЖАҢА 'X')",
+                heading_data_energy: "ЭНЕРГИЯ БОЙЫНША ДЕРЕКТЕР", info_click_peak: "(Пикке басыңыз)", info_energy: "Энергия", info_energy_unit: "кэВ", info_counts: "Есептеулер",
+                heading_setup_diagram: "ОРНАТУ СХЕМАСЫ", text_diagram_placeholder: "Орнату схемасы үшін орын",
+                heading_journal: "ЗЕРТХАНАЛЫҚ ЖУРНАЛ", button_record: "ЖУРНАЛҒА ЖАЗУ (инфо-блоктан)", button_clear_journal: "ЖУРНАЛДЫ ТАЗАРТУ", table_t: "Өткен уақыт (t, жыл)", table_n: "Пиктегі есептеулер (N)",
+                heading_analysis: "ДЕРЕКТЕРДІ ТАЛДАУ (ln(N) t-дан)", heading_results: "ТАЛДАУ НӘТИЖЕЛЕРІ", info_need_points: "(4-тен көп нүкте қажет)", info_need_points_text: "({N}-ден көп нүкте қажет)", info_points_count: "Журналдағы нүктелер: 0/5", info_points_count_prefix: "Журналдағы нүктелер",
+                error_positive_slope: '<span style="color: #dc3545;">ҚАТЕ:</span><br>Деректер <span style="color: #ffc107;">өсу</span> трендін көрсетіп тұр (m > 0).<br>Бұл физикалық тұрғыдан мүмкін емес.<br><br><span style="color: #007bff;">Шешімі:</span><br>Журналды тазартып, бірдей шыңға <span style="color: #ffc107;">дәл</span> басу арқылы нүктелерді қайта жинаңыз.',
+                calculate_half_life_hint: "$m$ арқылы $\\lambda$ және T1/2 есептеңіз",
+                heading_id_prefix: "ИДЕНТИФИКАЦИЯ (ӘРЕКЕТ САНЫ: ", label_your_answer: "Сіздің жауабыңыз (Изотоп):", option_select_answer: "--- Жауабыңызды таңдаңыз ---", button_check: "ЖАУАПТЫ ТЕКСЕРУ", feedback_correct: "ДҰРЫС! Сіз изотопты {N}-ші әрекеттен анықтадыңыз.", feedback_incorrect: "ҚАТЕ. T1/2 қайта есептеңіз. Қалған әрекет саны: {N}.", error_select_isotope: "Тізімнен изотопты таңдаңыз.", error_click_peak: "Қате: Есептеу үшін алдымен пикке басыңыз.",
+                res_h2: "ЗЕРТХАНАЛЫҚ ЖҰМЫС НӘТИЖЕСІ", res_name: "Студент:", res_group: "Топ:", res_attempts: "Пайдаланылған әрекеттер:", res_final_score: "Қорытынды нәтиже:", button_print: "НӘТИЖЕНІ БАСЫП ШЫҒАРУ (PDF)",
+                chart_counts_label: "Есептеулер", chart_x_energy: "Энергия (кэВ)", chart_y_counts: "Есептеулер саны", chart_data_ln_label: "ln(N) Деректері", chart_trendline_label: "Тенденция сызығы", chart_x_time: "Өткен уақыт (t, жыл)", chart_y_ln: "Натурал логарифм (ln(N))",
+                opt_Zn_65: "Мырыш-65", opt_Mn_54: "Марганец-54", opt_Cd_109: "Кадмий-109", opt_Na_22: "Натрий-22", opt_Co_60: "Кобальт-60", opt_Ba_133: "Барий-133", opt_Eu_152: "Еуропий-152", opt_Cs_137: "Цезий-137",
+                instructions_content: `<ol><li><strong>Идентификация:</strong> Басқару батырмаларын іске қосу үшін <strong>Аты-жөніңізді</strong> және <strong>Тобыңызды</strong> енгізіңіз.</li><li><strong>Жұмыс мақсаты:</strong> Белгісіз "Үлгі-Х"-тың жартылай ыдырау периодын (T<sub>1/2</sub>) анықтау және оны 8 белгілі эталонмен салыстыру арқылы сәйкестендіру.</li><li><strong>Дайындық және деректер жинау:</strong><ul><li>Көздер тізімінен <strong>"Үлгі-Х"</strong> таңдаңыз.</li><li><strong>"Жинау уақытын"</strong> орнатыңыз (мысалы, 60 секунд). Бұл мәнді <strong>өзгертпеңіз</strong>!</li><li><strong>"Өткен уақыт"</strong> жүгірткісін **0.0 жылға** орнатып, <strong>"ЖИНАУДЫ БАСТАУ"</strong> батырмасын басыңыз.</li><li>"Есептеулерді" алу үшін ең биік пиктің дәл үстінен басыңыз. <strong>"ЖУРНАЛҒА ЖАЗУ"</strong> батырмасын басыңыз.</li><li>Бұл процесті 5-6 түрлі уақыт нүктесі үшін қайталаңыз (мысалы, 0, 5, 10, 15, 20, 25 жыл). Тенденция сызығын тұрғызу үшін <strong>кемінде 5 нүкте</strong> жинау қажет.</li><li><strong>МАҢЫЗДЫ ЕСКЕРТУ:</strong> Егер сіз өте үлкен "Өткен уақытты" орнатсаңыз, айқын пиктердің жоғалып, графиктің "шулы" болып кеткенін көресіз (мысалы, "Фон" көзін таңдағандағыдай). Бұл – **табиғи фондық шу**. Бұл сіздің үлгіңіздің белсенділігі өте аз болғанын білдіреді, өйткені барлық радиоактивті атомдар ыдырап біткен.</li></ul></li><li><strong>Талдау және есептеу:</strong><ul><li>Ыдырау заңы: $A(t) = A_0 \\cdot e^{-\\lambda t}$.</li><li>Тура сызық алу үшін оны логарифмдеу керек: $\\ln(A) = \\ln(A_0) - \\lambda t$.</li><li>Тенденция сызығы мен теңдеуі ( $\\ln(A) = \\ln(A_0) - \\lambda t$ ) автоматты түрде салынады, егер журналда <strong>5 немесе одан да көп нүкте</strong> болса.</li><li><strong>$\\lambda$-ны табу:</strong> <code>y = mx + b</code> теңдеуіндегі $m$ бұрыштық коэффициенті теріс ыдырау тұрақтысына тең: $\\lambda = -m$.</li><li><strong>T<sub>1/2</sub> есептеңіз:</strong> Жартылай ыдырау периодын есептеу үшін $T_{1/2} = \\ln(2) / \\lambda$ формуласын қолданыңыз.</li></ul></li><li><strong>Жауапты тексеру және бағалау:</strong><ul><li>Сізде изотопты сәйкестендіруге **3 әрекет** бар.</li><li>3-ші әрекеттен кейін (дұрыс немесе қате болсын) қорытынды нәтиже терезесі пайда болады.</li><li><strong>Бағалау жүйесі:</strong> <ul><li>1 әрекет (дұрыс): 100%</li><li>2 әрекет (дұрыс): 80%</li><li>3 әрекет (дұрыс): 60%</li><li>3 әрекет (қате): 0%</li></ul></li></ul></li></ol>`
+            }
+        };
+
+        // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+        const MAX_ENERGY_KEV = 2000;  
+        const MIN_POINTS_FOR_TREND = 5;  
+        let currentLang = 'ru';  
+        let attemptCount = 3;  
+        let attemptSucceeded = false;  
+        let currentUnknownKey = 'Co-60';  
+        let lastClickedData = { t: 0, counts: 0, energy: 0 }; 
+        let journalData = [];  
+        let myChart; 
+        let analysisChart; 
+
+        // === ГЛОБАЛЬНЫЕ ФУНКЦИИ ===
+        
+        function calculateLinearRegression(data) {  
+            let sum_x = 0, sum_y = 0, sum_xy = 0, sum_xx = 0;
+            let n = data.length;
+            for (let i = 0; i < n; i++) {
+                sum_x += data[i].x;
+                sum_y += data[i].y;
+                sum_xy += data[i].x * data[i].y;
+                sum_xx += data[i].x * data[i].x;
+            }
+            let m = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x);
+            let b = (sum_y - m * sum_x) / n;
+            return { m, b };  
+        }
+
+        function setRandomUnknown() {
+            const UNKNOWN_OPTIONS = Object.keys(ISOTOPES).filter(k => k !== 'Background');
+            currentUnknownKey = UNKNOWN_OPTIONS[Math.floor(Math.random() * UNKNOWN_OPTIONS.length)];
+            const unknownProps = ISOTOPES[currentUnknownKey];
+            ISOTOPES['Sample-X'] = {  
+                name: "Образец-X", name_en: "Sample-X", name_kz: "Үлгі-X",  
+                halfLife_years: unknownProps.halfLife_years,  
+                spectrum: unknownProps.spectrum  
+            };
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) updateLanguage(languageSelect.value);
+            console.log("Новый Образец-Х (T1/2):", currentUnknownKey, unknownProps.halfLife_years);  
+        }
+
+        function generateSpectrum() {
+            const sourceSelect = document.getElementById('source-select');
+            const timeInput = document.getElementById('time-input');
+            const decayTimeSlider = document.getElementById('decay-time-slider');
+            const selectedSourceValue = sourceSelect.value;
+            const acquisitionTime = parseFloat(timeInput.value);  
+            const elapsedYears = parseFloat(decayTimeSlider.value);  
+            let sourceKey = (selectedSourceValue === 'Sample-X') ? currentUnknownKey : selectedSourceValue;
+            const source = ISOTOPES[sourceKey] || ISOTOPES['Background']; 
+            let decayFactor = 1.0;
+            if (source.halfLife_years < Infinity && elapsedYears > 0) {
+                const lambda = Math.log(2) / source.halfLife_years;  
+                decayFactor = Math.exp(-lambda * elapsedYears);  
+            }
+            let spectrumData = new Array(MAX_ENERGY_KEV).fill(0);
+            const BASE_INTENSITY = 500000;  
+            for (let E = 0; E < MAX_ENERGY_KEV; E++) {
+                let background = 50 * (1 - (E / MAX_ENERGY_KEV));
+                spectrumData[E] = background;
+            }
+            if (source && source.spectrum) {
+                for (const peak of source.spectrum) {
+                    const E_peak = peak.energy;
+                    const sigma_keV = E_peak * 0.02;  
+                    const A = peak.intensity * BASE_INTENSITY * decayFactor * (acquisitionTime / 60.0);
+                    let E_start = Math.floor(Math.max(0, E_peak - 3*sigma_keV));
+                    let E_end = Math.ceil(Math.min(MAX_ENERGY_KEV, E_peak + 3*sigma_keV));
+                    for (let E = E_start; E < E_end; E++) {
+                        spectrumData[E] += gaussian(E, A, E_peak, sigma_keV);
+                    }
+                }
+            }
+            for (let E = 0; E < MAX_ENERGY_KEV; E++) {
+                spectrumData[E] = poissonRandom(spectrumData[E]);
+            }
+            return { data: spectrumData, sourceName: source.name };
+        }
+
+        function updateChartLabels() {
+            if (myChart) {
+                myChart.options.scales.x.title.text = LANGUAGE_STRINGS[currentLang].chart_x_energy;
+                myChart.options.scales.y.title.text = LANGUAGE_STRINGS[currentLang].chart_y_counts;
+                myChart.data.datasets[0].label = LANGUAGE_STRINGS[currentLang].chart_counts_label;
+                myChart.update('none'); 
+            }
+            if (analysisChart) {
+                analysisChart.options.scales.x.title.text = LANGUAGE_STRINGS[currentLang].chart_x_time;
+                analysisChart.options.scales.y.title.text = LANGUAGE_STRINGS[currentLang].chart_y_ln;
+                analysisChart.data.datasets[0].label = LANGUAGE_STRINGS[currentLang].chart_data_ln_label;
+                analysisChart.data.datasets[1].label = LANGUAGE_STRINGS[currentLang].chart_trendline_label;
+                analysisChart.update('none'); 
+            }
+        }
+        
+        function updateLanguage(langKey) {
+            currentLang = langKey; 
+            const strings = LANGUAGE_STRINGS[langKey];
+            const decayTimeSlider = document.getElementById('decay-time-slider');
+            const decayTimeValue = document.getElementById('decay-time-value');
+            const sourceSelect = document.getElementById('source-select');
+            const instContent = document.getElementById('inst-content');
+            
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                if (strings[key]) {
+                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                        el.placeholder = strings[key];
+                    } else if (key.endsWith('_prefix')) {
+                        const attemptSpan = el.querySelector('span');
+                        const attemptNum = attemptSpan ? attemptSpan.textContent : attemptCount;
+                        el.innerHTML = strings[key] + `<span id="attempt-counter">${attemptNum}</span>)`;
+                    } else if (el.tagName === 'OPTGROUP') {
+                        el.label = strings[key];
+                    } else { 
+                        el.textContent = strings[key];
+                    }
+                }
+            });
+            
+            if (decayTimeValue && decayTimeSlider) {
+                decayTimeValue.textContent = `${parseFloat(decayTimeSlider.value).toFixed(1)} ${strings.unit_years}`;
+            }
+            if (document.getElementById('spectrum-info')) {
+                document.getElementById('spectrum-info').textContent = strings.info_click_peak;
+                if (lastClickedData.counts > 0) {
+                     document.getElementById('spectrum-info').innerHTML = `
+                        ${strings.info_energy}: ${lastClickedData.energy} ${strings.info_energy_unit}<br>
+                        ${strings.info_counts}: ${lastClickedData.counts}
+                    `;
+                }
+            }
+            
+            Object.keys(ISOTOPES).forEach(key => {
+                const isotope = ISOTOPES[key];
+                const name = isotope[`name_${langKey}`] || isotope.name; 
+                const sourceOption = sourceSelect.querySelector(`[value="${key}"]`);
+                if (sourceOption) {
+                    let halfLife = ''; 
+                    if (key !== 'Sample-X' && key !== 'Background' && isotope.halfLife_years < Infinity) {
+                         halfLife = ` (T1/2 = ${isotope.halfLife_years.toFixed(2)} ${strings.unit_years})`;
+                    }
+                    if (!sourceOption.hasAttribute('data-key')) {
+                        sourceOption.textContent = `${name}${halfLife}`;
+                    }
+                }
+            });
+
+            if (instContent) {
+                 instContent.innerHTML = strings.instructions_content;
+                 if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                     MathJax.typesetPromise([instContent]);
+                 }
+            }
+            
+            updateChartLabels();  
+            const pointCountDisplay = document.getElementById('point-count-display');
+            if (pointCountDisplay) {
+                 pointCountDisplay.textContent = `${strings.info_points_count_prefix}: ${journalData.length}/${MIN_POINTS_FOR_TREND}`;
+            }
+        }
+        
+        function printResult() {
+            window.print();
+        }
+
+        function initializeCharts() {
+            const chartCanvas = document.getElementById('spectrum-chart');
+            const analysisChartCanvas = document.getElementById('analysis-chart');
+            const decayTimeSlider = document.getElementById('decay-time-slider');
+            const spectrumInfo = document.getElementById('spectrum-info');
+
+            const ctx1 = chartCanvas.getContext('2d');
+            myChart = new Chart(ctx1, { 
+                type: 'line',  
+                data: {
+                    labels: Array.from(Array(MAX_ENERGY_KEV).keys()),
+                    datasets: [{
+                        label: LANGUAGE_STRINGS[currentLang].chart_counts_label,  
+                        data: new Array(MAX_ENERGY_KEV).fill(0),  
+                        borderColor: '#39ff14',
+                        backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                        borderWidth: 1.5,
+                        pointRadius: 0,  
+                        fill: true,
+                        tension: 0.1  
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    scales: {
+                        x: {  
+                            title: { display: true, text: LANGUAGE_STRINGS[currentLang].chart_x_energy, color: '#e0e0e0' },  
+                            min: 0,  
+                            max: MAX_ENERGY_KEV,
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        },
+                        y: {  
+                            title: { display: true, text: LANGUAGE_STRINGS[currentLang].chart_y_counts, color: '#e0e0e0' },  
+                            beginAtZero: true,
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    onClick: (e, elements, chart) => {
+                        const clickedElements = chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+                        if (clickedElements.length > 0) {
+                            const clickedIndex = clickedElements[0].index;  
+                            const counts = chart.data.datasets[0].data[clickedIndex];
+                            const currentStrings = LANGUAGE_STRINGS[currentLang];
+                            spectrumInfo.innerHTML = `
+                                ${currentStrings.info_energy}: ${clickedIndex} ${currentStrings.info_energy_unit}<br>
+                                ${currentStrings.info_counts}: ${counts}
+                            `;
+                            lastClickedData = {
+                                t: parseFloat(decayTimeSlider.value),
+                                counts: counts,
+                                energy: clickedIndex
+                            };
+                        }
+                    }
+                }
+            });
+            
+            const ctx2 = analysisChartCanvas.getContext('2d');
+            analysisChart = new Chart(ctx2, { 
+                type: 'scatter',  
+                data: {
+                    datasets: [
+                        {
+                            label: LANGUAGE_STRINGS[currentLang].chart_data_ln_label,  
+                            data: [],  
+                            backgroundColor: '#007bff',
+                            borderColor: '#007bff',
+                            pointRadius: 5,
+                            pointStyle: 'crossRot',
+                        },
+                        {
+                            label: LANGUAGE_STRINGS[currentLang].chart_trendline_label,  
+                            data: [],  
+                            type: 'line',  
+                            backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                            borderColor: '#dc3545',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: { display: true, text: LANGUAGE_STRINGS[currentLang].chart_x_time, color: '#e0e0e0' },  
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        },
+                        y: {
+                            title: { display: true, text: LANGUAGE_STRINGS[currentLang].chart_y_ln, color: '#e0e0e0' },  
+                            ticks: { color: '#e0e0e0' },
+                            grid: { color: 'rgba(74, 74, 126, 0.5)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+        
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Получаем все DOM-элементы ОДИН РАЗ ---
+            const studentNameInput = document.getElementById('student-name');
+            const studentGroupInput = document.getElementById('student-group');
+            const sourceSelect = document.getElementById('source-select');
+            const checkAnswerButton = document.getElementById('check-answer-button');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const attemptCounter = document.getElementById('attempt-counter');
+            const pointCountDisplay = document.getElementById('point-count-display');  
+            const equationDisplay = document.getElementById('equation-display');
+            const journalTableBody = document.querySelector("#journal-table tbody");
+            const languageSelect = document.getElementById('language-select');
+            
+            const allControlButtons = [
+                document.getElementById('start-button'),
+                document.getElementById('clear-spectrum-button'),
+                document.getElementById('reset-button'),
+                document.getElementById('record-journal-button'),
+                document.getElementById('clear-journal-button'),
+                document.getElementById('check-answer-button')
+            ];
+
+            
+            
+            function updateAnalysisGraph() {
+                // Убедимся, что DOM-элемент существует, прежде чем его использовать
+                if (pointCountDisplay) {
+                    pointCountDisplay.textContent = `${LANGUAGE_STRINGS[currentLang].info_points_count_prefix}: ${journalData.length}/${MIN_POINTS_FOR_TREND}`;
+                }
+                
+                const lnData = journalData.map(point => {
+                    return point.counts > 0 ? { x: point.t, y: Math.log(point.counts) } : null;
+                }).filter(p => p !== null); 
+
+                analysisChart.data.datasets[0].data = lnData; 
+
+                if (journalData.length < MIN_POINTS_FOR_TREND) {
+                    analysisChart.data.datasets[1].data = [];
+                    analysisChart.update();
+                    if (equationDisplay) {
+                        equationDisplay.textContent = LANGUAGE_STRINGS[currentLang].info_need_points_text.replace('{N}', MIN_POINTS_FOR_TREND - 1);
+                    }
+                    checkIdFields();  
+                    return;
+                }
+
+                const { m, b } = calculateLinearRegression(lnData);
+
+                if (m > 0) {
+                    analysisChart.data.datasets[1].data = []; 
+                    analysisChart.update();
+                    if (equationDisplay) {
+                        equationDisplay.innerHTML = LANGUAGE_STRINGS[currentLang].error_positive_slope;
+                    }
+                    checkIdFields();
+                    return; 
+                }
+
+                const xValues = lnData.map(d => d.x);
+                const minX = Math.min(...xValues);
+                const maxX = Math.max(...xValues);
+                const trendlineData = [
+                    { x: minX, y: m * minX + b },
+                    { x: maxX, y: m * maxX + b }
+                ];
+
+                analysisChart.data.datasets[1].data = trendlineData;
+                analysisChart.update();
+                
+                if (equationDisplay) {
+                    equationDisplay.innerHTML = `
+                        y = ${m.toFixed(4)}x + ${b.toFixed(4)}<br>
+                        <span style="font-size: 0.9em; color: #a0a0ff; font-style: italic;">
+                            (${LANGUAGE_STRINGS[currentLang].calculate_half_life_hint})
+                        </span>
+                    `;
+                    // Убедимся, что MathJax существует, прежде чем вызывать
+                    if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                        MathJax.typesetPromise(); 
+                    }
+                }
+                checkIdFields();  
+            }
+
+            function calculateScore(attemptsUsed, isCorrect) {
+                if (!isCorrect) return 0;
+                
+                switch (attemptsUsed) {
+                    case 1: return 100;
+                    case 2: return 80;  
+                    case 3: return 60;  
+                    default: return 0;
+                }
+            }
+            
+            
+            function showFinalResult(isCorrect) {
+
+                const resultNameDom = document.getElementById('result-name');
+                const resultGroupDom = document.getElementById('result-group');
+                const resultAttemptsDom = document.getElementById('result-attempts');
+                const resultScoreDom = document.getElementById('result-score');
+                const resultModal = document.getElementById('result-modal');
+
+                
+                const studentName = studentNameInput.value;
+                const studentGroup = studentGroupInput.value;
+
+                let attemptsUsed = isCorrect ? (3 - attemptCount + 1) : 3;
+                if (!isCorrect && attemptCount === 0) attemptsUsed = 3;
+
+                const score = calculateScore(attemptsUsed, isCorrect);
+                const scoreText = `${score}%`;
+
+                
+                if (resultNameDom) {
+                    resultNameDom.textContent = studentName || LANGUAGE_STRINGS[currentLang].res_no_data;
+                } else {
+                    console.error('ОШИБКА: Элемент "result-name" не найден в HTML!');
+                }
+
+                if (resultGroupDom) {
+                    resultGroupDom.textContent = studentGroup || LANGUAGE_STRINGS[currentLang].res_no_data;
+                } else {
+                    console.error('ОШИБКА: Элемент "result-group" не найден в HTML!');
+                }
+
+                if (resultAttemptsDom) {
+                    resultAttemptsDom.textContent = attemptsUsed;
+                } else {
+                    console.error('ОШИБКА: Элемент "result-attempts" не найден в HTML!');
+                }
+
+                if (resultScoreDom) {
+                    resultScoreDom.textContent = scoreText;
+                    resultScoreDom.style.color = score > 0 ? '#39ff14' : '#dc3545';
+                } else {
+                    console.error('ОШИБКА: Элемент "result-score" не найден в HTML!');
+                }
+
+                
+                allControlButtons.forEach(btn => {
+                    if (btn) btn.disabled = true;
+                });
+
+                
+                if (resultModal) {
+                    resultModal.style.display = 'flex';
+                } else {
+                    console.error('ОШИБКА: Модальное окно "result-modal" не найдено в HTML!');
+                }
+            }
+            
+            function checkAnswer() {
+                if (attemptCount <= 0 || attemptSucceeded) return;
+
+                const guess = document.getElementById('isotope-guess').value;
+                if (guess === 'none') {
+                    feedbackMessage.textContent = LANGUAGE_STRINGS[currentLang].error_select_isotope;  
+                    feedbackMessage.className = 'feedback-fail';
+                    return;
+                }
+                
+                const attemptNum = 4 - attemptCount;
+                
+                // ИСПРАВЛЕНИЕ: Аргументы (currentName, currentGroup) УДАЛЕНЫ из вызовов
+                // Функция showFinalResult() сама возьмет их из studentNameInput.value
+                if (guess === currentUnknownKey) {
+                    feedbackMessage.innerHTML = LANGUAGE_STRINGS[currentLang].feedback_correct.replace('{N}', attemptNum);  
+                    feedbackMessage.className = 'feedback-success';
+                    attemptSucceeded = true;  
+                    
+                    if(checkAnswerButton) checkAnswerButton.disabled = true;  
+                    showFinalResult(true); // Вызов без аргументов
+                    
+                } else {
+                    attemptCount--;
+                    if (attemptCount > 0) {
+                        feedbackMessage.textContent = LANGUAGE_STRINGS[currentLang].feedback_incorrect.replace('{N}', attemptCount);  
+                        feedbackMessage.className = 'feedback-fail';
+                    } else {
+                        feedbackMessage.textContent = LANGUAGE_STRINGS[currentLang].feedback_incorrect.replace('{N}', attemptCount); 
+                        feedbackMessage.className = 'feedback-fail';
+                        showFinalResult(false); // Вызов без аргументов
+                    }
+                }
+                
+                if (attemptCounter) attemptCounter.textContent = attemptCount;
+            }
+
+            function checkIdFields() {
+                const nameFilled = studentNameInput && studentNameInput.value.trim() !== '';
+                const groupFilled = studentGroupInput && studentGroupInput.value.trim() !== '';
+                const canProceed = nameFilled && groupFilled && !attemptSucceeded && attemptCount > 0;
+                const canCheck = canProceed && journalData.length >= MIN_POINTS_FOR_TREND;
+                
+                const checkBtn = document.getElementById('check-answer-button');
+                
+                allControlButtons.forEach(btn => {
+                    if (btn) {
+                        if (btn !== checkBtn) {
+                            btn.disabled = !canProceed;
+                        } else {
+                            btn.disabled = !canCheck;
+                        }
+                    }
+                });
+            }
+            
+            
+            if (!studentNameInput || !studentGroupInput || !languageSelect || !sourceSelect || !document.getElementById('spectrum-chart') || !document.getElementById('analysis-chart')) {
+                console.error("КРИТИЧЕСКАЯ ОШИБКА: Не удалось найти один или несколько основных HTML-элементов. Скрипт остановлен.");
+                alert("Критическая ошибка! Не удалось загрузить симуляцию. Проверьте HTML-файл.");
+                return; // Останавливаем выполнение, если чего-то не хватает
+            }
+            
+            currentLang = languageSelect.value;
+            setRandomUnknown(); 
+            initializeCharts(); 
+            updateLanguage(currentLang); 
+            
+            // --- Привязка событий ---
+            languageSelect.addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+                updateAnalysisGraph();
+            });
+            
+            studentNameInput.addEventListener('input', checkIdFields);
+            studentGroupInput.addEventListener('input', checkIdFields);
+            
+            document.getElementById('decay-time-slider').addEventListener('input', (e) => {
+                const decayTimeValue = document.getElementById('decay-time-value');
+                if (decayTimeValue) {
+                    decayTimeValue.textContent = `${parseFloat(e.target.value).toFixed(1)} ${LANGUAGE_STRINGS[currentLang].unit_years}`;
+                }
+            });
+            
+            sourceSelect.addEventListener('change', () => {
+                document.getElementById('clear-spectrum-button').click();
+            });
+
+            document.getElementById('start-button').addEventListener('click', () => {
+                const startButton = document.getElementById('start-button');
+                startButton.disabled = true;
+                startButton.textContent = LANGUAGE_STRINGS[currentLang].button_sampling;  
+                
+                document.getElementById('spectrum-info').textContent = LANGUAGE_STRINGS[currentLang].info_click_peak;
+                lastClickedData = { t: 0, counts: 0, energy: 0 };
+                
+                setTimeout(() => {  
+                    const { data, sourceName } = generateSpectrum();  
+                    myChart.data.datasets[0].data = data; 
+                    myChart.update();
+                    startButton.disabled = false;
+                    startButton.textContent = LANGUAGE_STRINGS[currentLang].button_start;  
+                }, 10); 
+            });
+            
+            document.getElementById('clear-spectrum-button').addEventListener('click', () => {
+                myChart.data.datasets[0].data = new Array(MAX_ENERGY_KEV).fill(0);
+                myChart.update();
+                document.getElementById('spectrum-info').textContent = LANGUAGE_STRINGS[currentLang].info_click_peak;  
+                lastClickedData = { t: 0, counts: 0, energy: 0 }; 
+            });
+            
+            document.getElementById('record-journal-button').addEventListener('click', () => {
+                if (lastClickedData.counts <= 0) {
+                    alert(LANGUAGE_STRINGS[currentLang].error_click_peak);  
+                    return;
+                }
+                
+                const isDuplicate = journalData.some(item => item.t === lastClickedData.t);
+                if (isDuplicate) {
+                    alert("Ошибка: Точка времени " + lastClickedData.t.toFixed(1) + " уже записана в журнал. Удалите старую запись или выберите новое время.");
+                    return;
+                }
+                
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${lastClickedData.t.toFixed(1)}</td>
+                    <td>${lastClickedData.counts}</td>
+                `;
+                journalTableBody.appendChild(newRow);
+                journalData.push({ t: lastClickedData.t, counts: lastClickedData.counts });
+                journalData.sort((a, b) => a.t - b.t);
+                updateAnalysisGraph();
+                checkIdFields();  
+            });
+
+            document.getElementById('clear-journal-button').addEventListener('click', () => {
+                journalTableBody.innerHTML = '';
+                journalData = [];
+                updateAnalysisGraph();
+                checkIdFields();  
+            });
+
+            document.getElementById('reset-button').addEventListener('click', () => {
+                attemptCount = 3;
+                attemptSucceeded = false;
+                if (attemptCounter) attemptCounter.textContent = attemptCount;
+                if (feedbackMessage) {
+                    feedbackMessage.textContent = '';
+                    feedbackMessage.className = '';
+                }
+                
+                document.getElementById('source-select').value = 'Background';
+                document.getElementById('time-input').value = 60;
+                document.getElementById('decay-time-slider').value = 0;
+                const decayTimeValue = document.getElementById('decay-time-value');
+                if (decayTimeValue) {
+                    decayTimeValue.textContent = `0.0 ${LANGUAGE_STRINGS[currentLang].unit_years}`;
+                }
+
+                document.getElementById('clear-spectrum-button').click();  
+                document.getElementById('clear-journal-button').click();  
+                setRandomUnknown();
+
+                document.getElementById('isotope-guess').value = 'none';
+                checkIdFields();
+            });
+
+            checkAnswerButton.addEventListener('click', checkAnswer);
+
+            document.getElementById('open-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'flex';
+                updateLanguage(currentLang);
+            });
+            document.getElementById('close-instructions-button').addEventListener('click', () => {
+                document.getElementById('instructions-modal').style.display = 'none';
+            });
+            document.getElementById('instructions-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('instructions-modal')) {
+                    document.getElementById('instructions-modal').style.display = 'none';
+                }
+            });
+
+            
+            document.getElementById('close-result-button').addEventListener('click', () => {
+                location.reload();
+            });
+            document.getElementById('print-button').addEventListener('click', printResult);
+
+            checkIdFields(); 
+        });
+    </script>
+</body>
+</html>

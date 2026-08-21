@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Электромагнитная индукция</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #3b82f6; /* Blue for Electrodynamics */
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 15px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 10px; 
+            background: #000; border: 1px solid #444; 
+            color: white; border-radius: 4px; box-sizing: border-box;
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button.action-btn:hover { opacity: 0.9; transform: scale(1.01); }
+        .visualizer {
+            position: relative; height: 350px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; flex-direction: column;
+        }
+        canvas#faraday-canvas { flex-grow: 1; border-bottom: 1px solid #333; }
+        .readout-panel {
+            display: flex; justify-content: space-around;
+            background: #222; padding: 10px;
+            font-family: 'Courier New', monospace; font-size: 1.1em;
+        }
+        .readout { text-align: center; }
+        .readout span { display: block; font-size: 0.8em; color: #777; }
+        .readout strong { color: var(--accent); font-size: 1.3em; }
+        .graph-container { height: 280px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1200px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="title">Электромагнитная индукция</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headParams">Параметры установки</div>
+        
+        <div class="control-group">
+            <label><span data-lang="lblTurns">Число витков (N):</span> <span class="val" id="val-n">100</span></label>
+            <input type="range" id="slider-n" min="20" max="200" step="10" value="100">
+        </div>
+
+        <div class="control-group">
+            <label><span data-lang="lblField">Индукция поля (B, Тл):</span> <span class="val"><span id="val-b">0.5</span> Тл</span></label>
+            <input type="range" id="slider-b" min="0.1" max="2.0" step="0.1" value="0.5">
+        </div>
+
+        <div class="control-group">
+            <label><span data-lang="lblSpeed">Скорость магнита (v):</span> <span class="val"><span id="val-v">1.0</span> м/с</span></label>
+            <input type="range" id="slider-v" min="0.2" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <button class="action-btn" id="toggle-motion-btn" data-lang="btnMove">ПЕРЕМЕСТИТЬ МАГНИТ</button>
+        <button class="action-btn" id="clear-btn" style="background:#64748B; margin-top:10px;" data-lang="btnClear">ОЧИСТИТЬ ГРАФИК</button>
+    </div>
+
+    <div style="display:flex; flex-direction:column;">
+        <div class="visualizer">
+            <canvas id="faraday-canvas" width="600" height="280"></canvas>
+            <div class="readout-panel">
+                <div class="readout"><span>Ф (Wb)</span><strong id="read-phi">0.00</strong></div>
+                <div class="readout"><span>E (V)</span><strong id="read-emf">0.00</strong></div>
+                <div class="readout"><span>I (A)</span><strong id="read-current">0.00</strong></div>
+            </div>
+        </div>
+
+        <div class="panel graph-container">
+            <canvas id="emf-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    const LANG = {
+        ru: {
+            title: "Электромагнитная индукция",
+            headParams: "Параметры установки",
+            lblTurns: "Число витков (N):",
+            lblField: "Индукция поля (B, Тл):",
+            lblSpeed: "Скорость магнита (v):",
+            btnMove: "ПУСК / СТОП ДВИЖЕНИЯ",
+            btnClear: "ОЧИСТИТЬ ГРАФИК"
+        },
+        kz: {
+            title: "Электромагнитная индукция",
+            headParams: "Қондырғы параметрлері",
+            lblTurns: "Орам саны (N):",
+            lblField: "Өріс индукциясы (B, Тл):",
+            lblSpeed: "Магнит жылдамдығы (v):",
+            btnMove: "ҚОЗҒАЛЫСТЫ БАСТАУ / ТОҚТАТУ",
+            btnClear: "ГРАФИКТІ ТАЗАРТУ"
+        },
+        en: {
+            title: "Electromagnetic Induction",
+            headParams: "Setup Parameters",
+            lblTurns: "Number of turns (N):",
+            lblField: "Magnetic field (B, T):",
+            lblSpeed: "Magnet speed (v):",
+            btnMove: "START / STOP MOTION",
+            btnClear: "CLEAR GRAPH"
+        }
+    };
+
+    let currentLang = 'ru';
+    let chart = null;
+    let isMoving = false;
+    let magnetX = 100;
+    let movingDir = 1;
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        if(chart) {
+            chart.options.scales.y.title.text = (lang === 'ru' ? 'ЭДС индукции E (В)' : (lang === 'kz' ? 'Индукция ЭҚК E (В)' : 'EMF E (V)'));
+            chart.options.scales.x.title.text = (lang === 'ru' ? 'Время t (с)' : (lang === 'kz' ? 'Уақыт t (с)' : 'Time t (s)'));
+            chart.update();
+        }
+    }
+
+    const cvs = document.getElementById('faraday-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function drawScene() {
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+        // Draw Coil (Solenoid)
+        ctx.fillStyle = '#475569';
+        for(let i = 0; i < 10; i++) {
+            ctx.beginPath();
+            ctx.ellipse(250 + i * 15, 140, 10, 50, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+
+        // Draw Bar Magnet
+        ctx.fillStyle = '#ef4444'; // North Red
+        ctx.fillRect(magnetX, 115, 60, 50);
+        ctx.fillStyle = '#3b82f6'; // South Blue
+        ctx.fillRect(magnetX + 60, 115, 60, 50);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = "bold 16px Arial";
+        ctx.fillText("N", magnetX + 25, 147);
+        ctx.fillText("S", magnetX + 85, 147);
+
+        // Physics calculations
+        let N = parseInt(document.getElementById('slider-n').value);
+        let B = parseFloat(document.getElementById('slider-b').value);
+        let v = parseFloat(document.getElementById('slider-v').value);
+
+        // Movement logic
+        if(isMoving) {
+            magnetX += movingDir * v * 2;
+            if(magnetX > 350 || magnetX < 80) {
+                movingDir *= -1;
+            }
+        }
+
+        // Flux & EMF simulation based on proximity to coil center (X = 300)
+        let dist = Math.abs(magnetX + 60 - 320);
+        let phi = B * 0.05 * Math.exp(-(dist*dist)/5000);
+        let emf = isMoving ? (movingDir * v * B * (N / 50) * Math.exp(-(dist*dist)/5000) * 5) : 0;
+        let current = emf / 10; // R = 10 Ohm
+
+        document.getElementById('read-phi').innerText = phi.toFixed(3);
+        document.getElementById('read-emf').innerText = emf.toFixed(2);
+        document.getElementById('read-current').innerText = current.toFixed(2);
+
+        if(isMoving && chart && Math.random() < 0.3) {
+            let timeLabel = (chart.data.labels.length * 0.2).toFixed(1);
+            chart.data.labels.push(timeLabel);
+            chart.data.datasets[0].data.push(emf.toFixed(2));
+            if(chart.data.labels.length > 30) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.update('none');
+        }
+
+        requestAnimationFrame(drawScene);
+    }
+
+    function initChart() {
+        const ctxChart = document.getElementById('emf-chart').getContext('2d');
+        chart = new Chart(ctxChart, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'EMF',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: {display:true, text:'Время t (с)', color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'} },
+                    y: { title: {display:true, text:'ЭДС индукции E (В)', color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'} }
+                },
+                plugins: { legend: {display:false} }
+            }
+        });
+    }
+
+    window.onload = () => {
+        initChart();
+        drawScene();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('slider-n').oninput = (e) => document.getElementById('val-n').innerText = e.target.value;
+        document.getElementById('slider-b').oninput = (e) => document.getElementById('val-b').innerText = e.target.value;
+        document.getElementById('slider-v').oninput = (e) => document.getElementById('val-v').innerText = e.target.value;
+
+        document.getElementById('toggle-motion-btn').onclick = () => { isMoving = !isMoving; };
+        document.getElementById('clear-btn').onclick = () => {
+            if(chart) {
+                chart.data.labels = [];
+                chart.data.datasets[0].data = [];
+                chart.update();
+            }
+        };
+        updateLanguage('ru');
+    };
+</script>
+
+</body>
+</html>

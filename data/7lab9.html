@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №9</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        
+        .simulation-container { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; }
+        .lever-area { width: 600px; height: 200px; position: relative; }
+        .lever {
+            width: 600px; height: 10px; background-color: #7f8c8d; border-radius: 5px;
+            position: absolute; left: 50%; top: 100px;
+            transform-origin: center center;
+            transform: translateX(-50%);
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .fulcrum {
+            width: 0; height: 0; border-left: 20px solid transparent;
+            border-right: 20px solid transparent; border-bottom: 40px solid #34495e;
+            position: absolute; left: 50%; top: 110px; transform: translateX(-50%);
+        }
+        .lever-markings { position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; }
+        .mark { position: absolute; background-color: #333; }
+        .mark.major { width: 2px; height: 15px; top: -15px; }
+        .mark.minor { width: 1px; height: 8px; top: -8px; }
+        .mark-label { position: absolute; top: -35px; transform: translateX(-50%); font-size: 12px; }
+        .weight-hook { position: absolute; top: 10px; width: 2px; height: 10px; background-color: #555; transform: translateX(-1px); }
+        .weight {
+            width: 24px; height: 24px; background-color: #c0392b; color: white;
+            border: 2px solid #a93226; border-radius: 4px; display: flex;
+            align-items: center; justify-content: center; font-size: 10px;
+            font-weight: bold; cursor: grab; position: absolute;
+            user-select: none; z-index: 100;
+        }
+        .weights-source { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+        .weights-source .weight { position: static; cursor: grab; }
+        .drop-zone { position: absolute; top: 90px; height: 40px; width: 600px; left: 50%; transform: translateX(-50%); z-index: 50; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td input { width: 80px; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton { background-color: #3498db; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 10px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    
+    <div class="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level"></h2>
+            <p><span data-key="author_prefix"></span> <span data-key="author_details"></span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright"></div>
+
+    <div class="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button"></button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info">
+        <div><label for="student_lastname" data-key="student_lastname"></label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname"></label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number"></label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter"></label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title"></h1>
+    <h2 data-key="lab_topic_title"></h2>
+    <p><strong data-key="lab_goal_title"></strong> <span data-key="lab_goal_text"></span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title"></h4>
+        <ol>
+            <li data-key="instruction_step1"></li><li data-key="instruction_step2"></li>
+            <li data-key="instruction_step3"></li><li data-key="instruction_step4"></li>
+            <li data-key="instruction_step5"></li>
+        </ol>
+    </div>
+    
+    <h3 data-key="procedure_title"></h3>
+    <div class="simulation-container">
+        <div class="lever-area" id="lever-area">
+            <div class="fulcrum"></div>
+            <div class="lever" id="lever">
+                <div class="lever-markings" id="lever-markings"></div>
+            </div>
+            <div class="drop-zone" id="drop-zone"></div>
+        </div>
+        <div class="weights-source">
+            <span data-key="weights_source_label"></span>
+            <div class="weight" draggable="true">1Н</div>
+            <button id="reset-sim-btn" data-key="reset_sim_btn"></button>
+        </div>
+    </div>
+    
+    <h3 data-key="results_table_title"></h3>
+    <h3 data-key="results_table_title"></h3>
+<table>
+    <thead>
+        <tr>
+            <th rowspan="2" data-key="th_exp_num"></th>
+            <th colspan="1" data-key="th_left_arm"></th>
+            <th colspan="1" data-key="th_right_arm"></th>
+        </tr>
+        <tr>
+            <th data-key="th_moment_sum_left"></th>
+            <th data-key="th_moment_sum_right"></th>
+        </tr>
+    </thead>
+    <tbody id="results-table-body">
+        <tr>
+            <td>1</td>
+            <td><input type="text" id="m1-total-1" placeholder=""></td>
+            <td><input type="text" id="m2-total-1" placeholder=""></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><input type="text" id="m1-total-2" placeholder=""></td>
+            <td><input type="text" id="m2-total-2" placeholder=""></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><input type="text" id="m1-total-3" placeholder=""></td>
+            <td><input type="text" id="m2-total-3" placeholder=""></td>
+        </tr>
+    </tbody>
+</table>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button"></button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button"></button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button"></button>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- НАСТРОЙКА ДЛЯ TELEGRAM ---
+    const BOT_TOKEN = '8165182583:AAGsg_7KFT5B3tQo80Oef81tYqr-ZNmoqYM'; // Замените на токен вашего бота
+    const CHAT_ID = '876026321';   // Замените на ваш ID чата
+
+    // --- ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ СТРАНИЦЫ ---
+    const lever = document.getElementById('lever');
+    const leverArea = document.getElementById('lever-area');
+    const leverMarkings = document.getElementById('lever-markings');
+    const weightsSource = document.querySelector('.weights-source .weight');
+    const resetSimBtn = document.getElementById('reset-sim-btn');
+    const backButton = document.getElementById('backButton');
+    const checkButton = document.getElementById('checkButton');
+    const showAnswersButton = document.getElementById('showAnswersButton');
+    const shareToTeacherButton = document.getElementById('shareToTeacherButton');
+    const finalResultDiv = document.getElementById('finalResult');
+    const answersReviewDiv = document.getElementById('answersReview');
+    const validationMessageDiv = document.getElementById('validationMessage');
+
+    let state = { attemptsLeft: 2, finalScoreText: '' };
+    let draggedItem = null;
+    const PIXELS_PER_METER = 200;
+    const LEVER_LENGTH_PX = 600;
+    const FULCRUM_OFFSET_PX = LEVER_LENGTH_PX / 2;
+
+    function setupLever() {
+        leverMarkings.innerHTML = '';
+        for (let i = -15; i <= 15; i++) {
+            if (i === 0) continue;
+            const pos = FULCRUM_OFFSET_PX + i * (PIXELS_PER_METER / 10);
+            const mark = document.createElement('div'); mark.classList.add('mark');
+            const hook = document.createElement('div'); hook.classList.add('weight-hook');
+            if (i % 5 === 0) {
+                mark.classList.add('major');
+                const label = document.createElement('span'); label.classList.add('mark-label');
+                label.textContent = Math.abs(i) / 10;
+                mark.appendChild(label);
+            } else { mark.classList.add('minor'); }
+            mark.style.left = `${pos}px`;
+            mark.appendChild(hook);
+            leverMarkings.appendChild(mark);
+        }
+    }
+    function updateLeverBalance() {
+        let netTorque = 0;
+        const weightsOnLever = lever.querySelectorAll('.weight');
+        weightsOnLever.forEach(w => {
+            const posPixels = parseFloat(w.style.left) + (w.offsetWidth / 2);
+            const distancePixels = posPixels - FULCRUM_OFFSET_PX;
+            const distanceMeters = distancePixels / PIXELS_PER_METER;
+            const force = parseFloat(w.textContent);
+            netTorque += force * distanceMeters;
+        });
+        const angle = Math.max(-20, Math.min(20, netTorque * 5));
+        lever.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+    }
+    function resetSimulation() {
+        lever.querySelectorAll('.weight').forEach(w => w.remove());
+        updateLeverBalance();
+    }
+    
+    // *** ОБНОВЛЕННАЯ ЛОГИКА ПЕРЕМЕЩЕНИЯ ***
+    function startDrag(event, element, isSource) {
+        event.preventDefault();
+
+        if (isSource) {
+            draggedItem = element.cloneNode(true);
+        } else {
+            draggedItem = element;
+        }
+
+        // Делаем элемент видимым поверх всего
+        draggedItem.style.position = 'fixed';
+        draggedItem.style.zIndex = '1000';
+        draggedItem.style.cursor = 'grabbing';
+        document.body.appendChild(draggedItem);
+
+        let shiftX = event.clientX - element.getBoundingClientRect().left;
+        let shiftY = event.clientY - element.getBoundingClientRect().top;
+
+        moveAt(event.clientX, event.clientY);
+
+        function moveAt(clientX, clientY) {
+            draggedItem.style.left = `${clientX - shiftX}px`;
+            draggedItem.style.top = `${clientY - shiftY}px`;
+        }
+
+        function onMouseMove(event) {
+            moveAt(event.clientX, event.clientY);
+        }
+        document.addEventListener('mousemove', onMouseMove);
+
+        function onMouseUp(event) {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+
+            const rect = leverArea.getBoundingClientRect();
+            // Проверяем, отпущена ли мышь над областью рычага
+            if (event.clientX > rect.left && event.clientX < rect.right && event.clientY > rect.top && event.clientY < rect.bottom) {
+                // Если да, то размещаем груз
+                lever.appendChild(draggedItem);
+                draggedItem.style.position = 'absolute'; // Возвращаем обычное позиционирование
+                draggedItem.style.cursor = 'grab';
+                draggedItem.style.zIndex = '100';
+
+                const dropX = event.clientX - rect.left;
+                const snapDistanceMeters = Math.round((dropX - FULCRUM_OFFSET_PX) / (PIXELS_PER_METER / 10)) * 0.1;
+                const snapX = FULCRUM_OFFSET_PX + snapDistanceMeters * PIXELS_PER_METER - (draggedItem.offsetWidth / 2);
+                
+                let weightsAtSamePosition = 0;
+                lever.querySelectorAll('.weight').forEach(w => {
+                    if (w !== draggedItem && Math.abs(parseFloat(w.style.left) - snapX) < 1) {
+                        weightsAtSamePosition++;
+                    }
+                });
+                const weightHeight = draggedItem.offsetHeight;
+                const newTop = 10 + (weightsAtSamePosition * weightHeight);
+
+                draggedItem.style.left = `${snapX}px`;
+                draggedItem.style.top = `${newTop}px`;
+            } else {
+                // Если мышь отпущена за пределами области, удаляем груз
+                draggedItem.remove();
+            }
+            
+            updateLeverBalance();
+            draggedItem = null;
+        }
+        document.addEventListener('mouseup', onMouseUp);
+
+        if(draggedItem) {
+            draggedItem.ondragstart = function() { return false; };
+        }
+    }
+
+    weightsSource.addEventListener('mousedown', (e) => startDrag(e, weightsSource, true));
+    
+    lever.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('weight')) {
+            startDrag(e, e.target, false);
+        }
+    });
+
+    lever.addEventListener('dblclick', function(e) {
+        if (e.target.classList.contains('weight')) {
+            e.target.remove();
+            updateLeverBalance();
+        }
+    });
+    
+    const translations = {
+        ru: {
+            grade_level: "7 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Интерактивная лабораторная работа №9", lab_topic_title: "Тема: Определение условия равновесия рычага", lab_goal_title: "Цель:", lab_goal_text: "Проверить на опыте, при каком условии рычаг находится в равновесии.", instruction_title: "Инструкция по выполнению", instruction_step1: "Расположите грузы на левом и правом плечах рычага так, чтобы он пришел в равновесие.", instruction_step2: "Для КАЖДОГО груза (или группы) рассчитайте момент силы по формуле M = F · l.", instruction_step3: "Найдите СУММУ всех моментов на левом плече и СУММУ всех моментов на правом плече.", instruction_step4: "Запишите суммы в таблицу. Повторите опыт еще два раза.", instruction_step5: "Чтобы убрать груз, дважды кликните по нему. Когда таблица заполнена, нажмите \"Проверить\".", procedure_title: "Ход работы", weights_source_label: "Источник грузов:", reset_sim_btn: "Сбросить грузы", results_table_title: "Таблица результатов", th_exp_num: "№ опыта", th_left_arm: "Левое плечо", th_right_arm: "Правое плечо", th_moment_sum_left: "Сумма моментов M₁, Н·м", th_moment_sum_right: "Сумма моментов M₂, Н·м", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля ученика и таблицы.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", your_answer: "Ваш ответ:", correct_answer: "Правильный ответ:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:", review_equal: "Моменты должны быть равны для достижения равновесия."
+        },
+        kk: {
+            grade_level: "7 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ. №8 гимназиясы, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№9 Интерактивті зертханалық жұмыс", lab_topic_title: "Тақырыбы: Иінтіректің тепе-теңдік шарты", lab_goal_title: "Мақсаты:", lab_goal_text: "Тәжірибеде иінтіректің қандай шартта тепе-теңдікте болатынын тексеру.", instruction_title: "Орындау нұсқаулығы", instruction_step1: "Иінтіректі тепе-теңдікке келтіру үшін жүктерді оның сол және оң иіндеріне орналастырыңыз.", instruction_step2: "Бір нүктеде орналасқан ӘРБІР жүк немесе жүктер тобы үшін M = F · l формуласы бойынша күш моментін есептеңіз.", instruction_step3: "Сол жақ иіндегі барлық моменттердің ҚОСЫНДЫСЫН және оң жақ иіндегі барлық моменттердің ҚОСЫНДЫСЫН табыңыз.", instruction_step4: "Алынған қосындыларды кестеге жазыңыз. Тәжірибені басқа жүктер комбинациясымен тағы екі рет қайталаңыз.", instruction_step5: "Жүкті алып тастау үшін оны екі рет шертіңіз. Кесте толтырылған кезде, \"Тексеру\" түймесін басыңыз.", procedure_title: "Жұмыс барысы", weights_source_label: "Жүктер көзі:", reset_sim_btn: "Жүктерді тастау", results_table_title: "Нәтижелер кестесі", th_exp_num: "№ тәжірибе", th_left_arm: "Сол жақ иін", th_right_arm: "Оң жақ иін", th_moment_sum_left: "Сол жақ моменттер сомасы M₁, Н·м", th_moment_sum_right: "Оң жақ моменттер сомасы M₂, Н·м", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Әріп", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберілуде...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Оқушы туралы және кестедегі барлық өрістерді толтырыңыз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", your_answer: "Сіздің жауабыңыз:", correct_answer: "Дұрыс жауап:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:", review_equal: "Тепе-теңдікке жету үшін моменттер тең болуы керек."
+        },
+        en: {
+            grade_level: "7th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium №8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Interactive Laboratory Work №9", lab_topic_title: "Topic: Determining the Equilibrium Condition of a Lever", lab_goal_title: "Objective:", lab_goal_text: "To experimentally verify the condition under which a lever is in equilibrium.", instruction_title: "Instructions", instruction_step1: "Place weights on the left and right arms of the lever to bring it into equilibrium.", instruction_step2: "For EACH weight or group of weights, calculate the moment of force using the formula M = F · l.", instruction_step3: "Find the SUM of all moments on the left arm and the SUM of all moments on the right arm.", instruction_step4: "Record these sums in the table. Repeat the experiment two more times.", instruction_step5: "To remove a weight, double-click on it. When the table is complete, click \"Check\".", procedure_title: "Procedure", weights_source_label: "Weights Source:", reset_sim_btn: "Reset Weights", results_table_title: "Results Table", th_exp_num: "Exp. №", th_left_arm: "Left Arm", th_right_arm: "Right Arm", th_moment_sum_left: "Sum of moments M₁, N·m", th_moment_sum_right: "Sum of moments M₂, N·m", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Grade (number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report sent successfully!", send_error: "Sending error.", validation_message: "Please fill in all student and table fields.", final_result_title: "Your final result:", out_of_10: "out of 10", answers_review_title: "Answer Review:", your_answer: "Your answer:", correct_answer: "Correct answer:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:", review_equal: "Moments must be equal to achieve equilibrium."
+        }
+    };
+    let currentLang = 'ru';
+    
+    function setLanguage(lang) {
+        currentLang = lang; document.querySelector('html').setAttribute('lang', lang);
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            if (translations[lang] && translations[lang][key]) {
+                let text = translations[lang][key];
+                if (key === 'copyright') { text = text.replace('{year}', new Date().getFullYear()); }
+                element.innerHTML = text;
+            }
+        });
+        updateCheckButtonText();
+    }
+    
+    document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (btn.classList.contains('active')) return;
+            document.querySelectorAll('.lang-btn[data-lang]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active'); setLanguage(e.target.dataset.lang);
+        });
+    });
+    
+    function updateCheckButtonText() {
+        if (state.attemptsLeft > 0) {
+            const attemptKey = state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2';
+            const attemptText = translations[currentLang][attemptKey] || (state.attemptsLeft === 1 ? 'attempt' : 'attempts');
+            checkButton.innerHTML = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`;
+        }
+    }
+    
+    checkButton.addEventListener('click', function() {
+        if (state.attemptsLeft <= 0) return;
+        let allFieldsValid = true;
+        validationMessageDiv.style.display = 'none';
+        const inputsToCheck = document.querySelectorAll('.student-info input, #results-table-body input');
+        inputsToCheck.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('incorrect-input'); allFieldsValid = false;
+            } else { input.classList.remove('incorrect-input'); }
+        });
+        if (!allFieldsValid) {
+            validationMessageDiv.textContent = translations[currentLang].validation_message;
+            validationMessageDiv.style.display = 'block'; return;
+        }
+        state.attemptsLeft--;
+        let correctRows = 0;
+        const totalRows = 3;
+        for (let i = 1; i <= totalRows; i++) {
+            const m1_input = document.getElementById(`m1-total-${i}`);
+            const m2_input = document.getElementById(`m2-total-${i}`);
+            m1_input.classList.remove('correct-input', 'incorrect-input');
+            m2_input.classList.remove('correct-input', 'incorrect-input');
+            const m1_user = parseFloat(m1_input.value.replace(',', '.'));
+            const m2_user = parseFloat(m2_input.value.replace(',', '.'));
+            if (!isNaN(m1_user) && !isNaN(m2_user) && m1_user > 0 && Math.abs(m1_user - m2_user) < 0.005) {
+                m1_input.classList.add('correct-input');
+                m2_input.classList.add('correct-input');
+                correctRows++;
+            } else {
+                m1_input.classList.add('incorrect-input');
+                m2_input.classList.add('incorrect-input');
+            }
+        }
+        updateCheckButtonText();
+        if (state.attemptsLeft === 0) {
+            checkButton.style.display = 'none';
+            showAnswersButton.style.display = 'inline-block';
+            shareToTeacherButton.style.display = 'inline-block';
+            const score = (correctRows / totalRows * 10).toFixed(1);
+            state.finalScoreText = `${score} ${translations[currentLang].out_of_10}`;
+            finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></h3>`;
+            document.querySelectorAll('td input, .student-info input').forEach(input => { input.disabled = true; });
+        }
+    });
+    
+    showAnswersButton.addEventListener('click', function() {
+        let reviewHTML = `<h4>${translations[currentLang].answers_review_title}</h4>`;
+        for (let i = 1; i <= 3; i++) {
+            const m1_input = document.getElementById(`m1-total-${i}`);
+            const m2_input = document.getElementById(`m2-total-${i}`);
+            const isRowCorrect = m1_input.classList.contains('correct-input');
+            reviewHTML += `<p><b>${translations[currentLang].th_exp_num} ${i}:</b> `;
+            if (isRowCorrect) {
+                reviewHTML += `<span class="correct">${m1_input.value} Н·м ≈ ${m2_input.value} Н·м. Верно!</span></p>`;
+            } else {
+                reviewHTML += `<span class="incorrect">${m1_input.value} Н·м ≠ ${m2_input.value} Н·м. Ошибка.</span> ${translations[currentLang].review_equal}</p>`;
+            }
+        }
+        answersReviewDiv.innerHTML = reviewHTML;
+        answersReviewDiv.style.display = 'block';
+        showAnswersButton.style.display = 'none';
+    });
+    
+    shareToTeacherButton.addEventListener('click', async function() {
+        const studentLastName = document.getElementById('student_lastname').value;
+        const studentFirstName = document.getElementById('student_firstname').value;
+        const studentClassNumber = document.getElementById('student_class_number').value;
+        const studentClassLetter = document.getElementById('student_class_letter').value;
+        if (!studentLastName || !studentFirstName || !studentClassNumber || !studentClassLetter) {
+            alert(translations[currentLang].validation_message); return;
+        }
+        const button = this;
+        const originalText = button.innerHTML;
+        button.disabled = true; button.innerHTML = translations[currentLang].sending;
+        let reportText = `*Отчет по лабораторной работе №10*\n\n`;
+        reportText += `*${translations[currentLang].report_student}* ${studentLastName} ${studentFirstName}\n`;
+        reportText += `*${translations[currentLang].report_class}* ${studentClassNumber} "${studentClassLetter}"\n`;
+        reportText += `*${translations[currentLang].report_score}* ${state.finalScoreText}\n\n`;
+        reportText += `*Таблица результатов:*\n`;
+        reportText += `\`\`\`\n`;
+        reportText += `| № | M1 (сумма, ответ) | M2 (сумма, ответ) |\n`;
+        reportText += `|---|-------------------|-------------------|\n`;
+        for (let i = 1; i <= 3; i++) {
+            const m1 = document.getElementById(`m1-total-${i}`).value;
+            const m2 = document.getElementById(`m2-total-${i}`).value;
+            reportText += `| ${i} | ${m1.padEnd(17)} | ${m2.padEnd(17)} |\n`;
+        }
+        reportText += `\`\`\``;
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        try {
+            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: CHAT_ID, text: reportText, parse_mode: 'Markdown' }) });
+            const data = await response.json();
+            if (data.ok) { button.innerHTML = translations[currentLang].send_success; } else { throw new Error(data.description); }
+        } catch (error) {
+            console.error('Telegram API error:', error); button.innerHTML = translations[currentLang].send_error;
+            setTimeout(() => { button.disabled = false; button.innerHTML = originalText; }, 3000);
+        }
+    });
+
+    // --- НАЧАЛЬНАЯ НАСТРОЙКА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
+    resetSimBtn.addEventListener('click', resetSimulation);
+    backButton.addEventListener('click', () => window.history.back());
+    setupLever();
+    setLanguage('ru');
+    updateCheckButtonText();
+});
+</script>
+</body>
+</html>

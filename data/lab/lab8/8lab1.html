@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+        .simulation-container { display: flex; justify-content: space-around; align-items: center; gap: 20px; padding: 20px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; min-height: 400px; flex-wrap: wrap; }
+        .sim-controls { width: 220px; }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .control-group input[type="range"] { width: 100%; }
+        .control-group .temp-display { font-weight: bold; color: #3498db; text-align: center; }
+        .control-group button { width: 100%; padding: 10px; background-color: #27ae60; color: white; border: none; border-radius: 5px; font-size: 1em; cursor: pointer; }
+        .control-group button:disabled { background-color: #bdc3c7; }
+        .sim-visuals { display: flex; align-items: flex-end; gap: 30px; }
+        .beaker-setup { text-align: center; }
+        .beaker { width: 80px; height: 120px; background-color: rgba(174, 214, 241, 0.2); border: 2px solid #aed6f1; border-top: none; border-radius: 0 0 10px 10px; position: relative; overflow: hidden; }
+        .water { position: absolute; bottom: 0; width: 100%; height: 70%; transition: background-color 0.3s, height 0.5s; }
+        #cold-water { background-color: #85c1e9; }
+        #hot-water { background-color: #f1948a; }
+        #mixed-water { background-color: #d2b4de; }
+        .thermometer { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 10px; height: 110px; background-color: #f2f3f4; border: 1px solid #ccc; border-radius: 5px; }
+        .mercury { position: absolute; bottom: 5px; left: 2px; width: 6px; background-color: #e74c3c; border-radius: 2px; transition: height 0.5s; }
+        .thermometer::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background-color: #e74c3c; border-radius: 50%; }
+        .calorimeter { width: 120px; height: 160px; background-color: #d5d8dc; border: 2px solid #566573; border-radius: 5px; display: flex; justify-content: center; align-items: center; }
+        .calorimeter-inner { width: 100px; height: 140px; background-color: #f8f9f9; border: 1px solid #abb2b9; border-radius: 3px; position: relative; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td.param-name { background-color: #ecf0f1; font-weight: bold; text-align: left; }
+        td input { width: 100px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton { background-color: #3498db; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        /* Стили для обратной связи */
+        .result-feedback { font-weight: bold; display: block; text-align: center; margin-top: 4px; height: 1em; font-size: 0.9em; }
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; }
+        .incorrect-input { border-color: #e74c3c !important; }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    <div class="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level">8 класс</h2>
+            <p><span data-key="author_prefix">Автор:</span> <span data-key="author_details">Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан</span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright">© Все права защищены, {year}</div>
+
+    <div class="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button">Назад</button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info">
+        <div><label for="student_lastname" data-key="student_lastname">Фамилия</label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname">Имя</label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number">Класс (цифра)</label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter">Литер</label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title">Интерактивная лабораторная работа №1</h1>
+    <h2 data-key="lab_topic_title">Тема: Сравнение количеств теплоты при смешивании воды разной температуры</h2>
+    <p><strong data-key="lab_goal_title">Цель:</strong> <span data-key="lab_goal_text">определить количество теплоты, отданное горячей водой и полученное холодной при теплообмене, и объяснить полученный результат.</span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title">Инструкция по выполнению</h4>
+        <ol>
+            <li data-key="instruction_step1">В начале работы симулятор задает случайные объемы (массы) холодной и горячей воды.</li>
+            <li data-key="instruction_step2">С помощью ползунков установите начальную температуру для холодной и горячей воды.</li>
+            <li data-key="instruction_step3">Нажмите кнопку «Смешать воду». Симуляция покажет конечную температуру смеси в калориметре.</li>
+            <li data-key="instruction_step4">Занесите все начальные и конечные данные (массу, температуры) в таблицу.</li>
+            <li data-key="instruction_step5">Рассчитайте количество теплоты Q₁, полученное холодной водой по формуле: Q₁ = c·m₁·(t - t₁).</li>
+            <li data-key="instruction_step6">Рассчитайте количество теплоты Q₂, отданное горячей водой по формуле: Q₂ = c·m₂·(t₂ - t). Удельная теплоемкость воды (c) = 4200 Дж/(кг·°C).</li>
+            <li data-key="instruction_step7">Заполните ячейки для Q₁ и Q₂ в таблице, сравните полученные значения и сделайте вывод в соответствующем поле.</li>
+            <li data-key="instruction_step8">Нажмите «Проверить».</li>
+        </ol>
+    </div>
+
+    <h3 data-key="procedure_title">Ход работы</h3>
+    <div class="simulation-container">
+        <div class="sim-controls">
+            <div class="control-group">
+                <label for="cold-temp-slider" data-key="cold_temp_label">Температура холодной воды:</label>
+                <input type="range" id="cold-temp-slider" min="5" max="30" value="20" step="1">
+                <div class="temp-display"><span id="cold-temp-display">20</span> °C</div>
+            </div>
+            <div class="control-group">
+                <label for="hot-temp-slider" data-key="hot_temp_label">Температура горячей воды:</label>
+                <input type="range" id="hot-temp-slider" min="50" max="90" value="80" step="1">
+                <div class="temp-display"><span id="hot-temp-display">80</span> °C</div>
+            </div>
+            <div class="control-group">
+                <button id="mix-btn" data-key="mix_btn">Смешать воду</button>
+            </div>
+        </div>
+        <div class="sim-visuals">
+            <div class="beaker-setup">
+                <div class="beaker">
+                    <div class="water" id="cold-water"></div>
+                    <div class="thermometer"><div class="mercury" id="cold-mercury"></div></div>
+                </div>
+                <p data-key="cold_water_beaker">Холодная вода</p>
+            </div>
+            <div class="beaker-setup">
+                <div class="beaker">
+                    <div class="water" id="hot-water"></div>
+                    <div class="thermometer"><div class="mercury" id="hot-mercury"></div></div>
+                </div>
+                <p data-key="hot_water_beaker">Горячая вода</p>
+            </div>
+            <div class="beaker-setup">
+                <div class="calorimeter">
+                    <div class="calorimeter-inner">
+                        <div class="water" id="mixed-water" style="height: 0%;"></div>
+                        <div class="thermometer"><div class="mercury" id="mixed-mercury" style="height: 0%;"></div></div>
+                    </div>
+                </div>
+                <p data-key="calorimeter_label">Калориметр</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 data-key="results_table_title">Таблица результатов и вычислений</h3>
+    <table>
+        <thead>
+            <tr>
+                <th data-key="th_param">Параметр</th>
+                <th data-key="th_cold_water">Холодная вода</th>
+                <th data-key="th_hot_water">Горячая вода</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="param-name" data-key="param_mass">Масса, m (кг)</td>
+                <td><input type="text" id="m1_input" disabled></td>
+                <td><input type="text" id="m2_input" disabled></td>
+            </tr>
+            <tr>
+                <td class="param-name" data-key="param_t_initial">Начальная температура, t_нач (°C)</td>
+                <td><input type="text" id="t1_input" disabled></td>
+                <td><input type="text" id="t2_input" disabled></td>
+            </tr>
+            <tr>
+                <td class="param-name" data-key="param_t_final">Конечная температура, t_кон (°C)</td>
+                <td colspan="2"><input type="text" id="t_final_input" disabled style="width: 212px;"></td>
+            </tr>
+            <tr>
+                <td class="param-name" data-key="param_q">Количество теплоты, Q (Дж)</td>
+                <td>
+                    <input type="number" id="q1_input" placeholder="Q полученное">
+                    <span id="q1_feedback" class="result-feedback"></span>
+                </td>
+                <td>
+                    <input type="number" id="q2_input" placeholder="Q отданное">
+                    <span id="q2_feedback" class="result-feedback"></span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4 data-key="conclusion_title">Вывод</h4>
+    <p data-key="conclusion_prompt">Сравните рассчитанные значения Q₁ и Q₂. Какой вывод можно сделать на основе этого сравнения?</p>
+    <textarea id="conclusion_input" rows="4" style="width: 98%; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"></textarea>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button">Проверить</button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button">Показать ответы</button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button">Поделиться с учителем</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // -----------------------------------------------------------------
+        // ВАЖНЫЕ НАСТРОЙКИ ДЛЯ TELEGRAM
+        // -----------------------------------------------------------------
+        // 1. Замените 'ВАШ_BOT_TOKEN' на реальный токен вашего бота.
+        //    Его можно получить у @BotFather в Telegram.
+        const BOT_TOKEN = '7965293959:AAHPx2BJ1ibi05eBqKHSipgpXXtHDY9Ozt4'; 
+
+        // 2. Замените 'ВАШ_CHAT_ID' на ваш ID чата в Telegram.
+        //    Как получить:
+        //    a) Найдите в Telegram бота @userinfobot.
+        //    b) Отправьте ему любое сообщение.
+        //    c) Он пришлет вам ваш "Id". Скопируйте это число сюда.
+        //    d) Важно: Вы должны хотя бы раз запустить вашего бота (/start), 
+        //       чтобы он мог отправлять вам сообщения.
+        const CHAT_ID = '876026321'; 
+
+        // -----------------------------------------------------------------
+
+        const C_WATER = 4200; // Удельная теплоемкость воды
+        const state = {
+            m1: 0, m2: 0,
+            t1: 20, t2: 80, t_final: null,
+            correct_q1: null, correct_q2: null,
+            attemptsLeft: 2, // Количество попыток
+            finalScoreText: ''
+        };
+
+        const dom = {
+            coldSlider: document.getElementById('cold-temp-slider'),
+            hotSlider: document.getElementById('hot-temp-slider'),
+            coldDisplay: document.getElementById('cold-temp-display'),
+            hotDisplay: document.getElementById('hot-temp-display'),
+            coldWater: document.getElementById('cold-water'),
+            hotWater: document.getElementById('hot-water'),
+            coldMercury: document.getElementById('cold-mercury'),
+            hotMercury: document.getElementById('hot-mercury'),
+            mixedMercury: document.getElementById('mixed-mercury'),
+            mixedWater: document.getElementById('mixed-water'),
+            mixBtn: document.getElementById('mix-btn'),
+            table: {
+                m1: document.getElementById('m1_input'),
+                m2: document.getElementById('m2_input'),
+                t1: document.getElementById('t1_input'),
+                t2: document.getElementById('t2_input'),
+                t_final: document.getElementById('t_final_input'),
+                q1: document.getElementById('q1_input'), // Активировано
+                q2: document.getElementById('q2_input')  // Активировано
+            },
+            feedback: {
+                q1: document.getElementById('q1_feedback'),
+                q2: document.getElementById('q2_feedback')
+            },
+            conclusion: document.getElementById('conclusion_input'),
+            checkButton: document.getElementById('checkButton'),
+            showAnswersButton: document.getElementById('showAnswersButton'),
+            shareToTeacherButton: document.getElementById('shareToTeacherButton'),
+            finalResultDiv: document.getElementById('finalResult'),
+            answersReviewDiv: document.getElementById('answersReview'),
+            validationMessage: document.getElementById('validationMessage'),
+            backButton: document.getElementById('backButton'),
+        };
+
+        const translations = {
+            ru: {
+                grade_level: "8 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Интерактивная лабораторная работа №1", lab_topic_title: "Тема: Сравнение количеств теплоты при смешивании воды разной температуры", lab_goal_title: "Цель:", lab_goal_text: "определить количество теплоты, отданное горячей водой и полученное холодной при теплообмене, и объяснить полученный результат.", instruction_title: "Инструкция по выполнению", instruction_step1: "В начале работы симулятор задает случайные объемы (массы) холодной и горячей воды.", instruction_step2: "С помощью ползунков установите начальную температуру для холодной и горячей воды.", instruction_step3: "Нажмите кнопку «Смешать воду». Симуляция покажет конечную температуру смеси в калориметре.", instruction_step4: "Занесите все начальные и конечные данные (массу, температуры) в таблицу.", instruction_step5: "Рассчитайте количество теплоты Q₁, полученное холодной водой по формуле: Q₁ = c·m₁·(t - t₁).", instruction_step6: "Рассчитайте количество теплоты Q₂, отданное горячей водой по формуле: Q₂ = c·m₂·(t₂ - t). Удельная теплоемкость воды (c) = 4200 Дж/(кг·°C).", instruction_step7: "Заполните ячейки для Q₁ и Q₂ в таблице, сравните полученные значения и сделайте вывод в соответствующем поле.", instruction_step8: "Нажмите «Проверить».", procedure_title: "Ход работы", cold_temp_label: "Температура холодной воды:", hot_temp_label: "Температура горячей воды:", mix_btn: "Смешать воду", cold_water_beaker: "Холодная вода", hot_water_beaker: "Горячая вода", calorimeter_label: "Калориметр", results_table_title: "Таблица результатов и вычислений", th_param: "Параметр", th_cold_water: "Холодная вода", th_hot_water: "Горячая вода", param_mass: "Масса, m (кг)", param_t_initial: "Начальная температура, t_нач (°C)", param_t_final: "Конечная температура, t_кон (°C)", param_q: "Количество теплоты, Q (Дж)", conclusion_title: "Вывод", conclusion_prompt: "Сравните рассчитанные значения Q₁ и Q₂. Какой вывод можно сделать на основе этого сравнения?", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля ученика, таблицы и вывода.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", your_answer: "Ваш ответ:", correct_answer: "Правильный ответ:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:", review_q1: "Q₁ (полученное):", review_q2: "Q₂ (отданное):", review_conclusion: "Вывод:", feedback_correct: "Верно 👍", feedback_incorrect: "Неверно ❌", error_details: "Проверьте токен бота, ID чата и подключение к интернету."
+            },
+            kk: {
+                grade_level: "8 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика пәнінің мұғалімі, Шымкент қ. №8 гимназиясы, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№1 Интерактивті зертханалық жұмыс", lab_topic_title: "Тақырыбы: Әр түрлі температурадағы суды араластырған кездегі жылу мөлшерін салыстыру", lab_goal_title: "Мақсаты:", lab_goal_text: "жылу алмасу кезінде ыстық су берген және суық су алған жылу мөлшерін анықтау және алынған нәтижені түсіндіру.", instruction_title: "Орындау нұсқаулығы", instruction_step1: "Жұмыс басында симулятор суық және ыстық судың кездейсоқ көлемдерін (массаларын) белгілейді.", instruction_step2: "Жүгірткілердің көмегімен суық және ыстық судың бастапқы температурасын орнатыңыз.", instruction_step3: "«Суды араластыру» түймесін басыңыз. Симуляция калориметрдегі қоспаның соңғы температурасын көрсетеді.", instruction_step4: "Барлық бастапқы және соңғы деректерді (масса, температура) кестеге енгізіңіз.", instruction_step5: "Суық су алған Q₁ жылу мөлшерін келесі формула бойынша есептеңіз: Q₁ = c·m₁·(t - t₁).", instruction_step6: "Ыстық су берген Q₂ жылу мөлшерін келесі формула бойынша есептеңіз: Q₂ = c·m₂·(t₂ - t). Судың меншікті жылу сыйымдылығы (c) = 4200 Дж/(кг·°C).", instruction_step7: "Кестедегі Q₁ және Q₂ үшін ұяшықтарды толтырып, алынған мәндерді салыстырып, тиісті өрісте қорытынды жасаңыз.", instruction_step8: "«Тексеру» түймесін басыңыз.", procedure_title: "Жұмыс барысы", cold_temp_label: "Суық су температурасы:", hot_temp_label: "Ыстық су температурасы:", mix_btn: "Суды араластыру", cold_water_beaker: "Суық су", hot_water_beaker: "Ыстық су", calorimeter_label: "Калориметр", results_table_title: "Нәтижелер мен есептеулер кестесі", th_param: "Параметр", th_cold_water: "Суық су", th_hot_water: "Ыстық су", param_mass: "Масса, m (кг)", param_t_initial: "Бастапқы температура, t_баст (°C)", param_t_final: "Соңғы температура, t_соңғы (°C)", param_q: "Жылу мөлшері, Q (Дж)", conclusion_title: "Қорытынды", conclusion_prompt: "Есептелген Q₁ және Q₂ мәндерін салыстырыңыз. Осы салыстыру негізінде қандай қорытынды жасауға болады?", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Литер", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберу...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Оқушы, кесте және қорытынды туралы барлық өрістерді толтырыңыз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", your_answer: "Сіздің жауабыңыз:", correct_answer: "Дұрыс жауап:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:", review_q1: "Q₁ (алынған):", review_q2: "Q₂ (берілген):", review_conclusion: "Қорытынды:", feedback_correct: "Дұрыс 👍", feedback_incorrect: "Қате ❌", error_details: "Бот токенін, чат ID-ін және интернет қосылымын тексеріңіз."
+            },
+            en: {
+                grade_level: "8th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium No. 8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Interactive Lab Work #1", lab_topic_title: "Topic: Comparing Heat Quantities when Mixing Water of Different Temperatures", lab_goal_title: "Objective:", lab_goal_text: "to determine the amount of heat given off by hot water and received by cold water during heat exchange, and to explain the result.", instruction_title: "Instructions", instruction_step1: "At the beginning, the simulator sets random volumes (masses) for the cold and hot water.", instruction_step2: "Use the sliders to set the initial temperature for the cold and hot water.", instruction_step3: "Click the 'Mix Water' button. The simulation will show the final temperature of the mixture in the calorimeter.", instruction_step4: "Enter all initial and final data (mass, temperatures) into the table.", instruction_step5: "Calculate the amount of heat Q₁ received by the cold water using the formula: Q₁ = c·m₁·(t - t₁).", instruction_step6: "Calculate the amount of heat Q₂ given off by the hot water using the formula: Q₂ = c·m₂·(t₂ - t). Specific heat capacity of water (c) = 4200 J/(kg·°C).", instruction_step7: "Fill in the cells for Q₁ and Q₂, compare the calculated values, and write a conclusion in the corresponding field.", instruction_step8: "Click 'Check'.", procedure_title: "Procedure", cold_temp_label: "Cold Water Temperature:", hot_temp_label: "Hot Water Temperature:", mix_btn: "Mix Water", cold_water_beaker: "Cold Water", hot_water_beaker: "Hot Water", calorimeter_label: "Calorimeter", results_table_title: "Results and Calculations Table", th_param: "Parameter", th_cold_water: "Cold Water", th_hot_water: "Hot Water", param_mass: "Mass, m (kg)", param_t_initial: "Initial Temperature, t_initial (°C)", param_t_final: "Final Temperature, t_final (°C)", param_q: "Quantity of Heat, Q (J)", conclusion_title: "Conclusion", conclusion_prompt: "Compare the calculated values of Q₁ and Q₂. What conclusion can be drawn from this comparison?", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Class (Number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report sent successfully!", send_error: "Send error.", validation_message: "Please fill in all student, table, and conclusion fields.", final_result_title: "Your Final Result:", out_of_10: "out of 10", answers_review_title: "Answers Review:", your_answer: "Your answer:", correct_answer: "Correct answer:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:", review_q1: "Q₁ (received):", review_q2: "Q₂ (given):", review_conclusion: "Conclusion:", feedback_correct: "Correct 👍", feedback_incorrect: "Incorrect ❌", error_details: "Check your bot token, chat ID, and internet connection."
+            }
+        };
+        let currentLang = 'ru';
+
+        function updateThermometer(mercuryEl, temp) {
+            const minTemp = 0, maxTemp = 100;
+            const percent = (temp - minTemp) / (maxTemp - minTemp) * 100;
+            mercuryEl.style.height = `${Math.max(0, Math.min(100, percent))}%`;
+        }
+
+        function updateUI() {
+            state.t1 = parseInt(dom.coldSlider.value);
+            state.t2 = parseInt(dom.hotSlider.value);
+            dom.coldDisplay.textContent = state.t1;
+            dom.hotDisplay.textContent = state.t2;
+            updateThermometer(dom.coldMercury, state.t1);
+            updateThermometer(dom.hotMercury, state.t2);
+        }
+
+        function resetSimulation() {
+            dom.mixBtn.disabled = false;
+            dom.coldSlider.disabled = false;
+            dom.hotSlider.disabled = false;
+            
+            // Поля Q1 и Q2 теперь всегда активны, но очищаются
+            dom.table.q1.value = ''; dom.table.q1.className = '';
+            dom.table.q2.value = ''; dom.table.q2.className = '';
+            dom.conclusion.value = ''; dom.conclusion.className = '';
+            dom.feedback.q1.textContent = '';
+            dom.feedback.q2.textContent = '';
+
+            state.m1 = parseFloat(((Math.random() * 100 + 50) / 1000).toFixed(3)); // 50-150 грамм
+            state.m2 = parseFloat(((Math.random() * 100 + 50) / 1000).toFixed(3)); // 50-150 грамм
+
+            dom.table.m1.value = state.m1;
+            dom.table.m2.value = state.m2;
+
+            const maxMass = 0.150; // Максимальная возможная масса воды в колбе для расчета высоты
+            dom.coldWater.style.height = `${(state.m1 / maxMass) * 80}%`;
+            dom.hotWater.style.height = `${(state.m2 / maxMass) * 80}%`;
+
+            dom.table.t1.value = '';
+            dom.table.t2.value = '';
+            dom.table.t_final.value = '';
+
+            dom.mixedWater.style.height = '0%';
+            updateThermometer(dom.mixedMercury, 0);
+
+            updateUI();
+        }
+
+        function resetState() {
+            state.t1 = 20;
+            state.t2 = 80;
+            state.t_final = null;
+            state.correct_q1 = null;
+            state.correct_q2 = null;
+            state.attemptsLeft = 2; // Сброс попыток
+            state.finalScoreText = '';
+
+            dom.finalResultDiv.innerHTML = '';
+            dom.answersReviewDiv.style.display = 'none';
+            dom.checkButton.style.display = 'inline-block';
+            dom.showAnswersButton.style.display = 'none';
+            dom.shareToTeacherButton.style.display = 'none';
+            dom.validationMessage.style.display = 'none';
+
+            // Все поля, кроме m1, m2, t1, t2, t_final, должны быть доступны после сброса
+            document.querySelectorAll('input:not([disabled]), textarea:not([disabled]), button:not([disabled])').forEach(el => {
+                if(!el.classList.contains('lang-btn') && el.id !== 'backButton' && el.id !== 'checkButton' && el.id !== 'mix-btn') {
+                    el.disabled = false;
+                }
+            });
+             dom.table.q1.disabled = false; // Убедимся, что Q1 и Q2 всегда активны
+             dom.table.q2.disabled = false;
+
+            resetSimulation();
+            updateCheckButtonText(); // Обновить текст кнопки "Проверить"
+        }
+
+        dom.coldSlider.addEventListener('input', updateUI);
+        dom.hotSlider.addEventListener('input', updateUI);
+
+        dom.mixBtn.addEventListener('click', () => {
+            dom.mixBtn.disabled = true;
+            dom.coldSlider.disabled = true;
+            dom.hotSlider.disabled = true;
+            // Q1 и Q2 теперь не отключаются, они всегда активны
+
+            const m1 = parseFloat(state.m1);
+            const m2 = parseFloat(state.m2);
+
+            state.t_final = (m1 * state.t1 + m2 * state.t2) / (m1 + m2);
+            state.correct_q1 = C_WATER * m1 * (state.t_final - state.t1);
+            state.correct_q2 = C_WATER * m2 * (state.t2 - state.t_final);
+
+            dom.table.t1.value = state.t1;
+            dom.table.t2.value = state.t2;
+            dom.table.t_final.value = state.t_final.toFixed(1); // Округляем до 1 знака после запятой
+
+            const totalMass = m1 + m2;
+            const maxTotalMass = 0.150 + 0.150; // Максимальная общая масса для расчета высоты смеси
+            const finalWaterHeight = (totalMass / maxTotalMass) * 85; // Процент заполнения калориметра
+
+            dom.mixedWater.style.transition = 'height 0.5s 0.5s'; // Задержка для анимации
+            dom.mixedWater.style.height = `${finalWaterHeight}%`;
+            setTimeout(() => {
+                updateThermometer(dom.mixedMercury, state.t_final);
+            }, 1000); // Задержка, чтобы вода успела "налиться"
+        });
+
+        dom.checkButton.addEventListener('click', () => {
+            if (state.attemptsLeft <= 0) return; // Не проверять, если попыток не осталось
+
+            const inputsToCheck = [
+                document.getElementById('student_lastname'),
+                document.getElementById('student_firstname'),
+                document.getElementById('student_class_number'),
+                document.getElementById('student_class_letter'),
+                dom.table.q1,
+                dom.table.q2,
+                dom.conclusion
+            ];
+            let allValid = true;
+            inputsToCheck.forEach(input => {
+                if (input.value.trim() === '') {
+                    input.classList.add('incorrect-input');
+                    allValid = false;
+                } else {
+                    input.classList.remove('incorrect-input');
+                }
+            });
+
+            if (!allValid) {
+                dom.validationMessage.textContent = translations[currentLang].validation_message;
+                dom.validationMessage.style.display = 'block';
+                return;
+            }
+            dom.validationMessage.style.display = 'none';
+
+            state.attemptsLeft--;
+            let score = 0;
+
+            const user_q1 = parseFloat(dom.table.q1.value);
+            const user_q2 = parseFloat(dom.table.q2.value);
+
+            // Проверка Q1
+            if (state.correct_q1 && Math.abs(user_q1 - state.correct_q1) / Math.abs(state.correct_q1) < 0.05) { // Допуск 5%
+                score += 5;
+                dom.table.q1.className = 'correct-input';
+                dom.feedback.q1.textContent = translations[currentLang].feedback_correct;
+                dom.feedback.q1.className = 'result-feedback correct';
+            } else {
+                dom.table.q1.className = 'incorrect-input';
+                dom.feedback.q1.textContent = translations[currentLang].feedback_incorrect;
+                dom.feedback.q1.className = 'result-feedback incorrect';
+            }
+
+            // Проверка Q2
+            if (state.correct_q2 && Math.abs(user_q2 - state.correct_q2) / Math.abs(state.correct_q2) < 0.05) { // Допуск 5%
+                score += 5;
+                dom.table.q2.className = 'correct-input';
+                dom.feedback.q2.textContent = translations[currentLang].feedback_correct;
+                dom.feedback.q2.className = 'result-feedback correct';
+            } else {
+                dom.table.q2.className = 'incorrect-input';
+                dom.feedback.q2.textContent = translations[currentLang].feedback_incorrect;
+                dom.feedback.q2.className = 'result-feedback incorrect';
+            }
+
+            updateCheckButtonText(); // Обновить текст кнопки "Проверить"
+
+            if (state.attemptsLeft === 0 || score === 10) {
+                state.finalScoreText = `${score} ${translations[currentLang].out_of_10}`;
+                dom.finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${score >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></h3>`;
+                dom.checkButton.style.display = 'none';
+                dom.showAnswersButton.style.display = 'inline-block';
+                // Отключить все поля, кроме кнопки показа ответов
+                document.querySelectorAll('input, textarea, button').forEach(el => {
+                    if(!el.classList.contains('lang-btn') && el.id !== 'backButton' && el.id !== 'showAnswersButton') {
+                        el.disabled = true;
+                    }
+                });
+            }
+        });
+
+        function populateAnswersReview() {
+            const trans = translations[currentLang];
+            const student = {
+                lastname: document.getElementById('student_lastname').value || '...',
+                firstname: document.getElementById('student_firstname').value || '...',
+                classNum: document.getElementById('student_class_number').value || '...',
+                classLetter: document.getElementById('student_class_letter').value || '...',
+            };
+            const userQ1 = dom.table.q1.value || '...';
+            const userQ2 = dom.table.q2.value || '...';
+
+            let reviewHTML = `<h4>${trans.answers_review_title}</h4>
+            <p><b>${trans.report_student}</b> ${student.lastname} ${student.firstname}</p>
+            <p><b>${trans.report_class}</b> ${student.classNum}${student.classLetter}</p>
+            <p><b>${trans.report_score}</b> <span class="${parseFloat(state.finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></p><hr>
+            <p><b>${trans.review_q1}</b> ${trans.your_answer} ${userQ1} Дж. ${trans.correct_answer} ${Math.round(state.correct_q1)} Дж.</p>
+            <p><b>${trans.review_q2}</b> ${trans.your_answer} ${userQ2} Дж. ${trans.correct_answer} ${Math.round(state.correct_q2)} Дж.</p>
+            <p><b>${trans.review_conclusion}</b> ${dom.conclusion.value}</p>`;
+
+            dom.answersReviewDiv.innerHTML = reviewHTML;
+            dom.answersReviewDiv.style.display = 'block';
+        }
+
+        dom.showAnswersButton.addEventListener('click', function() {
+            populateAnswersReview();
+            this.style.display = 'none'; // Скрыть кнопку "Показать ответы" после нажатия
+            dom.shareToTeacherButton.style.display = 'inline-block'; // Показать кнопку "Поделиться"
+            dom.shareToTeacherButton.disabled = false; // Активировать кнопку "Поделиться"
+        });
+
+        async function generatePdfBlob() {
+            if (dom.answersReviewDiv.style.display === 'none') {
+                populateAnswersReview(); // Убедимся, что раздел ответов видим и содержит данные
+            }
+
+            const { jsPDF } = window.jspdf;
+            const mainContainer = document.querySelector('.container');
+            
+            // Скрыть кнопки и навигацию перед захватом
+            const buttonsToHide = document.querySelectorAll('.action-buttons, .top-nav');
+            buttonsToHide.forEach(el => el.style.visibility = 'hidden');
+
+            const canvas = await html2canvas(mainContainer, { scale: 1.5, useCORS: true, windowWidth: 900 });
+            
+            // Восстановить видимость кнопок и навигации
+            buttonsToHide.forEach(el => el.style.visibility = 'visible');
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgHeight = canvas.height * pdfWidth / canvas.width;
+            let heightLeft = imgHeight, position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+            return pdf.output('blob');
+        }
+
+
+        dom.shareToTeacherButton.addEventListener('click', async function() {
+            this.textContent = translations[currentLang].sending; // Изменить текст кнопки на "Отправка..."
+            this.disabled = true; // Отключить кнопку
+            
+            // Функция для очистки имени файла от недопустимых символов
+            function sanitizeFilename(name) {
+                if (!name) return "";
+                return name.replace(/[\/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
+            }
+
+            try {
+                const pdfBlob = await generatePdfBlob();
+                
+                if (!pdfBlob || pdfBlob.size === 0) {
+                    throw new Error("PDF generation failed or resulted in an empty file.");
+                }
+
+                const student = {
+                    lastname: document.getElementById('student_lastname').value || 'student',
+                    firstname: document.getElementById('student_firstname').value || 'report',
+                    class: (document.getElementById('student_class_number').value + document.getElementById('student_class_letter').value).trim() || 'class'
+                };
+
+                const safeClass = sanitizeFilename(student.class);
+                const safeLastname = sanitizeFilename(student.lastname);
+                const safeFirstname = sanitizeFilename(student.firstname);
+                
+                const fileName = `Lab_Report_1_${safeClass}_${safeLastname}_${safeFirstname}.pdf`;
+                
+                const caption = `Отчет по лабораторной работе №1\nУченик(ца): ${student.lastname} ${student.firstname}\nКласс: ${student.class}\nОценка: ${state.finalScoreText}`;
+
+                const formData = new FormData();
+                formData.append('chat_id', CHAT_ID);
+                formData.append('document', pdfBlob, fileName);
+                formData.append('caption', caption);
+
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.ok) {
+                    this.textContent = translations[currentLang].send_success; // Вернуть исходный текст кнопки
+                    this.style.backgroundColor = '#27ae60'; // Зеленый цвет при успехе
+                } else {
+                    console.error('Telegram API Error Response:', result);
+                    let errorMessage = result.description || 'Unknown error';
+                    if (response.status === 400) {
+                         errorMessage += ' (Bad Request). Это часто означает неверный CHAT_ID. Убедитесь, что ID корректен и вы начали диалог с ботом.';
+                    } else if (response.status === 401) {
+                         errorMessage += ' (Unauthorized). Проверьте правильность BOT_TOKEN.';
+                    }
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                console.error('Full Error:', error);
+                this.textContent = translations[currentLang].send_error; // Вернуть исходный текст кнопки
+                this.style.backgroundColor = '#e74c3c'; // Красный цвет при ошибке
+                this.disabled = false; // Активировать кнопку снова
+                alert(`${translations[currentLang].send_error}: ${error.message} ${translations[currentLang].error_details}`);
+            }
+        });
+
+        // Функция для установки языка
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelector('html').setAttribute('lang', lang);
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (translations[lang] && translations[lang][key]) {
+                    // Заменяем {year} на текущий год
+                    element.innerHTML = translations[lang][key].replace('{year}', new Date().getFullYear());
+                }
+            });
+            updateCheckButtonText(); // Обновить текст кнопки "Проверить" при смене языка
+        }
+
+        // Обработчики для кнопок переключения языка
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (btn.classList.contains('active')) return; // Если уже активна, ничего не делаем
+
+                // Удалить active класс у всех кнопок
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                // Добавить active класс текущей кнопке
+                e.target.classList.add('active');
+
+                // Сбросить симуляцию и применить новый язык
+                resetState(); 
+                setLanguage(e.target.dataset.lang);
+            });
+        });
+
+        // Функция для обновления текста на кнопке "Проверить" с учетом оставшихся попыток
+        function updateCheckButtonText() {
+            if (state.attemptsLeft > 0) {
+                const attemptText = translations[currentLang][state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2'];
+                dom.checkButton.textContent = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`;
+            }
+        }
+
+        // Кнопка "Назад"
+        dom.backButton.addEventListener('click', () => {
+            // Можно добавить логику сохранения состояния или подтверждения выхода
+            window.history.back(); // Возврат на предыдущую страницу
+        });
+
+        // Инициализация
+        resetState(); // Сброс состояния и запуск симуляции
+        setLanguage('ru'); // Установить язык по умолчанию (русский)
+    });
+</script>
+</body>
+</html>

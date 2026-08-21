@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер: Инжекция протона | Сила Лоренца</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f4f6f9; color: #333; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        canvas { display: block; }
+        
+        #ui-panel { 
+            position: absolute; top: 15px; left: 15px; width: 340px; 
+            max-height: calc(100vh - 30px); overflow-y: auto; box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.95); padding: 25px; 
+            border-radius: 12px; border: 2px solid #0055ff; 
+            box-shadow: 0 10px 30px rgba(0, 85, 255, 0.15); backdrop-filter: blur(10px);
+        }
+        
+        #ui-panel::-webkit-scrollbar { width: 6px; }
+        #ui-panel::-webkit-scrollbar-track { background: #f4f6f9; border-radius: 4px; }
+        #ui-panel::-webkit-scrollbar-thumb { background: #0055ff; border-radius: 4px; }
+
+        h2 { margin: 0 0 15px 0; font-size: 1.2rem; text-align: center; border-bottom: 2px solid #e0e5ec; padding-bottom: 10px; color: #112; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .counter-box { display: flex; justify-content: space-between; align-items: center; background: #eef2f7; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; border: 1px solid #d1d9e6;}
+        #attemptVal { color: #d35400; font-size: 1.4rem; }
+
+        .info-box { background: rgba(0, 85, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0055ff; }
+        .info-box span { font-weight: bold; font-size: 1.2rem; display: block; margin-top: 5px; }
+        .info-box div { font-size: 0.9rem; color: #555; margin-top: 8px; line-height: 1.4;}
+        
+        label { display: block; margin-top: 15px; font-size: 0.9rem; color: #555; font-weight: bold; }
+        input[type="range"] { width: 100%; margin-top: 8px; accent-color: #0055ff; cursor: pointer; }
+        
+        .dir-selector { display: flex; gap: 10px; margin-top: 8px; }
+        .dir-selector label { flex: 1; text-align: center; background: #eef2f7; padding: 12px; border-radius: 6px; border: 1px solid #d1d9e6; cursor: pointer; color: #555; font-weight: bold; transition: 0.2s; margin: 0;}
+        .dir-selector input { display: none; }
+        .dir-selector input:checked + label { background: #0055ff; border-color: #0044cc; color: #fff; box-shadow: 0 4px 10px rgba(0,85,255,0.3); }
+
+        .btn { width: 100%; padding: 14px; margin-top: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #scanBtn { background: #fff; color: #c0392b; border: 2px solid #c0392b; }
+        #scanBtn:hover { background: #fdf0ef; }
+        #launchBtn { background: linear-gradient(135deg, #0055ff, #00aaff); color: white; margin-top: 25px; box-shadow: 0 4px 15px rgba(0, 85, 255, 0.3);}
+        #launchBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 85, 255, 0.4); }
+        #launchBtn:disabled { background: #ccc; color: #888; cursor: not-allowed; box-shadow: none; transform: none;}
+        
+        #status { margin-top: 15px; padding: 12px; text-align: center; font-weight: bold; border-radius: 6px; font-size: 0.95rem; opacity: 0; transition: 0.3s; }
+        .fail { background: #fdeaea; border: 1px solid #e74c3c; color: #c0392b; opacity: 1 !important; }
+        .success { background: #eafaf1; border: 1px solid #2ecc71; color: #27ae60; opacity: 1 !important; }
+    </style>
+</head>
+<body>
+
+    <canvas id="sim"></canvas>
+
+    <div id="ui-panel">
+        <h2>Модуль Инжекции</h2>
+        
+        <div class="counter-box">
+            <span>Попытка:</span>
+            <span id="attemptVal">0</span>
+        </div>
+
+        <div class="info-box">
+            Вектор индукции (B): 
+            <span id="bText">ЗАГРУЗКА...</span>
+            <hr style="border: 0; border-top: 1px solid #d1d9e6; margin: 12px 0;">
+            <div>
+                Цель: <b style="color:#000;">R = 0.25 м</b><br>
+                Коридор: <b style="color:#000;">0.23 м — 0.27 м</b>
+            </div>
+        </div>
+        <button id="scanBtn" class="btn">НОВОЕ ПОЛЕ</button>
+
+        <label>Направление инжектора:</label>
+        <div class="dir-selector">
+            <input type="radio" id="dRight" name="dir" value="1" checked>
+            <label for="dRight">ВПРАВО ➔</label>
+            <input type="radio" id="dLeft" name="dir" value="-1">
+            <label for="dLeft">⬅ ВЛЕВО</label>
+        </div>
+
+        <label>Скорость v: <span id="vTxt" style="color:#0055ff; font-size: 1.1rem;">5.0</span> · 10⁶ м/с</label>
+        <input type="range" id="vSld" min="1" max="25" value="5" step="0.1">
+
+        <button id="launchBtn" class="btn">ЗАПУСК ПУЧКА</button>
+        <div id="status">ОЖИДАНИЕ</div>
+    </div>
+
+    <script>
+        const cvs = document.getElementById('sim');
+        const ctx = cvs.getContext('2d');
+        const scale = 850; 
+        
+        const M = 1.67e-27; const Q = 1.6e-19;
+        let B = 0; let attempts = 0;
+        const R_TARGET = 0.25;
+        const START_POS = { x: 0, y: -0.25 };
+
+        let state = 'IDLE'; 
+        let part = { x:0, y:0, vx:0, vy:0, active: false };
+        let trail = [];
+        let angleCount = 0;
+        let boomSize = 0;
+
+        function resize() {
+            cvs.width = window.innerWidth;
+            cvs.height = window.innerHeight;
+            render();
+        }
+        window.addEventListener('resize', resize);
+
+        function toScreen(x, y) {
+            return { x: cvs.width/2 + x*scale, y: cvs.height/2 - y*scale };
+        }
+
+        function render() {
+            ctx.clearRect(0,0, cvs.width, cvs.height);
+            
+            // Отрисовка Магнитного Поля
+            if (B !== 0) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = B < 0 ? "rgba(0, 60, 180, 0.3)" : "rgba(180, 30, 30, 0.3)";
+                ctx.fillStyle = ctx.strokeStyle;
+                for(let i=30; i<cvs.width; i+=60) {
+                    for(let j=30; j<cvs.height; j+=60) {
+                        if(B < 0) { // Крестики
+                            ctx.beginPath(); ctx.moveTo(i-6, j-6); ctx.lineTo(i+6, j+6);
+                            ctx.moveTo(i+6, j-6); ctx.lineTo(i-6, j+6); ctx.stroke();
+                        } else { // Точки
+                            ctx.beginPath(); ctx.arc(i, j, 4, 0, 7); ctx.fill();
+                        }
+                    }
+                }
+            }
+
+            // Координатная сетка
+            ctx.strokeStyle = "rgba(0,0,0,0.05)"; ctx.lineWidth = 1;
+            const c = toScreen(0,0);
+            ctx.beginPath(); ctx.moveTo(0, c.y); ctx.lineTo(cvs.width, c.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(c.x, 0); ctx.lineTo(c.x, cvs.height); ctx.stroke();
+
+            // Коридор безопасности
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 0.27*scale, 0, 7);
+            ctx.arc(c.x, c.y, 0.23*scale, 0, 7, true);
+            ctx.fillStyle = state==='CRASH' ? "rgba(231, 76, 60, 0.15)" : (state==='WIN' ? "rgba(46, 204, 113, 0.15)" : "rgba(52, 152, 219, 0.1)");
+            ctx.fill();
+            ctx.strokeStyle = state==='CRASH' ? "#e74c3c" : (state==='WIN' ? "#2ecc71" : "#3498db"); 
+            ctx.lineWidth = 2; ctx.stroke();
+
+            ctx.fillStyle = "#555"; ctx.font = "bold 14px 'Segoe UI', sans-serif";
+            ctx.fillText("R 0.27 м", c.x + 0.27*scale + 8, c.y - 5);
+            ctx.fillText("R 0.23 м", c.x + 0.23*scale + 8, c.y + 20);
+
+            // Траектория частицы
+            if(trail.length > 1) {
+                ctx.beginPath();
+                let s = toScreen(trail[0].x, trail[0].y); ctx.moveTo(s.x, s.y);
+                for(let p of trail) { let m = toScreen(p.x, p.y); ctx.lineTo(m.x, m.y); }
+                ctx.strokeStyle = "#e74c3c"; ctx.lineWidth = 3; ctx.stroke();
+            }
+
+            // Инжектор
+            const inj = toScreen(START_POS.x, START_POS.y);
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(inj.x - 12, inj.y - 12, 24, 24);
+
+            // Частица
+            if(part.active) {
+                let p = toScreen(part.x, part.y);
+                ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, 7); 
+                ctx.fillStyle = "#e74c3c"; ctx.fill();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            // Эффект взрыва
+            if(state === 'CRASH' && boomSize > 0) {
+                let p = toScreen(part.x, part.y);
+                ctx.beginPath(); ctx.arc(p.x, p.y, boomSize, 0, 7);
+                ctx.fillStyle = `rgba(230, 126, 34, ${1 - boomSize/80})`; ctx.fill();
+            }
+        }
+
+        function scan() {
+            let s = Math.random() > 0.5 ? 1 : -1;
+            B = (Math.random() * 0.7 + 0.1) * s;
+            let color = B < 0 ? "#2980b9" : "#c0392b";
+            let txt = B < 0 ? "✖ ОТ НАС" : "● К НАМ";
+            document.getElementById('bText').innerHTML = `<span style="color:${color}">${Math.abs(B).toFixed(2)} Тл <br>${txt}</span>`;
+            reset(true);
+        }
+
+        function reset(isNewField) {
+            state = 'IDLE'; angleCount = 0; boomSize = 0; part.active = false;
+            if(isNewField) trail = []; 
+            document.getElementById('status').style.opacity = 0;
+            document.getElementById('launchBtn').disabled = false;
+            render();
+        }
+
+        document.getElementById('scanBtn').onclick = scan;
+        document.getElementById('vSld').oninput = (e) => { 
+            document.getElementById('vTxt').innerText = parseFloat(e.target.value).toFixed(1); 
+            if(state !== 'RUN') reset(false); 
+        };
+
+        document.getElementById('launchBtn').onclick = () => {
+            reset(true); 
+            attempts++; document.getElementById('attemptVal').innerText = attempts;
+            document.getElementById('launchBtn').disabled = true;
+
+            const vel = parseFloat(document.getElementById('vSld').value) * 1e6;
+            const side = parseInt(document.querySelector('input[name="dir"]:checked').value);
+            
+            part = { x: START_POS.x, y: START_POS.y, vx: vel * side, vy: 0, active: true };
+            state = 'RUN';
+            trail.push({x: part.x, y: part.y});
+            requestAnimationFrame(loop);
+        };
+
+        const dt = 1e-10; // Уменьшенный шаг времени для идеальной гладкости
+        
+        function loop() {
+            if(state !== 'RUN') {
+                if(state === 'CRASH' && boomSize < 80) { boomSize += 4; render(); requestAnimationFrame(loop); }
+                return;
+            }
+
+            // 400 микро-вычислений за кадр = идеальный круг
+            for(let i=0; i<400; i++) {
+                let ax = (Q * part.vy * B) / M;
+                let ay = (-Q * part.vx * B) / M;
+                part.vx += ax * dt; part.vy += ay * dt;
+                part.x += part.vx * dt; part.y += part.vy * dt;
+                angleCount += (Math.sqrt(part.vx**2 + part.vy**2) * dt) / R_TARGET;
+                
+                if (i % 10 === 0) trail.push({x: part.x, y: part.y});
+            }
+            
+            let d = Math.sqrt(part.x**2 + part.y**2);
+
+            if(d < 0.23 || d > 0.27) {
+                state = 'CRASH'; boomSize = 1;
+                document.getElementById('status').innerText = "АВАРИЯ: СТОЛКНОВЕНИЕ"; 
+                document.getElementById('status').className = 'fail';
+                document.getElementById('launchBtn').disabled = false;
+            } else if(angleCount >= Math.PI * 2 * 0.96) {
+                state = 'WIN'; 
+                document.getElementById('status').innerText = "УСПЕХ: ОРБИТА СТАБИЛЬНА"; 
+                document.getElementById('status').className = 'success';
+                document.getElementById('launchBtn').disabled = false;
+            }
+            
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        // Запуск при старте
+        resize();
+        scan();
+    </script>
+</body>
+</html>

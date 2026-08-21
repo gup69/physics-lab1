@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Резонанс в цепи RLC | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1050px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; width: 100%; max-width: 1050px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* ГРАФИК РЕЗОНАНСА */
+    .graph-container { position: relative; width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px solid #475569; overflow: hidden; }
+    .grid-bg { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.2) 1px, transparent 1px), 
+            linear-gradient(90deg, rgba(56, 189, 248, 0.2) 1px, transparent 1px);
+        background-size: 50px 48px; 
+    }
+    svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; overflow: visible; }
+    .resonance-curve { fill: none; stroke: #38BDF8; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 6px #38BDF8); }
+    .active-point { fill: #10B981; stroke: #fff; stroke-width: 2; transition: 0.1s; }
+
+    /* Приборы */
+    .instruments { display: flex; gap: 15px; margin-top: 15px; }
+    .meter { background: rgba(0,0,0,0.8); border: 1px solid #38BDF8; padding: 10px; border-radius: 8px; font-family: monospace; text-align: center; flex: 1; }
+    .meter-val { color: #38BDF8; font-size: 1.3rem; font-weight: bold; }
+    .meter-label { color: #94A3B8; font-size: 0.75rem; }
+
+    /* Управление */
+    .tools { margin-top: 15px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
+    .tool-row { display: flex; align-items: center; justify-content: space-between; }
+    .tool-row label { font-size: 0.9rem; color: #CBD5E1; font-family: monospace; font-weight: bold; }
+    input[type=range] { width: 60%; accent-color: #38BDF8; cursor: pointer; }
+
+    /* Расчеты */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 0.9rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.85rem; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 160px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8; }
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } 
+
+    .formulas { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 0.85rem; color: #94A3B8; }
+    .formulas b { color: #38BDF8; font-size: 0.9rem; }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="Резонанс в цепи RLC" data-kk="RLC тізбегіндегі резонанс" data-en="RLC Circuit Resonance">Резонанс в цепи RLC</h1>
+      <p data-ru="Электромагнитные колебания и АЧХ контура" data-kk="Электромагниттік тербелістер және контурдың АЖХ" data-en="Electromagnetic oscillations and frequency response">Электромагнитные колебания и АЧХ контура</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ВИД ГРАФИКА И УПРАВЛЕНИЕ -->
+    <div class="panel">
+      <h2 data-ru="Амплитудно-частотная характеристика" data-kk="Амплитудалық-жиіліктік сипаттама" data-en="Frequency Response (AIF)">Амплитудно-частотная характеристика</h2>
+      
+      <div class="graph-container">
+        <div class="grid-bg"></div>
+        <svg viewBox="0 0 500 240" preserveAspectRatio="none">
+            <path class="resonance-curve" id="curve-path" d="" />
+            <circle class="active-point" id="marker-point" cx="0" cy="0" r="6" />
+        </svg>
+      </div>
+
+      <div class="instruments">
+          <div class="meter">
+              <div class="meter-label" data-ru="Частота генератора (ν)" data-kk="Генератор жиілігі (ν)" data-en="Generator Frequency (ν)">Частота (ν)</div>
+              <div class="meter-val"><span id="out-f">500</span> Гц</div>
+          </div>
+          <div class="meter">
+              <div class="meter-label" data-ru="Ток в контуре (I)" data-kk="Тізбектегі ток (I)" data-en="Circuit Current (I)">Ток (I)</div>
+              <div class="meter-val"><span id="out-i">0.00</span> А</div>
+          </div>
+      </div>
+
+      <div class="tools">
+          <div class="tool-row">
+              <label data-ru="Регулировка частоты (ν)" data-kk="Жиілікті реттеу (ν)" data-en="Frequency tuning (ν)">Частота (Гц)</label>
+              <input type="range" id="slide-f" min="100" max="1800" step="5" value="500">
+          </div>
+      </div>
+    </div>
+
+    <!-- РАСЧЕТНЫЙ МОДУЛЬ -->
+    <div class="panel">
+      <h2 data-ru="Параметры и расчеты" data-kk="Параметрлер және есептеулер" data-en="Parameters & Calculations">Параметры и расчеты</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+          <div class="data-row">
+            <span data-ru="Индуктивность (L):" data-kk="Индуктивтілік (L):" data-en="Inductance (L):">Индуктивность (L):</span>
+            <strong id="lbl-l">--</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Емкость (C):" data-kk="Сыйымдылық (C):" data-en="Capacitance (C):">Емкость (C):</span>
+            <strong id="lbl-c">--</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Активное сопротивление (R):" data-kk="Активті кедергі (R):" data-en="Resistance (R):">Сопротивление (R):</span>
+            <strong id="lbl-r">--</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Напряжение сети (U):" data-kk="Желі кернеуі (U):" data-en="Supply Voltage (U):">Напряжение (U):</span>
+            <strong>24 В</strong>
+          </div>
+      </div>
+
+      <div class="formulas">
+          <div data-ru="Формулы резонанса:" data-kk="Резонанс формулалары:" data-en="Resonance formulas:">Формулы резонанса:</div>
+          <div style="margin-top:5px"><b>ν₀ = 1 / (2 * π * √(L * C))</b></div>
+          <div style="margin-top:3px"><b>I_max = U / R</b></div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="in-f0" placeholder="Резонансная частота ν₀ (Гц)" data-ru="Резонансная частота ν₀ (Гц)" data-kk="Резонанстық жиілік ν₀ (Гц)" data-en="Resonant frequency ν₀ (Hz)" step="1">
+        <input type="number" id="in-imax" placeholder="Максимальный ток I_max (А)" data-ru="Максимальный ток I_max (А)" data-kk="Максималды ток I_max (А)" data-en="Max current I_max (A)" step="0.01">
+      </div>
+
+      <button class="btn-submit" onclick="analyzeRLC()" data-ru="ПРОВЕРИТЬ ЧЕРЕЗ ИИ" data-kk="ЖИ АРҚЫЛЫ ТЕКСЕРУ" data-en="VERIFY VIA AI">ПРОВЕРИТЬ ЧЕРЕЗ ИИ</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD RLC готов. Найдите максимум тока на графике и определите ν₀.</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD RLC дайын. Графиктен токтың максимумын тауып, ν₀ анықтаңыз.</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD RLC ready. Find current peak on graph and determine ν₀.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // СЛУЧАЙНАЯ ГЕНЕРАЦИЯ ПАРАМЕТРОВ ПРИ КАЖДОЙ ЗАГРУЗКЕ
+    const U = 24; // Вольт
+    
+    // L от 15 до 40 мГн (0.015 - 0.040 Гн)
+    const L_mH = Math.floor(Math.random() * 26) + 15;
+    const L = L_mH / 1000;
+
+    // C от 2.0 до 8.0 мкФ (2.0e-6 - 8.0e-6 Ф)
+    const C_uF = (Math.floor(Math.random() * 61) + 20) / 10; 
+    const C = C_uF * 1e-6;
+
+    // R от 10 до 25 Ом
+    const R = Math.floor(Math.random() * 16) + 10;
+
+    // Эталонный расчет
+    const true_f0 = 1 / (2 * Math.PI * Math.sqrt(L * C));
+    const true_imax = U / R;
+
+    // Вывод случайных констант на панель
+    document.getElementById('lbl-l').innerText = `${L_mH} мГн`;
+    document.getElementById('lbl-c').innerText = `${C_uF.toFixed(1)} мкФ`;
+    document.getElementById('lbl-r').innerText = `${R} Ом`;
+
+    // Построение графика АЧХ в SVG (диапазон частот от 100 до 1800 Гц)
+    const f_min = 100;
+    const f_max = 1800;
+    const svgWidth = 500;
+    const svgHeight = 240;
+
+    function getI(f) {
+        let omega = 2 * Math.PI * f;
+        let XL = omega * L;
+        let XC = 1 / (omega * C);
+        let Z = Math.sqrt(R * R + Math.pow(XL - XC, 2));
+        return U / Z;
+    }
+
+    let points = [];
+    for (let x = 0; x <= svgWidth; x += 5) {
+        let f = f_min + (x / svgWidth) * (f_max - f_min);
+        let I = getI(f);
+        let y = svgHeight - (I / (true_imax * 1.1)) * (svgHeight - 30);
+        points.push(`${x},${y}`);
+    }
+    document.getElementById('curve-path').setAttribute('d', `M ${points.join(' L ')}`);
+
+    // Управление слайдером частоты
+    const slideF = document.getElementById('slide-f');
+    const outF = document.getElementById('out-f');
+    const outI = document.getElementById('out-i');
+    const marker = document.getElementById('marker-point');
+
+    slideF.addEventListener('input', updateState);
+
+    function updateState() {
+        let f = parseFloat(slideF.value);
+        outF.innerText = Math.round(f);
+        let I = getI(f);
+        outI.innerText = I.toFixed(2);
+
+        let x = ((f - f_min) / (f_max - f_min)) * svgWidth;
+        let y = svgHeight - (I / (true_imax * 1.1)) * (svgHeight - 30);
+        marker.setAttribute('cx', x);
+        marker.setAttribute('cy', y);
+    }
+
+    updateState();
+
+    // ИИ АНАЛИЗАТОР
+    function analyzeRLC() {
+        const studentF0 = parseFloat(document.getElementById('in-f0').value);
+        const studentImax = parseFloat(document.getElementById('in-imax').value);
+        
+        if (isNaN(studentF0) || isNaN(studentImax)) {
+            printAI("ОШИБКА: Заполните оба поля расчетов.", "ҚАТЕ: Есептеу өрістерін толтырыңыз.", "ERROR: Fill in calculation fields.", "error");
+            return;
+        }
+
+        let errRU = [], errKK = [], errEN = [];
+
+        if (Math.abs(studentF0 - true_f0) > true_f0 * 0.03) {
+            errRU.push("Резонансная частота ν₀"); errKK.push("Резонанстық жиілік ν₀"); errEN.push("Resonant frequency ν₀");
+        }
+        if (Math.abs(studentImax - true_imax) > true_imax * 0.03) {
+            errRU.push("Максимальный ток I_max"); errKK.push("Максималды ток I_max"); errEN.push("Max current I_max");
+        }
+
+        if (errRU.length === 0) {
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Частота контура: ${studentF0.toFixed(1)} Гц | Ток резонанса: ${studentImax.toFixed(2)} А.<br>Резонансные явления изучены верно!`,
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Контур жиілігі: ${studentF0.toFixed(1)} Гц | Резонанс тоғы: ${studentImax.toFixed(2)} А.<br>Резонанс құбылыстары дұрыс зерттелді!`,
+                    `SYNC SUCCESSFUL.<br>Circuit frequency: ${studentF0.toFixed(1)} Hz | Resonance current: ${studentImax.toFixed(2)} A.<br>Resonance phenomena verified successfully!`,
+                    "success");
+        } else {
+            printAI(`ОШИБКА В РАСЧЕТАХ.<br>Ошибки найдены в: <b>${errRU.join(", ")}</b>.<br>Проверьте формулу Томсона для ν₀ и закон Ома для амплитуды тока при резонансе.`,
+                    `ЕСЕПТЕУДЕГІ ҚАТЕ.<br>Қателер табылды: <b>${errKK.join(", ")}</b>.<br>ν₀ үшін Томсон формуласын және резонанс кезіндегі Ом заңын тексеріңіз.`,
+                    `CALCULATION ERROR.<br>Errors found in: <b>${errEN.join(", ")}</b>.<br>Check Thomson's formula for ν₀ and Ohm's law at resonance.`,
+                    "error");
+        }
+    }
+
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        document.getElementById('ai-output').prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const lang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            span.style.display = span.getAttribute('data-lang-text') === lang ? 'inline' : 'none';
+        });
+    }
+
+    applyLogLanguage();
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        applyLogLanguage();
+      });
+    });
+  </script>
+</body>
+</html>

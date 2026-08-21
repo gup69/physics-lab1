@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v12.2 (Постоянный Ток)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                        </div>
+                    <p id="mission-question">...</p>
+                </div>
+
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                    </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Закон Ома (I)", scenario: "На резисторе с сопротивлением R создано напряжение U. Рассчитайте силу тока через резистор.", data: { U: "Напряжение (В)", R: "Сопротивление (Ом)" }, question: "Задача: Введите силу тока (I) в Амперах." },
+                    { title: "Миссия 2: Закон Ома (U)", scenario: "Через резистор R течет ток I. Рассчитайте напряжение на резисторе.", data: { I: "Сила тока (А)", R: "Сопротивление (Ом)" }, question: "Задача: Введите напряжение (U) в Вольтах." },
+                    { title: "Миссия 3: Сопротивление проводника", scenario: "Проводник длиной L и площадью сечения S сделан из материала с удельным сопротивлением &rho;. Рассчитайте его сопротивление.", data: { rho: "Уд. сопротивление (&rho;) (&times; 10<sup>-8</sup> Ом·м)", L: "Длина (м)", S: "Площадь сечения (мм²)" }, question: "Задача: Введите сопротивление (R) в Омах." },
+                    { title: "Миссия 4: Последовательное соединение", scenario: "Два резистора R1 и R2 соединены последовательно. Рассчитайте общее сопротивление цепи.", data: { R1: "Сопротивление R1 (Ом)", R2: "Сопротивление R2 (Ом)" }, question: "Задача: Введите общее сопротивление (R<sub>экв</sub>) в Омах." },
+                    { title: "Миссия 5: Параллельное соединение", scenario: "Два резистора R1 и R2 соединены параллельно. Рассчитайте общее сопротивление цепи.", data: { R1: "Сопротивление R1 (Ом)", R2: "Сопротивление R2 (Ом)" }, question: "Задача: Введите общее сопротивление (R<sub>экв</sub>) в Омах." },
+                    { title: "Миссия 6: Мощность тока (P=UI)", scenario: "На элементе цепи напряжение U и через него течет ток I. Рассчитайте мощность, выделяющуюся на элементе.", data: { U: "Напряжение (В)", I: "Сила тока (А)" }, question: "Задача: Введите мощность (P) в Ваттах." },
+                    { title: "Миссия 7: Мощность тока (P=I²R)", scenario: "Через резистор R течет ток I. Рассчитайте мощность, выделяющуюся на резисторе.", data: { I: "Сила тока (А)", R: "Сопротивление (Ом)" }, question: "Задача: Введите мощность (P) в Ваттах." },
+                    { title: "Миссия 8: Закон Джоуля-Ленца", scenario: "Через проводник с сопротивлением R протекает ток I в течение времени t. Рассчитайте количество теплоты, выделившееся в проводнике.", data: { I: "Сила тока (А)", R: "Сопротивление (Ом)", t: "Время (с)" }, question: "Задача: Введите количество теплоты (Q) в кДж (килоджоулях)." },
+                    { title: "Миссия 9: Работа тока", scenario: "На участке цепи с напряжением U протекает ток I в течение времени t. Рассчитайте работу, совершенную током.", data: { U: "Напряжение (В)", I: "Сила тока (А)", t: "Время (с)" }, question: "Задача: Введите работу тока (A) в кДж (килоджоулях)." },
+                    { title: "Миссия 10: Закон Ома для полной цепи", scenario: "Источник с ЭДС &Epsilon; и внутренним сопротивлением r подключен к внешнему сопротивлению R. Рассчитайте силу тока в цепи.", data: { E: "ЭДС (&Epsilon;) (В)", R_ext: "Внешнее сопротивление (R) (Ом)", r_int: "Внутреннее сопротивление (r) (Ом)" }, question: "Задача: Введите силу тока (I) в Амперах." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Ом заңы (I)", scenario: "R кедергісі бар резисторға U кернеуі түсірілген. Резистор арқылы өтетін ток күшін есептеңіз.", data: { U: "Кернеу (В)", R: "Кедергі (Ом)" }, question: "Тапсырма: Ток күшін (I) Ампермен енгізіңіз." },
+                    { title: "Миссия 2: Ом заңы (U)", scenario: "R резисторы арқылы I ток өтеді. Резистордағы кернеуді есептеңіз.", data: { I: "Ток күші (А)", R: "Кедергі (Ом)" }, question: "Тапсырма: Кернеуді (U) Вольтпен енгізіңіз." },
+                    { title: "Миссия 3: Өткізгіш кедергісі", scenario: "Ұзындығы L және көлденең қимасының ауданы S өткізгіш меншікті кедергісі &rho; материалдан жасалған. Оның кедергісін есептеңіз.", data: { rho: "Менш. кедергі (&rho;) (&times; 10<sup>-8</sup> Ом·м)", L: "Ұзындық (м)", S: "Қима ауданы (мм²)" }, question: "Тапсырма: Кедергіні (R) Оммен енгізіңіз." },
+                    { title: "Миссия 4: Тізбектей жалғау", scenario: "Екі R1 және R2 резисторы тізбектей жалғанған. Тізбектің жалпы кедергісін есептеңіз.", data: { R1: "Кедергі R1 (Ом)", R2: "Кедергі R2 (Ом)" }, question: "Тапсырма: Жалпы кедергіні (R<sub>экв</sub>) Оммен енгізіңіз." },
+                    { title: "Миссия 5: Параллель жалғау", scenario: "Екі R1 және R2 резисторы параллель жалғанған. Тізбектің жалпы кедергісін есептеңіз.", data: { R1: "Кедергі R1 (Ом)", R2: "Кедергі R2 (Ом)" }, question: "Тапсырма: Жалпы кедергіні (R<sub>экв</sub>) Оммен енгізіңіз." },
+                    { title: "Миссия 6: Ток қуаты (P=UI)", scenario: "Тізбек элементінде U кернеуі және ол арқылы I ток өтеді. Элементте бөлінетін қуатты есептеңіз.", data: { U: "Кернеу (В)", I: "Ток күші (А)" }, question: "Тапсырма: Қуатты (P) Ваттпен енгізіңіз." },
+                    { title: "Миссия 7: Ток қуаты (P=I²R)", scenario: "R резисторы арқылы I ток өтеді. Резисторда бөлінетін қуатты есептеңіз.", data: { I: "Ток күші (А)", R: "Кедергі (Ом)" }, question: "Тапсырма: Қуатты (P) Ваттпен енгізіңіз." },
+                    { title: "Миссия 8: Джоуль-Ленц заңы", scenario: "Кедергісі R өткізгіш арқылы t уақыт ішінде I ток өтеді. Өткізгіште бөлінген жылу мөлшерін есептеңіз.", data: { I: "Ток күші (А)", R: "Кедергі (Ом)", t: "Уақыт (с)" }, question: "Тапсырма: Жылу мөлшерін (Q) кДж (килоджоуль) енгізіңіз." },
+                    { title: "Миссия 9: Ток жұмысы", scenario: "Кернеуі U тізбек бөлігінде t уақыт ішінде I ток өтеді. Токтың атқарған жұмысын есептеңіз.", data: { U: "Кернеу (В)", I: "Ток күші (А)", t: "Уақыт (с)" }, question: "Тапсырма: Ток жұмысын (A) кДж (килоджоуль) енгізіңіз." },
+                    { title: "Миссия 10: Толық тізбек үшін Ом заңы", scenario: "ЭҚК-і &Epsilon; және ішкі кедергісі r ток көзі сыртқы R кедергіге жалғанған. Тізбектегі ток күшін есептеңіз.", data: { E: "ЭҚК (&Epsilon;) (В)", R_ext: "Сыртқы кедергі (R) (Ом)", r_int: "Ішкі кедергі (r) (Ом)" }, question: "Тапсырма: Ток күшін (I) Ампермен енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                 },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Ohm's Law (I)", scenario: "Voltage U is applied across a resistor R. Calculate the current through the resistor.", data: { U: "Voltage (V)", R: "Resistance (Ω)" }, question: "Task: Enter the current (I) in Amperes." },
+                    { title: "Mission 2: Ohm's Law (U)", scenario: "Current I flows through resistor R. Calculate the voltage across the resistor.", data: { I: "Current (A)", R: "Resistance (Ω)" }, question: "Task: Enter the voltage (U) in Volts." },
+                    { title: "Mission 3: Conductor Resistance", scenario: "A conductor of length L and cross-sectional area S is made of material with resistivity &rho;. Calculate its resistance.", data: { rho: "Resistivity (&rho;) (&times; 10<sup>-8</sup> Ω·m)", L: "Length (m)", S: "Area (mm²)" }, question: "Task: Enter the resistance (R) in Ohms." },
+                    { title: "Mission 4: Series Connection", scenario: "Two resistors R1 and R2 are connected in series. Calculate the total resistance.", data: { R1: "Resistance R1 (Ω)", R2: "Resistance R2 (Ω)" }, question: "Task: Enter the equivalent resistance (R<sub>eq</sub>) in Ohms." },
+                    { title: "Mission 5: Parallel Connection", scenario: "Two resistors R1 and R2 are connected in parallel. Calculate the total resistance.", data: { R1: "Resistance R1 (Ω)", R2: "Resistance R2 (Ω)" }, question: "Task: Enter the equivalent resistance (R<sub>eq</sub>) in Ohms." },
+                    { title: "Mission 6: Electric Power (P=UI)", scenario: "A circuit element has voltage U across it and current I through it. Calculate the power dissipated.", data: { U: "Voltage (V)", I: "Current (A)" }, question: "Task: Enter the power (P) in Watts." },
+                    { title: "Mission 7: Electric Power (P=I²R)", scenario: "Current I flows through resistor R. Calculate the power dissipated in the resistor.", data: { I: "Current (A)", R: "Resistance (Ω)" }, question: "Task: Enter the power (P) in Watts." },
+                    { title: "Mission 8: Joule's Law", scenario: "Current I flows through a conductor with resistance R for time t. Calculate the heat generated.", data: { I: "Current (A)", R: "Resistance (Ω)", t: "Time (s)" }, question: "Task: Enter the heat (Q) in kJ (kilojoules)." },
+                    { title: "Mission 9: Work of Current", scenario: "Current I flows through a circuit section with voltage U for time t. Calculate the work done by the current.", data: { U: "Voltage (V)", I: "Current (A)", t: "Time (s)" }, question: "Task: Enter the work (A) in kJ (kilojoules)." },
+                    { title: "Mission 10: Ohm's Law for Complete Circuit", scenario: "A source with EMF &Epsilon; and internal resistance r is connected to an external resistance R. Calculate the current in the circuit.", data: { E: "EMF (&Epsilon;) (V)", R_ext: "External Resistance (R) (Ω)", r_int: "Internal Resistance (r) (Ω)" }, question: "Task: Enter the current (I) in Amperes." }
+                ]
+            }
+        };
+
+
+        const TOLERANCE = 0.02;
+        const TOTAL_MISSIONS = 10; // Back to 10 missions
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = [];
+
+        const missionTitle = document.getElementById('mission-title');
+        const missionScenario = document.getElementById('mission-scenario');
+        const missionData = document.getElementById('mission-data');
+        const missionQuestion = document.getElementById('mission-question');
+        const userAnswerInput = document.getElementById('user-answer');
+        const submitButton = document.getElementById('submit-button');
+        const newDataButton = document.getElementById('new-data-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const navButtons = document.querySelectorAll('.mission-nav button');
+        const progressList = document.getElementById('progress-list');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const progressTitle = document.getElementById('progress-title');
+        const inputLabel = document.getElementById('input-label');
+
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                 num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+
+        function toPrecision(num, sig) {
+            return parseFloat(num.toPrecision(sig));
+        }
+
+        function formatScientific(num, decimals = 1) {
+            if (num === 0) return '0';
+            const exponent = Math.floor(Math.log10(Math.abs(num)));
+            const mantissa = num / Math.pow(10, exponent);
+            return `${mantissa.toFixed(decimals)} &times; 10<sup>${exponent}</sup>`;
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+         function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+            const ui = translations[currentLang].ui;
+            submitButton.textContent = ui.submit;
+            newDataButton.textContent = ui.newData;
+            inputLabel.textContent = ui.inputLabel;
+            userAnswerInput.placeholder = ui.placeholder;
+            updateProgressWindow();
+            missionLoaders[currentMissionId]();
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            const t = translations[currentLang].progress;
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress[i]) continue;
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                <span class="correct">${progress.correct} ✔</span> /
+                                <span class="incorrect">${progress.incorrect} ❌</span>
+                             </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        function loadMission1() {
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const U = getRandom(1, 12, 1); // В
+            const R = getRandom(10, 1000, 0); // Ом
+            currentCorrectAnswer = U / R;
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.U}: ${U} В</p><p>${t.data.R}: ${R} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() {
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const I = getRandom(0.1, 2, 2); // А
+            const R = getRandom(10, 1000, 0); // Ом
+            currentCorrectAnswer = I * R;
+
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.I}: ${I} А</p><p>${t.data.R}: ${R} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() {
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const rho_val = getRandom(1.5e-8, 10e-8); // Ом·м
+            const rho_str = formatScientific(rho_val, 2);
+            const L = getRandom(1, 100, 0); // м
+            const S_mm2 = getRandom(0.1, 5, 2); // мм²
+            const S_m2 = S_mm2 / 1e6; // м²
+            currentCorrectAnswer = (rho_val * L) / S_m2;
+
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.rho}: ${rho_str} Ом·м</p><p>${t.data.L}: ${L} м</p><p>${t.data.S}: ${S_mm2} мм²</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() {
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const R1 = getRandom(10, 100, 0);
+            const R2 = getRandom(10, 100, 0);
+            currentCorrectAnswer = R1 + R2;
+
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.R1}: ${R1} Ом</p><p>${t.data.R2}: ${R2} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() {
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const R1 = getRandom(10, 100, 0);
+            const R2 = getRandom(10, 100, 0);
+            currentCorrectAnswer = (R1 * R2) / (R1 + R2);
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.R1}: ${R1} Ом</p><p>${t.data.R2}: ${R2} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() {
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const U = getRandom(1, 220, 0);
+            const I = getRandom(0.1, 10, 1);
+            currentCorrectAnswer = U * I;
+
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.U}: ${U} В</p><p>${t.data.I}: ${I} А</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() {
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const I = getRandom(0.5, 5, 1);
+            const R = getRandom(10, 200, 0);
+            currentCorrectAnswer = I * I * R;
+
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.I}: ${I} А</p><p>${t.data.R}: ${R} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() {
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const I = getRandom(1, 10, 1);
+            const R = getRandom(5, 50, 0);
+            const time_s = getRandom(60, 600, 0); // секунды
+            currentCorrectAnswer = (I * I * R * time_s) / 1000.0; // Ответ в кДж.
+
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.I}: ${I} А</p><p>${t.data.R}: ${R} Ом</p><p>${t.data.t}: ${time_s} с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() {
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const U = getRandom(12, 220, 0);
+            const I = getRandom(0.5, 10, 1);
+            const time_s = getRandom(60, 1800, 0); // секунды
+            currentCorrectAnswer = (U * I * time_s) / 1000.0; // Ответ в кДж.
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.U}: ${U} В</p><p>${t.data.I}: ${I} А</p><p>${t.data.t}: ${time_s} с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        // (ИЗМЕНЕНИЕ) Функция loadMission10 теперь для полной цепи
+        function loadMission10() {
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const E = getRandom(1.5, 12, 1); // В
+            const R_ext = getRandom(1, 10, 1); // Ом
+            const r_int = getRandom(0.1, 1, 2); // Ом
+            currentCorrectAnswer = E / (R_ext + r_int);
+
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.E}: ${E} В</p><p>${t.data.R_ext}: ${R_ext} Ом</p><p>${t.data.r_int}: ${r_int} Ом</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+         function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                // Правильный ответ
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                // Неправильный ответ
+                missionProgress[currentMissionId].incorrect++;
+                feedbackMessage.textContent = `${t.incorrect} (${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+        function initializeGame() {
+            // (ИЗМЕНЕНИЕ) Массив теперь содержит 10 загрузчиков
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            // (ИЗМЕНЕНИЕ) Цикл до TOTAL_MISSIONS (10)
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true // Все миссии разблокированы
+                };
+            }
+
+             navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Mission loader not found for ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                missionLoaders[currentMissionId]();
+            });
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            setLanguage(currentLang);
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

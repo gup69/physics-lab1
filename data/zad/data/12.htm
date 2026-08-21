@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v15.1 (Механические колебания)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; /* ~5 кнопок в ряд */
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .game-area {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; }
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1;
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc;
+            min-height: 100%;
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                    </div>
+                    <p id="mission-question">...</p>
+                </div>
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    <p id="feedback-message"></p>
+                </div>
+            </div>
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- (НОВЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (МЕХАНИЧЕСКИЕ КОЛЕБАНИЯ) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Частота и Период", scenario: "Колебательная система совершает ν (ню) колебаний в секунду. Рассчитайте период колебаний.", data: { nu: "Частота (ν) (Гц)" }, question: "Задача: Введите период (T) в миллисекундах (мс)." },
+                    { title: "Миссия 2: Циклическая частота", scenario: "Период колебаний системы равен T. Рассчитайте циклическую (угловую) частоту колебаний.", data: { T: "Период (T) (с)" }, question: "Задача: Введите циклическую частоту (ω) в рад/с." },
+                    { title: "Миссия 3: Пружинный маятник (Период)", scenario: "Груз массой m подвешен на пружине жесткостью k. Рассчитайте период свободных колебаний.", data: { m: "Масса (г)", k: "Жесткость (Н/м)" }, question: "Задача: Введите период (T) в секундах (с)." },
+                    { title: "Миссия 4: Пружинный маятник (Жесткость)", scenario: "Пружинный маятник с грузом массой m совершает колебания с периодом T. Рассчитайте жесткость пружины.", data: { m: "Масса (г)", T: "Период (с)" }, question: "Задача: Введите жесткость (k) в Н/м." },
+                    { title: "Миссия 5: Математический маятник (Период)", scenario: "Рассчитайте период малых колебаний математического маятника с длиной нити L.", data: { L: "Длина нити (см)" }, question: "Задача: Введите период (T) в секундах (с). (g ≈ 9.8 м/с²)" },
+                    { title: "Миссия 6: Математический маятник (Длина)", scenario: "Математический маятник совершает колебания с периодом T. Рассчитайте длину его подвеса.", data: { T: "Период (с)" }, question: "Задача: Введите длину (L) в сантиметрах (см). (g ≈ 9.8 м/с²)" },
+                    { title: "Миссия 7: Макс. Скорость (Гарм. колеб.)", scenario: "Тело совершает гармонические колебания с амплитудой A и циклической частотой ω. Рассчитайте максимальную скорость тела.", data: { A: "Амплитуда (см)", omega: "Цикл. частота (рад/с)" }, question: "Задача: Введите макс. скорость (vₘₐₓ) в м/с." },
+                    { title: "Миссия 8: Макс. Ускорение (Гарм. колеб.)", scenario: "Тело совершает гармонические колебания с амплитудой A и периодом T. Рассчитайте максимальное ускорение тела.", data: { A: "Амплитуда (см)", T: "Период (с)" }, question: "Задача: Введите макс. ускорение (aₘₐₓ) в м/с²." },
+                    { title: "Миссия 9: Энергия (Пружинный маятник)", scenario: "Пружинный маятник с жесткостью k колеблется с амплитудой A. Рассчитайте полную механическую энергию маятника.", data: { k: "Жесткость (Н/м)", A: "Амплитуда (см)" }, question: "Задача: Введите полную энергию (E) в миллиджоулях (мДж)." },
+                    { title: "Миссия 10: Энергия (Макс. скорость)", scenario: "Тело массой m совершает колебания. Его максимальная скорость равна vₘₐₓ. Рассчитайте полную энергию колебаний.", data: { m: "Масса (г)", v_max: "Макс. скорость (м/с)" }, question: "Задача: Введите полную энергию (E) в Джоулях (Дж)." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Жиілік пен Период", scenario: "Тербелмелі жүйе секундына ν (ню) тербеліс жасайды. Тербеліс периодын есептеңіз.", data: { nu: "Жиілік (ν) (Гц)" }, question: "Тапсырма: Периодты (T) миллисекундпен (мс) енгізіңіз." },
+                    { title: "Миссия 2: Циклдік жиілік", scenario: "Жүйенің тербеліс периоды T-ға тең. Тербелістердің циклдік (бұрыштық) жиілігін есептеңіз.", data: { T: "Период (T) (с)" }, question: "Тапсырма: Циклдік жиілікті (ω) рад/с-пен енгізіңіз." },
+                    { title: "Миссия 3: Серіппелі маятник (Период)", scenario: "Массасы m жүк қатаңдығы k серіппеге ілінген. Еркін тербелістердің периодын есептеңіз.", data: { m: "Масса (г)", k: "Қатаңдық (Н/м)" }, question: "Тапсырма: Периодты (T) секундпен (с) енгізіңіз." },
+                    { title: "Миссия 4: Серіппелі маятник (Қатаңдық)", scenario: "Массасы m жүгі бар серіппелі маятник T периодпен тербеледі. Серіппенің қатаңдығын есептеңіз.", data: { m: "Масса (г)", T: "Период (с)" }, question: "Тапсырма: Қатаңдықты (k) Н/м-мен енгізіңіз." },
+                    { title: "Миссия 5: Математикалық маятник (Период)", scenario: "Жібінің ұзындығы L математикалық маятниктің кіші тербелістерінің периодын есептеңіз.", data: { L: "Жіп ұзындығы (см)" }, question: "Тапсырма: Периодты (T) секундпен (с) енгізіңіз. (g ≈ 9.8 м/с²)" },
+                    { title: "Миссия 6: Математикалық маятник (Ұзындық)", scenario: "Математикалық маятник T периодпен тербеледі. Оның ілгішінің ұзындығын есептеңіз.", data: { T: "Период (с)" }, question: "Тапсырма: Ұзындықты (L) сантиметрмен (см) енгізіңіз. (g ≈ 9.8 м/с²)" },
+                    { title: "Миссия 7: Макс. Жылдамдық (Гарм. терб.)", scenario: "Дене A амплитудамен және ω циклдік жиілікпен гармоникалық тербелістер жасайды. Дененің максималды жылдамдығын есептеңіз.", data: { A: "Амплитуда (см)", omega: "Цикл. жиілік (рад/с)" }, question: "Тапсырма: Макс. жылдамдықты (vₘₐₓ) м/с-пен енгізіңіз." },
+                    { title: "Миссия 8: Макс. Үдеу (Гарм. терб.)", scenario: "Дене A амплитудамен және T периодпен гармоникалық тербелістер жасайды. Дененің максималды үдеуін есептеңіз.", data: { A: "Амплитуда (см)", T: "Период (с)" }, question: "Тапсырма: Макс. үдеуді (aₘₐₓ) м/с²-пен енгізіңіз." },
+                    { title: "Миссия 9: Энергия (Серіппелі маятник)", scenario: "Қатаңдығы k серіппелі маятник A амплитудамен тербеледі. Маятниктің толық механикалық энергиясын есептеңіз.", data: { k: "Қатаңдық (Н/м)", A: "Амплитуда (см)" }, question: "Тапсырма: Толық энергияны (E) миллиджоульмен (мДж) енгізіңіз." },
+                    { title: "Миссия 10: Энергия (Макс. жылдамдық)", scenario: "Массасы m дене тербеліс жасайды. Оның максималды жылдамдығы vₘₐₓ-ке тең. Тербелістердің толық энергиясын есептеңіз.", data: { m: "Масса (г)", v_max: "Макс. жылдамдық (м/с)" }, question: "Тапсырма: Толық энергияны (E) Джоульмен (Дж) енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct Answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Frequency and Period", scenario: "An oscillating system completes ν (nu) oscillations per second. Calculate the period of oscillation.", data: { nu: "Frequency (ν) (Hz)" }, question: "Task: Enter the period (T) in milliseconds (ms)." },
+                    { title: "Mission 2: Angular Frequency", scenario: "The period of oscillation for a system is T. Calculate the angular frequency of the oscillations.", data: { T: "Period (T) (s)" }, question: "Task: Enter the angular frequency (ω) in rad/s." },
+                    { title: "Mission 3: Spring Pendulum (Period)", scenario: "A mass m is suspended from a spring with stiffness k. Calculate the period of free oscillations.", data: { m: "Mass (g)", k: "Stiffness (N/m)" }, question: "Task: Enter the period (T) in seconds (s)." },
+                    { title: "Mission 4: Spring Pendulum (Stiffness)", scenario: "A spring pendulum with mass m oscillates with a period T. Calculate the stiffness of the spring.", data: { m: "Mass (g)", T: "Period (s)" }, question: "Task: Enter the stiffness (k) in N/m." },
+                    { title: "Mission 5: Simple Pendulum (Period)", scenario: "Calculate the period of small oscillations for a simple pendulum with string length L.", data: { L: "String length (cm)" }, question: "Task: Enter the period (T) in seconds (s). (g ≈ 9.8 m/s²)" },
+                    { title: "Mission 6: Simple Pendulum (Length)", scenario: "A simple pendulum oscillates with a period T. Calculate the length of its suspension.", data: { T: "Period (s)" }, question: "Task: Enter the length (L) in centimeters (cm). (g ≈ 9.8 m/s²)" },
+                    { title: "Mission 7: Max. Velocity (SHM)", scenario: "A body undergoes simple harmonic motion with amplitude A and angular frequency ω. Calculate the maximum velocity of the body.", data: { A: "Amplitude (cm)", omega: "Angular freq. (rad/s)" }, question: "Task: Enter the max. velocity (vₘₐₓ) in m/s." },
+                    { title: "Mission 8: Max. Acceleration (SHM)", scenario: "A body undergoes simple harmonic motion with amplitude A and period T. Calculate the maximum acceleration of the body.", data: { A: "Amplitude (cm)", T: "Period (s)" }, question: "Task: Enter the max. acceleration (aₘₐₓ) in m/s²." },
+                    { title: "Mission 9: Energy (Spring Pendulum)", scenario: "A spring pendulum with stiffness k oscillates with amplitude A. Calculate the total mechanical energy of the pendulum.", data: { k: "Stiffness (N/m)", A: "Amplitude (cm)" }, question: "Task: Enter the total energy (E) in millijoules (mJ)." },
+                    { title: "Mission 10: Energy (Max. Velocity)", scenario: "A body of mass m is oscillating. Its maximum velocity is vₘₐₓ. Calculate the total energy of the oscillations.", data: { m: "Mass (g)", v_max: "Max. velocity (m/s)" }, question: "Task: Enter the total energy (E) in Joules (J)." }
+                ]
+            }
+        };
+
+
+        // --- Глобальные Константы и Состояние ---
+        const G_ACCEL = 9.8; // Ускорение свободного падения (м/с²)
+
+        const TOLERANCE = 0.03; // Погрешность (3%)
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru';
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы (ИСПРАВЛЕНО) ---
+        // Объявляем переменные здесь
+        let missionTitle, missionScenario, missionData, missionQuestion,
+            userAnswerInput, submitButton, newDataButton, feedbackMessage,
+            navButtons, progressList, langButtons, progressTitle, inputLabel;
+
+
+        // --- Утилиты (Без изменений) ---
+        function getRandom(min, max, decimals) {
+            let num = Math.random() * (max - min) + min;
+            if (decimals !== undefined) {
+                num = parseFloat(num.toFixed(decimals));
+            }
+            return num;
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов (Без изменений) ---
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+
+            const t = translations[currentLang];
+            if (!t) {
+                console.error("Переводы для языка не найдены:", lang);
+                return;
+            }
+
+            if (t.ui) {
+                submitButton.textContent = t.ui.submit;
+                newDataButton.textContent = t.ui.newData;
+                inputLabel.textContent = t.ui.inputLabel;
+                userAnswerInput.placeholder = t.ui.placeholder;
+            } else {
+                 console.error("Секция 'ui' в переводах отсутствует для:", lang);
+            }
+
+            if (t.progress) {
+                 updateProgressWindow();
+            } else {
+                console.error("Секция 'progress' в переводах отсутствует для:", lang);
+            }
+           
+            if (t.missions && missionLoaders[currentMissionId]) {
+                missionLoaders[currentMissionId]();
+            } else {
+                 if (missionLoaders.length > 0) {
+                    console.error("Секция 'missions' в переводах отсутствует или загрузчик миссии не найден для:", lang, currentMissionId);
+                 }
+            }
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = '';
+            
+            const t = translations[currentLang].progress;
+            if (!t) {
+                console.error("Переводы 'progress' не найдены для:", currentLang);
+                return;
+            }
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                if (!missionProgress || !missionProgress[i]) {
+                    console.error("Объект прогресса отсутствует для миссии:", i);
+                    continue; 
+                }
+
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                    <span class="correct">${progress.correct} ✔</span> /
+                                    <span class="incorrect">${progress.incorrect} ❌</span>
+                                </span>`;
+
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `${t.mission} ${i}`;
+                } else {
+                    console.error("Кнопка не найдена для миссии:", i);
+                }
+
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- Загрузчики Миссий (Без изменений) ---
+
+        function loadMission1() { 
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const nu = getRandom(2, 20, 1); 
+            const T_s = 1.0 / nu;
+            currentCorrectAnswer = T_s * 1000.0; 
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.nu}: ${nu} Гц</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() { 
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const T = getRandom(0.5, 5, 2); 
+            currentCorrectAnswer = (2 * Math.PI) / T; 
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.T}: ${T} с</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() { 
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const m_g = getRandom(50, 500, 0); 
+            const m_kg = m_g / 1000.0;       
+            const k = getRandom(10, 100, 1);  
+            currentCorrectAnswer = 2 * Math.PI * Math.sqrt(m_kg / k); 
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m_g} г</p><p>${t.data.k}: ${k} Н/м</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() { 
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const m_g = getRandom(100, 1000, 0); 
+            const m_kg = m_g / 1000.0;          
+            const T = getRandom(0.5, 3, 2);     
+            const omega = (2 * Math.PI) / T;
+            currentCorrectAnswer = m_kg * omega * omega; 
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m_g} г</p><p>${t.data.T}: ${T} с</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() { 
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const L_cm = getRandom(20, 150, 0); 
+            const L_m = L_cm / 100.0;         
+            currentCorrectAnswer = 2 * Math.PI * Math.sqrt(L_m / G_ACCEL); 
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.L}: ${L_cm} см</p><p>(g &approx; ${G_ACCEL} м/с², &pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() { 
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const T = getRandom(1, 3, 2); 
+            const L_m = G_ACCEL * Math.pow(T / (2 * Math.PI), 2);
+            currentCorrectAnswer = L_m * 100.0; 
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.T}: ${T} с</p><p>(g &approx; ${G_ACCEL} м/с², &pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() { 
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const A_cm = getRandom(2, 10, 1);   
+            const A_m = A_cm / 100.0;           
+            const omega = getRandom(5, 50, 1);  
+            currentCorrectAnswer = A_m * omega; 
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.A}: ${A_cm} см</p><p>${t.data.omega}: ${omega} рад/с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() { 
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const A_cm = getRandom(5, 20, 0); 
+            const A_m = A_cm / 100.0;         
+            const T = getRandom(0.2, 1.5, 2); 
+            const omega = (2 * Math.PI) / T;
+            currentCorrectAnswer = A_m * omega * omega; 
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.A}: ${A_cm} см</p><p>${t.data.T}: ${T} с</p><p>(&pi; &approx; 3.14159)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission9() { 
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const k = getRandom(20, 200, 0);  
+            const A_cm = getRandom(2, 10, 1); 
+            const A_m = A_cm / 100.0;         
+            const E_J = (k * A_m * A_m) / 2.0;
+            currentCorrectAnswer = E_J * 1000.0; 
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.k}: ${k} Н/м</p><p>${t.data.A}: ${A_cm} см</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() { 
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const m_g = getRandom(100, 1000, 0); 
+            const m_kg = m_g / 1000.0;          
+            const v_max = getRandom(0.5, 5, 2);  
+            currentCorrectAnswer = (m_kg * v_max * v_max) / 2.0; 
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m_g} г</p><p>${t.data.v_max}: ${v_max} м/с</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+
+        // --- Обработчик Проверки (Без изменений) ---
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback;
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                missionProgress[currentMissionId].incorrect++;
+                const t_feedback = translations[currentLang].feedback;
+                feedbackMessage.textContent = `${t_feedback.incorrect} (${t_feedback.correctAnswer}: ${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+
+        // --- Инициализация Игры (ИСПРАВЛЕНО) ---
+        function initializeGame() {
+            
+            // (ИСПРАВЛЕНО) Сначала назначаем DOM-элементы
+            missionTitle = document.getElementById('mission-title');
+            missionScenario = document.getElementById('mission-scenario');
+            missionData = document.getElementById('mission-data');
+            missionQuestion = document.getElementById('mission-question');
+            userAnswerInput = document.getElementById('user-answer');
+            submitButton = document.getElementById('submit-button');
+            newDataButton = document.getElementById('new-data-button');
+            feedbackMessage = document.getElementById('feedback-message');
+            navButtons = document.querySelectorAll('.mission-nav button');
+            progressList = document.getElementById('progress-list');
+            langButtons = document.querySelectorAll('.lang-btn');
+            progressTitle = document.getElementById('progress-title');
+            inputLabel = document.getElementById('input-label');
+
+            // Теперь, когда элементы найдены, остальной код будет работать
+            
+            missionLoaders.push(null,
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10
+            );
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true 
+                };
+            }
+
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    if (missionLoaders[id]) {
+                        missionLoaders[id]();
+                    } else {
+                        console.error("Загрузчик миссии не найден для ID:", id);
+                    }
+                });
+            });
+
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                if (missionLoaders[currentMissionId]) {
+                    missionLoaders[currentMissionId](); 
+                }
+            });
+            
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        // Ждем, пока DOM будет готов, затем запускаем initializeGame
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

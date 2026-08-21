@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-lang="pageTitle">Тренажер: Поглощение Бета-Излучения</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --main-bg: #1a1a2e;
+            --container-bg: #2a2a4e;
+            --controls-bg: #232342;
+            --border-color: #4a4a7e;
+            --text-color: #e0e0e0;
+            --text-light: #aaa;
+            --text-title: #ffffff;
+            
+            --accent-color: #ff007f; 
+            --accent-hover: #c70063;
+            
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --secondary-color: #6c757d;
+        }
+
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--container-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+        }
+        header div {
+            flex-basis: 80%;
+        }
+        header h1 { color: var(--text-title); margin: 0; }
+        header p { font-size: 1.1em; color: var(--text-light); }
+        
+        .lang-selector {
+            flex-basis: 15%;
+            min-width: 100px;
+        }
+        #lang-select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: var(--main-bg);
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .main-content-area {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            background: var(--controls-bg);
+            border-right: 2px solid var(--border-color);
+            box-sizing: border-box;
+        }
+        .controls h2 { 
+            margin-top: 0; 
+            border-bottom: 2px solid var(--accent-color); 
+            padding-bottom: 5px; 
+            color: var(--accent-color); 
+        }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { 
+            display: block; 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+            font-size: 0.9em; 
+            color: var(--accent-color); 
+        }
+        .control-group select, .control-group input { 
+            width: 100%; 
+            padding: 8px; 
+            box-sizing: border-box; 
+            border-radius: 5px; 
+            border: 1px solid var(--border-color);
+            background: var(--main-bg);
+            color: var(--text-color);
+        }
+        .control-group input[type="range"] { padding: 0; }
+        .control-group .value-display { font-size: 0.9em; text-align: right; color: var(--text-light); }
+        
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .button-group button { 
+            flex: 1 1 45%;
+            padding: 10px; 
+            font-size: 1.0em; 
+            font-weight: bold; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            background-color: transparent;
+            border-width: 2px;
+            border-style: solid;
+            text-transform: uppercase;
+        }
+        
+        
+        #start-button, #bg-button {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+        #start-button:hover:not(:disabled), #bg-button:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        #help-button {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+            flex-basis: 100%;
+        }
+        #help-button:hover:not(:disabled) {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        #reset-all-button {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+            flex-basis: 100%;
+        }
+        #reset-all-button:hover:not(:disabled) {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+
+        
+        input:disabled, button:disabled, select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #333 !important;
+            color: #777 !important;
+            border-color: #555 !important;
+        }
+        #start-button:disabled, #bg-button:disabled {
+            border-color: var(--accent-color);
+            opacity: 0.6;
+        }
+        
+        .simulation {
+            flex: 2;
+            min-width: 400px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        
+        .detector-visual {
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: var(--controls-bg); 
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .detector-visual img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            background: #e0e0e0; 
+        }
+
+        .results h2 { 
+            margin-top: 0; 
+            color: var(--accent-color); 
+            border-bottom: 2px solid var(--accent-color); 
+            padding-bottom: 5px; 
+        }
+        .results-display { 
+            background: var(--main-bg); 
+            color: var(--accent-color); 
+            font-family: "Courier New", Courier, monospace; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 3px solid var(--border-color); 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
+        }
+        .display-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1.5em; }
+        .display-row:last-child { margin-bottom: 0; }
+        .display-label { color: #aaa; font-weight: bold; }
+        .display-value { font-weight: bold; font-size: 1.8em; letter-spacing: 2px; }
+        
+        #count-display { color: var(--accent-color); } 
+        #rate-display { color: #f0ad4e; } 
+        #bg-display { color: #5bc0de; font-size: 1.2em; } 
+
+        .graph-container {
+            width: 100%;
+            padding: 20px;
+            border-top: 2px solid var(--border-color);
+            box-sizing: border-box;
+        }
+        .graph-container h2 { 
+            margin-top: 0; 
+            color: var(--accent-color); 
+            border-bottom: 2px solid var(--accent-color); 
+            padding-bottom: 5px; 
+        }
+        .graph-controls { margin-top: 10px; }
+        #clear-chart-button { 
+            padding: 8px 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: transparent;
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+            text-transform: uppercase;
+        }
+        #clear-chart-button:hover:not(:disabled) { background-color: var(--secondary-color); color: white; }
+        #absorption-chart { max-height: 400px; }
+
+        .validation-container {
+            width: 100%;
+            margin-top: 20px;
+            padding: 20px;
+            border-top: 2px solid var(--border-color);
+            background-color: var(--controls-bg);
+            border-radius: 0 0 8px 8px; 
+            box-sizing: border-box;
+        }
+        .validation-container h2 {
+            margin-top: 0;
+            color: var(--accent-color); 
+            border-bottom: 2px solid var(--accent-color); 
+            padding-bottom: 5px;
+        }
+        .validation-container p {
+            font-size: 0.9em;
+            font-style: italic;
+            background: #3a3a5e; 
+            padding: 5px 10px;
+            border-radius: 3px;
+            border-left: 3px solid var(--accent-color);
+        }
+        .validation-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .validation-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .validation-group select, .validation-group input { 
+            padding: 8px; 
+            border-radius: 5px; 
+            border: 1px solid var(--border-color);
+            background: var(--main-bg);
+            color: var(--text-color);
+        }
+        .validation-group input[type="text"] { width: 100%; box-sizing: border-box; }
+        .validation-group input[type="number"] { width: 100px; margin-right: 10px; }
+        
+        .validation-group button { 
+            padding: 8px 12px; 
+            background-color: transparent; 
+            color: var(--accent-color); 
+            border: 2px solid var(--accent-color); 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: all 0.2s ease;
+        }
+        .validation-group button:hover:not(:disabled) { 
+            background-color: var(--accent-color); 
+            color: white; 
+        }
+        
+        .feedback { font-size: 0.9em; font-weight: bold; font-style: italic; margin-top: 8px; padding: 5px; border-radius: 3px; }
+        .feedback.correct { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .feedback.incorrect { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+
+        
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.7); 
+        }
+        .modal-content {
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            margin: 10% auto; 
+            padding: 20px 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px;
+        }
+        .modal-content h2 {
+            color: var(--accent-color); 
+            border-bottom: 2px solid var(--accent-color); 
+            padding-bottom: 10px;
+        }
+        .modal-content ol, .modal-content ul {
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+        .modal-content li { margin-bottom: 10px; }
+        /* *** НОВОЕ: Стиль для вложенного списка (a, b, c) в инструкции *** */
+        .modal-content ol[type="a"] {
+            padding-left: 30px;
+            font-size: 0.95em;
+        }
+        .modal-content ol[type="a"] li {
+            margin-bottom: 8px;
+        }
+        
+        .modal-content code, .formula-box {
+            background-color: var(--main-bg);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--accent-color); 
+        }
+        /* *** НОВОЕ: Стиль для формулы в инструкции *** */
+        .formula-box {
+            list-style-type: none;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            margin: 5px 0 10px 0;
+        }
+        
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #feedback-modal .result-card {
+            background: var(--controls-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        #feedback-modal .result-card strong {
+            color: var(--accent-color); 
+        }
+        #feedback-modal .result-score {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            background: #3a3a5e;
+            color: var(--accent-color); 
+            margin-bottom: 15px;
+        }
+        #feedback-modal .formula {
+            font-family: "Courier New", Courier, monospace;
+            background: var(--main-bg);
+            padding: 8px;
+            border-radius: 4px;
+            display: block;
+            margin-top: 5px;
+            font-style: normal;
+        }
+        #print-results-button {
+            width: 100%;
+            padding: 10px 15px; 
+            font-size: 1.0em; 
+            font-weight: bold; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            background-color: transparent;
+            border: 2px solid var(--accent-color); 
+            color: var(--accent-color); 
+            text-transform: uppercase;
+            margin-top: 20px;
+        }
+        #print-results-button:hover {
+            background-color: var(--accent-color); 
+            color: white;
+        }
+
+        
+        @media print {
+            body * { visibility: hidden; }
+            #feedback-modal, #feedback-modal * { visibility: visible; }
+            #feedback-modal {
+                position: absolute; left: 0; top: 0; width: 100%;
+                margin: 0; padding: 0; border: none; box-shadow: none;
+                background-color: white !important; 
+            }
+            #feedback-modal .modal-content {
+                border: none; box-shadow: none; margin: 0;
+                width: 100%; max-width: 100%;
+                color: #000 !important;
+            }
+            #feedback-modal .close-button,
+            #feedback-modal #print-results-button {
+                visibility: hidden; display: none;
+            }
+            #feedback-modal h2, #feedback-modal .result-card strong, 
+            #feedback-modal .result-score, #feedback-modal .formula {
+                color: #000 !important;
+            }
+            #feedback-modal .result-card,
+            #feedback-modal .result-score {
+                background: #ffffff !important; 
+                border: 1px solid #ccc !important;
+            }
+            #feedback-modal .formula {
+                background: #eee !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <div>
+                <h1 data-lang="headerTitle">Тренажер: Поглощение Бета-Излучения</h1>
+                <p data-lang="headerDesc">Исследуйте, как энергия бета-частиц и толщина поглотителя влияют на проникающую способность излучения, и проверьте свои расчеты.</p>
+            </div>
+            <div class="lang-selector">
+                <select id="lang-select">
+                    <option value="ru">Русский</option>
+                    <option value="kz">Қазақша</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="main-content-area">
+            
+            <div class="controls">
+                <h2 data-lang="controlsHeader">Параметры Установки</h2>
+
+                <div class="control-group">
+                    <label for="source-select" data-lang="sourceLabel">1. Выберите Источник (β):</label>
+                    <select id="source-select">
+                        <option value="Sr-90">Стронций-90 (E_max: 2.28 МэВ)</option>
+                        <option value="P-32">Фосфор-32 (E_max: 1.71 МэВ)</option>
+                        <option value="Tl-204">Таллий-204 (E_max: 0.763 МэВ)</option>
+                        <option value="C-14">Углерод-14 (E_max: 0.156 МэВ)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="distance-slider" data-lang="distanceLabel">2. Расстояние L (Источник-Детектор):</label>
+                    <input type="range" id="distance-slider" min="3" max="15" value="5" step="0.5">
+                    <div class="value-display" id="distance-value">5.0 см</div>
+                </div>
+
+                <div class="control-group">
+                    <label for="material-select" data-lang="materialLabel">3. Материал Поглотителя:</label>
+                    <select id="material-select">
+                        <option value="Aluminum" data-lang="matAl">Алюминий (ρ = 2.7 г/см³)</option>
+                        <option value="Plastic" data-lang="matPl">Пластик (ρ = 1.2 г/см³)</option>
+                        <option value="Glass" data-lang="matGl">Стекло (ρ = 2.5 г/см³)</option>
+                        <option value="Lead" data-lang="matPb">Свинец (ρ = 11.3 г/см³)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="plates-input" data-lang="platesLabel">4. Кол-во пластин (0.1 мм):</label>
+                    <input type="number" id="plates-input" min="0" max="100" value="0" step="1">
+                    <div class="value-display" id="plates-value" data-lang-key="platesValuePrefix">Толщина: 0.0 мм</div>
+                </div>
+
+                <div class="control-group">
+                    <label for="time-input" data-lang="timeLabel">5. Время измерения T:</label>
+                    <input type="number" id="time-input" min="1" max="600" value="30" step="1">
+                    <div class="value-display" id="time-value" data-lang-key="timeValueSuffix">30 секунд</div>
+                </div>
+
+                <h2 data-lang="controlsHeader2">Управление</h2>
+                <div class="button-group">
+                    <button id="start-button" data-lang="startButton">СТАРТ</button>
+                    <button id="bg-button" data-lang="bgButton">ФОН</button>
+                    <button id="help-button" data-lang="helpButton">Инструкция</button>
+                    <button id="reset-all-button" data-lang="resetAllButton">Общий Сброс</button>
+                </div>
+            </div>
+
+            <div class="simulation">
+                
+                <div class="detector-visual">
+                    <img src="img/im2.png" alt="Схема поглощения бета-излучения">
+                </div>
+
+                <div class="results">
+                    <h2 data-lang="resultsHeader">Результаты Измерения</h2>
+                    <div class="results-display">
+                        <div class="display-row">
+                            <span class="display-label" data-lang="countLabel">СЧЕТ (N):</span>
+                            <span class="display-value" id="count-display">0</span>
+                        </div>
+                        <div class="display-row">
+                            <span class="display-label" data-lang="rateLabel">СКОРОСТЬ (I):</span>
+                            <span class="display-value" id="rate-display">0.00</span>
+                        </div>
+                        <div class="display-row">
+                            <span class="display-label" data-lang="bgLabel">ФОН (I_bg):</span>
+                            <span class="display-value" id="bg-display">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <h2 data-lang="graphHeader">График Поглощения: ln(I) от Толщины (d)</h2>
+            <canvas id="absorption-chart"></canvas>
+            <div class="graph-controls">
+                <button id="clear-chart-button" data-lang="clearChartButton">Очистить график</button>
+            </div>
+        </div>
+
+        <div class="validation-container">
+            <h2 data-lang="validationHeader">Проверка Результатов</h2>
+            
+            <div class="validation-group">
+                <label for="user-name" data-lang="nameLabel">Ваше ФИО:</label>
+                <input type="text" id="user-name" data-lang-placeholder="valNamePlaceholder" placeholder="">
+            </div>
+            <div class="validation-group">
+                <label for="user-group" data-lang="groupLabel">Ваша Группа:</label>
+                <input type="text" id="user-group" data-lang-placeholder="valGroupPlaceholder" placeholder="">
+            </div>
+
+            <p data-lang="validationNote">Проверка будет использовать параметры (L, Источник, Материал) из "Параметров Установки".</p>
+            
+            <div class="validation-group">
+                <label for="validate-mu" data-lang="valMuLabel">1. Ваш коэф. поглощения &mu; (в мм⁻¹): <span id="mu-attempts-left" data-lang-key="attemptsLeft" data-count="3">(Попыток: 3)</span></label>
+                <input type="number" id="validate-mu" step="0.01" data-lang-placeholder="valPlaceholder" placeholder="н/п: 2.30">
+                <button id="check-mu-button" data-lang="checkButton">Проверить &mu;</button>
+                <p id="mu-feedback" class="feedback"></p>
+            </div>
+
+            <div class="validation-group">
+                <label for="validate-lnI0" data-lang="valLnI0Label">2. Ваш ln(I₀) (пересечение с осью Y): <span id="lnI0-attempts-left" data-lang-key="attemptsLeft" data-count="3">(Попыток: 3)</span></label>
+                <input type="number" id="validate-lnI0" step="0.01" data-lang-placeholder="valPlaceholder" placeholder="н/п: 2.30">
+                <button id="check-lnI0-button" data-lang="checkButtonLnI0">Проверить ln(I₀)</button>
+                <p id="lnI0-feedback" class="feedback"></p>
+            </div>
+        </div>
+
+    </div> <div id="instruction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-modal-button">&times;</span>
+            <h2 data-lang="instructionTitle">Инструкция по выполнению работы</h2>
+            <div id="instruction-content"></div> 
+        </div>
+    </div>
+
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-feedback-modal">&times;</span>
+            <h2 data-lang="resultsTitle">Результаты Проверки</h2>
+
+            <div class="result-card">
+                <strong data-lang="resultsStudent">Студент:</strong> <span id="feedback-name"></span><br>
+                <strong data-lang="resultsGroup">Группа:</strong> <span id="feedback-group"></span>
+            </div>
+
+            <div class="result-score">
+                <span data-lang="resultsPercentage">Итоговый процент выполнения:</span> <span id="feedback-percentage">0%</span>
+            </div>
+
+            <div class="result-card">
+                <h3 data-lang="resultsTheoryHeader">Теоретический Расчет</h3>
+                <p id="results-theory-intro"></p>
+                <ul>
+                    <li>
+                        <strong data-lang="resultsMuLabel">Коэффициент поглощения (μ):</strong>
+                        <span class="formula">&mu; = -k = - (&Delta;y / &Delta;x) = - (ln(I₂) - ln(I₁)) / (d₂ - d₁)</span>
+                        <strong data-lang="resultsExpected">Ожидаемое значение:</strong> <span id="feedback-mu-correct"></span>
+                    </li>
+                    <li>
+                        <strong data-lang="resultsLnI0Label">Пересечение ln(I₀) (при L=<span id="feedback-distance"></span> см):</strong>
+                        <span class="formula">ln(I₀) = ln( I<sub>net_d=0</sub> )</span>
+                        <strong data-lang="resultsExpected">Ожидаемое значение:</strong> <span id="feedback-lnI0-correct"></span>
+                    </li>
+                </ul>
+            </div>
+            
+            <button id="print-results-button" data-lang="printButton">Сохранить/Печатать результат</button>
+        </div>
+    </div>
+
+
+    <script>
+        
+        const translations = {
+            
+            ru: {
+                pageTitle: "Тренажер: Поглощение Бета-Излучения",
+                headerTitle: "Тренажер: Поглощение Бета-Излучения",
+                headerDesc: "Исследуйте, как энергия бета-частиц и толщина поглотителя влияют на проникающую способность излучения, и проверьте свои расчеты.",
+                controlsHeader: "Параметры Установки",
+                sourceLabel: "1. Выберите Источник (β):",
+                distanceLabel: "2. Расстояние L (Источник-Детектор):",
+                materialLabel: "3. Материал Поглотителя:",
+                matAl: "Алюминий (ρ = 2.7 г/см³)",
+                matPl: "Пластик (ρ = 1.2 г/см³)",
+                matGl: "Стекло (ρ = 2.5 г/см³)",
+                matPb: "Свинец (ρ = 11.3 г/см³)",
+                platesLabel: "4. Кол-во пластин (0.1 мм):",
+                platesValuePrefix: "Толщина:",
+                timeLabel: "5. Время измерения T:",
+                timeValueSuffix: "секунд",
+                controlsHeader2: "Управление",
+                startButton: "СТАРТ",
+                measuring: "ИЗМЕРЕНИЕ...", 
+                bgButton: "ФОН",
+                helpButton: "Инструкция",
+                resetAllButton: "Общий Сброс",
+                detectorLabel: "Детектор",
+                resultsHeader: "Результаты Измерения",
+                countLabel: "СЧЕТ (N):",
+                rateLabel: "СКОРОСТЬ (I):",
+                bgLabel: "ФОН (I_bg):",
+                graphHeader: "График Поглощения: ln(I) от Толщины (d)",
+                graphXAxis: "Толщина поглотителя d, мм",
+                graphYAxis: "ln(I) (Натуральный логарифм чистой скорости счета)",
+                clearChartButton: "Очистить график",
+                validationHeader: "Проверка Результатов",
+                nameLabel: "Ваше ФИО:",
+                groupLabel: "Ваша Группа:",
+                valNamePlaceholder: "", 
+                valGroupPlaceholder: "", 
+                validationNote: "Проверка будет использовать параметры (L, Источник, Материал) из \"Параметров Установки\".",
+                valMuLabel: "1. Ваш коэф. поглощения μ (в мм⁻¹):",
+                valLnI0Label: "2. Ваш ln(I₀) (пересечение с осью Y):", 
+                valPlaceholder: "н/п: 2.30", 
+                checkButton: "Проверить μ",
+                checkButtonLnI0: "Проверить ln(I₀)", 
+                attemptsLeft: "(Попыток: {count})",
+                attemptsCorrect: "(Правильно!)",
+                attemptsFailed: "(Попытки кончились)",
+                fillDetailsError: "Пожалуйста, заполните поля 'Ваше ФИО' и 'Ваша Группа' перед проверкой.",
+                feedbackCorrect: "Правильно!",
+                feedbackIncorrect: "Неправильно.",
+                feedbackInvalid: "Некорректный ввод.",
+                instructionTitle: "Инструкция по выполнению работы",
+                instructionHTML: `
+                    <ol>
+                        <li><strong>Измерение Фона:</strong> Установите время измерения (<code>T</code>) на 60-100 секунд. Нажмите <strong>"ФОН"</strong>. Значение <code>I_bg</code> на дисплее сохранится в памяти.</li>
+                        <li><strong>Настройка Установки:</strong>
+                            <ul>
+                                <li>Выберите <strong>Источник</strong> (н/п, "Sr-90").</li>
+                                <li>Установите <strong>Расстояние L</strong> (н/п, 5 см). <strong>Важно:</strong> не меняйте L до конца всех измерений!</li>
+                                <li>Выберите <strong>Материал Поглотителя</strong> (н/п, "Алюминий").</li>
+                                <li>Установите <strong>Время T</strong> (н/п, 30 сек).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Сбор Данных:</strong>
+                            <ul>
+                                <li>Установите <strong>Кол-во пластин</strong> на <strong>0</strong>. Нажмите <strong>"СТАРТ"</strong>. График добавит первую точку.</li>
+                                <li>Повторите измерения для <code>n = 1, 2, 3, 4, 5...</code> (рекомендуется 8-10 точек).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Теория:</strong> График строится в координатах <code>ln(I_чистая)</code> (ось Y) от <code>d (мм)</code> (ось X). Закон поглощения <code>ln(I) = ln(I₀) - μ·d</code> — это уравнение прямой линии <code>y = b + mx</code>, где:
+                             <ul>
+                                <li>Угловой коэффициент (наклон) <code>m</code> (или <code>k</code>) равен <code>-μ</code>.</li>
+                                <li>Точка пересечения <code>b</code> (при d=0) равна <code>ln(I₀)</code>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Обработка (Расчет μ):</strong>
+                            <ol type="a">
+                                <li>Выберите <strong>две точки</strong> (<code>d₁, ln(I₁)</code> и <code>d₂, ln(I₂)</code>) из <strong>начального, прямого участка</strong> вашего графика. Не берите точки из "хвоста" (где график изгибается).</li>
+                                <li>Рассчитайте угловой коэффициент <code>k</code> (он же <code>m</code>) по формуле:</li>
+                                <li class="formula-box">k = (ln(I₂) - ln(I₁)) / (d₂ - d₁)</li>
+                                <li>Вы получите отрицательное число (например, <code>k ≈ -0.05</code>).</li>
+                                <li>Ваш коэффициент поглощения: <strong>&mu; = -k</strong>. (Например: <code>μ = -(-0.05) = 0.05</code>).</li>
+                            </ol>
+                        </li>
+                        <li><strong>Обработка (Расчет ln(I₀)):</strong>
+                             <ul>
+                                <li>Это значение <code>ln(I)</code> на вашем графике при толщине <code>d = 0</code>. Возьмите его из своей первой точки (n=0).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Проверка:</strong> Введите свои ФИО и Группу. Введите свои рассчитанные значения <strong>&mu;</strong> и <strong>ln(I₀)</strong> (у вас 3 попытки на каждый). <strong>Примечание:</strong> Ответ засчитывается как "Правильно", если погрешность вашего расчета не превышает 15%.</li>
+                    </ol>`,
+                resultsTitle: "Результаты Проверки",
+                resultsStudent: "Студент:",
+                resultsGroup: "Группа:",
+                resultsPercentage: "Итоговый процент выполнения:",
+                resultsTheoryHeader: "Теоретический Расчет",
+                resultsTheoryIntro: "Для источника <strong>{source}</strong>, материала <strong>{material}</strong> и L = <strong>{distance} см</strong>:",
+                resultsMuLabel: "Коэффициент поглощения (μ):",
+                resultsLnI0Label: "Пересечение ln(I₀):",
+                resultsExpected: "Ожидаемое значение:",
+                printButton: "Сохранить/Печатать результат"
+            },
+
+            
+            en: {
+                pageTitle: "Simulator: Beta Radiation Absorption",
+                headerTitle: "Simulator: Beta Radiation Absorption",
+                headerDesc: "Explore how beta particle energy and absorber thickness affect radiation penetration, and check your calculations.",
+                controlsHeader: "Setup Parameters",
+                sourceLabel: "1. Select Source (β):",
+                distanceLabel: "2. Distance L (Source-Detector):",
+                materialLabel: "3. Absorber Material:",
+                matAl: "Aluminum (ρ = 2.7 g/cm³)",
+                matPl: "Plastic (ρ = 1.2 g/cm³)",
+                matGl: "Glass (ρ = 2.5 g/cm³)",
+                matPb: "Lead (ρ = 11.3 g/cm³)",
+                platesLabel: "4. Number of Plates (0.1 mm):",
+                platesValuePrefix: "Thickness:",
+                timeLabel: "5. Measurement Time T:",
+                timeValueSuffix: "seconds",
+                controlsHeader2: "Controls",
+                startButton: "START",
+                measuring: "MEASURING...", 
+                bgButton: "BACKGROUND",
+                helpButton: "Instructions",
+                resetAllButton: "Full Reset",
+                detectorLabel: "Detector",
+                resultsHeader: "Measurement Results",
+                countLabel: "COUNT (N):",
+                rateLabel: "RATE (I):",
+                bgLabel: "BKG (I_bg):",
+                graphHeader: "Absorption Plot: ln(I) vs. Thickness (d)",
+                graphXAxis: "Absorber Thickness d, mm",
+                graphYAxis: "ln(I) (Natural Log of Net Count Rate)",
+                clearChartButton: "Clear Plot",
+                validationHeader: "Check Results",
+                nameLabel: "Your Name:",
+                groupLabel: "Your Group:",
+                valNamePlaceholder: "",
+                valGroupPlaceholder: "",
+                validationNote: "The check will use the parameters (L, Source, Material) from \"Setup Parameters\".",
+                valMuLabel: "1. Your absorption coeff. μ (in mm⁻¹):",
+                valLnI0Label: "2. Your ln(I₀) (Y-axis intercept):",
+                valPlaceholder: "e.g.: 2.30", 
+                checkButton: "Check μ",
+                checkButtonLnI0: "Check ln(I₀)",
+                attemptsLeft: "(Attempts: {count})",
+                attemptsCorrect: "(Correct!)",
+                attemptsFailed: "(No attempts left)",
+                fillDetailsError: "Please fill in the 'Your Name' and 'Your Group' fields before checking.",
+                feedbackCorrect: "Correct!",
+                feedbackIncorrect: "Incorrect.",
+                feedbackInvalid: "Invalid input.",
+                instructionTitle: "Instructions",
+                instructionHTML: `
+                    <ol>
+                        <li><strong>Measure Background:</strong> Set measurement time (<code>T</code>) to 60-100 seconds for accuracy. Press <strong>"BACKGROUND"</strong>. The <code>I_bg</code> value will be saved.</li>
+                        <li><strong>Configure Setup:</strong>
+                            <ul>
+                                <li>Select a <strong>Source</strong> (e.g., "Sr-90").</li>
+                                <li>Set <strong>Distance L</strong> (e.g., 5 cm). <strong>Important:</strong> do not change L for all subsequent measurements!</li>
+                                <li>Select <strong>Absorber Material</strong> (e.g., "Aluminum").</li>
+                                <li>Set <strong>Time T</strong> (e.g., 30 sec).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Collect Data:</strong>
+                            <ul>
+                                <li>Set <strong>Number of plates</strong> to <strong>0</strong>. Press <strong>"START"</strong>. The first point will be plotted.</li>
+                                <li>Repeat for <code>n = 1, 2, 3, 4, 5...</code> (8-10 points recommended).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Theory:</strong> The graph plots <code>ln(I_net)</code> (Y-axis) vs. <code>d (mm)</code> (X-axis). The absorption law <code>ln(I) = ln(I₀) - μ·d</code> is the equation of a straight line <code>y = b + mx</code>, where:
+                             <ul>
+                                <li>The slope <code>m</code> (or <code>k</code>) is equal to <code>-μ</code>.</li>
+                                <li>The y-intercept <code>b</code> (at d=0) is equal to <code>ln(I₀)</code>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Analysis (Calculating μ):</strong>
+                            <ol type="a">
+                                <li>Select <strong>two points</strong> (<code>d₁, ln(I₁)</code> and <code>d₂, ln(I₂)</code>) from the <strong>initial, straight-line portion</strong> of your graph. Do not use points from the "tail" (where the graph curves).</li>
+                                <li>Calculate the slope <code>k</code> (which is <code>m</code>) using the "rise over run" formula:</li>
+                                <li class="formula-box">k = (ln(I₂) - ln(I₁)) / (d₂ - d₁)</li>
+                                <li>You will get a negative number (e.g., <code>k ≈ -0.05</code>).</li>
+                                <li>Your absorption coefficient is: <strong>&mu; = -k</strong>. (e.g., <code>μ = -(-0.05) = 0.05</code>).</li>
+                            </ol>
+                        </li>
+                        <li><strong>Analysis (Calculating ln(I₀)):</strong>
+                             <ul>
+                                <li>This is simply the <code>ln(I)</code> value on your graph at thickness <code>d = 0</code>. Take it from your first data point (n=0).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Check:</strong> Enter your Name and Group. Enter your calculated <strong>&mu;</strong> and <strong>ln(I₀)</strong> values (you have 3 attempts for each). <strong>Note:</strong> Your answer is considered "Correct" if your calculation error is within 15%.</li>
+                    </ol>`,
+                resultsTitle: "Check Results",
+                resultsStudent: "Student:",
+                resultsGroup: "Group:",
+                resultsPercentage: "Final Score:",
+                resultsTheoryHeader: "Theoretical Calculation",
+                resultsTheoryIntro: "For source <strong>{source}</strong>, material <strong>{material}</strong>, and L = <strong>{distance} cm</strong>:",
+                resultsMuLabel: "Absorption Coefficient (μ):",
+                resultsLnI0Label: "Intercept ln(I₀):",
+                resultsExpected: "Expected Value:",
+                printButton: "Save/Print Results"
+            },
+            
+            
+            kz: {
+                pageTitle: "Тренажер: Бета-сәулеленудің жұтылуы",
+                headerTitle: "Тренажер: Бета-сәулеленудің жұтылуы",
+                headerDesc: "Бета-бөлшектердің энергиясы мен жұтқыштың қалыңдығы сәулеленудің ену қабілетіне қалай әсер ететінін зерттеңіз және есептеулеріңізді тексеріңіз.",
+                controlsHeader: "Орнату параметрлері",
+                sourceLabel: "1. Көзді таңдаңыз (β):",
+                distanceLabel: "2. L Қашықтығы (Көз-Детектор):",
+                materialLabel: "3. Жұтқыш Материал:",
+                matAl: "Алюминий (ρ = 2.7 г/см³)",
+                matPl: "Пластик (ρ = 1.2 г/см³)",
+                matGl: "Шыны (ρ = 2.5 г/см³)",
+                matPb: "Қорғасын (ρ = 11.3 г/см³)",
+                platesLabel: "4. Пластиналар саны (0.1 мм):",
+                platesValuePrefix: "Қалыңдығы:",
+                timeLabel: "5. T Өлшеу уақыты:",
+                timeValueSuffix: "секунд",
+                controlsHeader2: "Басқару",
+                startButton: "БАСТАУ",
+                measuring: "ӨЛШЕУ...", 
+                bgButton: "ФОН",
+                helpButton: "Нұсқаулық",
+                resetAllButton: "Толық Қалпына Келтіру",
+                detectorLabel: "Детектор",
+                resultsHeader: "Өлшеу Нәтижелері",
+                countLabel: "САНАУ (N):",
+                rateLabel: "ЖЫЛДАМДЫҚ (I):",
+                bgLabel: "ФОН (I_bg):",
+                graphHeader: "Жұтылу Графигі: ln(I) - Қалыңдық (d)",
+                graphXAxis: "Жұтқыш қалыңдығы d, мм",
+                graphYAxis: "ln(I) (Таза санау жылдамдығының нат. логарифмі)",
+                clearChartButton: "Графикті тазалау",
+                validationHeader: "Нәтижелерді Тексеру",
+                nameLabel: "Сіздің Аты-жөніңіз:",
+                groupLabel: "Сіздің Тобыңыз:",
+                valNamePlaceholder: "",
+                valGroupPlaceholder: "",
+                validationNote: "Тексеру \"Орнату параметрлері\" (L, Көз, Материал) параметрлерін пайдаланады.",
+                valMuLabel: "1. Сіздің жұтылу коэф. μ (мм⁻¹):",
+                valLnI0Label: "2. Сіздің ln(I₀) (Y осімен қиылысуы):",
+                valPlaceholder: "мысалы: 2.30", 
+                checkButton: "Тексеру μ",
+                checkButtonLnI0: "Тексеру ln(I₀)",
+                attemptsLeft: "(Мүмкіндік: {count})",
+                attemptsCorrect: "(Дұрыс!)",
+                attemptsFailed: "(Мүмкіндік қалмады)",
+                fillDetailsError: "Тексермес бұрын 'Сіздің Аты-жөніңіз' және 'Сіздің Тобыңыз' өрістерін толтырыңыз.",
+                feedbackCorrect: "Дұрыс!",
+                feedbackIncorrect: "Дұрыс емес.",
+                feedbackInvalid: "Жарамсыз енгізу.",
+                instructionTitle: "Жұмысты орындау нұсқаулығы",
+                instructionHTML: `
+                    <ol>
+                        <li><strong>Фонды өлшеу:</strong> Дәлдік үшін өлшеу уақытын (<code>T</code>) 60-100 секундқа орнатыңыз. <strong>"ФОН"</strong> түймесін басыңыз. <code>I_bg</code> мәні жадта сақталады.</li>
+                        <li><strong>Орнатпаны баптау:</strong>
+                            <ul>
+                                <li><strong>Көзді</strong> таңдаңыз (мысалы, "Sr-90").</li>
+                                <li><strong>L Қашықтығын</strong> орнатыңыз (мысалы, 5 см). <strong>Маңызды:</strong> барлық өлшеулер аяқталғанша L-ді өзгертпеңіз!</li>
+                                <li><strong>Жұтқыш Материалды</strong> таңдаңыз (мысалы, "Алюминий").</li>
+                                <li><strong>T Уақытын</strong> орнатыңыз (мысалы, 30 сек).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Мәліметтерді жинау:</strong>
+                            <ul>
+                                <li><strong>Пластиналар санын</strong> <strong>0</strong>-ге қойыңыз. <strong>"БАСТАУ"</strong> түймесін басыңыз.</li>
+                                <li><code>n = 1, 2, 3, 4, 5...</code> үшін өлшеулерді қайталаңыз (8-10 нүкте ұсынылады).</li>
+                            </ul>
+                        </li>
+                         <li><strong>Теория:</strong> График <code>ln(I_таза)</code> (Y осі) - <code>d (мм)</code> (X осі) координаттарында салынады. Жұтылу заңы <code>ln(I) = ln(I₀) - μ·d</code> — бұл <code>y = b + mx</code> түзу сызығының теңдеуі, мұнда:
+                             <ul>
+                                <li><code>m</code> (немесе <code>k</code>) бұрыштық коэффициенті (көлбеуі) <code>-μ</code> тең.</li>
+                                <li><code>b</code> (d=0 кезінде) Y осімен қиылысу нүктесі <code>ln(I₀)</code> тең.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Талдау (μ есептеу):</strong>
+                            <ol type="a">
+                                <li>Графигіңіздің **бастапқы, түзу сызықты бөлігінен** **екі нүктені** (<code>d₁, ln(I₁)</code> және <code>d₂, ln(I₂)</code>) таңдаңыз. Графиктің иілген "құйрық" бөлігінен нүктелерді алмаңыз.</li>
+                                <li><code>k</code> (немесе <code>m</code>) бұрыштық коэффициентін формула бойынша есептеңіз:</li>
+                                <li class="formula-box">k = (ln(I₂) - ln(I₁)) / (d₂ - d₁)</li>
+                                <li>Сіз теріс сан аласыз (мысалы, <code>k ≈ -0.05</code>).</li>
+                                <li>Сіздің жұтылу коэффициентіңіз: <strong>&mu; = -k</strong>. (Мысалы: <code>μ = -(-0.05) = 0.05</code>).</li>
+                            </ol>
+                        </li>
+                        <li><strong>Талдау (ln(I₀) есептеу):</strong>
+                             <ul>
+                                <li>Бұл сіздің графиктегі <code>d = 0</code> қалыңдығына сәйкес келетін <code>ln(I)</code> мәні. Оны журналдағы бірінші нүктеңізден (n=0) алыңыз.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Тексеру:</strong> Аты-жөніңізді және Тобыңызды енгізіңіз. Есептелген <strong>&mu;</strong> және <strong>ln(I₀)</strong> мәндеріңізді енгізіңіз (әрқайсысына 3 мүмкіндік беріледі). <strong>Ескертпе:</strong> Егер есептеу қателігі 15%-дан аспаса, жауап "Дұрыс" деп есептеледі.</li>
+                    </ol>`,
+                resultsTitle: "Тексеру Нәтижелері",
+                resultsStudent: "Студент:",
+                resultsGroup: "Топ:",
+                resultsPercentage: "Жалпы орындау пайызы:",
+                resultsTheoryHeader: "Теориялық Есептеу",
+                resultsTheoryIntro: "<strong>{source}</strong> көзі, <strong>{material}</strong> материалы және L = <strong>{distance} см</strong> үшін:",
+                resultsMuLabel: "Жұтылу коэффициенті (μ):",
+                resultsLnI0Label: "ln(I₀) қиылысуы:",
+                resultsExpected: "Күтілетін мән:",
+                printButton: "Нәтижені сақтау/басып шығару"
+            }
+        };
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+
+            
+            const sourceSelect = document.getElementById('source-select');
+            const distanceSlider = document.getElementById('distance-slider');
+            const distanceValue = document.getElementById('distance-value');
+            const materialSelect = document.getElementById('material-select'); 
+            const platesInput = document.getElementById('plates-input');
+            const platesValue = document.getElementById('plates-value');
+            const timeInput = document.getElementById('time-input');
+            const timeValue = document.getElementById('time-value');
+            const startButton = document.getElementById('start-button');
+            const bgButton = document.getElementById('bg-button');
+            const countDisplay = document.getElementById('count-display');
+            const rateDisplay = document.getElementById('rate-display');
+            const bgDisplay = document.getElementById('bg-display');
+            const chartCanvas = document.getElementById('absorption-chart');
+            const clearChartButton = document.getElementById('clear-chart-button');
+            let myChart; 
+            
+            const helpButton = document.getElementById('help-button');
+            const instructionModal = document.getElementById('instruction-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const resetAllButton = document.getElementById('reset-all-button');
+            const instructionContent = document.getElementById('instruction-content');
+
+            const userNameInput = document.getElementById('user-name');
+            const userGroupInput = document.getElementById('user-group');
+            const validateMuInput = document.getElementById('validate-mu');
+            const checkMuButton = document.getElementById('check-mu-button');
+            const muFeedback = document.getElementById('mu-feedback');
+            const muAttemptsLeft = document.getElementById('mu-attempts-left');
+            const validateLnI0Input = document.getElementById('validate-lnI0');
+            const checkLnI0Button = document.getElementById('check-lnI0-button');
+            const lnI0Feedback = document.getElementById('lnI0-feedback');
+            const lnI0AttemptsLeft = document.getElementById('lnI0-attempts-left');
+
+            const feedbackModal = document.getElementById('feedback-modal');
+            const closeFeedbackModal = document.getElementById('close-feedback-modal');
+            const fbName = document.getElementById('feedback-name');
+            const fbGroup = document.getElementById('feedback-group');
+            const fbPercentage = document.getElementById('feedback-percentage');
+            const fbTheoryIntro = document.getElementById('results-theory-intro');
+            const fbMuCorrect = document.getElementById('feedback-mu-correct');
+            const fbLnI0Correct = document.getElementById('feedback-lnI0-correct');
+            const fbDistance = document.getElementById('feedback-distance');
+            const printResultsButton = document.getElementById('print-results-button');
+
+            const langSelect = document.getElementById('lang-select');
+            let currentLang = 'ru';
+
+
+            
+            const CONSTANTS = {
+                DETECTOR_DEAD_TIME: 200e-6,
+                DETECTOR_WINDOW_AREA: 3.0,
+                DETECTOR_EFFICIENCY_BETA: 0.8,
+                BACKGROUND_RATE_TRUE: 0.5,
+                BASE_SOURCE_ACTIVITY: 75000,
+                PLATE_THICKNESS_CM: 0.01,
+                LN_2: 0.693147
+            };
+            
+            const MATERIAL_DENSITIES = {
+                'Aluminum': { name: 'Алюминий', rho: 2.7 },
+                'Plastic': { name: 'Пластик', rho: 1.2 },
+                'Glass': { name: 'Стекло', rho: 2.5 },
+                'Lead': { name: 'Свинец', rho: 11.3 }
+            };
+            
+            const BASE_SOURCE_CONSTANTS = {
+                'Sr-90': { name: 'Стронций-90', base_mu_m: 8.5, color: '#ff007f' },
+                'P-32':  { name: 'Фосфор-32', base_mu_m: 11.0, color: '#54a0ff' },
+                'Tl-204':{ name: 'Таллий-204', base_mu_m: 24.0, color: '#00c2c2' },
+                'C-14':  { name: 'Углерод-14', base_mu_m: 230.0, color: '#f0ad4e' }
+            };
+            
+            let SESSION_CONSTANTS = {};
+            let SESSION_ACTIVITY_BASE = 75000; 
+
+            let measuredBackgroundRate = 0.0; 
+            const MAX_ATTEMPTS = 3;
+            
+            let muAttempts = 0;
+            let lnI0Attempts = 0;
+            let muScore = 0; 
+            let lnI0Score = 0; 
+            let muTaskDone = false;
+            let lnI0TaskDone = false;
+
+
+            
+            
+            function randomizeSessionConstants() {
+                SESSION_CONSTANTS = JSON.parse(JSON.stringify(BASE_SOURCE_CONSTANTS));
+                for (const key in SESSION_CONSTANTS) {
+                    const baseMu_m = SESSION_CONSTANTS[key].base_mu_m;
+                    const modifier = 1.0 + (Math.random() - 0.5) * 0.2; 
+                    SESSION_CONSTANTS[key].mu_m = baseMu_m * modifier; 
+                }
+                
+                const baseActivity = CONSTANTS.BASE_SOURCE_ACTIVITY;
+                const activityModifier = 1.0 + (Math.random() - 0.5) * 0.4; 
+                SESSION_ACTIVITY_BASE = baseActivity * activityModifier;
+            }
+            
+            function updateLanguage(lang) {
+                currentLang = lang;
+                document.documentElement.lang = lang; 
+                const langData = translations[lang];
+                
+                document.querySelectorAll('[data-lang]').forEach(el => {
+                    const key = el.getAttribute('data-lang');
+                    if (langData[key]) {
+                        el.textContent = langData[key];
+                    }
+                });
+                
+                document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+                     const key = el.getAttribute('data-lang-placeholder');
+                     if (langData[key] !== undefined) { 
+                         el.placeholder = langData[key];
+                    }
+                });
+                
+                updateLocalizedNames(); 
+                updateAttemptText(muAttemptsLeft, muAttempts, 'mu');
+                updateAttemptText(lnI0AttemptsLeft, lnI0Attempts, 'lnI0');
+                updateDynamicLabels();
+                instructionContent.innerHTML = langData.instructionHTML || '';
+                
+                if(myChart) {
+                    myChart.options.scales.x.title.text = langData.graphXAxis || 'Толщина d, мм';
+                    myChart.options.scales.y.title.text = langData.graphYAxis || 'ln(I)';
+                    myChart.update('none'); 
+                }
+            }
+
+            function updateLocalizedNames() {
+                MATERIAL_DENSITIES.Aluminum.name = translations[currentLang].matAl.split(' (')[0];
+                MATERIAL_DENSITIES.Plastic.name = translations[currentLang].matPl.split(' (')[0];
+                MATERIAL_DENSITIES.Glass.name = translations[currentLang].matGl.split(' (')[0];
+                MATERIAL_DENSITIES.Lead.name = translations[currentLang].matPb.split(' (')[0];
+                
+                
+            }
+
+            function updateAttemptText(element, attempts, taskType) {
+                const langData = translations[currentLang];
+                let text;
+                
+                let done = (taskType === 'mu') ? muTaskDone : lnI0TaskDone;
+                let correct = (taskType ==='mu') ? (muScore > 0) : (lnI0Score > 0);
+
+                if (done) {
+                    text = correct ? langData.attemptsCorrect : langData.attemptsFailed;
+                } else {
+                    text = langData.attemptsLeft.replace('{count}', MAX_ATTEMPTS - attempts);
+                }
+                element.textContent = text;
+            }
+            
+            function updateDynamicLabels() {
+                const langData = translations[currentLang];
+                platesValue.textContent = `${langData.platesValuePrefix || 'Толщина:'} ${(platesInput.value * 0.1).toFixed(1)} мм`;
+                timeValue.textContent = `${timeInput.value} ${langData.timeValueSuffix || 'секунд'}`;
+                distanceValue.textContent = `${parseFloat(distanceSlider.value).toFixed(1)} см`;
+            }
+
+            function poissonRandom(lambda) {
+                if (lambda < 30) {
+                    let L = Math.exp(-lambda), k = 0, p = 1;
+                    do { k++; p *= Math.random(); } while (p > L);
+                    return k - 1;
+                } else {
+                    let u1 = Math.random(), u2 = Math.random();
+                    let z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+                    let result = Math.round(lambda + z * Math.sqrt(lambda));
+                    return Math.max(0, result);
+                }
+            }
+            
+            function initializeChart() {
+                const ctx = chartCanvas.getContext('2d');
+                const langData = translations[currentLang];
+                
+                myChart = new Chart(ctx, {
+                    type: 'scatter', 
+                    data: { datasets: [] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: 'white' } 
+                            }
+                        },
+                        scales: {
+                            x: { 
+                                type: 'linear', 
+                                position: 'bottom',
+                                title: { 
+                                    display: true, 
+                                    text: langData.graphXAxis, 
+                                    color: '#e0e0e0' 
+                                },
+                                ticks: { color: '#e0e0e0' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: { 
+                                title: { 
+                                    display: true, 
+                                    text: langData.graphYAxis, 
+                                    color: '#e0e0e0' 
+                                },
+                                ticks: { color: '#e0e0e0' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            
+            
+            function getTrueNetRate(sourceKey, L_cm, d_s) {
+                const { DETECTOR_WINDOW_AREA: S_det, DETECTOR_EFFICIENCY_BETA: epsilon_beta, DETECTOR_DEAD_TIME: tau } = CONSTANTS;
+                
+                const A_0 = SESSION_ACTIVITY_BASE;
+                const mu_m = SESSION_CONSTANTS[sourceKey].mu_m;
+                
+                const G = S_det / (4 * Math.PI * Math.pow(L_cm, 2));
+                const I_geom = A_0 * G;
+                
+                const I_abs = I_geom * Math.exp(-mu_m * d_s);
+                const I_ideal = I_abs * epsilon_beta;
+                const I_true_count = I_ideal / (1 + I_ideal * tau);
+                
+                return I_true_count;
+            }
+
+            function performMeasurement() {
+                const sourceType = sourceSelect.value;
+                const L_cm = parseFloat(distanceSlider.value);
+                const numPlates = parseInt(platesInput.value);
+                const T_sec = parseInt(timeInput.value);
+                const materialType = materialSelect.value; 
+
+                const rho = MATERIAL_DENSITIES[materialType].rho; 
+                const d_plate_cm = CONSTANTS.PLATE_THICKNESS_CM;
+                const I_bg_true = CONSTANTS.BACKGROUND_RATE_TRUE;
+
+                const d_cm_total = numPlates * d_plate_cm; 
+                const d_s = d_cm_total * rho; 
+                
+                const I_true_count = getTrueNetRate(sourceType, L_cm, d_s);
+                
+                const I_total_avg = I_true_count + I_bg_true;
+                const N_avg = I_total_avg * T_sec;
+                const N_display = poissonRandom(N_avg);
+                const I_display = (N_display / T_sec); 
+
+                updateDisplay(N_display, I_display.toFixed(2), 'start', () => {
+                    const I_net = I_display - measuredBackgroundRate;
+                    if (I_net <= 0) return; 
+                    
+                    const xValue = numPlates * 0.1; // Толщина в мм
+                    const yValue = Math.log(I_net); 
+
+                    const sourceName = SESSION_CONSTANTS[sourceType].name;
+                    const materialName = MATERIAL_DENSITIES[materialType].name;
+                    const datasetLabel = `${sourceName} (${materialName})`;
+                    const color = SESSION_CONSTANTS[sourceType].color;
+
+                    let dataset = myChart.data.datasets.find(ds => ds.label === datasetLabel);
+                    if (!dataset) {
+                        dataset = {
+                            label: datasetLabel,
+                            data: [],
+                            backgroundColor: color,
+                            borderColor: color,
+                            fill: false, showLine: true, pointRadius: 5, // <-- Добавлено showLine
+                            tension: 0.1 // <-- Добавлено сглаживание
+                        };
+                        myChart.data.datasets.push(dataset);
+                    }
+                    dataset.data.push({ x: xValue, y: yValue });
+                    // Сортировка данных, чтобы линия рисовалась корректно
+                    dataset.data.sort((a, b) => a.x - b.x); 
+                    myChart.update();
+                });
+            }
+
+            function measureBackground() {
+                const T_sec = parseInt(timeInput.value);
+                const N_avg = CONSTANTS.BACKGROUND_RATE_TRUE * T_sec;
+                const N_bg = poissonRandom(N_avg);
+                measuredBackgroundRate = (N_bg / T_sec);
+                updateDisplay(N_bg, measuredBackgroundRate.toFixed(2), 'background');
+            }
+
+            function updateDisplay(count, rate, mode, callback) { 
+                startButton.disabled = true;
+                bgButton.disabled = true;
+                startButton.textContent = translations[currentLang].measuring || "MEASURING...";
+                countDisplay.textContent = "----";
+                rateDisplay.textContent = "--.--";
+                const delay = Math.min(parseInt(timeInput.value) * 100, 3000); 
+
+                setTimeout(() => {
+                    countDisplay.textContent = count;
+                    rateDisplay.textContent = rate;
+                    if (mode === 'background') {
+                        bgDisplay.textContent = rate;
+                    }
+                    startButton.disabled = false;
+                    bgButton.disabled = false;
+                    updateLanguage(currentLang); 
+                    if (callback) { callback(); }
+                }, delay);
+            }
+
+            
+            
+            startButton.addEventListener('click', performMeasurement);
+            bgButton.addEventListener('click', measureBackground);
+            
+            sourceSelect.addEventListener('change', updateDynamicLabels);
+            distanceSlider.addEventListener('input', updateDynamicLabels);
+            platesInput.addEventListener('input', updateDynamicLabels);
+            materialSelect.addEventListener('change', updateDynamicLabels); 
+            timeInput.addEventListener('input', updateDynamicLabels);
+            
+            function resetValidation() {
+                muAttempts = 0; lnI0Attempts = 0;
+                muScore = 0; lnI0Score = 0;
+                muTaskDone = false; lnI0TaskDone = false;
+                
+                validateMuInput.disabled = false;
+                checkMuButton.disabled = false;
+                validateLnI0Input.disabled = false;
+                checkLnI0Button.disabled = false;
+                
+                validateMuInput.value = "";
+                validateLnI0Input.value = "";
+                
+                muFeedback.textContent = "";
+                lnI0Feedback.textContent = "";
+                muFeedback.className = "feedback";
+                lnI0Feedback.className = "feedback";
+                
+                updateAttemptText(muAttemptsLeft, muAttempts, 'mu');
+                updateAttemptText(lnI0AttemptsLeft, lnI0Attempts, 'lnI0');
+            }
+            
+            clearChartButton.addEventListener('click', () => {
+                myChart.data.datasets = [];
+                myChart.update();
+                resetValidation();
+            });
+
+            resetAllButton.addEventListener('click', () => {
+                sourceSelect.value = 'Sr-90';
+                distanceSlider.value = 5;
+                materialSelect.value = 'Aluminum';
+                platesInput.value = 0;
+                timeInput.value = 30;
+
+                userNameInput.value = "";
+                userGroupInput.value = "";
+
+                myChart.data.datasets = [];
+                myChart.update();
+                resetValidation();
+
+                updateDynamicLabels(); 
+
+                measuredBackgroundRate = 0.0;
+                measureBackground();
+                
+                randomizeSessionConstants();
+            });
+
+            
+            helpButton.onclick = function() {
+                instructionModal.style.display = "block";
+            }
+            closeModalButton.onclick = function() {
+                instructionModal.style.display = "none";
+            }
+            
+            // (Модальное окно Результаты)
+            closeFeedbackModal.onclick = function() {
+                feedbackModal.style.display = "none";
+            }
+            printResultsButton.onclick = function() {
+                window.print();
+            }
+
+            window.onclick = function(event) {
+                if (event.target == instructionModal) {
+                    instructionModal.style.display = "none";
+                }
+                if (event.target == feedbackModal) {
+                    feedbackModal.style.display = "none";
+                }
+            }
+
+            function showFeedbackModal() {
+                const langData = translations[currentLang];
+
+                fbName.textContent = userNameInput.value;
+                fbGroup.textContent = userGroupInput.value;
+
+                let percentage = (muScore + lnI0Score) / 2;
+                fbPercentage.textContent = percentage.toFixed(0) + '%'; 
+
+                const sourceKey = sourceSelect.value;
+                const materialKey = materialSelect.value; 
+                const distance = distanceSlider.value; 
+                
+                const sourceName = SESSION_CONSTANTS[sourceKey].name;
+                const materialName = MATERIAL_DENSITIES[materialKey].name;
+                const mu_m = SESSION_CONSTANTS[sourceKey].mu_m;
+                
+                const rho = MATERIAL_DENSITIES[materialKey].rho;
+                
+                const trueMu = mu_m * rho * 0.1;
+                const trueLnI0 = Math.log(getTrueNetRate(sourceKey, parseFloat(distance), 0)); 
+
+                fbTheoryIntro.innerHTML = langData.resultsTheoryIntro
+                    .replace('{source}', sourceName)
+                    .replace('{material}', materialName)
+                    .replace('{distance}', distance);
+                
+                fbMuCorrect.textContent = trueMu.toFixed(3) + " мм⁻¹";
+                fbDistance.textContent = distance; 
+                fbLnI0Correct.textContent = trueLnI0.toFixed(3);
+                
+                feedbackModal.style.display = 'block';
+            }
+            
+            function checkCompletion() {
+                if (muTaskDone && lnI0TaskDone) {
+                    showFeedbackModal(); 
+                }
+            }
+            
+            function checkValue(inputValue, trueValue, feedbackElement) {
+                const langData = translations[currentLang];
+                if (isNaN(inputValue)) { 
+                    feedbackElement.textContent = langData.feedbackInvalid;
+                    feedbackElement.className = "feedback incorrect";
+                    return false;
+                }
+
+                const relativeError = Math.abs(inputValue - trueValue) / (Math.abs(trueValue) + 1e-9); 
+                
+                feedbackElement.classList.remove('correct', 'incorrect');
+
+                if (relativeError <= 0.15) { // 15% допуск
+                    feedbackElement.textContent = langData.feedbackCorrect; 
+                    feedbackElement.classList.add('correct');
+                    return true;
+                } else {
+                    feedbackElement.textContent = langData.feedbackIncorrect; 
+                    feedbackElement.classList.add('incorrect');
+                    return false;
+                }
+            }
+
+            function validateStudentFields() {
+                if (userNameInput.value.trim() === '' || userGroupInput.value.trim() === '') {
+                    alert(translations[currentLang].fillDetailsError);
+                    return false;
+                }
+                return true;
+            }
+
+            checkMuButton.addEventListener('click', () => {
+                if (muTaskDone) return; 
+                if (!validateStudentFields()) return;
+
+                muAttempts++;
+                
+                const source = sourceSelect.value;
+                const material = materialSelect.value; 
+                const mu_m = SESSION_CONSTANTS[source].mu_m;
+                const rho = MATERIAL_DENSITIES[material].rho;
+                const trueMu = mu_m * rho * 0.1; 
+                const userMu = parseFloat(validateMuInput.value);
+                
+                const isCorrect = checkValue(userMu, trueMu, muFeedback);
+                
+                if (isCorrect) {
+                    muTaskDone = true;
+                    if (muAttempts === 1) muScore = 100;
+                    else if (muAttempts === 2) muScore = 75;
+                    else if (muAttempts === 3) muScore = 50;
+                    
+                    validateMuInput.disabled = true;
+                    checkMuButton.disabled = true;
+                } else {
+                    if (muAttempts >= MAX_ATTEMPTS) {
+                        muTaskDone = true; 
+                        muScore = 0;
+                        validateMuInput.disabled = true;
+                        checkMuButton.disabled = true;
+                    }
+                }
+                updateAttemptText(muAttemptsLeft, muAttempts, 'mu');
+                checkCompletion();
+            });
+
+            checkLnI0Button.addEventListener('click', () => {
+                if (lnI0TaskDone) return;
+                if (!validateStudentFields()) return;
+
+                lnI0Attempts++;
+
+                const source = sourceSelect.value;
+                const distance = distanceSlider.value; 
+                
+                const trueLnI0 = Math.log(getTrueNetRate(source, parseFloat(distance), 0)); 
+                const userLnI0 = parseFloat(validateLnI0Input.value);
+
+                const isCorrect = checkValue(userLnI0, trueLnI0, lnI0Feedback);
+
+                if (isCorrect) {
+                    lnI0TaskDone = true;
+                    if (lnI0Attempts === 1) lnI0Score = 100;
+                    else if (lnI0Attempts === 2) lnI0Score = 75;
+                    else if (lnI0Attempts === 3) lnI0Score = 50;
+
+                    validateLnI0Input.disabled = true;
+                    checkLnI0Button.disabled = true;
+                } else {
+                    if (lnI0Attempts >= MAX_ATTEMPTS) {
+                        lnI0TaskDone = true; 
+                        lnI0Score = 0;
+                        validateLnI0Input.disabled = true;
+                        checkLnI0Button.disabled = true;
+                    }
+                }
+                updateAttemptText(lnI0AttemptsLeft, lnI0Attempts, 'lnI0');
+                checkCompletion();
+            });
+            
+            langSelect.addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+            });
+
+
+            // === 6. ПЕРВЫЙ ЗАПУСК ===
+            randomizeSessionConstants(); 
+            initializeChart(); 
+            updateLanguage('ru'); 
+            updateDynamicLabels(); 
+            measureBackground(); 
+        });
+    </script>
+
+</body>
+</html>

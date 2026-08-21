@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ORBITSHIELD AI - Физический симулятор (Телеметрия)</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #58a6ff; margin-bottom: 10px; }
+        .container {
+            display: flex;
+            gap: 20px;
+            background: #161b22;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        canvas {
+            background-color: #010409;
+            border: 2px solid #30363d;
+            border-radius: 5px;
+        }
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 320px;
+        }
+        .control-group {
+            background: #21262d;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #58a6ff;
+        }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input[type="range"] { width: 100%; }
+        .value-display { float: right; color: #58a6ff; }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { background: #2ea043; }
+        button.danger { background: #da3633; }
+        button.danger:hover { background: #f85149; }
+        #status {
+            margin-top: 5px;
+            padding: 10px;
+            background: #010409;
+            border: 1px solid #30363d;
+            border-radius: 5px;
+            font-family: monospace;
+            min-height: 60px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ORBITSHIELD AI: Терминал защиты</h1>
+    
+    <div class="container">
+        <canvas id="radarCanvas" width="650" height="600"></canvas>
+        
+        <div class="panel">
+            <div class="control-group">
+                <h3>Кинетический перехват</h3>
+                <label>Масса дрона m₂ (кг): <span id="m_val" class="value-display">500</span></label>
+                <input type="range" id="droneMass" min="100" max="3000" value="500" oninput="updateUI()">
+                
+                <label>Скорость дрона v₂ (м/с): <span id="v_val" class="value-display">150</span></label>
+                <input type="range" id="droneVel" min="50" max="400" value="150" oninput="updateUI()">
+                
+                <button onclick="launchDrone()">ЗАПУСК ДРОНА</button>
+            </div>
+
+            <div class="control-group" style="border-left-color: #a371f7;">
+                <h3>Энергетический купол</h3>
+                <label>Радиус купола R (м): <span id="r_val" class="value-display">150</span></label>
+                <input type="range" id="shieldRadius" min="50" max="250" value="150" oninput="updateUI()">
+                
+                <label>Сила поля F (Н): <span id="f_val" class="value-display">8000</span></label>
+                <input type="range" id="shieldForce" min="1000" max="30000" value="8000" step="500" oninput="updateUI()">
+                
+                <button onclick="activateShield()" style="background: #8957e5;">АКТИВИРОВАТЬ ПОЛЕ</button>
+            </div>
+
+            <button class="danger" onclick="spawnAsteroid()">НОВАЯ УГРОЗА (СБРОС)</button>
+
+            <div id="status">Система готова...</div>
+        </div>
+    </div>
+
+<script>
+    class Vector2D {
+        constructor(x, y) { this.x = x; this.y = y; }
+        add(v) { return new Vector2D(this.x + v.x, this.y + v.y); }
+        sub(v) { return new Vector2D(this.x - v.x, this.y - v.y); }
+        mult(n) { return new Vector2D(this.x * n, this.y * n); }
+        mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+        normalize() {
+            let m = this.mag();
+            return m === 0 ? new Vector2D(0, 0) : new Vector2D(this.x / m, this.y / m);
+        }
+    }
+
+    const canvas = document.getElementById('radarCanvas');
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    let station = { pos: new Vector2D(cx, cy), radius: 20, energy: 100000 };
+    let asteroid = null;
+    let drones = [];
+    let shield = { active: false, radius: 150, force: 8000 };
+    let gameOver = false;
+    
+    // Переменные для визуализации формул на экране
+    let displayMath = { active: false, text: "", timer: 0 };
+
+    function spawnAsteroid() {
+        let angle = Math.random() * Math.PI * 2;
+        let dist = 380; 
+        let startX = cx + Math.cos(angle) * dist;
+        let startY = cy + Math.sin(angle) * dist;
+        let mass = Math.floor(Math.random() * 4000) + 2000; 
+        let dir = station.pos.sub(new Vector2D(startX, startY)).normalize();
+        let speed = Math.random() * 25 + 20; 
+        
+        asteroid = {
+            pos: new Vector2D(startX, startY), vel: dir.mult(speed), mass: mass,
+            radius: Math.cbrt(mass) * 1.5, active: true
+        };
+        
+        drones = [];
+        shield.active = false;
+        station.energy = 100000;
+        gameOver = false;
+        displayMath.active = false;
+        log(`Угроза обнаружена. Выберите метод защиты.`);
+    }
+
+    function launchDrone() {
+        if (gameOver || !asteroid.active) return;
+        let mass = parseFloat(document.getElementById('droneMass').value);
+        let speed = parseFloat(document.getElementById('droneVel').value);
+        let dir = asteroid.pos.sub(station.pos).normalize();
+        drones.push({ pos: new Vector2D(cx, cy), vel: dir.mult(speed), mass: mass, radius: 5, active: true });
+        log(`Дрон запущен. Расчетная точка перехвата...`);
+    }
+
+    function activateShield() {
+        if (gameOver || !asteroid.active) return;
+        shield.radius = parseFloat(document.getElementById('shieldRadius').value);
+        shield.force = parseFloat(document.getElementById('shieldForce').value);
+        shield.active = true;
+        log(`Энергощит активен. Мониторинг расхода энергии...`);
+    }
+
+    function log(text) { document.getElementById('status').innerText = text; }
+
+    function updateUI() {
+        document.getElementById('m_val').innerText = document.getElementById('droneMass').value;
+        document.getElementById('v_val').innerText = document.getElementById('droneVel').value;
+        document.getElementById('r_val').innerText = document.getElementById('shieldRadius').value;
+        document.getElementById('f_val').innerText = document.getElementById('shieldForce').value;
+    }
+
+    let lastTime = 0;
+    function loop(timestamp) {
+        let dt = (timestamp - lastTime) / 1000;
+        if (dt > 0.1) dt = 0.1;
+        lastTime = timestamp;
+        updatePhysics(dt);
+        drawScene();
+        requestAnimationFrame(loop);
+    }
+
+    function updatePhysics(dt) {
+        if (gameOver || !asteroid || !asteroid.active) return;
+
+        asteroid.pos = asteroid.pos.add(asteroid.vel.mult(dt));
+
+        // Кинетика: Столкновение
+        drones.forEach(drone => {
+            if (!drone.active) return;
+            drone.pos = drone.pos.add(drone.vel.mult(dt));
+            let dist = drone.pos.sub(asteroid.pos).mag();
+            
+            if (dist < asteroid.radius + drone.radius) {
+                drone.active = false;
+                
+                let pAst = asteroid.vel.mult(asteroid.mass);
+                let pDr = drone.vel.mult(drone.mass);
+                let pTotal = pAst.add(pDr);
+                
+                let oldMass = asteroid.mass;
+                let oldVel = Math.round(asteroid.vel.mag());
+                let droneP = Math.round(drone.mass * drone.vel.mag());
+                
+                asteroid.mass += drone.mass;
+                asteroid.vel = pTotal.mult(1 / asteroid.mass);
+                
+                // Вывод формулы на экран
+                displayMath = {
+                    active: true,
+                    timer: 150, // Кадров отображения
+                    text: `Закон сохранения: m₁v₁ + m₂v₂ = (m₁+m₂)V\n` + 
+                          `P_sys = ${Math.round(pAst.mag())} + ${droneP} = ${Math.round(pTotal.mag())} кг*м/с\n` +
+                          `Новая скорость V = ${Math.round(asteroid.vel.mag())} м/с`
+                };
+                log(`Удар! Импульс передан. Траектория изменена.`);
+            }
+        });
+
+        // Термодинамика: Работа щита
+        if (shield.active) {
+            let distToStation = asteroid.pos.sub(station.pos).mag();
+            if (distToStation < shield.radius) {
+                station.energy -= (shield.radius * shield.radius) * 0.5 * dt;
+                
+                if (station.energy > 0) {
+                    let currentSpeed = asteroid.vel.mag();
+                    let decel = shield.force / asteroid.mass;
+                    let newSpeed = currentSpeed - decel * dt;
+                    
+                    if (newSpeed <= 0) {
+                        asteroid.active = false;
+                        log("УГРОЗА УСТРАНЕНА: Кинетическая энергия погашена.");
+                        gameOver = true;
+                    } else {
+                        asteroid.vel = asteroid.vel.normalize().mult(newSpeed);
+                    }
+                } else {
+                    shield.active = false;
+                    log("КРИТИЧЕСКИЙ ОТКАЗ: Энергия исчерпана!");
+                }
+            }
+        }
+
+        let distToStation = asteroid.pos.sub(station.pos).mag();
+        if (distToStation < station.radius + asteroid.radius) {
+            log("КРИТИЧЕСКИЙ УРОН: Станция уничтожена.");
+            gameOver = true;
+            asteroid.active = false;
+        }
+
+        if (distToStation > 800) {
+            log("УГРОЗА МИНОВАЛА: Астероид на безопасной орбите.");
+            gameOver = true;
+            asteroid.active = false;
+        }
+    }
+
+    function drawScene() {
+        ctx.fillStyle = '#010409';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Сетка
+        ctx.strokeStyle = '#161b22';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 50) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+        }
+
+        // Щит
+        if (shield.active && station.energy > 0) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, shield.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(137, 87, 229, ${station.energy / 100000 * 0.3})`;
+            ctx.fill();
+            ctx.strokeStyle = '#8957e5';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Станция
+        ctx.beginPath(); ctx.arc(cx, cy, station.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#58a6ff'; ctx.fill();
+
+        // Астероид
+        if (asteroid && asteroid.active) {
+            ctx.beginPath(); ctx.arc(asteroid.pos.x, asteroid.pos.y, asteroid.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f85149'; ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(asteroid.pos.x, asteroid.pos.y);
+            ctx.lineTo(asteroid.pos.x + asteroid.vel.x * 2, asteroid.pos.y + asteroid.vel.y * 2);
+            ctx.strokeStyle = 'rgba(248, 81, 73, 0.5)'; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        // Дроны
+        drones.forEach(drone => {
+            if (!drone.active) return;
+            ctx.beginPath(); ctx.arc(drone.pos.x, drone.pos.y, drone.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#3fb950'; ctx.fill();
+        });
+
+        // --- HUD: ТЕЛЕМЕТРИЯ ---
+        ctx.fillStyle = 'rgba(0, 10, 20, 0.85)';
+        ctx.fillRect(10, 10, 220, 130);
+        ctx.strokeStyle = '#30363d'; ctx.strokeRect(10, 10, 220, 130);
+        
+        ctx.fillStyle = '#8b949e'; ctx.font = '12px monospace';
+        ctx.fillText("ТЕЛЕМЕТРИЯ УГРОЗЫ", 20, 30);
+        
+        if (asteroid && asteroid.active) {
+            let v = asteroid.vel.mag();
+            let p = asteroid.mass * v;
+            let ek = 0.5 * asteroid.mass * (v * v);
+            
+            ctx.fillStyle = '#c9d1d9';
+            ctx.fillText(`Масса:  ${Math.round(asteroid.mass)} кг`, 20, 50);
+            ctx.fillText(`Скорость: ${Math.round(v)} м/с`, 20, 70);
+            ctx.fillText(`Импульс p=mv:`, 20, 95);
+            ctx.fillStyle = '#58a6ff';
+            ctx.fillText(`${Math.round(p)} кг*м/с`, 120, 95);
+            
+            ctx.fillStyle = '#c9d1d9';
+            ctx.fillText(`Энергия E=mv²/2:`, 20, 115);
+            ctx.fillStyle = '#f85149';
+            ctx.fillText(`${Math.round(ek)} Дж`, 140, 115);
+        }
+
+        // HUD: Энергия Станции
+        ctx.fillStyle = 'rgba(0, 10, 20, 0.85)';
+        ctx.fillRect(canvas.width - 200, 10, 190, 60);
+        ctx.fillStyle = '#8b949e';
+        ctx.fillText("РЕАКТОР СТАНЦИИ", canvas.width - 190, 30);
+        ctx.fillStyle = '#30363d'; ctx.fillRect(canvas.width - 190, 40, 170, 15);
+        ctx.fillStyle = '#a371f7'; ctx.fillRect(canvas.width - 190, 40, (station.energy / 100000) * 170, 15);
+
+        // Работа щита
+        if (shield.active && asteroid && asteroid.active) {
+            let dist = asteroid.pos.sub(station.pos).mag();
+            if (dist < shield.radius) {
+                // Выводим формулу работы
+                ctx.fillStyle = '#a371f7';
+                ctx.fillText(`РАБОТА ПОЛЯ: A = F*d`, canvas.width - 190, 90);
+                ctx.fillText(`A = ${shield.force} * d Дж`, canvas.width - 190, 110);
+            }
+        }
+
+        // Всплывающие формулы (после перехвата)
+        if (displayMath.active) {
+            ctx.fillStyle = 'rgba(35, 134, 54, 0.9)';
+            ctx.fillRect(cx - 160, canvas.height - 100, 320, 80);
+            ctx.fillStyle = 'white';
+            ctx.font = '13px monospace';
+            let lines = displayMath.text.split('\n');
+            for(let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], cx - 145, canvas.height - 75 + (i*20));
+            }
+            displayMath.timer--;
+            if(displayMath.timer <= 0) displayMath.active = false;
+        }
+    }
+
+    spawnAsteroid();
+    requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

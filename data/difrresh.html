@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лаб. работа: Дифракционная решетка</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #00e5ff;
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: var(--accent); margin-bottom: 5px; }
+        .subtitle { color: #777; margin-bottom: 20px; font-size: 0.9em; }
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        /* Управление */
+        .control-group { margin-bottom: 15px; }
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 8px; background: #000; 
+            border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box; 
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+        
+        button {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: #000; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        /* Экран (Canvas) */
+        .screen-container {
+            position: relative;
+            background: #000;
+            border: 4px solid #333;
+            border-radius: 5px;
+            height: 400px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        canvas { display: block; }
+        
+        /* Линейка */
+        .ruler-tick {
+            position: absolute;
+            bottom: 0;
+            background: #fff;
+            width: 1px;
+        }
+        .ruler-label {
+            position: absolute;
+            bottom: 15px;
+            color: #fff;
+            font-size: 10px;
+            transform: translateX(-50%);
+        }
+        
+        /* Модальное окно */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%; max-width: 500px;
+            text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 20px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1 data-lang="mainTitle">Определение длины световой волны</h1>
+<div class="subtitle" data-lang="subTitle">Дифракционная решетка</div>
+
+<div class="container">
+    <div class="panel">
+        <div style="text-align: right; margin-bottom: 10px;">
+            <select id="lang-select" style="width: auto;">
+                <option value="ru">Русский</option>
+                <option value="kz">Қазақша</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+
+        <div class="control-header" data-lang="headStudent">1. Ученик</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button id="start-btn" data-lang="btnStart">НАЧАТЬ РАБОТУ</button>
+
+        <div id="controls-block" style="opacity: 0.5; pointer-events: none;">
+            <div class="control-header" data-lang="headSettings">2. Установка</div>
+            
+            <div class="control-group">
+                <label data-lang="lblMode">Режим работы:</label>
+                <select id="mode-select">
+                    <option value="training" data-lang="optTraining">Обучение (Известная длина волны)</option>
+                    <option value="exam" data-lang="optExam">Задание (Неизвестная длина волны)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblPeriod">Период решетки (d):</span> <span class="val"><span id="d-val">0.01</span> мм</span></label>
+                <input type="range" id="d-slider" min="10" max="100" value="10" step="10"> 
+                <div style="font-size: 0.8em; color: #777;" id="lines-per-mm">100 штрихов/мм</div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblDist">Расстояние до экрана (L):</span> <span class="val"><span id="l-val">1.0</span> м</span></label>
+                <input type="range" id="l-slider" min="0.5" max="2.0" value="1.0" step="0.1">
+            </div>
+
+            <div class="control-group" id="lambda-group">
+                <label><span data-lang="lblLambda">Длина волны (λ):</span> <span class="val"><span id="lam-val">500</span> нм</span></label>
+                <input type="range" id="lam-slider" min="380" max="720" value="500" step="10">
+            </div>
+
+            <div class="control-header" data-lang="headTask">3. Ответ</div>
+            <div class="control-group">
+                <label data-lang="lblCalc">Рассчитанная длина волны (нм):</label>
+                <input type="text" id="ans-input" placeholder="Например: 550">
+                <button id="check-btn" style="background: var(--success); color: white;" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="margin-top: 5px; font-size: 0.9em; color: #aaa; text-align: center;"></div>
+                <div id="check-res" style="margin-top: 10px; font-weight: bold; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top: 0; text-align: center;" data-lang="screenTitle">Вид на экране</h3>
+        <div class="screen-container" id="screen-container">
+            <canvas id="diffraction-canvas" width="800" height="400"></canvas>
+            </div>
+        <div style="margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.9em; color: #aaa;">
+            <span data-lang="rulerHint">Линейка снизу показывает расстояние от центра (см)</span>
+            <span id="mouse-pos">x: 0 см</span>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <p><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></p>
+        <p><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></p>
+        <p><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></p>
+        <hr style="border-color: #444">
+        <p data-lang="resScoreLabel">Оценка:</p>
+        <div class="modal-score" id="res-score-val">10</div>
+        <p><span data-lang="resTrueVal">Истинная λ:</span> <strong id="res-true-val"></strong> нм</p>
+        <button onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языковые настройки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Определение длины световой волны",
+            subTitle: "Лабораторная работа: Дифракционная решетка",
+            headStudent: "1. Ученик",
+            lblPupil: "ФИ Ученика:",
+            lblGrade: "Класс:",
+            btnStart: "НАЧАТЬ РАБОТУ",
+            headSettings: "2. Установка",
+            lblMode: "Режим работы:",
+            optTraining: "Обучение (Настройка λ)",
+            optExam: "Задание (Найти λ)",
+            lblPeriod: "Период решетки (d):",
+            lblDist: "Расстояние до экрана (L):",
+            lblLambda: "Длина волны (λ):",
+            headTask: "3. Ответ",
+            lblCalc: "Рассчитанная длина волны (нм):",
+            btnCheck: "ПРОВЕРИТЬ",
+            screenTitle: "Вид на экране",
+            rulerHint: "Линейка показывает расстояние от центрального максимума (см)",
+            resTitle: "Результат",
+            resPupil: "Ученик:",
+            resGrade: "Класс:",
+            resAttempts: "Использовано попыток:",
+            resScoreLabel: "Оценка:",
+            resTrueVal: "Правильный ответ:",
+            btnRestart: "ЗАВЕРШИТЬ",
+            linesPerMm: "{n} штрихов/мм",
+            alertName: "Введите имя и класс!",
+            txtAttempts: "Попытка: {n} / 3",
+            resCorrect: "Верно!",
+            resWrong: "Неверно. Проверьте формулу: λ = (d * x) / (k * L)"
+        },
+        kz: {
+            mainTitle: "Жарық толқын ұзындығын анықтау",
+            subTitle: "Зертханалық жұмыс: Дифракциялық тор",
+            headStudent: "1. Оқушы",
+            lblPupil: "Оқушының Аты-жөні:",
+            lblGrade: "Сынып:",
+            btnStart: "ЖҰМЫСТЫ БАСТАУ",
+            headSettings: "2. Қондырғы",
+            lblMode: "Жұмыс режимі:",
+            optTraining: "Оқу (λ баптау)",
+            optExam: "Тапсырма (λ табу)",
+            lblPeriod: "Тор периоды (d):",
+            lblDist: "Экранға дейінгі қашықтық (L):",
+            lblLambda: "Толқын ұзындығы (λ):",
+            headTask: "3. Жауап",
+            lblCalc: "Есептелген толқын ұзындығы (нм):",
+            btnCheck: "ТЕКСЕРУ",
+            screenTitle: "Экрандағы көрініс",
+            rulerHint: "Сызғыш орталық максимумнан қашықтықты көрсетеді (см)",
+            resTitle: "Нәтиже",
+            resPupil: "Оқушы:",
+            resGrade: "Сынып:",
+            resAttempts: "Қолданылған мүмкіндіктер:",
+            resScoreLabel: "Баға:",
+            resTrueVal: "Дұрыс жауап:",
+            btnRestart: "АЯҚТАУ",
+            linesPerMm: "{n} штрих/мм",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!",
+            txtAttempts: "Әрекет: {n} / 3",
+            resCorrect: "Дұрыс!",
+            resWrong: "Қате. Формуланы тексеріңіз: λ = (d * x) / (k * L)"
+        },
+        en: {
+            mainTitle: "Determination of Light Wavelength",
+            subTitle: "Lab Work: Diffraction Grating",
+            headStudent: "1. Student",
+            lblPupil: "Name:",
+            lblGrade: "Class:",
+            btnStart: "START LAB",
+            headSettings: "2. Setup",
+            lblMode: "Mode:",
+            optTraining: "Training (Set λ)",
+            optExam: "Exam (Find λ)",
+            lblPeriod: "Grating Period (d):",
+            lblDist: "Distance to Screen (L):",
+            lblLambda: "Wavelength (λ):",
+            headTask: "3. Answer",
+            lblCalc: "Calculated Wavelength (nm):",
+            btnCheck: "CHECK",
+            screenTitle: "Screen View",
+            rulerHint: "Ruler shows distance from central maximum (cm)",
+            resTitle: "Result",
+            resPupil: "Student:",
+            resGrade: "Class:",
+            resAttempts: "Attempts used:",
+            resScoreLabel: "Score:",
+            resTrueVal: "Correct Answer:",
+            btnRestart: "FINISH",
+            linesPerMm: "{n} lines/mm",
+            alertName: "Enter Name and Class!",
+            txtAttempts: "Attempt: {n} / 3",
+            resCorrect: "Correct!",
+            resWrong: "Incorrect. Check formula: λ = (d * x) / (k * L)"
+        }
+    };
+
+    let currentLang = 'ru';
+    let isRunning = false;
+    let attempts = 0;
+    let unknownLambda = 0;
+
+    const state = {
+        d_microns: 10, // d in microns (1/100 mm = 10 microns)
+        L_m: 1.0,      // L in meters
+        lambda_nm: 500, // lambda in nm
+        mode: 'training'
+    };
+
+    // === 2. Логика ===
+
+    function wavelengthToRGB(Wavelength) {
+        // Приближенный перевод длины волны в цвет
+        let Red, Green, Blue;
+        if((Wavelength >= 380) && (Wavelength<440)){
+            Red = -(Wavelength - 440) / (440 - 380); Green = 0.0; Blue = 1.0;
+        } else if((Wavelength >= 440) && (Wavelength<490)){
+            Red = 0.0; Green = (Wavelength - 440) / (490 - 440); Blue = 1.0;
+        } else if((Wavelength >= 490) && (Wavelength<510)){
+            Red = 0.0; Green = 1.0; Blue = -(Wavelength - 510) / (510 - 490);
+        } else if((Wavelength >= 510) && (Wavelength<580)){
+            Red = (Wavelength - 510) / (580 - 510); Green = 1.0; Blue = 0.0;
+        } else if((Wavelength >= 580) && (Wavelength<645)){
+            Red = 1.0; Green = -(Wavelength - 645) / (645 - 580); Blue = 0.0;
+        } else if((Wavelength >= 645) && (Wavelength<781)){
+            Red = 1.0; Green = 0.0; Blue = 0.0;
+        } else {
+            Red = 0.0; Green = 0.0; Blue = 0.0;
+        }
+        
+        // Интенсивность падает на краях спектра
+        let factor;
+        if((Wavelength >= 380) && (Wavelength<420)){
+            factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+        } else if((Wavelength >= 420) && (Wavelength<701)){
+            factor = 1.0;
+        } else if((Wavelength >= 701) && (Wavelength<781)){
+            factor = 0.3 + 0.7*(780 - Wavelength) / (780 - 700);
+        } else {
+            factor = 0.0;
+        }
+
+        const R = Math.round(Red * factor * 255);
+        const G = Math.round(Green * factor * 255);
+        const B = Math.round(Blue * factor * 255);
+        return `rgb(${R}, ${G}, ${B})`;
+    }
+
+    const cvs = document.getElementById('diffraction-canvas');
+    const ctx = cvs.getContext('2d');
+    
+    // Рисование линейки
+    function drawRuler() {
+        const container = document.getElementById('screen-container');
+        // Очищаем старые метки (кроме canvas)
+        const oldTicks = container.querySelectorAll('.ruler-tick, .ruler-label');
+        oldTicks.forEach(el => el.remove());
+
+        const width = cvs.width;
+        const center = width / 2;
+        const scalePxPerCm = 10; // 1 см = 10 пикселей (настраиваемый масштаб)
+        // Для реалистичности: 
+        // Если экран шириной 800px, и пусть это 80 см в реальности -> 10px/см.
+        
+        for (let i = 0; i <= width; i += scalePxPerCm) { // Каждый см
+            const distFromCenter = Math.abs((i - center) / scalePxPerCm);
+            
+            const tick = document.createElement('div');
+            tick.className = 'ruler-tick';
+            tick.style.left = i + 'px';
+            
+            // Крупные риски каждые 5 см
+            if (distFromCenter % 5 === 0) {
+                tick.style.height = '15px';
+                const label = document.createElement('div');
+                label.className = 'ruler-label';
+                label.innerText = distFromCenter;
+                label.style.left = i + 'px';
+                container.appendChild(label);
+            } else {
+                tick.style.height = '8px';
+            }
+            container.appendChild(tick);
+        }
+    }
+
+    function drawScreen() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+        // Параметры
+        // d * sin(phi) = k * lambda
+        // tan(phi) = x / L
+        // x = L * tan(arcsin(k * lambda / d))
+        
+        const lam_m = (state.mode === 'exam' ? unknownLambda : state.lambda_nm) * 1e-9;
+        const d_m = state.d_microns * 1e-6; // перевод мкм в м
+        const L_m = state.L_m;
+
+        // Центральный максимум (k=0)
+        const centerX = cvs.width / 2;
+        const color = wavelengthToRGB(state.mode === 'exam' ? unknownLambda : state.lambda_nm);
+        
+        drawSpot(centerX, color, 1.0); // Самый яркий
+
+        // Порядки k = 1, 2, 3...
+        for (let k = 1; k < 10; k++) {
+            const sinPhi = (k * lam_m) / d_m;
+            if (sinPhi >= 1) break; // Невозможно
+
+            const phi = Math.asin(sinPhi);
+            const x_m = L_m * Math.tan(phi);
+            
+            // Перевод x (метры) в пиксели
+            // Наш масштаб линейки: 1 см = 10 px. Значит 1 м = 100 см = 1000 px.
+            const x_px = x_m * 100 * 10; 
+
+            // Интенсивность падает с порядком
+            const intensity = 1.0 / (k * 1.5);
+
+            drawSpot(centerX + x_px, color, intensity);
+            drawSpot(centerX - x_px, color, intensity);
+        }
+    }
+
+    function drawSpot(x, color, opacity) {
+        if (x < 0 || x > cvs.width) return;
+        
+        // Градиент для реалистичности полосы
+        const grad = ctx.createLinearGradient(x - 5, 0, x + 5, 0);
+        grad.addColorStop(0, 'black');
+        grad.addColorStop(0.5, color);
+        grad.addColorStop(1, 'black');
+
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = opacity;
+        ctx.fillRect(x - 8, 50, 16, 300); // Полоса
+        ctx.globalAlpha = 1.0;
+    }
+
+    // === 3. UI и События ===
+    
+    function updateUI() {
+        const t = LANG[currentLang];
+        
+        // Обновление значений
+        document.getElementById('d-val').innerText = (state.d_microns / 1000).toFixed(3); // в мм
+        // Расчет штрихов/мм: 1 мм / d(мм)
+        const lines = Math.round(1 / (state.d_microns / 1000));
+        document.getElementById('lines-per-mm').innerText = t.linesPerMm.replace('{n}', lines);
+
+        document.getElementById('l-val').innerText = state.L_m.toFixed(1);
+        document.getElementById('lam-val').innerText = state.lambda_nm;
+
+        // Показать/скрыть слайдер длины волны
+        const lamGroup = document.getElementById('lambda-group');
+        if (state.mode === 'exam') {
+            lamGroup.style.display = 'none';
+        } else {
+            lamGroup.style.display = 'block';
+        }
+
+        drawScreen();
+    }
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (t[key]) el.innerText = t[key];
+        });
+        document.getElementById('ans-input').placeholder = (lang === 'en') ? "e.g. 550" : (lang === 'kz' ? "мыс: 550" : "Например: 550");
+        
+        // Обновляем опции селекта
+        const modeSel = document.getElementById('mode-select');
+        modeSel.options[0].text = t.optTraining;
+        modeSel.options[1].text = t.optExam;
+
+        updateUI();
+    }
+
+    // Инициализация
+    window.onload = () => {
+        drawRuler();
+        updateLanguage('ru');
+        updateUI();
+
+        // Слайдеры
+        // d слайдер возвращает значение в мкм (100 штрихов -> 10 мкм, 50 штрихов -> 20 мкм)
+        // Сделаем так: слайдер задает N (штрихов/мм), а мы считаем d
+        // Пусть слайдер: min=100 штрихов, max=600 штрихов
+        // Но в коде выше d-slider от 10 до 100.
+        // Давайте переделаем: slider value = d в микронах.
+        document.getElementById('d-slider').oninput = (e) => { 
+            // Инвертируем логику: чем правее, тем больше штрихов (меньше d)
+            // Допустим, слайдер 1..10. d = 100 / val (мкм).
+            // Оставим как есть в HTML (min 10, max 100, step 10). d = value мкм.
+            state.d_microns = parseInt(e.target.value); 
+            updateUI(); 
+        };
+
+        document.getElementById('l-slider').oninput = (e) => { state.L_m = parseFloat(e.target.value); updateUI(); };
+        document.getElementById('lam-slider').oninput = (e) => { state.lambda_nm = parseInt(e.target.value); updateUI(); };
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+
+        document.getElementById('mode-select').onchange = (e) => {
+            state.mode = e.target.value;
+            if (state.mode === 'exam') {
+                // Генерируем случайную длину волны
+                unknownLambda = Math.floor(Math.random() * (700 - 400) + 400);
+                console.log("Teacher info: Lambda = " + unknownLambda);
+            }
+            updateUI();
+        };
+
+        document.getElementById('start-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            if(!name.trim()) { alert(LANG[currentLang].alertName); return; }
+            
+            isRunning = true;
+            document.getElementById('controls-block').style.opacity = "1";
+            document.getElementById('controls-block').style.pointerEvents = "auto";
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-btn').style.display = 'none';
+        };
+
+        // Отслеживание мыши на экране
+        const screenDiv = document.getElementById('screen-container');
+        screenDiv.onmousemove = (e) => {
+            const rect = cvs.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            // Центр в середине
+            const center = rect.width / 2;
+            const distPx = Math.abs(x - center);
+            // Масштаб: 10 px = 1 см
+            const distCm = (distPx / 10).toFixed(1);
+            document.getElementById('mouse-pos').innerText = `x: ${distCm} см`;
+        };
+
+        // Проверка ответа
+        document.getElementById('check-btn').onclick = () => {
+            if (state.mode !== 'exam') {
+                alert("Переключитесь в режим 'Задание'!");
+                return;
+            }
+            
+            const userVal = parseFloat(document.getElementById('ans-input').value);
+            if (isNaN(userVal)) return;
+
+            attempts++;
+            const t = LANG[currentLang];
+            document.getElementById('attempts-display').innerText = t.txtAttempts.replace('{n}', attempts);
+
+            const err = Math.abs(userVal - unknownLambda);
+            const resDiv = document.getElementById('check-res');
+
+            // Допуск 20 нм
+            if (err <= 20) {
+                let score = 10;
+                if (attempts === 2) score = 8;
+                if (attempts >= 3) score = 7;
+                
+                resDiv.innerHTML = `<span style="color:var(--success)">${t.resCorrect}</span>`;
+                
+                // Modal
+                setTimeout(() => {
+                    document.getElementById('result-modal').style.display = 'flex';
+                    document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+                    document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+                    document.getElementById('res-attempts').innerText = attempts;
+                    document.getElementById('res-score-val').innerText = score;
+                    document.getElementById('res-true-val').innerText = unknownLambda;
+                }, 1000);
+
+            } else {
+                resDiv.innerHTML = `<span style="color:var(--danger)">${t.resWrong}</span>`;
+                if (attempts >= 3) {
+                    setTimeout(() => {
+                        document.getElementById('result-modal').style.display = 'flex';
+                        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+                        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+                        document.getElementById('res-attempts').innerText = attempts;
+                        document.getElementById('res-score-val').innerText = "0";
+                        document.getElementById('res-true-val').innerText = unknownLambda;
+                    }, 1000);
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контроль: Физика – наука о природе (7 класс)</title>
+  
+  <script>
+    MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root { --primary: #3B82F6; --bg: #F0F4FF; --text: #1E293B; --success: #059669; --error: #DC2626; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { max-width: 850px; width: 100%; background: #fff; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .section { margin-bottom: 30px; }
+    h2 { margin-bottom: 15px; color: #1E3A8A; border-left: 4px solid var(--primary); padding-left: 10px; font-size: 1.15rem; }
+    .task { margin-bottom: 15px; padding: 18px; background: #F8FAFC; border-radius: 16px; border: 1px solid #E2E8F0; }
+    .task p { font-weight: 600; margin-bottom: 12px; }
+    .option-label { display: block; padding: 10px 14px; cursor: pointer; border-radius: 10px; margin: 6px 0; border: 1px solid #E2E8F0; background: #FFFFFF; transition: 0.2s; }
+    .option-label:hover { background: #EFF6FF; border-color: #93C5FD; }
+    .context-box { background: #EFF6FF; padding: 18px; border-radius: 16px; margin-bottom: 20px; border: 1px dashed #93C5FD; line-height: 1.6; color: #1E3A8A; }
+    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 12px; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; gap: 15px; }
+    .matching-row select { padding: 8px 12px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 0.95rem; outline: none; }
+    .btn { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 14px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: #2563EB; }
+    .status { font-weight: bold; margin-left: 10px; font-size: 1.2rem; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .back-btn { text-decoration: none; color: #475569; font-weight: 600; }
+    .back-btn:hover { color: #3B82F6; }
+    .lang-switcher button { background: #E2E8F0; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; color: #475569; }
+    .lang-switcher button.active { background: #3B82F6; color: #fff; }
+    #score-box { margin-top: 25px; text-align: center; font-size: 1.6rem; font-weight: 800; color: #1E3A8A; display: none; padding: 20px; background: #EFF6FF; border-radius: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <a href="index7.html" class="back-btn" id="back-txt">← Назад к списку</a>
+        <div class="lang-switcher" id="lang-switcher">
+            <button onclick="setLang('ru')" id="btn-ru">РУС</button>
+            <button onclick="setLang('kk')" id="btn-kk">ҚАЗ</button>
+            <button onclick="setLang('en')" id="btn-en">ENG</button>
+        </div>
+    </div>
+
+    <h1 id="title" style="text-align:center; color:#0F172A; margin-bottom:5px;"></h1>
+    <p id="variant-id" style="text-align:center; color:#64748B; margin-bottom:25px; font-weight: 600;"></p>
+
+    <div id="content">
+        <div id="part1" class="section"></div>
+        <div id="part2" class="section"></div>
+        <div id="part3" class="section"></div>
+    </div>
+
+    <button class="btn" id="submit-btn" onclick="checkAssessment()">ПРОВЕРИТЬ РАБОТУ</button>
+    <div id="score-box"></div>
+</div>
+
+<script>
+let currentLang = localStorage.getItem('preferredLang') || 'ru';
+const variant = Math.floor(Math.random() * 5); // 5 индивидуальных вариантов
+
+const uiText = {
+    ru: {
+        title: "Физика – наука о природе",
+        back: "← Назад к списку",
+        p1: "Часть 1. Тестовые задания (4 балла)",
+        p2: "Часть 2. Задание на соответствие (3 балла)",
+        p3: "Часть 3. Контекстное задание (3 балла)",
+        submit: "ПРОВЕРИТЬ РАБОТУ",
+        matchPrompt: "Установите соответствие между физическим понятием и его описанием:"
+    },
+    kk: {
+        title: "Физика – табиғат туралы ғылым",
+        back: "← Тізімге оралу",
+        p1: "1-бөлім. Тест тапсырмалары (4 балл)",
+        p2: "2-бөлім. Сәйкестендіру тапсырмасы (3 балл)",
+        p3: "3-бөлім. Контекстік тапсырма (3 балл)",
+        submit: "ТЕКСЕРУ",
+        matchPrompt: "Физикалық ұғым мен оның сипаттамасы арасындағы сәйкестікті орнатыңыз:"
+    },
+    en: {
+        title: "Physics - Science of Nature",
+        back: "← Back to topics",
+        p1: "Part 1. Test Questions (4 points)",
+        p2: "Part 2. Matching Task (3 points)",
+        p3: "Part 3. Context-Based Task (3 points)",
+        submit: "SUBMIT WORK",
+        matchPrompt: "Match the physical concept with its description:"
+    }
+};
+
+// Банк тестовых вопросов (4 балла)
+const questionsBank = [
+    {
+        q: { ru: "Что является основным предметом изучения физики?", kk: "Физиканың негізгі зерттеу пәні не?", en: "What is the main subject of physics?" },
+        o: [
+            ["Наиболее общие законы природы и свойства материального мира", "Табиғаттың ең жалпы заңдары және материалдық әлем", "General laws of nature", true],
+            ["Только внутреннее строение живых клеток", "Тек тірі жасушалардың құрылысы", "Structure of living cells only", false],
+            ["Исключительно правила дорожного движения", "Тек жол жүру ережелері", "Exclusively traffic rules", false]
+        ]
+    },
+    {
+        q: { ru: "Какой метод познания предполагает активное вмешательство в процесс?", kk: "Қай таным әдісі процеске белсенді түрде араласуды болжайды?", en: "Which cognitive method involves active intervention?" },
+        o: [
+            ["Физический эксперимент", "Физикалық эксперимент", "Physical experiment", true],
+            ["Пассивное наблюдение в природе", "Табиғаттағы пассивті бақылау", "Passive observation in nature", false],
+            ["Простое художественное описание", "Қарапайым көркем суреттеу", "Simple artistic description", false]
+        ]
+    },
+    {
+        q: { ru: "Какое из явлений относится к тепловым?", kk: "Қай құбылыс жылулық құбылыстарға жатады?", en: "Which phenomenon is thermal?" },
+        o: [
+            ["Плавление льда при нагревании", "Қыздырған кезде мұздың еруі", "Ice melting upon heating", true],
+            ["Электрический ток в проводнике", "Өткізгіштегі электр тогы", "Electric current in a conductor", false],
+            ["Распространение эха в горах", "Тауда эхоның таралуы", "Echo propagation in mountains", false]
+        ]
+    },
+    {
+        q: { ru: "Что из перечисленного является веществом, а не физическим телом?", kk: "Төмендегілердің қайсысы физикалық дене емес, зат болып табылады?", en: "Which of the following is a substance rather than a physical body?" },
+        o: [
+            ["Медь", "Мыс", "Copper", true],
+            ["Медный чайник", "Мыс шәйнек", "Copper kettle", false],
+            ["Медная ложка", "Мыс қасық", "Copper spoon", false]
+        ]
+    }
+];
+
+// Банк соответствий (3 балла)
+const matchingBank = [
+    {
+        term: { ru: "Физическое тело", kk: "Физикалық дене", en: "Physical body" },
+        correct: "A",
+        options: [
+            { key: "A", text: { ru: "Каждый отдельный предмет в окружающем мире", kk: "Қоршаған әлемдегі әрбір жеке зат", en: "Each separate object in the world" } },
+            { key: "B", text: { ru: "То, из чего состоят физические тела", kk: "Физикалық денелер неден тұрса, сол зат", en: "What physical bodies consist of" } },
+            { key: "C", text: { ru: "Научное предположение, требующее проверки", kk: "Тексеруді қажет ететін ғылыми болжам", en: "Scientific hypothesis requiring verification" } }
+        ]
+    },
+    {
+        term: { ru: "Вещество", kk: "Зат", en: "Substance" },
+        correct: "B",
+        options: [
+            { key: "A", text: { ru: "Каждый отдельный предмет в окружающем мире", kk: "Қоршаған әлемдегі әрбір жеке зат", en: "Each separate object in the world" } },
+            { key: "B", text: { ru: "То, из чего состоят физические тела", kk: "Физикалық денелер неден тұрса, сол зат", en: "What physical bodies consist of" } },
+            { key: "C", text: { ru: "Научное предположение, требующее проверки", kk: "Тексеруді қажет ететін ғылыми болжам", en: "Scientific hypothesis requiring verification" } }
+        ]
+    },
+    {
+        term: { ru: "Гипотеза", kk: "Гипотеза", en: "Hypothesis" },
+        correct: "C",
+        options: [
+            { key: "A", text: { ru: "Каждый отдельный предмет в окружающем мире", kk: "Қоршаған әлемдегі әрбір жеке зат", en: "Each separate object in the world" } },
+            { key: "B", text: { ru: "То, из чего состоят физические тела", kk: "Физикалық денелер неден тұрса, сол зат", en: "What physical bodies consist of" } },
+            { key: "C", text: { ru: "Научное предположение, требующее проверки", kk: "Тексеруді қажет ететін ғылыми болжам", en: "Scientific hypothesis requiring verification" } }
+        ]
+    }
+];
+
+// Банк контекстов (5 вариантов для индивидуализации)
+const contextVariants = [
+    {
+        text: {
+            ru: "<b>Контекст №1:</b> Ученик проводит эксперимент в кабинете физики. Он нагревает воду в колбе до кипения и наблюдает образование пара, а также измеряет время изменения температуры с помощью термометра.",
+            kk: "<b>Контекст №1:</b> Оқушы физика кабинетінде эксперимент жүргізуде. Ол колбадағы суды қайнағанға дейін қыздырып, будың түзілуін бақылайды және термометр көмегімен температураның өзгеру уақытын өлшейді.",
+            en: "<b>Context №1:</b> A student conducts an experiment in a physics classroom. He heats water in a flask to a boil, observes steam formation, and measures temperature change time."
+        },
+        questions: [
+            { q: { ru: "1. Какой метод познания использовал ученик?", kk: "1. Оқушы танымның қай әдісін қолданды?", en: "1. Which method did the student use?" }, o: [["Физический эксперимент", "Физикалық эксперимент", "Physical experiment", true], ["Только пассивное наблюдение", "Тек пассивті бақылау", "Passive observation only", false]] },
+            { q: { ru: "2. К какому типу явлений относится кипение воды?", kk: "2. Судың қайнауы құбылыстың қай түріне жатады?", en: "2. What type of phenomenon is boiling water?" }, o: [["Тепловое явление", "Жылулық құбылыс", "Thermal phenomenon", true], ["Электрическое явление", "Электрлік құбылыс", "Electrical phenomenon", false]] },
+            { q: { ru: "3. Что выступило в роли прибора для измерения?", kk: "3. Өлшеу құралының рөлін не атқарды?", en: "3. What served as the measuring instrument?" }, o: [["Термометр", "Термометр", "Thermometer", true], ["Колба", "Колба", "Flask", false]] }
+        ]
+    },
+    {
+        text: {
+            ru: "<b>Контекст №2:</b> Во время грозы ученик заметил, что сначала видит вспышку молнии, а спустя несколько секунд слышит раскаты грома. Он предположил, что свет распространяется гораздо быстрее звука.",
+            kk: "<b>Контекст №2:</b> Найзағай кезінде оқушы əуелі жарқылды көріп, бірнеше секундтан кейін күркіреген дыбысты еститінін байқады. Ол жарық дыбысқа қарағанда әлдеқайда жылдам таралады деп болжады.",
+            en: "<b>Context №2:</b> During a thunderstorm, a student noticed he sees the flash first and hears thunder seconds later. He hypothesized that light travels much faster than sound."
+        },
+        questions: [
+            { q: { ru: "1. Что сделал ученик, предположив разницу в скоростях?", kk: "1. Жылдамдықтар айырмашылығын болжай отырып, оқушы не жасады?", en: "1. What did the student do by hypothesizing?" }, o: [["Выдвинул научную гипотезу", "Ғылыми гипотеза ұсынды", "Put forward a scientific hypothesis", true], ["Провел химическую реакцию", "Химиялық реакция жүргізді", "Performed a chemical reaction", false]] },
+            { q: { ru: "2. К какому типу явлений относятся вспышка молнии и гром?", kk: "2. Найзағай жарқылы мен күркіреуі қай құбылыстарға жатады?", en: "2. What types of phenomena are lightning and thunder?" }, o: [["Световые и звуковые (механические) явления", "Жарық және дыбыс (механикалық) құбылыстары", "Light and sound (mechanical) phenomena", true], ["Только магнитные явления", "Тек магниттік құбылыстар", "Magnetic phenomena only", false]] },
+            { q: { ru: "3. Почему молния видна раньше, чем слышен гром?", kk: "3. Найзағай неге дыбыстан бұрын көрінеді?", en: "3. Why is lightning seen before thunder is heard?" }, o: [["Скорость света больше скорости звука", "Жарық жылдамдығы дыбыс жылдамдығынан көп", "Speed of light is greater than sound", true], ["Гром звучит тише молнии", "Күркіреу найзағайдан тыныш", "Thunder is quieter than lightning", false]] }
+        ]
+    },
+    {
+        text: {
+            ru: "<b>Контекст №3:</b> На уроке физики исследовали брусок из алюминия объемом 0.05 м³. С помощью весов определили его массу, чтобы вычислить плотность материала.",
+            kk: "<b>Контекст №3:</b> Физика сабағында көлемі 0.05 м³ алюминий білеушеسي зерттелді. Материалдың тығыздығын есептеу үшін таразы көмегімен оның массасы анықталды.",
+            en: "<b>Context №3:</b> In a physics lesson, an aluminum block of 0.05 m³ was studied. Its mass was determined using scales to calculate the material's density."
+        },
+        questions: [
+            { q: { ru: "1. Что измеряли с помощью весов?", kk: "1. Таразы көмегімен не өлшенді?", en: "1. What was measured using scales?" }, o: [["Массу бруска", "Білеуше массасы", "Mass of the block", true], ["Объем бруска", "Білеуше көлемі", "Volume of the block", false]] },
+            { q: { ru: "2. Алюминий в данном случае является...", kk: "2. Бұл жағдайда алюминий болып табылады...", en: "In this case, aluminum is..." }, o: [["Веществом", "Зат", "A substance", true], ["Физическим телом", "Физикалық дене", "A physical body", false]] },
+            { q: { ru: "3. Алюминиевый брусок является...", kk: "3. Алюминий білеушесі болып табылады...", en: "The aluminum block is..." }, o: [["Физическим телом", "Физикалық дене", "A physical body", true], ["Только единицей измерения", "Тек өлшем бірлігі", "Only a unit of measurement", false]] }
+        ]
+    },
+    {
+        text: {
+            ru: "<b>Контекст №4:</b> Автомобиль движется по прямолинейному шоссе. Водитель фиксирует пройденный путь по спидометру и затраченное время по часам для определения средней скорости.",
+            kk: "<b>Контекст №4:</b> Автокөлік түзу сызықты тасжолмен қозғалуда. Жүргізуші орташа жылдамдықты анықтау үшін жол өлшегіш пен сағатты пайдаланады.",
+            en: "<b>Context №4:</b> A car moves along a straight highway. The driver records distance and time to determine average speed."
+        },
+        questions: [
+            { q: { ru: "1. Движение автомобиля — это...", kk: "1. Автокөлік қозғалысы — бұл...", en: "1. Car motion is..." }, o: [["Механическое явление", "Механикалық құбылыс", "Mechanical phenomenon", true], ["Тепловое явление", "Жылулық құбылыс", "Thermal phenomenon", false]] },
+            { q: { ru: "2. Какой прибор измеряет время?", kk: "2. Қай құрал уақытты өлшейді?", en: "2. Which device measures time?" }, o: [["Часы", "Сағат", "Clock / Watch", true], ["Спидометр", "Спидометр", "Speedometer", false]] },
+            { q: { ru: "3. Какой метод познания здесь применяется на практике?", kk: "3. Мұнда танымның қай әдісі қолданылады?", en: "3. What cognitive method is applied here?" }, o: [["Измерение физических величин", "Физикалық шамаларды өлшеу", "Measurement of physical quantities", true], ["Только фантазия", "Тек қиял", "Fantasy only", false]] }
+        ]
+    },
+    {
+        text: {
+            ru: "<b>Контекст №5:</b> Ученик изучал свойства магнита. Он подносил магнит к железным скрепкам и булавкам на разное расстояние, фиксируя момент их притяжения.",
+            kk: "<b>Контекст №5:</b> Оқушы магниттің қасиеттерін зерттеді. Ол магнитті темір қыстырғыштарға түрлі қашықтықта жақындатып, тартылу сәтін тіркеді.",
+            en: "<b>Context №5:</b> A student studied magnet properties. He brought a magnet to iron paperclips at different distances, recording the attraction moment."
+        },
+        questions: [
+            { q: { ru: "1. Взаимодействие магнита и сцепок — это...", kk: "1. Магнит пен қыстырғыштардың әрекеттесуі — бұл...", en: "1. Magnet and paperclip interaction is..." }, o: [["Магнитное явление", "Магниттік құбылыс", "Magnetic phenomenon", true], ["Тепловое явление", "Жылулық құбылыс", "Thermal phenomenon", false]] },
+            { q: { ru: "2. Что менял ученик в ходе опыта?", kk: "2. Тәжірибе барысында оқушы нені өзгертті?", en: "2. What did the student change during the experiment?" }, o: [["Расстояние между магнитом и предметами", "Магнит пен заттар арасындағы қашықтықты", "Distance between magnet and items", true], ["Цвет магнита", "Магнит түсін", "Color of the magnet", false]] },
+            { q: { ru: "3. Какой метод исследования он использовал?", kk: "3. Ол зерттеудің қай әдісін қолданды?", en: "3. What research method did he use?" }, o: [["Эксперимент (опыт)", "Эксперимент (тәжірибе)", "Experiment", true], ["Только чтение учебника", "Тек оқулық оқу", "Reading textbook only", false]] }
+        ]
+    }
+];
+
+function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+function setLang(l) {
+    localStorage.setItem('preferredLang', l);
+    location.reload();
+}
+
+function renderAssessment() {
+    document.getElementById('title').innerText = uiText[currentLang].title;
+    document.getElementById('back-txt').innerText = uiText[currentLang].back;
+    document.getElementById('submit-btn').innerText = uiText[currentLang].submit;
+    document.getElementById('variant-id').innerText = (currentLang === 'ru' ? "Индивидуальный вариант №" : (currentLang === 'kk' ? "Жеке нұсқа №" : "Individual Variant №")) + (variant + 1);
+
+    document.querySelectorAll('.lang-switcher button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + currentLang).classList.add('active');
+
+    // --- ЧАСТЬ 1: ТЕСТЫ (4 балла) ---
+    let p1 = document.getElementById('part1');
+    p1.innerHTML = `<h2>${uiText[currentLang].p1}</h2>`;
+    
+    let shuffledTests = shuffle([...questionsBank]).slice(0, 4);
+    shuffledTests.forEach((t, i) => {
+        let div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `<p>${i + 1}. ${t.q[currentLang]}</p>`;
+        
+        let shuffledOpts = shuffle([...t.o]);
+        shuffledOpts.forEach(opt => {
+            let textIdx = currentLang === 'ru' ? 0 : (currentLang === 'kk' ? 1 : 2);
+            div.innerHTML += `
+                <label class="option-label">
+                    <input type="radio" name="test-${i}" data-correct="${opt[3]}"> ${opt[textIdx]}
+                </label>`;
+        });
+        p1.appendChild(div);
+    });
+
+    // --- ЧАСТЬ 2: СООТВЕТСТВИЯ (3 пары) ---
+    let p2 = document.getElementById('part2');
+    p2.innerHTML = `<h2>${uiText[currentLang].p2}</h2>`;
+    
+    let matchCard = document.createElement('div');
+    matchCard.className = 'task';
+    matchCard.innerHTML = `<p>${uiText[currentLang].matchPrompt}</p>`;
+    
+    let shuffledMatching = shuffle([...matchingBank]);
+    shuffledMatching.forEach((m, i) => {
+        let shuffledOpts = shuffle([...m.options]);
+        let selectHtml = `<option value="">-- ${currentLang==='ru'?'Выберите':'Таңдаңыз'} --</option>`;
+        
+        shuffledOpts.forEach(opt => {
+            // Исправлено: обращаемся к объекту текста по ключу языка, а не по индексу
+            let optText = opt.text[currentLang];
+            selectHtml += `<option value="${opt.key}">${opt.key}) ${optText}</option>`;
+        });
+
+        matchCard.innerHTML += `
+            <div class="matching-row">
+                <span><b>${i + 1})</b> ${m.term[currentLang]}</span>
+                <select class="match-select" data-correct="${m.correct}">${selectHtml}</select>
+            </div>`;
+    });
+    p2.appendChild(matchCard);
+
+    // --- ЧАСТЬ 3: КОНТЕКСТ (3 вопроса) ---
+    let p3 = document.getElementById('part3');
+    let activeCtx = contextVariants[variant];
+    
+    p3.innerHTML = `
+        <h2>${uiText[currentLang].p3}</h2>
+        <div class="context-box">${activeCtx.text[currentLang]}</div>`;
+
+    activeCtx.questions.forEach((cq, i) => {
+        let div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `<p>${cq.q[currentLang]}</p>`;
+        
+        let shuffledCqOpts = shuffle([...cq.o]);
+        shuffledCqOpts.forEach(opt => {
+            let textIdx = currentLang === 'ru' ? 0 : (currentLang === 'kk' ? 1 : 2);
+            div.innerHTML += `
+                <label class="option-label">
+                    <input type="radio" name="ctx-${i}" data-correct="${opt[3]}"> ${opt[textIdx]}
+                </label>`;
+        });
+        p3.appendChild(div);
+    });
+}
+
+function checkAssessment() {
+    let score = 0;
+
+    // Проверка тестов (4 балла)
+    document.querySelectorAll('#part1 .task').forEach(task => {
+        let selected = task.querySelector('input[type="radio"]:checked');
+        let statusSpan = document.createElement('span');
+        statusSpan.className = 'status';
+        if (selected) {
+            if (selected.getAttribute('data-correct') === 'true') {
+                score++;
+                statusSpan.innerText = '✅';
+                selected.parentElement.style.borderColor = '#059669';
+                selected.parentElement.style.background = '#ECFDF5';
+            } else {
+                statusSpan.innerText = '❌';
+                selected.parentElement.style.borderColor = '#DC2626';
+                selected.parentElement.style.background = '#FEF2F2';
+            }
+            selected.parentElement.appendChild(statusSpan);
+        }
+    });
+
+    // Проверка соответствий (3 балла)
+    document.querySelectorAll('.matching-row').forEach(row => {
+        let select = row.querySelector('select');
+        let statusSpan = document.createElement('span');
+        statusSpan.className = 'status';
+        if (select.value === select.getAttribute('data-correct')) {
+            score++;
+            statusSpan.innerText = '✅';
+            select.style.borderColor = '#059669';
+        } else {
+            statusSpan.innerText = '❌';
+            select.style.borderColor = '#DC2626';
+        }
+        row.appendChild(statusSpan);
+    });
+
+    // Проверка контекста (3 балла)
+    document.querySelectorAll('#part3 .task').forEach(task => {
+        let selected = task.querySelector('input[type="radio"]:checked');
+        let statusSpan = document.createElement('span');
+        statusSpan.className = 'status';
+        if (selected) {
+            if (selected.getAttribute('data-correct') === 'true') {
+                score++;
+                statusSpan.innerText = '✅';
+                selected.parentElement.style.borderColor = '#059669';
+                selected.parentElement.style.background = '#ECFDF5';
+            } else {
+                statusSpan.innerText = '❌';
+                selected.parentElement.style.borderColor = '#DC2626';
+                selected.parentElement.style.background = '#FEF2F2';
+            }
+            selected.parentElement.appendChild(statusSpan);
+        }
+    });
+
+    document.getElementById('submit-btn').style.display = 'none';
+    let scoreBox = document.getElementById('score-box');
+    scoreBox.style.display = 'block';
+    
+    let gradeText = currentLang === 'ru' ? 'Итоговая оценка:' : (currentLang === 'kk' ? 'Қорытынды баға:' : 'Final Grade:');
+    scoreBox.innerText = `${gradeText} ${score} / 10`;
+    scoreBox.scrollIntoView({ behavior: 'smooth' });
+}
+
+window.onload = renderAssessment;
+</script>
+</body>
+</html>

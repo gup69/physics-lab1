@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная лабораторная работа №4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .page-header { display: flex; align-items: center; margin-bottom: 10px; }
+        .page-header .header-text h2 { margin: 0; padding: 0; border: none; color: #2c3e50; }
+        .page-header .header-text p { margin: 5px 0 0 0; color: #7f8c8d; font-style: italic; }
+        .copyright { text-align: center; font-size: 12px; color: #95a5a6; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .student-info { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 20px; }
+        .student-info div { display: flex; flex-direction: column; flex-grow: 1; }
+        .student-info label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .student-info input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1, h2, h3, h4 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .instruction-block { background-color: #eaf5ff; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .instruction-block ol { padding-left: 20px; margin: 0; }
+        .lang-switcher { text-align: right; }
+        .lang-btn { background: none; border: 1px solid #bdc3c7; padding: 4px 8px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.8em; }
+        .lang-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        #backButton { background-color: #6c757d; color: white; border-color: #6c757d; }
+        #backButton:hover { background-color: #5a6268; }
+
+        .simulation-container { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; }
+        .circuit-diagram { width: 100%; height: 250px; position: relative; max-width: 700px; margin: 0 auto; }
+        .component { position: absolute; text-align: center; font-size: 0.9em; z-index: 10;}
+        .component .label { font-weight: bold; }
+        
+        /* Power Source */
+        .power-source { top: 85px; left: 0; width: 40px; height: 60px; }
+        .power-source::before { content: '+'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 1.2em;}
+        .power-source::after { content: '−'; position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 1.2em;}
+        .power-line { position: absolute; background-color: #333; left: 50%; transform: translateX(-50%);}
+        .power-long { width: 30px; height: 2px; top: 20px; }
+        .power-short { width: 15px; height: 2px; top: 35px; }
+
+        /* Rheostat */
+        .rheostat { top: 85px; left: 250px; width: 120px; height: 30px; border: 2px solid #333; background: #fff; }
+        #rheostat-contact { position: absolute; top: -5px; width: 10px; height: 40px; background-color: #e74c3c; z-index: 5; transition: left 0.1s linear; }
+        
+        /* Meters - round */
+        .meter { border-radius: 50%; width: 70px; height: 70px; background: #fff; z-index: 10; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; position: absolute;}
+        .ammeter { border: 2px solid #2980b9; } 
+        .voltmeter { border: 2px solid #27ae60; } 
+        .meter .reading { font-size: 1.2em; color: #c0392b; }
+        .meter .unit { font-size: 0.9em; }
+
+        /* Wires */
+        .wire { background-color: #555; position: absolute; z-index: 1;}
+        .wire.h { height: 2px; }
+        .wire.v { width: 2px; }
+
+        .controls { width: 100%; max-width: 400px; margin-top: 10px; }
+        .controls label { display: block; text-align: center; font-weight: bold; margin-bottom: 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        td .input-container { display: flex; flex-direction: column; align-items: stretch; justify-content: center; width: 100%; }
+        td input { width: 100%; text-align: center; padding: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .feedback-cell { font-size: 0.9em; font-weight: bold; height: 1.2em; }
+        
+        .conclusion-container { margin-top: 20px; text-align: center; }
+        .conclusion-container label { font-weight: bold; margin-right: 10px; }
+        .conclusion-container select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+
+        .action-buttons { text-align: center; margin-top: 20px; }
+        .action-button { display: inline-block; margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #checkButton { background-color: #3498db; }
+        #showAnswersButton { background-color: #9b59b6; display: none; }
+        #shareToTeacherButton { background-color: #3498db; display: none; }
+        #validationMessage, #finalResult { text-align: center; margin-top: 20px; }
+        #answersReview { text-align: left; padding: 15px; background-color: #ecf0f1; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 0.9em; margin-top: 15px; }
+        
+        .correct { color: #27ae60; }
+        .incorrect { color: #e74c3c; }
+        .correct-input { border-color: #27ae60 !important; box-shadow: 0 0 5px rgba(39, 174, 96, 0.5); }
+        .incorrect-input { border-color: #e74c3c !important; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
+    </style>
+</head>
+<body>
+<div class="container" id="printableArea">
+    <div class="page-header">
+        <div class="header-text">
+            <h2 data-key="grade_level">8 класс</h2>
+            <p><span data-key="author_prefix"></span> <span data-key="author_details"></span></p>
+        </div>
+    </div>
+    <div class="copyright" data-key="copyright"></div>
+
+    <div class="top-nav">
+        <button id="backButton" class="lang-btn" data-key="back_button"></button>
+        <div class="lang-switcher">
+            <button class="lang-btn active" data-lang="ru">Русский</button>
+            <button class="lang-btn" data-lang="kk">Қазақша</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+    </div>
+
+    <div class="student-info">
+        <div><label for="student_lastname" data-key="student_lastname"></label><input type="text" id="student_lastname"></div>
+        <div><label for="student_firstname" data-key="student_firstname"></label><input type="text" id="student_firstname"></div>
+        <div><label for="student_class_number" data-key="student_class_number"></label><input type="number" id="student_class_number"></div>
+        <div><label for="student_class_letter" data-key="student_class_letter"></label><input type="text" id="student_class_letter" maxlength="1" style="max-width: 60px;"></div>
+    </div>
+
+    <h1 data-key="main_title"></h1>
+    <h2 data-key="lab_topic_title"></h2>
+    <p><strong data-key="lab_goal_title"></strong> <span data-key="lab_goal_text"></span></p>
+
+    <div class="instruction-block">
+        <h4 data-key="instruction_title"></h4>
+        <ol>
+            <li data-key="instruction_step1"></li>
+            <li data-key="instruction_step2"></li>
+            <li data-key="instruction_step3"></li>
+            <li data-key="instruction_step4"></li>
+        </ol>
+    </div>
+    
+    <h3 data-key="procedure_title"></h3>
+    <div class="simulation-container">
+        <div class="circuit-diagram">
+            <div class="component power-source" style="top: 85px; left: 0;">
+                <div class="power-line power-long"></div>
+                <div class="power-line power-short"></div>
+            </div>
+
+            <div id="ammeter" class="meter ammeter" style="top: 70px; left: 160px;">
+                <div class="label">A</div>
+                <span id="ammeter-reading" class="reading">0.00</span><span class="unit">A</span>
+            </div>
+
+            <div class="component rheostat" style="top: 85px; left: 350px;">
+                <div id="rheostat-contact"></div>
+            </div>
+
+            <div id="voltmeter" class="meter voltmeter" style="top: 0px; left: 385px;">
+                <div class="label">V</div>
+                <span id="voltmeter-reading" class="reading">0.00</span><span class="unit">V</span>
+            </div>
+            
+            <div class="wire h" style="top: 95px; left: 40px; width: 120px;"></div>
+            <div class="wire h" style="top: 95px; left: 235px; width: 115px;"></div>
+            <div class="wire h" style="top: 95px; left: 475px; width: 150px;"></div>
+
+            <div class="wire v" style="top: 95px; left: 625px; height: 106px;"></div>
+
+            <div class="wire h" style="top: 199px; left: 20px; width: 605px;"></div>
+
+            <div class="wire v" style="top: 145px; left: 20px; height: 56px;"></div>
+
+            <div class="wire v" style="top: 70px; left: 350px; height: 25px;"></div>
+            <div class="wire h" style="top: 70px; left: 350px; width: 35px;"></div>
+
+            <div class="wire v" style="top: 70px; left: 570px; height: 25px;"></div>
+            <div class="wire h" style="top: 70px; left: 455px; width: 115px;"></div>
+
+        </div>
+        <div class="controls">
+            <label for="rheostat-slider" data-key="rheostat_label"></label>
+            <input type="range" id="rheostat-slider" min="0" max="100" value="50" step="1">
+        </div>
+    </div>
+    
+    <h3 data-key="results_table_title"></h3>
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th data-key="th_voltage"></th>
+                <th data-key="th_current"></th>
+                <th data-key="th_resistance"></th>
+                <th data-key="th_feedback"></th>
+            </tr>
+        </thead>
+        <tbody id="results-tbody">
+            </tbody>
+    </table>
+
+    <div class="conclusion-container">
+        <label for="conclusion-select" data-key="conclusion_label"></label>
+        <select id="conclusion-select">
+            <option value="" data-key="conclusion_option_select"></option>
+            <option value="direct" data-key="conclusion_option_direct"></option>
+            <option value="inverse" data-key="conclusion_option_inverse"></option>
+            <option value="none" data-key="conclusion_option_none"></option>
+        </select>
+    </div>
+
+    <div id="validationMessage"></div>
+    <div class="action-buttons">
+        <button id="checkButton" class="action-button" data-key="check_button"></button>
+        <button id="showAnswersButton" class="action-button" data-key="show_answers_button"></button>
+    </div>
+    <div id="finalResult"></div>
+    <div id="answersReview" style="display: none;"></div>
+    <div class="action-buttons">
+        <button id="shareToTeacherButton" class="action-button" data-key="share_button"></button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const BOT_TOKEN = '7965293959:AAHPx2BJ1ibi05eBqKHSipgpXXtHDY9Ozt4'; 
+    const CHAT_ID = '876026321';
+
+    const state = {
+        U_source: 12, // Voltage of the power source
+        R_fixed: 10, // Fixed resistance in the circuit (e.g., internal resistance or other component)
+        R_rheo_max: 50, // Maximum resistance of the rheostat
+        attemptsLeft: 2,
+        finalScoreText: ''
+    };
+
+    const dom = {
+        rheostatSlider: document.getElementById('rheostat-slider'),
+        ammeterReading: document.getElementById('ammeter-reading'),
+        voltmeterReading: document.getElementById('voltmeter-reading'),
+        rheostatContact: document.getElementById('rheostat-contact'),
+        resultsTbody: document.getElementById('results-tbody'),
+        conclusionSelect: document.getElementById('conclusion-select'),
+        checkButton: document.getElementById('checkButton'),
+        showAnswersButton: document.getElementById('showAnswersButton'),
+        shareToTeacherButton: document.getElementById('shareToTeacherButton'),
+        finalResultDiv: document.getElementById('finalResult'),
+        answersReviewDiv: document.getElementById('answersReview'),
+        validationMessage: document.getElementById('validationMessage'),
+        backButton: document.getElementById('backButton'),
+        ammeter: document.getElementById('ammeter'),
+        voltmeter: document.getElementById('voltmeter')
+    };
+
+    const translations = {
+        ru: {
+            grade_level: "8 класс", author_prefix: "Автор:", author_details: "Грязнов Юрий Петрович, учитель физики, гимназия №8 г. Шымкент, Казахстан", copyright: "© Все права защищены, {year}", main_title: "Лабораторная работа №4", lab_topic_title: "Тема: Измерение сопротивления проводника", lab_goal_title: "Цель:", lab_goal_text: "Научиться измерять сопротивление участка цепи с помощью амперметра и вольтметра и сделать вывод о зависимости величин.", instruction_title: "Инструкция", instruction_step1: "Установите ползунок реостата в произвольное положение.", instruction_step2: "Снимите показания вольтметра (U) и амперметра (I) и занесите их в таблицу.", instruction_step3: "Используя закон Ома (R = U / I), вычислите сопротивление и запишите результат. Повторите опыт еще 3 раза.", instruction_step4: "На основе наблюдений сделайте вывод о зависимости силы тока от напряжения. Нажмите «Проверить».", procedure_title: "Ход работы", rheostat_label: "Перемещение ползунка реостата", results_table_title: "Таблица измерений и вычислений", th_voltage: "Напряжение U, В", th_current: "Сила тока I, А", th_resistance: "Сопротивление R, Ом", th_feedback: "Проверка", conclusion_label: "Вывод: Сила тока на участке цепи", conclusion_option_select: "Выберите...", conclusion_option_direct: "прямо пропорциональна напряжению", conclusion_option_inverse: "обратно пропорциональна напряжению", conclusion_option_none: "не зависит от напряжения", check_button: "Проверить", back_button: "Назад", student_lastname: "Фамилия", student_firstname: "Имя", student_class_number: "Класс (цифра)", student_class_letter: "Литер", attempts_left_1: "попытка", attempts_left_2: "попытки", show_answers_button: "Показать ответы", share_button: "Поделиться с учителем", sending: "Отправка...", send_success: "Отчет успешно отправлен!", send_error: "Ошибка отправки.", validation_message: "Пожалуйста, заполните все поля ученика, таблицы и сделайте вывод.", final_result_title: "Ваш итоговый результат:", out_of_10: "из 10", answers_review_title: "Разбор ответов:", report_student: "Ученик(ца):", report_class: "Класс:", report_score: "Итоговая оценка:", conclusion: "Вывод", your_answer: "Ваш ответ", correct_answer: "Правильный ответ", example_calculation: "Пример правильного расчета", error_details: "Проверьте токен бота, ID чата и интернет қосылымын тексеріңіз.", feedback_correct: "Верно 👍", feedback_incorrect: "Неверно ❌"
+        },
+        kk: {
+            grade_level: "8 сынып", author_prefix: "Авторы:", author_details: "Грязнов Юрий Петрович, физика мұғалімі, Шымкент қ. №8 гимназиясы, Қазақстан", copyright: "© Барлық құқықтар қорғалған, {year}", main_title: "№4 Зертханалық жұмыс", lab_topic_title: "Тақырыбы: Өткізгіштің кедергісін өлшеу", lab_goal_title: "Мақсаты:", lab_goal_text: "Амперметр мен вольтметрдің көмегімен тізбек бөлігінің кедергісін өлшеуді және шамалардың тәуелділігі туралы қорытынды жасауды үйрену.", instruction_title: "Нұсқаулық", instruction_step1: "Реостаттың жүгірткісін кездейсоқ жағдайға қойыңыз.", instruction_step2: "Вольтметр (U) мен амперметрдің (I) көрсеткіштерін алып, оларды кестеге енгізіңіз.", instruction_step3: "Ом заңын (R = U / I) пайдаланып, кедергіні есептеп, нәтижені жазыңыз. Тәжірибені тағы 3 рет қайталаңыз.", instruction_step4: "Бақылаулар негізінде ток күшінің кернеуге тәуелділігі туралы қорытынды жасаңыз. «Тексеру» түймесін басыңыз.", procedure_title: "Жұмыс барысы", rheostat_label: "Реостат жүгірткісін жылжыту", results_table_title: "Өлшеулер мен есептеулер кестесі", th_voltage: "Кернеу U, В", th_current: "Ток күші I, А", th_resistance: "Кедергі R, Ом", th_feedback: "Тексеру", conclusion_label: "Қорытынды: Тізбек бөлігіндегі ток күші", conclusion_option_select: "Таңдаңыз...", conclusion_option_direct: "кернеуге тура пропорционал", conclusion_option_inverse: "кернеуге кері пропорционал", conclusion_option_none: "кернеуге тәуелді емес", check_button: "Тексеру", back_button: "Артқа", student_lastname: "Тегі", student_firstname: "Аты", student_class_number: "Сынып (сан)", student_class_letter: "Литер", attempts_left_1: "мүмкіндік", attempts_left_2: "мүмкіндік", show_answers_button: "Жауаптарды көрсету", share_button: "Мұғаліммен бөлісу", sending: "Жіберу...", send_success: "Есеп сәтті жіберілді!", send_error: "Жіберу қатесі.", validation_message: "Оқушының, кестенің барлық өрістерін толтырып, қорытынды жасаңыз.", final_result_title: "Сіздің қорытынды нәтижеңіз:", out_of_10: "/ 10", answers_review_title: "Жауаптарды талдау:", report_student: "Оқушы:", report_class: "Сынып:", report_score: "Қорытынды баға:", conclusion: "Қорытынды", your_answer: "Сіздің жауабыңыз", correct_answer: "Дұрыс жауап", example_calculation: "Дұрыс есептеу үлгісі", error_details: "Бот токенін, чат ID-ін және интернет қосылымын тексеріңіз.", feedback_correct: "Дұрыс 👍", feedback_incorrect: "Қате ❌"
+        },
+        en: {
+            grade_level: "8th Grade", author_prefix: "Author:", author_details: "Yuriy Gryaznov, Physics Teacher, Gymnasium No. 8, Shymkent, Kazakhstan", copyright: "© All rights reserved, {year}", main_title: "Laboratory Work #4", lab_topic_title: "Topic: Measuring Conductor Resistance", lab_goal_title: "Objective:", lab_goal_text: "To learn how to measure the resistance of a circuit section using an ammeter and voltmeter and to conclude on the relationship between quantities.", instruction_title: "Instructions", instruction_step1: "Set the rheostat slider to an arbitrary position.", instruction_step2: "Take the readings from the voltmeter (U) and ammeter (I) and enter them into the table.", instruction_step3: "Using Ohm's law (R = U / I), calculate the resistance and record the result. Repeat the experiment 3 more times.", instruction_step4: "Based on your observations, draw a conclusion about the relationship between current and voltage. Click 'Check'.", procedure_title: "Procedure", rheostat_label: "Move Rheostat Slider", results_table_title: "Table of Measurements and Calculations", th_voltage: "Voltage U, V", th_current: "Current I, A", th_resistance: "Resistance R, Ω", th_feedback: "Check", conclusion_label: "Conclusion: The current in the circuit section is", conclusion_option_select: "Select...", conclusion_option_direct: "directly proportional to the voltage", conclusion_option_inverse: "inversely proportional to the voltage", conclusion_option_none: "independent of the voltage", check_button: "Check", back_button: "Back", student_lastname: "Last Name", student_firstname: "First Name", student_class_number: "Class (Number)", student_class_letter: "Letter", attempts_left_1: "attempt", attempts_left_2: "attempts", show_answers_button: "Show Answers", share_button: "Share with Teacher", sending: "Sending...", send_success: "Report Sent!", send_error: "Send Error.", validation_message: "Please fill in all student and table fields, and make a conclusion.", final_result_title: "Your Final Result:", out_of_10: "out of 10", answers_review_title: "Answers Review:", report_student: "Student:", report_class: "Class:", report_score: "Final Score:", conclusion: "Conclusion", your_answer: "Your answer", correct_answer: "Correct answer", example_calculation: "Example of a correct calculation", error_details: "Check your bot token, chat ID, and internet connection.", feedback_correct: "Correct 👍", feedback_incorrect: "Incorrect ❌"
+        }
+    };
+    let currentLang = 'ru';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.querySelector('html').setAttribute('lang', lang);
+        document.querySelectorAll('[data-key]').forEach(element => {
+            const key = element.getAttribute('data-key');
+            const translation = translations[lang]?.[key];
+            if (translation) {
+                element.innerHTML = translation.replace('{year}', new Date().getFullYear());
+            }
+        });
+        updateCheckButtonText();
+    }
+
+    function updateSimulation() {
+        const sliderValue = parseInt(dom.rheostatSlider.value);
+        // Сопротивление реостата регулируется от 0 до R_rheo_max
+        const R_rheo = (sliderValue / 100) * state.R_rheo_max;
+        
+        // Общее сопротивление цепи (фиксированное + реостат)
+        // В этой схеме вольтметр измеряет напряжение на реостате, а амперметр - общий ток.
+        // Поэтому, сопротивление "проводника", которое мы измеряем, это сопротивление реостата.
+        const R_total_circuit = state.R_fixed + R_rheo; 
+
+        if (R_total_circuit === 0) { // Избегаем деления на ноль
+            dom.ammeterReading.textContent = "0.00";
+            dom.voltmeterReading.textContent = "0.00";
+            return;
+        }
+
+        const I_total = state.U_source / R_total_circuit; // Общий ток в цепи
+        const U_measured_rheo = I_total * R_rheo; // Напряжение на реостате
+
+        dom.ammeterReading.textContent = I_total.toFixed(2);
+        dom.voltmeterReading.textContent = U_measured_rheo.toFixed(2);
+        
+        // Перемещение ползунка реостата
+        // 0px - левый край, 110px - правый край (ширина реостата 120px - ширина контакта 10px)
+        dom.rheostatContact.style.left = `${(sliderValue / 100) * 110}px`;
+    }
+    
+    function createTableRows(numRows) {
+        dom.resultsTbody.innerHTML = '';
+        for (let i = 1; i <= numRows; i++) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${i}</td>
+                <td><input type="number" class="voltage-input" step="0.01"></td>
+                <td><input type="number" class="current-input" step="0.01"></td>
+                <td><div class="input-container"><input type="number" class="resistance-input" step="0.1"></div></td>
+                <td class="feedback-cell"></td>
+            `;
+            dom.resultsTbody.appendChild(row);
+        }
+    }
+
+    function resetState() {
+        state.attemptsLeft = 2;
+        state.finalScoreText = '';
+        
+        createTableRows(4);
+        updateSimulation();
+
+        dom.finalResultDiv.innerHTML = '';
+        dom.answersReviewDiv.style.display = 'none';
+        dom.checkButton.style.display = 'inline-block';
+        dom.showAnswersButton.style.display = 'none';
+        dom.shareToTeacherButton.style.display = 'none';
+        dom.validationMessage.style.display = 'none';
+        
+        document.querySelectorAll('input, select').forEach(el => {
+            if(!el.classList.contains('lang-btn') && el.id !== 'backButton') {
+                el.disabled = false;
+                if (el.tagName === 'INPUT' && el.type !== 'range') {
+                    el.value = '';
+                    el.classList.remove('correct-input', 'incorrect-input');
+                }
+                if(el.tagName === 'SELECT') {
+                    el.value = '';
+                    el.classList.remove('correct-input', 'incorrect-input');
+                }
+            }
+        });
+        updateCheckButtonText();
+    }
+    
+    dom.checkButton.addEventListener('click', () => {
+        if (state.attemptsLeft <= 0) return;
+
+        let allFieldsValid = true;
+        document.querySelectorAll('.student-info input').forEach(input => {
+            if (input.value.trim() === '') allFieldsValid = false;
+        });
+        document.querySelectorAll('#results-tbody input').forEach(input => {
+            if(input.value.trim() === '') allFieldsValid = false;
+        });
+        if (dom.conclusionSelect.value === '') allFieldsValid = false;
+
+        if (!allFieldsValid) {
+            dom.validationMessage.textContent = translations[currentLang].validation_message;
+            dom.validationMessage.style.display = 'block';
+            return;
+        }
+        dom.validationMessage.style.display = 'none';
+
+        state.attemptsLeft--;
+        let score = 0;
+        const totalPoints = 5; // 4 rows + 1 conclusion
+        const tolerance = 0.5; // Допустимая погрешность для сопротивления
+
+        const tableRows = dom.resultsTbody.querySelectorAll('tr');
+        tableRows.forEach(row => {
+            const uInput = row.querySelector('.voltage-input');
+            const iInput = row.querySelector('.current-input');
+            const rInput = row.querySelector('.resistance-input');
+            const feedbackCell = row.querySelector('.feedback-cell');
+
+            const u = parseFloat(uInput.value.replace(',', '.'));
+            const i = parseFloat(iInput.value.replace(',', '.'));
+            const r = parseFloat(rInput.value.replace(',', '.'));
+
+            [uInput, iInput, rInput].forEach(inp => {
+                inp.classList.remove('correct-input', 'incorrect-input');
+            });
+
+            if (isNaN(u) || isNaN(i) || isNaN(r) || i === 0) {
+                rInput.classList.add('incorrect-input');
+                feedbackCell.innerHTML = `<span class="incorrect">${translations[currentLang].feedback_incorrect}</span>`;
+                return;
+            };
+
+            const calculated_r = u / i;
+            const isCorrect = Math.abs(r - calculated_r) < tolerance;
+
+            rInput.classList.toggle('correct-input', isCorrect);
+            rInput.classList.toggle('incorrect-input', !isCorrect);
+            feedbackCell.innerHTML = `<span class="${isCorrect ? 'correct' : 'incorrect'}">${translations[currentLang][isCorrect ? 'feedback_correct' : 'feedback_incorrect']}</span>`;
+            
+            if (isCorrect) score++;
+        });
+        
+        const isConclusionCorrect = dom.conclusionSelect.value === 'direct';
+        dom.conclusionSelect.classList.toggle('correct-input', isConclusionCorrect);
+        dom.conclusionSelect.classList.toggle('incorrect-input', !isConclusionCorrect);
+        if(isConclusionCorrect) score++;
+
+        const finalScore = Math.round((score / totalPoints) * 10);
+        state.finalScoreText = `${finalScore} ${translations[currentLang].out_of_10}`;
+        
+        updateCheckButtonText();
+
+        if (state.attemptsLeft === 0 || finalScore === 10) {
+            dom.finalResultDiv.innerHTML = `<h3>${translations[currentLang].final_result_title} <span class="${finalScore >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></h3>`;
+            dom.checkButton.style.display = 'none';
+            dom.showAnswersButton.style.display = 'inline-block';
+            
+            document.querySelectorAll('input, select').forEach(el => {
+                if(!el.classList.contains('lang-btn') && el.id !== 'backButton' && el.id !== 'showAnswersButton' && el.id !== 'shareToTeacherButton') {
+                    el.disabled = true;
+                }
+            });
+            dom.rheostatSlider.disabled = true; // Отключаем ползунок реостата после финальной проверки
+        }
+    });
+
+    function populateAnswersReview() {
+        const trans = translations[currentLang];
+        const student = {
+            lastname: document.getElementById('student_lastname').value || '...',
+            firstname: document.getElementById('student_firstname').value || '...',
+            classNum: document.getElementById('student_class_number').value || '...',
+            classLetter: document.getElementById('student_class_letter').value || '...',
+        };
+        
+        let reviewHTML = `<h4>${trans.answers_review_title}</h4>
+            <p><b>${trans.report_student}</b> ${student.lastname} ${student.firstname}</p>
+            <p><b>${trans.report_class}</b> ${student.classNum}${student.classLetter}</p>
+            <p><b>${trans.report_score}</b> <span class="${parseFloat(state.finalScoreText) >= 5 ? 'correct' : 'incorrect'}">${state.finalScoreText}</span></p><hr>`;
+        
+        // Берем значения из первой строки для примера
+        const row = dom.resultsTbody.querySelector('tr');
+        const u = parseFloat(row.querySelector('.voltage-input').value.replace(',', '.')) || 'U';
+        const i = parseFloat(row.querySelector('.current-input').value.replace(',', '.')) || 'I';
+        let calc_r = (u !== 'U' && i !== 'I' && i !== 0) ? (u / i).toFixed(1) : 'R';
+
+        reviewHTML += `<p><b>${trans.example_calculation}:</b> R = U / I. Если вы записали U = ${u} В и I = ${i} А, то правильный расчет R = ${calc_r} Ом.</p>`;
+        reviewHTML += `<p><b>${trans.conclusion}:</b> ${trans.correct_answer} — <i>${trans.conclusion_option_direct}</i>.</p>`;
+
+        dom.answersReviewDiv.innerHTML = reviewHTML;
+        dom.answersReviewDiv.style.display = 'block';
+    }
+
+    dom.showAnswersButton.addEventListener('click', function() {
+        populateAnswersReview();
+        this.style.display = 'none';
+        dom.shareToTeacherButton.style.display = 'inline-block';
+    });
+
+    async function generatePdfBlob() {
+        if (dom.answersReviewDiv.style.display === 'none') { populateAnswersReview(); }
+        const { jsPDF } = window.jspdf;
+        const mainContainer = document.querySelector('.container');
+        const buttonsToHide = document.querySelectorAll('.action-buttons, .top-nav');
+        buttonsToHide.forEach(el => el.style.visibility = 'hidden');
+        
+        const canvas = await html2canvas(mainContainer, { scale: 1.5, useCORS: true, windowWidth: 900 });
+        
+        buttonsToHide.forEach(el => el.style.visibility = 'visible');
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = canvas.height * pdfWidth / canvas.width;
+        let heightLeft = imgHeight, position = 0;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        while (heightLeft > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+        return pdf.output('blob');
+    }
+
+    dom.shareToTeacherButton.addEventListener('click', async function() {
+        this.textContent = translations[currentLang].sending; 
+        this.disabled = true;
+        try {
+            const pdfBlob = await generatePdfBlob();
+            const student = {
+                lastname: document.getElementById('student_lastname').value || 'student',
+                firstname: document.getElementById('student_firstname').value || 'report',
+                class: (document.getElementById('student_class_number').value + document.getElementById('student_class_letter').value).trim() || 'class'
+            };
+            const fileName = `Lab_Report_4_${student.class}_${student.lastname}_${student.firstname}.pdf`.replace(/[\/\\?%*:|"<>]/g, '_');
+            const caption = `Отчет по лабораторной работе №4\nУченик(ца): ${student.lastname} ${student.firstname}\nКласс: ${student.class}\nОценка: ${state.finalScoreText}`;
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('document', pdfBlob, fileName);
+            formData.append('caption', caption);
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.ok) {
+                this.textContent = translations[currentLang].send_success;
+                this.style.backgroundColor = '#27ae60';
+            } else {
+                throw new Error(result.description || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Full Error:', error);
+            this.textContent = translations[currentLang].send_error;
+            this.style.backgroundColor = '#e74c3c';
+            this.disabled = false;
+            alert(`${translations[currentLang].send_error}: ${error.message}. ${translations[currentLang].error_details}`);
+        }
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (btn.classList.contains('active')) return;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            resetState();
+            setLanguage(e.target.dataset.lang);
+        });
+    });
+
+    function updateCheckButtonText() {
+        if (state.attemptsLeft > 0) {
+            const attemptText = translations[currentLang][state.attemptsLeft === 1 ? 'attempts_left_1' : 'attempts_left_2'];
+            dom.checkButton.textContent = `${translations[currentLang].check_button} (${state.attemptsLeft} ${attemptText})`;
+        } else {
+            dom.checkButton.textContent = translations[currentLang].check_button;
+            dom.checkButton.disabled = true;
+        }
+    }
+
+    dom.rheostatSlider.addEventListener('input', updateSimulation);
+    dom.backButton.addEventListener('click', () => window.history.back());
+
+    resetState();
+    setLanguage('ru');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Transformation Simulator</title>
+
+    <style>
+        /* (CSS code is unchanged) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #004a99;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+            padding: 0.5rem;
+        }
+        .nav-button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #777;
+        }
+        .nav-button.active {
+            background-color: #007bff;
+        }
+        main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .content-section {
+            display: none; 
+            animation: fadeIn 0.5s;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .task-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #canvas-container {
+            position: relative; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            background-color: #fafafa;
+            min-height: 300px;
+            overflow: hidden; 
+        }
+        .formula-overlay {
+            position: absolute;
+            top: 20px; 
+            left: 0;
+            right: 0;
+            z-index: 10; 
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none; 
+        }
+        .formula-overlay.active {
+            display: block;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .control-button {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .control-button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .simulation-nav {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .sim-button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            margin: 5px; 
+            border-radius: 5px;
+        }
+        .sim-button:hover {
+            background-color: #e0e0e0;
+        }
+        .sim-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        /* Quiz Styles */
+        #user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #user-info div {
+            margin-bottom: 10px;
+        }
+        #user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+        #start-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-quiz:hover {
+            background-color: #0056b3;
+        }
+        .question-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-left: 5px solid #007bff;
+            background: #fdfdfd;
+        }
+        .question-block p {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 0;
+        }
+        .question-block label {
+            display: block;
+            margin: 5px 0 5px 20px;
+            cursor: pointer;
+        }
+        #submit-quiz {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; 
+            margin-top: 20px;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .modal-content h3 {
+            color: #004a99;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+        }
+        .modal-content #result-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        .modal-content .close-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        #save-results-button {
+            background-color: #28a745;
+            margin-right: 10px;
+        }
+
+        /* Task Tab Styles */
+        .task-generator {
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        #task-equation {
+            font-size: 2rem; 
+            font-family: 'Times New Roman', Times, serif;
+            margin: 20px 0;
+            padding: 25px;
+            min-height: 50px;
+            line-height: 1.5;
+        }
+        #task-inputs-nucleus {
+            margin-bottom: 20px;
+        }
+        #task-inputs-nucleus span {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        #task-inputs-nucleus input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin: 0 10px;
+            -moz-appearance: textfield;
+        }
+        #task-inputs-nucleus input::-webkit-outer-spin-button,
+        #task-inputs-nucleus input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #task-inputs-particle {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #task-inputs-particle input[type="radio"] {
+            display: none; 
+        }
+        #task-inputs-particle label {
+            padding: 10px 20px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-family: 'Times New Roman', Times, serif;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        #task-inputs-particle input[type="radio"]:checked + label {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        #task-inputs-particle label:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .task-controls {
+            margin-top: 15px;
+        }
+        #task-feedback {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 1.5rem;
+            margin-top: 15px;
+        }
+        #task-feedback.correct {
+            color: #28a745;
+        }
+        #task-feedback.incorrect {
+            color: #dc3545;
+        }
+        #check-task-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #new-task-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Styles for Task User Info Form */
+        #task-user-info {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #task-user-info div {
+            margin-bottom: 10px;
+        }
+        #task-user-info label {
+            display: inline-block;
+            width: 100px;
+        }
+        #task-user-info input[type="text"] {
+            padding: 5px;
+            width: calc(100% - 120px);
+        }
+    </style>
+
+</head>
+<body>
+
+    <header>
+        <h1>Virtual Software: Nuclear Transformations</h1>
+    </header>
+    <nav>
+        <button class="nav-button active" data-target="theory">Theory</button>
+        <button class="nav-button" data-target="model">Virtual Model</button>
+        <button class="nav-button" data-target="questions">Control Questions</button>
+        <button class="nav-button" data-target="task">Task</button>
+    </nav>
+    <main>
+        
+        <section id="theory" class="content-section active">
+            <h2>Theory: Radioactive Decay</h2>
+            <p>Radioactivity is the spontaneous transformation of one atomic nucleus into another, accompanied by the emission of various particles and radiation.</p>
+            
+            <hr>
+            <h3>Key Concepts and Radiation Properties</h3>
+            
+            <h4>Penetrating Power</h4>
+            <p>Different types of radiation interact with matter differently, which determines their penetrating power. This is one of the most important characteristics of radiation, affecting protection methods.</p>
+            
+
+[Image of penetrating power of alpha, beta, and gamma radiation]
+
+            <ul>
+                <li><strong>Alpha particles (α):</strong> These are heavy, positively charged particles (helium nuclei). They rapidly lose energy upon collision with atoms and have the <strong>lowest</strong> penetrating power. Alpha radiation is completely stopped by a sheet of paper or even the outer layer of skin.</li>
+                <li><strong>Beta particles (β⁻, β⁺):</strong> These are light charged particles (electrons or positrons). Their penetrating power is <strong>medium</strong>. They pass freely through paper but are effectively stopped by a thin layer of metal (e.g., a few millimeters of aluminum) or a thick layer of plastic.</li>
+                <li><strong>Gamma rays (γ):</strong> These are high-energy photons (electromagnetic radiation) with no mass and no charge. They have the <strong>highest</strong> penetrating power and can pass through thick layers of dense materials. Significant layers of lead or concrete are required for protection against them.</li>
+            </ul>
+
+            <h4>Source of Electron in Electron Capture</h4>
+            <p>In electron capture (often called K-capture), the nucleus does not emit a particle but instead <strong>captures one of its own atom's electrons</strong>. Most often, this is an electron from the <strong>K-shell</strong>—the energy level closest to the nucleus. Less frequently, electrons from the farther L or M shells are captured.</p>
+            <p>The K-shell is preferred because its electrons have the highest probability of "being" within the volume of the nucleus. After capture, a proton in the nucleus transforms into a neutron, and the vacant spot in the electron shell is immediately filled by electrons from higher levels. This transition is accompanied by the emission of characteristic X-rays.</p>
+
+            <h4>Neutrino (ν) and Antineutrino (ν̄)</h4>
+            <p>The neutrino and its antiparticle, the antineutrino, are fundamental particles with very small (but non-zero) mass and no electric charge. They only participate in the weak nuclear interaction (and gravity), which is why they interact <strong>extremely weakly</strong> with matter. They can fly through an entire planet almost without colliding with a single atom, earning them the nickname "ghost particles."</p>
+            <p>They are "born" in beta decay processes and are necessary to satisfy the laws of conservation of energy and momentum. Without them, calculations showed that some energy simply disappeared during decay. Neutrinos and antineutrinos "carry away" this missing energy:</p>
+            <ul>
+                <li>In <strong>β⁻ decay</strong> (a neutron turns into a proton and an electron), an <strong>antineutrino (ν̄ₑ)</strong> is emitted.</li>
+                <li>In <strong>β⁺ decay</strong> (a proton turns into a neutron and a positron), a <strong>neutrino (νₑ)</strong> is emitted.</li>
+                <li>In <strong>electron capture</strong> (a proton captures an electron and becomes a neutron), a <strong>neutrino (νₑ)</strong> is also emitted.</li>
+            </ul>
+            
+            <hr>
+            <h3>1. Alpha Decay (α-decay)</h3>
+            <p><strong>Displacement Rule: The element transforms into a new element located 2 cells <ins>closer to the beginning</ins> of the periodic table.</strong></p>
+            <div class="formula"><sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He</div>
+            <hr>
+            <h3>2. Beta Decay (β⁻-decay)</h3>
+            <p><strong>Displacement Rule: The element transforms into a new element located 1 cell <ins>further towards the end</ins> of the periodic table.</strong></p>
+            <div class="formula"><sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e + ν̄ₑ</div>
+            <hr>
+            <h3>3. Positron Decay (β⁺-decay)</h3>
+            <p><strong>Displacement Rule: The element transforms into a new element located 1 cell <ins>closer to the beginning</ins> of the periodic table.</strong></p>
+            <div class="formula"><sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e + νₑ</div>
+            <hr>
+            <h3>4. Electron Capture (K-capture)</h3>
+            <p><strong>Displacement Rule: The element transforms into a new element located 1 cell <ins>closer to the beginning</ins> of the periodic table.</strong></p>
+            <div class="formula"><sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar + νₑ</div>
+            <hr>
+            <h3>5. Gamma Decay (γ-decay)</h3>
+            <p><strong>Displacement Rule: No element transformation occurs. The element <ins>remains in the same place</ins>.</strong></p>
+            <div class="formula"><sup>60</sup><sub>27</sub>Co* &rarr; <sup>60</sup><sub>27</sub>Co + γ</div>
+        </section>
+
+        <section id="model" class="content-section">
+            <h2>Virtual Model of Nuclear Transformations</h2>
+            <p>Select a decay type to simulate. An animation of the chosen nuclear transformation will be shown on the canvas.</p>
+            
+            <div class="simulation-nav">
+                <button class="sim-button" data-sim="alpha">α-decay (U-238)</button>
+                <button class="sim-button" data-sim="beta">β⁻-decay (C-14)</button>
+                <button class="sim-button" data-sim="gamma">γ-decay (Co-60*)</button>
+                <button class="sim-button" data-sim="positron">β⁺-decay (Na-22)</button>
+                <button class="sim-button" data-sim="capture">E. Capture (K-40)</button>
+            </div>
+            <div id="canvas-container">
+                <div id="alpha-formula" class="formula-overlay">
+                    <sup>238</sup><sub>92</sub>U &rarr; <sup>234</sup><sub>90</sub>Th + <sup>4</sup><sub>2</sub>He
+                </div>
+                <div id="beta-formula" class="formula-overlay">
+                    <sup>14</sup><sub>6</sub>C &rarr; <sup>14</sup><sub>7</sub>N + <sup>0</sup><sub>-1</sub>e
+                </div>
+                <div id="positron-formula" class="formula-overlay">
+                    <sup>22</sup><sub>11</sub>Na &rarr; <sup>22</sup><sub>10</sub>Ne + <sup>0</sup><sub>+1</sub>e
+                </div>
+                <div id="capture-formula" class="formula-overlay">
+                    <sup>40</sup><sub>19</sub>K + <sup>0</sup><sub>-1</sub>e &rarr; <sup>40</sup><sub>18</sub>Ar
+                </div>
+                <div id="gamma-formula" class="formula-overlay">
+                    <sup>60</sup><sub>27</sub>Co* &rarr; <sup>60</sup><sub>27</sub>Co + &gamma;
+                </div>
+            </div>
+            <div class="controls">
+                <button id="start-button" class="control-button">Start</button>
+                <button id="reset-button" class="control-button">Reset</button>
+            </div>
+        </section>
+        
+        <section id="questions" class="content-section">
+            <h2>Control Questions</h2>
+            <div id="user-info">
+                <p>Enter your details to start the test (10 random questions).</p>
+                <div>
+                    <label for="student-name">Name:</label>
+                    <input type="text" id="student-name" placeholder="E.g., John Smith">
+                </div>
+                <div>
+                    <label for="student-group">Group:</label>
+                    <input type="text" id="student-group" placeholder="E.g., PH-21">
+                </div>
+                <button id="start-quiz">Start Quiz</button>
+            </div>
+            <div id="quiz-container"></div>
+            <button id="submit-quiz">Check Answers</button>
+            
+            <div id="results-modal" class="modal">
+                <div class="modal-content">
+                    <h3>Quiz Results</h3>
+                    <p><strong>Student:</strong> <span id="result-name"></span></p>
+                    <p><strong>Group:</strong> <span id="result-group"></span></p>
+                    <p>Your result:</p>
+                    <div id="result-score">0%</div>
+                    <button id="save-results-button" class="close-button">Save to File</button>
+                    <button id="close-modal-btn" class="close-button">Close</button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="task" class="content-section">
+            <h2>Task: Complete the Equation</h2>
+            
+            <div id="task-user-info">
+                <p>Enter your details to start the problem-solving session.</p>
+                <div>
+                    <label for="task-student-name">Name:</label>
+                    <input type="text" id="task-student-name" placeholder="E.g., John Smith">
+                </div>
+                <div>
+                    <label for="task-student-group">Group:</label>
+                    <input type="text" id="task-student-group" placeholder="E.g., PH-21">
+                </div>
+                <button id="start-task-session" class="control-button" style="background-color: #007bff; color: white;">Start</button>
+            </div>
+
+            <div id="task-container-main" class="task-generator hidden">
+                <p>Identify the missing element (<sup>?</sup><sub>??</sub>X) or particle (?).</p>
+                
+                <div id="task-equation" class="formula">
+                    ...
+                </div>
+                
+                <div id="task-inputs-nucleus">
+                    <span>A = </span>
+                    <input type="number" id="task-ans-a" placeholder="?">
+                    <span>Z = </span>
+                    <input type="number" id="task-ans-z" placeholder="??">
+                </div>
+                
+                <div id="task-inputs-particle" class="hidden">
+                    <input type="radio" name="task-particle" id="part-alpha" value="alpha">
+                    <label for="part-alpha">α (<sup>4</sup><sub>2</sub>He)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-m" value="beta-">
+                    <label for="part-beta-m">β⁻ (<sup>0</sup><sub>-1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-beta-p" value="beta+">
+                    <label for="part-beta-p">β⁺ (<sup>0</sup><sub>+1</sub>e)</label>
+                    
+                    <input type="radio" name="task-particle" id="part-capture" value="capture">
+                    <label for="part-capture">e⁻ (capture)</label>
+                </div>
+                
+                <div class="task-controls">
+                    <button id="new-task-btn" class="control-button">New Task</button>
+                    <button id="check-task-btn" class="control-button">Check Answer</button>
+                    <button id="save-task-btn" class="control-button" style="background-color: #28a745; color: white;">Finish & Save</button>
+                </div>
+                
+                <div id="task-feedback"></div>
+            </div>
+        </section>
+    </main>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+    // ==========================================================
+    // == BLOCK 1: TAB SWITCHING LOGIC
+    // ==========================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        let isSimulationInitialized = false;
+        // let isTaskInitialized = false; // (No longer needed, task starts on button click)
+
+        const navButtons = document.querySelectorAll('.nav-button');
+        const contentSections = document.querySelectorAll('.content-section');
+        
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const targetId = button.dataset.target;
+                
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                const targetSection = document.getElementById(targetId);
+                targetSection.classList.add('active');
+
+                // Initialize Simulation on first click
+                if (targetId === 'model' && !isSimulationInitialized) {
+                    document.querySelector('.sim-button[data-sim="alpha"]').click();
+                    isSimulationInitialized = true;
+                }
+            });
+        });
+
+        
+        // ==========================================================
+        // == BLOCK 2: JAVASCRIPT FOR VIRTUAL MODEL (p5.js)
+        // ==========================================================
+        
+        // --- Find simulation control elements ---
+        const startButton = document.getElementById('start-button');
+        const resetButton = document.getElementById('reset-button');
+        const simButtons = document.querySelectorAll('.sim-button');
+        const formulaOverlays = document.querySelectorAll('.formula-overlay');
+        let myp5; // Variable to hold the p5 instance
+
+        // --- "Particle" Class (Nucleus, electron, etc.) ---
+        class Particle {
+            constructor(x, y, size, label, color) { this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.size = size; this.label = label; this.color = color; }
+            move() { this.x += this.vx; this.y += this.vy; }
+            draw(p) { p.fill(this.color); p.stroke(0); p.strokeWeight(2); p.ellipse(this.x, this.y, this.size, this.size); p.fill(0); p.noStroke(); p.textSize(this.size > 50 ? 18 : 14); p.textAlign(p.CENTER, p.CENTER); p.text(this.label, this.x, this.y); }
+        }
+        
+        // --- "GammaRay" Class (for γ-decay) ---
+        class GammaRay { 
+            constructor(x, y, angle) { this.x = x; this.y = y; this.angle = angle; this.vx = 4 * Math.cos(angle); this.vy = 4 * Math.sin(angle); this.length = 0; this.amplitude = 10; this.frequency = 0.5; }
+            move() { this.length += 4; }
+            draw(p) { p.noFill(); p.stroke(255, 200, 0); p.strokeWeight(2); p.beginShape(); for (let i = 0; i < this.length; i++) { let offset = this.amplitude * Math.sin(i * this.frequency); let x = this.x + (i * Math.cos(this.angle)) + (offset * -Math.sin(this.angle)); let y = this.y + (i * Math.sin(this.angle)) + (offset * Math.cos(this.angle)); p.vertex(x, y); } p.endShape(); let endX = this.x + (this.length * Math.cos(this.angle)); let endY = this.y + (this.length * Math.sin(this.angle)); p.fill(0); p.noStroke(); p.textSize(16); p.text("γ", endX, endY); }
+        }
+        
+        // --- Sketch 1: Alpha Decay (U-238) ---
+        let createAlphaSketch = (p) => { 
+            let uranium, thorium, alphaParticle; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': uranium.draw(p); break; 
+                    case 'decaying': thorium.move(); alphaParticle.move(); thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); if (p.dist(p.width / 2, p.height / 2, alphaParticle.x, alphaParticle.y) > stopDistance) { decayState = 'after'; thorium.vx = 0; thorium.vy = 0; alphaParticle.vx = 0; alphaParticle.vy = 0; } break; 
+                    case 'after': thorium.draw(p); alphaParticle.draw(p); uranium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; uranium = new Particle(startX, startY, 120, "U-238", p.color(0, 0, 255)); thorium = new Particle(startX, startY, 90, "Th-234", p.color(0, 100, 200)); alphaParticle = new Particle(startX, startY, 30, "α", p.color(255, 0, 0)); let alphaSpeed = 3, thoriumSpeed = 3; let angle_alpha = -p.PI / 4, angle_thorium = angle_alpha + p.PI; alphaParticle.vx = alphaSpeed * p.cos(angle_alpha); alphaParticle.vy = alphaSpeed * p.sin(angle_alpha); thorium.vx = thoriumSpeed * p.sin(angle_thorium); thorium.vy = thoriumSpeed * p.sin(angle_thorium); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Sketch 2: Beta Decay (C-14) ---
+        let createBetaSketch = (p) => { 
+            let carbon, nitrogen, electron; let decayState; let stopDistance = 180;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': carbon.draw(p); break; 
+                    case 'decaying': electron.move(); nitrogen.move(); electron.draw(p); nitrogen.draw(p); carbon.draw(p); if (p.dist(p.width / 2, p.height / 2, electron.x, electron.y) > stopDistance) { decayState = 'after'; electron.vx = 0; electron.vy = 0; nitrogen.vx = 0; nitrogen.vy = 0; } break; 
+                    case 'after': electron.draw(p); nitrogen.draw(p); carbon.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; carbon = new Particle(startX, startY, 100, "C-14", p.color(100, 100, 100)); nitrogen = new Particle(startX, startY, 100, "N-14", p.color(0, 150, 0)); electron = new Particle(startX, startY, 20, "e⁻", p.color(255, 255, 0)); let electronSpeed = 3; let recoilSpeed = 2.3; let angle_electron = -p.PI / 4; let angle_recoil = angle_electron + p.PI; electron.vx = electronSpeed * p.cos(angle_electron); electron.vy = electronSpeed * p.sin(angle_electron); nitrogen.vx = recoilSpeed * p.sin(angle_recoil); nitrogen.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Sketch 3: Gamma Decay (Co-60*) ---
+        let createGammaSketch = (p) => { 
+            let cobaltStar, cobalt, gamma; let decayState; let stopDistance = 120;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': let x = cobaltStar.x + p.random(-1, 1); let y = cobaltStar.y + p.random(-1, 1); p.fill(cobaltStar.color); p.stroke(0); p.strokeWeight(2); p.ellipse(x, y, cobaltStar.size, cobaltStar.size); p.fill(0); p.noStroke(); p.textSize(18); p.textAlign(p.CENTER, p.CENTER); p.text(cobaltStar.label, cobaltStar.x, cobaltStar.y); break; case 'decaying': gamma.move(); gamma.draw(p); cobalt.draw(p); if (gamma.length > stopDistance) { decayState = 'after'; } break; case 'after': gamma.draw(p); cobalt.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; cobaltStar = new Particle(startX, startY, 110, "Co-60*", p.color(200, 0, 200)); cobalt = new Particle(startX, startY, 110, "Co-60", p.color(150, 0, 150)); gamma = new GammaRay(startX, startY, -p.PI / 4); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Sketch 4: Positron Decay (Na-22) ---
+        let createPositronSketch = (p) => {
+            let sodium, neon, positron; let decayState; let stopDistance = 110;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { 
+                p.background(250); 
+                switch (decayState) { 
+                    case 'initial': sodium.draw(p); break; 
+                    case 'decaying': positron.move(); neon.move(); positron.draw(p); neon.draw(p); sodium.draw(p); if (p.dist(p.width / 2, p.height / 2, positron.x, positron.y) > stopDistance) { decayState = 'after'; positron.vx = 0; positron.vy = 0; neon.vx = 0; neon.vy = 0; } break; 
+                    case 'after': positron.draw(p); neon.draw(p); sodium.draw(p); break; 
+                } 
+            };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; sodium = new Particle(startX, startY, 100, "Na-22", p.color(200, 100, 0)); neon = new Particle(startX, startY, 100, "Ne-22", p.color(255, 150, 0)); positron = new Particle(startX, startY, 20, "e⁺", p.color(0, 200, 200)); let positronSpeed = 3; let recoilSpeed = 3; let angle_positron = -p.PI / 4; let angle_recoil = angle_positron + p.PI; positron.vx = positronSpeed * p.cos(angle_positron); positron.vy = positronSpeed * p.sin(angle_positron); neon.vx = recoilSpeed * p.sin(angle_recoil); neon.vy = recoilSpeed * p.sin(angle_recoil); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Sketch 5: Electron Capture (K-40) ---
+        let createCaptureSketch = (p) => {
+            let potassium, argon, electron; let decayState; let stopDistance = 150;
+            p.setup = () => { p.createCanvas(600, 300).parent('canvas-container'); p.resetSimulation(); };
+            p.draw = () => { p.background(250); switch (decayState) { case 'initial': potassium.draw(p); electron.x = p.width / 2 + p.cos(p.frameCount * 0.05) * (stopDistance / 2); electron.y = p.height / 2 + p.sin(p.frameCount * 0.05) * (stopDistance / 2); electron.draw(p); break; case 'decaying': electron.move(); potassium.draw(p); electron.draw(p); if (p.dist(potassium.x, potassium.y, electron.x, electron.y) < potassium.size / 2) { decayState = 'after'; } break; case 'after': argon.draw(p); break; } };
+            p.resetSimulation = () => { let startX = p.width / 2, startY = p.height / 2; potassium = new Particle(startX, startY, 110, "K-40", p.color(0, 150, 150)); argon = new Particle(startX, startY, 110, "Ar-40", p.color(100, 50, 150)); let electronStartX = startX + stopDistance; let electronStartY = startY; electron = new Particle(electronStartX, electronStartY, 20, "e⁻", p.color(255, 255, 0)); decayState = 'initial'; startButton.disabled = false; resetButton.disabled = true; };
+            p.startDecay = () => { if (decayState === 'initial') { let angle = p.atan2(potassium.y - electron.y, potassium.x - electron.x); let speed = 4; electron.vx = speed * p.cos(angle); electron.vy = speed * p.sin(angle); decayState = 'decaying'; startButton.disabled = true; resetButton.disabled = false; } };
+        };
+        
+        // --- Main listener for simulation buttons (selects which sketch to run) ---
+        simButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                simButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                if (myp5) { myp5.remove(); } // Remove old sketch
+                formulaOverlays.forEach(overlay => overlay.classList.remove('active'));
+                const simType = button.dataset.sim;
+                let targetFormulaId;
+                
+                // Select the correct sketch function
+                if (simType === 'alpha') { myp5 = new p5(createAlphaSketch); targetFormulaId = 'alpha-formula'; } 
+                else if (simType === 'beta') { myp5 = new p5(createBetaSketch); targetFormulaId = 'beta-formula'; } 
+                else if (simType === 'gamma') { myp5 = new p5(createGammaSketch); targetFormulaId = 'gamma-formula'; } 
+                else if (simType === 'positron') { myp5 = new p5(createPositronSketch); targetFormulaId = 'positron-formula'; } 
+                else if (simType === 'capture') { myp5 = new p5(createCaptureSketch); targetFormulaId = 'capture-formula'; }
+                
+                if(targetFormulaId) { document.getElementById(targetFormulaId).classList.add('active'); }
+                setTimeout(() => { resetButton.click(); }, 100); // Reset the simulation
+            });
+        });
+        
+        // --- Listeners for "Start" / "Reset" buttons ---
+        startButton.addEventListener('click', () => { if (myp5) myp5.startDecay(); });
+        resetButton.addEventListener('click', () => { if (myp5) myp5.resetSimulation(); });
+        
+
+        
+        // ==========================================================
+        // == BLOCK 3: JAVASCRIPT FOR QUIZ (CONTROL QUESTIONS)
+        // ==========================================================
+        
+        // --- Question Bank (50 questions) ---
+        const questionBank = [
+            // Alpha Decay (10)
+            { question: "What is an alpha particle?", answers: [{ text: "A helium nucleus (2 protons, 2 neutrons)", correct: true }, { text: "A fast electron", correct: false }, { text: "A high-energy photon", correct: false }, { text: "A positron", correct: false }] },
+            { question: "How does the nuclear charge change during alpha decay?", answers: [{ text: "Decreases by 2", correct: true }, { text: "Increases by 1", correct: false }, { text: "Does not change", correct: false }, { text: "Decreases by 1", correct: false }] },
+            { question: "How does the mass number (A) change during alpha decay?", answers: [{ text: "Decreases by 4", correct: true }, { text: "Decreases by 2", correct: false }, { text: "Does not change", correct: false }, { text: "Increases by 1", correct: false }] },
+            { question: "What element is formed from the alpha decay of Uranium-238 (<sub>92</sub>U)?", answers: [{ text: "Thorium-234 (<sub>90</sub>Th)", correct: true }, { text: "Protactinium-238 (<sub>91</sub>Pa)", correct: false }, { text: "Radium-234 (<sub>88</sub>Ra)", correct: false }, { text: "Uranium-234 (<sub>92</sub>U)", correct: false }] },
+            { question: "What is the charge of an alpha particle?", answers: [{ text: "+2e", correct: true }, { text: "-1e", correct: false }, { text: "0", correct: false }, { text: "+1e", correct: false }] },
+            { question: "Which radiation has the lowest penetrating power and is stopped by a sheet of paper?", answers: [{ text: "Alpha radiation", correct: true }, { text: "Beta radiation", correct: false }, { text: "Gamma radiation", correct: false }, { text: "Neutron radiation", correct: false }] },
+            { question: "What element will Polonium-210 (<sub>84</sub>Po) become after alpha decay?", answers: [{ text: "Lead-206 (<sub>82</sub>Pb)", correct: true }, { text: "Bismuth-210 (<sub>83</sub>Bi)", correct: false }, { text: "Radon-214 (<sub>86</sub>Rn)", correct: false }, { text: "Astatine-210 (<sub>85</sub>At)", correct: false }] },
+            { question: "How many protons are in a Thorium-234 (<sub>90</sub>Th) nucleus?", answers: [{ text: "90", correct: true }, { text: "234", correct: false }, { text: "144", correct: false }, { text: "92", correct: false }] },
+            { question: "How many neutrons are in a <sup>4</sup><sub>2</sub>He nucleus?", answers: [{ text: "2", correct: true }, { text: "4", correct: false }, { text: "0", correct: false }, { text: "1", correct: false }] },
+            { question: "The displacement rule for alpha decay states that the element shifts...", answers: [{ text: "2 places to the left on the periodic table", correct: true }, { text: "1 place to the right on the periodic table", correct: false }, { text: "4 places to the left on the periodic table", correct: false }, { text: "Does not shift", correct: false }] },
+            
+            // Beta-minus Decay (10)
+            { question: "What is a beta-minus (β⁻) particle?", answers: [{ text: "An electron", correct: true }, { text: "A proton", correct: false }, { text: "A positron", correct: false }, { text: "A neutron", correct: false }] },
+            { question: "What happens to a neutron during β⁻ decay?", answers: [{ text: "It turns into a proton", correct: true }, { text: "It turns into a positron", correct: false }, { text: "It leaves the nucleus", correct: false }, { text: "It captures an electron", correct: false }] },
+            { question: "How does the nuclear charge (Z) change during β⁻ decay?", answers: [{ text: "Increases by 1", correct: true }, { text: "Decreases by 1", correct: false }, { text: "Does not change", correct: false }, { text: "Decreases by 2", correct: false }] },
+            { question: "How does the mass number (A) change during β⁻ decay?", answers: [{ text: "Does not change", correct: true }, { text: "Decreases by 1", correct: false }, { text: "Increases by 1", correct: false }, { text: "Decreases by 4", correct: false }] },
+            { question: "What particle is emitted along with the electron in β⁻ decay?", answers: [{ text: "An antineutrino", correct: true }, { text: "A neutrino", correct: false }, { text: "A proton", correct: false }, { text: "A gamma ray", correct: false }] },
+            { question: "The displacement rule for β⁻ decay states that the element shifts...", answers: [{ text: "1 place to the right on the periodic table", correct: true }, { text: "1 place to the left on the periodic table", correct: false }, { text: "2 places to the left on the periodic table", correct: false }, { text: "Does not shift", correct: false }] },
+            { question: "What element will Thorium-234 (<sub>90</sub>Th) become after β⁻ decay?", answers: [{ text: "Protactinium-234 (<sub>91</sub>Pa)", correct: true }, { text: "Radium-234 (<sub>88</sub>Ra)", correct: false }, { text: "Uranium-234 (<sub>92</sub>U)", correct: false }, { text: "Actinium-234 (<sub>89</sub>Ac)", correct: false }] },
+            { question: "What element is formed from the β⁻ decay of Carbon-14 (<sub>6</sub>C)?", answers: [{ text: "Nitrogen-14 (<sub>7</sub>N)", correct: true }, { text: "Boron-14 (<sub>5</sub>B)", correct: false }, { text: "Carbon-13 (<sub>6</sub>C)", correct: false }, { text: "Oxygen-15 (<sub>8</sub>O)", correct: false }] },
+            { question: "What is the charge of a β⁻ particle?", answers: [{ text: "-1e", correct: true }, { text: "+1e", correct: false }, { text: "0", correct: false }, { text: "+2e", correct: false }] },
+            { question: "Which radiation is stopped by an aluminum plate but passes through paper?", answers: [{ text: "Beta radiation", correct: true }, { text: "Alpha radiation", correct: false }, { text: "Gamma radiation", correct: false }, { text: "All of the above", correct: false }] },
+
+            // Positron Decay (β⁺) (5)
+            { question: "What is a positron (β⁺)?", answers: [{ text: "The antiparticle of the electron", correct: true }, { text: "A positively charged proton", correct: false }, { text: "A helium nucleus", correct: false }, { text: "A neutral particle", correct: false }] },
+            { question: "What happens to a proton during β⁺ decay?", answers: [{ text: "It turns into a neutron", correct: true }, { text: "It turns into an electron", correct: false }, { text: "It leaves the nucleus", correct: false }, { text: "It captures a neutron", correct: false }] },
+            { question: "How does the nuclear charge (Z) change during β⁺ decay?", answers: [{ text: "Decreases by 1", correct: true }, { text: "Increases by 1", correct: false }, { text: "Does not change", correct: false }, { text: "Decreases by 2", correct: false }] },
+            { question: "What particle is emitted along with the positron in β⁺ decay?", answers: [{ text: "A neutrino", correct: true }, { text: "An antineutrino", correct: false }, { text: "An electron", correct: false }, { text: "A gamma ray", correct: false }] },
+            { question: "What element will Sodium-22 (<sub>11</sub>Na) become after β⁺ decay?", answers: [{ text: "Neon-22 (<sub>10</sub>Ne)", correct: true }, { text: "Magnesium-22 (<sub>12</sub>Mg)", correct: false }, { text: "Fluorine-22 (<sub>9</sub>F)", correct: false }, { text: "Sodium-21 (<sub>11</sub>Na)", correct: false }] },
+
+            // Electron Capture (5)
+            { question: "What happens during electron capture?", answers: [{ text: "A proton captures an electron and becomes a neutron", correct: true }, { text: "A neutron captures an electron and becomes a proton", correct: false }, { text: "The nucleus emits an electron", correct: false }, { text: "The nucleus captures a proton", correct: false }] },
+            { question: "Where does the nucleus capture the electron from?", answers: [{ text: "From one of the atom's inner electron shells", correct: true }, { text: "From another atom", correct: false }, { text: "From plasma", correct: false }, { text: "From a vacuum", correct: false }] },
+            { question: "How does the nuclear charge (Z) change during electron capture?", answers: [{ text: "Decreases by 1", correct: true }, { text: "Increases by 1", correct: false }, { text: "Does not change", correct: false }, { text: "Decreases by 2", correct: false }] },
+            { question: "Which process has the same net result for A and Z as electron capture?", answers: [{ text: "Positron decay", correct: true }, { text: "Alpha decay", correct: false }, { text: "Beta-minus decay", correct: false }, { text: "Gamma decay", correct: false }] },
+            { question: "What element will Potassium-40 (<sub>19</sub>K) become after electron capture?", answers: [{ text: "Argon-40 (<sub>18</sub>Ar)", correct: true }, { text: "Calcium-40 (<sub>20</sub>Ca)", correct: false }, { text: "Chlorine-40 (<sub>17</sub>Cl)", correct: false }, { text: "Potassium-39 (<sub>19</sub>K)", correct: false }] },
+
+            // Gamma Decay (5)
+            { question: "What is a gamma ray (γ)?", answers: [{ text: "A very high-energy photon", correct: true }, { text: "A particle with a +1 charge", correct: false }, { text: "A particle with a mass of 4", correct: false }, { text: "An electron from the nucleus", correct: false }] },
+            { question: "What happens to the mass number (A) and charge (Z) of a nucleus during gamma decay?", answers: [{ text: "A does not change, Z does not change", correct: true }, { text: "A decreases by 4, Z decreases by 2", correct: false }, { text: "A does not change, Z increases by 1", correct: false }, { text: "A does not change, Z decreases by 1", correct: false }] },
+            { question: "Why does gamma decay occur?", answers: [{ text: "The nucleus is in an excited state and releases excess energy", correct: true }, { text: "The nucleus is too heavy", correct: false }, { text: "There are too many neutrons in the nucleus", correct: false }, { text: "There are too many protons in the nucleus", correct: false }] },
+            { question: "Which radiation has the highest penetrating power?", answers: [{ text: "Gamma radiation", correct: true }, { text: "Alpha radiation", correct: false }, { text: "Beta radiation", correct: false }, { text: "Visible light", correct: false }] },
+            { question: "What does the notation Co-60* mean?", answers: [{ text: "An excited nucleus of Cobalt-60", correct: true }, { text: "An ion of Cobalt-60", correct: false }, { text: "An isotope of Cobalt-59", correct: false }, { text: "A very rare isotope of Cobalt", correct: false }] },
+
+            // General & Mixed (15)
+            { question: "What is radioactivity?", answers: [{ text: "The spontaneous transformation of unstable nuclei into other nuclei", correct: true }, { text: "The process of splitting heavy nuclei by neutron impact", correct: false }, { text: "The process of fusing light nuclei", correct: false }, { text: "A chemical reaction that releases energy", correct: false }] },
+            { question: "Which type of decay does NOT result in a change of the chemical element?", answers: [{ text: "Gamma decay", correct: true }, { text: "Alpha decay", correct: false }, { text: "Beta decay", correct: false }, { text: "Electron capture", correct: false }] },
+            { question: "Which type of decay leads to an increase in the number of protons in the nucleus?", answers: [{ text: "Beta-minus (β⁻) decay", correct: true }, { text: "Alpha decay", correct: false }, { text: "Positron (β⁺) decay", correct: false }, { text: "Electron capture", correct: false }] },
+            { question: "Which TWO decay types lead to a decrease in the number of protons in the nucleus?", answers: [{ text: "Positron decay and Electron capture", correct: true }, { text: "Alpha decay and Beta-minus decay", correct: false }, { text: "Gamma decay and Alpha decay", correct: false }, { text: "Beta-minus decay and Gamma decay", correct: false }] },
+            { question: "What is a 'nucleon'?", answers: [{ text: "A collective name for a proton and a neutron", correct: true }, { text: "Only a proton", correct: false }, { text: "Only a neutron", correct: false }, { text: "A particle orbiting the nucleus", correct: false }] },
+            { question: "What does 'Z' mean in the notation <sup>A</sup><sub>Z</sub>X?", answers: [{ text: "Charge number (number of protons)", correct: true }, { text: "Mass number (number of nucleons)", correct: false }, { text: "Number of neutrons", correct: false }, { text: "Chemical symbol", correct: false }] },
+            { question: "What does 'A' mean in the notation <sup>A</sup><sub>Z</sub>X?", answers: [{ text: "Mass number (number of nucleons)", correct: true }, { text: "Charge number (number of protons)", correct: false }, { text: "Number of neutrons", correct: false }, { text: "Number of electrons", correct: false }] },
+            { question: "How do you find the number of neutrons (N) in a nucleus?", answers: [{ text: "N = A - Z", correct: true }, { text: "N = A + Z", correct: false }, { text: "N = Z", correct: false }, { text: "N = A", correct: false }] },
+            { question: "How many neutrons are in a Uranium-238 (<sup>238</sup><sub>92</sub>U) nucleus?", answers: [{ text: "146", correct: true }, { text: "92", correct: false }, { text: "238", correct: false }, { text: "330", correct: false }] },
+            { question: "A <sup>210</sup><sub>83</sub>Bi nucleus undergoes β⁻ decay. What is the product?", answers: [{ text: "<sup>210</sup><sub>84</sub>Po", correct: true }, { text: "<sup>206</sup><sub>81</sub>Tl", correct: false }, { text: "<sup>210</sup><sub>82</sub>Pb", correct: false }, { text: "<sup>211</sup><sub>83</sub>Bi", correct: false }] },
+            { question: "A <sup>226</sup><sub>88</sub>Ra nucleus undergoes α decay. What is the product?", answers: [{ text: "<sup>222</sup><sub>86</sub>Rn", correct: true }, { text: "<sup>222</sup><sub>87</sub>Fr", correct: false }, { text: "<sup>226</sup><sub>89</sub>Ac", correct: false }, { text: "<sup>222</sup><sub>84</sub>Po", correct: false }] },
+            { question: "A <sup>13</sup><sub>7</sub>N nucleus undergoes β⁺ decay. What is the product?", answers: [{ text: "<sup>13</sup><sub>6</sub>C", correct: true }, { text: "<sup>13</sup><sub>8</sub>O", correct: false }, { text: "<sup>12</sup><sub>6</sub>C", correct: false }, { text: "<sup>14</sup><sub>7</sub>N", correct: false }] },
+            { question: "A <sup>7</sup><sub>4</sub>Be nucleus undergoes electron capture. What is the product?", answers: [{ text: "<sup>7</sup><sub>3</sub>Li", correct: true }, { text: "<sup>7</sup><sub>5</sub>B", correct: false }, { text: "<sup>8</sup><sub>4</sub>Be", correct: false }, { text: "<sup>6</sup><sub>3</sub>Li", correct: false }] },
+            { question: "What is the 'displacement rule'?", answers: [{ text: "A rule describing how many places an element shifts on the periodic table", correct: true }, { text: "A rule for calculating decay energy", correct: false }, { text: "A rule for calculating half-life", correct: false }, { text: "A rule for nucleus construction", correct: false }] },
+            { question: "What are 'neutrinos' and 'antineutrinos'?", answers: [{ text: "Very light (or massless) neutral particles", correct: true }, { text: "Positive and negative electrons", correct: false }, { text: "Components of an alpha particle", correct: false }, { text: "Synonyms for a neutron", correct: false }] }
+        ];
+
+        // --- Helper Functions (Shuffle & Download) ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function downloadFile(filename, text) {
+            const element = document.createElement('a');
+            const bom = "\uFEFF"; // BOM for correct Cyrillic in Notepad (though not needed for English, good practice)
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(bom + text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        // --- Quiz Elements ---
+        const userInfoDiv = document.getElementById('user-info');
+        const startQuizBtn = document.getElementById('start-quiz');
+        const quizContainer = document.getElementById('quiz-container');
+        const submitQuizBtn = document.getElementById('submit-quiz');
+        const resultsModal = document.getElementById('results-modal');
+        const resultName = document.getElementById('result-name');
+        const resultGroup = document.getElementById('result-group');
+        const resultScore = document.getElementById('result-score');
+        const saveResultsBtn = document.getElementById('save-results-button');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        
+        let studentName = "";
+        let studentGroup = "";
+
+        // --- Quiz Event Listeners & Logic ---
+        startQuizBtn.addEventListener('click', () => {
+            studentName = document.getElementById('student-name').value;
+            studentGroup = document.getElementById('student-group').value;
+            if (studentName.trim() === "" || studentGroup.trim() === "") {
+                alert("Please fill in your Name and Group.");
+                return;
+            }
+            userInfoDiv.style.display = 'none';
+            loadTest();
+        });
+
+        function loadTest() {
+            const questionsToShow = shuffleArray([...questionBank]).slice(0, 10);
+            let quizHTML = "";
+            questionsToShow.forEach((q, index) => {
+                const shuffledAnswers = shuffleArray([...q.answers]);
+                let answersHTML = "";
+                shuffledAnswers.forEach(answer => {
+                    answersHTML += `<label><input type="radio" name="question${index}" value="${answer.correct}"> ${answer.text}</label>`;
+                });
+                quizHTML += `<div class="question-block"><p>${index + 1}. ${q.question}</p>${answersHTML}</div>`;
+            });
+            quizContainer.innerHTML = quizHTML;
+            submitQuizBtn.style.display = 'block';
+        }
+
+        submitQuizBtn.addEventListener('click', () => {
+            let correctAnswers = 0;
+            const totalQuestions = 10;
+            for (let i = 0; i < totalQuestions; i++) {
+                const selectedAnswer = document.querySelector(`input[name="question${i}"]:checked`);
+                if (selectedAnswer && selectedAnswer.value === 'true') {
+                    correctAnswers++;
+                }
+            }
+            const score = (correctAnswers / totalQuestions) * 100;
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('en-US'); // Use English locale
+            const newResultEntry = `
+--------------------------------
+Date: ${dateTimeString}
+Student: ${studentName}
+Group: ${studentGroup}
+Result: ${score.toFixed(0)}%
+--------------------------------
+`;
+            // Save to 'quizResults'
+            let allResults = localStorage.getItem('quizResults') || "=== Quiz Result History ===";
+            allResults += newResultEntry;
+            localStorage.setItem('quizResults', allResults);
+
+            resultName.textContent = studentName;
+            resultGroup.textContent = studentGroup;
+            resultScore.textContent = `${score.toFixed(0)}%`;
+            resultsModal.style.display = 'block';
+        });
+        
+        saveResultsBtn.addEventListener('click', () => {
+            const resultsToSave = localStorage.getItem('quizResults');
+            if (resultsToSave) {
+                downloadFile('quiz_results.txt', resultsToSave);
+            } else {
+                alert('No results to save.');
+            }
+        });
+        
+        closeModalBtn.addEventListener('click', () => {
+            resultsModal.style.display = 'none'; 
+            quizContainer.innerHTML = ''; 
+            submitQuizBtn.style.display = 'none'; 
+            userInfoDiv.style.display = 'block'; 
+        });
+
+        
+        // ==========================================================
+        // == BLOCK 4: JAVASCRIPT FOR TASK
+        // ==========================================================
+        
+        // --- Task Elements ---
+        const taskUserInfo = document.getElementById('task-user-info');
+        const taskStudentName = document.getElementById('task-student-name');
+        const taskStudentGroup = document.getElementById('task-student-group');
+        const startTaskSessionBtn = document.getElementById('start-task-session');
+        const taskContainerMain = document.getElementById('task-container-main');
+        
+        const taskEquation = document.getElementById('task-equation');
+        const taskInputsNucleus = document.getElementById('task-inputs-nucleus');
+        const taskInputsParticle = document.getElementById('task-inputs-particle');
+        const taskAnsA = document.getElementById('task-ans-a');
+        const taskAnsZ = document.getElementById('task-ans-z');
+        
+        const newTaskBtn = document.getElementById('new-task-btn');
+        const checkTaskBtn = document.getElementById('check-task-btn');
+        const saveTaskBtn = document.getElementById('save-task-btn');
+        
+        const taskFeedback = document.getElementById('task-feedback');
+        
+        // --- Variables for storing answer and stats ---
+        let currentTaskType = 'findProduct'; // 'findProduct', 'findParent', 'findParticle'
+        let currentTaskSolution = { A: 0, Z: 0 }; // Correct answer (A & Z)
+        let currentParticleSolution = ''; // Correct answer (particle)
+        
+        let currentTaskStudentName = ""; // Student name for task session
+        let currentTaskStudentGroup = ""; // Student group for task session
+        let correctTaskCount = 0; // Counter for correct
+        let incorrectTaskCount = 0; // Counter for incorrect
+        
+        // --- Task Template Bank ---
+        const taskTemplates = [
+            { type: 'alpha',   parent: {A: 238, Z: 92, X: 'U'},  particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 226, Z: 88, X: 'Ra'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 210, Z: 84, X: 'Po'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'alpha',   parent: {A: 232, Z: 90, X: 'Th'}, particle: '<sup>4</sup><sub>2</sub>He', particleKey: 'alpha' },
+            { type: 'beta-',   parent: {A: 14,  Z: 6,  X: 'C'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 60,  Z: 27, X: 'Co'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 90,  Z: 38, X: 'Sr'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta-',   parent: {A: 234, Z: 90, X: 'Th'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'beta-' },
+            { type: 'beta+',   parent: {A: 22,  Z: 11, X: 'Na'}, particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 13,  Z: 7,  X: 'N'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'beta+',   parent: {A: 18,  Z: 9,  X: 'F'},  particle: '<sup>0</sup><sub>+1</sub>e', particleKey: 'beta+' },
+            { type: 'capture', parent: {A: 40,  Z: 19, X: 'K'},  particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 7,   Z: 4,  X: 'Be'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' },
+            { type: 'capture', parent: {A: 55,  Z: 26, X: 'Fe'}, particle: '<sup>0</sup><sub>-1</sub>e', particleKey: 'capture' }
+        ];
+
+        // --- Function: Generate New Task ---
+        function generateTask() {
+            // 1. Select a random template
+            const task = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
+            const parent = task.parent;
+            
+            // 2. Select a random task type (what to find)
+            const taskTypeRoll = Math.random();
+            if (taskTypeRoll < 0.45) {
+                currentTaskType = 'findProduct';
+            } else if (taskTypeRoll < 0.8) {
+                currentTaskType = 'findParent';
+            } else {
+                currentTaskType = 'findParticle';
+            }
+            
+            // 3. Show/hide the correct input fields
+            if (currentTaskType === 'findParticle') {
+                taskInputsNucleus.classList.add('hidden');
+                taskInputsParticle.classList.remove('hidden');
+            } else {
+                taskInputsNucleus.classList.remove('hidden');
+                taskInputsParticle.classList.add('hidden');
+            }
+
+            let solutionA = 0;
+            let solutionZ = 0;
+            let taskHTML = "";
+            const unknownNucleus = "<sup>?</sup><sub>??</sub>X";
+            const knownParticle = task.particle;
+            const parentHTML = `<sup>${parent.A}</sup><sub>${parent.Z}</sub>${parent.X}`;
+            
+            // 4. Generate HTML and save the correct answer
+            switch (task.type) {
+                case 'alpha':
+                    solutionA = parent.A - 4;
+                    solutionZ = parent.Z - 2;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta-':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z + 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'beta+':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} &rarr; ${unknownNucleus} + ${knownParticle}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ${knownParticle}`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X + ?`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+                case 'capture':
+                    solutionA = parent.A;
+                    solutionZ = parent.Z - 1;
+                    if (currentTaskType === 'findProduct') {
+                        taskHTML = `${parentHTML} + ${knownParticle} &rarr; ${unknownNucleus}`;
+                        currentTaskSolution = { A: solutionA, Z: solutionZ };
+                    } else if (currentTaskType === 'findParent') {
+                        taskHTML = `${unknownNucleus} + ${knownParticle} &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentTaskSolution = { A: parent.A, Z: parent.Z };
+                    } else { // findParticle
+                        taskHTML = `${parentHTML} + ? &rarr; <sup>${solutionA}</sup><sub>${solutionZ}</sub>X`;
+                        currentParticleSolution = task.particleKey;
+                    }
+                    break;
+            }
+            
+            // 5. Update UI
+            taskEquation.innerHTML = taskHTML;
+            // Show current score
+            taskFeedback.textContent = `(Correct: ${correctTaskCount}, Incorrect: ${incorrectTaskCount})`;
+            taskFeedback.className = "";
+            // Reset input fields
+            taskAnsA.value = "";
+            taskAnsZ.value = "";
+            document.querySelectorAll('input[name="task-particle"]').forEach(radio => radio.checked = false);
+        }
+
+        // --- Function: Check Task Answer ---
+        function checkTask() {
+            let isCorrect = false; // Flag for checking
+            
+            // 1. Check which task type is active
+            if (currentTaskType === 'findParticle') {
+                // --- Logic for checking PARTICLE ---
+                const selectedParticle = document.querySelector('input[name="task-particle"]:checked');
+                if (!selectedParticle) {
+                    taskFeedback.textContent = "Please select a decay type.";
+                    taskFeedback.className = "incorrect";
+                    return; // Don't count as an error
+                }
+                isCorrect = (selectedParticle.value === currentParticleSolution);
+
+            } else {
+                // --- Logic for checking NUCLEUS (A & Z) ---
+                const userA = parseInt(taskAnsA.value, 10);
+                const userZ = parseInt(taskAnsZ.value, 10);
+                
+                if (isNaN(userA) || isNaN(userZ)) {
+                    taskFeedback.textContent = "Please enter both numbers (A and Z).";
+                    taskFeedback.className = "incorrect";
+                    return; // Don't count as an error
+                }
+                isCorrect = (userA === currentTaskSolution.A && userZ === currentTaskSolution.Z);
+            }
+            
+            // 2. Update counters and feedback
+            if (isCorrect) {
+                correctTaskCount++;
+                taskFeedback.textContent = `Correct! (Correct: ${correctTaskCount}, Incorrect: ${incorrectTaskCount})`;
+                taskFeedback.className = "correct";
+            } else {
+                incorrectTaskCount++;
+                taskFeedback.textContent = `Incorrect. (Correct: ${correctTaskCount}, Incorrect: ${incorrectTaskCount})`;
+                // Add a hint
+                if (currentTaskType !== 'findParticle') {
+                    if (parseInt(taskAnsA.value, 10) !== currentTaskSolution.A) taskFeedback.textContent += " Check A. ";
+                    if (parseInt(taskAnsZ.value, 10) !== currentTaskSolution.Z) taskFeedback.textContent += " Check Z.";
+                }
+                taskFeedback.className = "incorrect";
+            }
+        }
+        
+        // --- Task Button Listeners ---
+        
+        // 1. "Start" button
+        startTaskSessionBtn.addEventListener('click', () => {
+            currentTaskStudentName = taskStudentName.value;
+            currentTaskStudentGroup = taskStudentGroup.value;
+            
+            if (currentTaskStudentName.trim() === "" || currentTaskStudentGroup.trim() === "") {
+                alert("Please fill in your Name and Group.");
+                return;
+            }
+
+            // Reset counters
+            correctTaskCount = 0;
+            incorrectTaskCount = 0;
+            
+            // Hide form and show trainer
+            taskUserInfo.classList.add('hidden');
+            taskContainerMain.classList.remove('hidden');
+            
+            generateTask(); // Generate first task
+        });
+
+        // 2. "New Task" button
+        newTaskBtn.addEventListener('click', generateTask);
+        
+        // 3. "Check Answer" button
+        checkTaskBtn.addEventListener('click', checkTask);
+        
+        // 4. "Finish & Save" button
+        saveTaskBtn.addEventListener('click', () => {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('en-US'); // Use English locale
+            
+            // Create log entry
+            const newResultEntry = `
+--------------------------------
+Date: ${dateTimeString}
+Student: ${currentTaskStudentName}
+Group: ${currentTaskStudentGroup}
+---
+Correct: ${correctTaskCount}
+Incorrect: ${incorrectTaskCount}
+--------------------------------
+`;
+            // Use NEW key 'taskResults'
+            let allResults = localStorage.getItem('taskResults') || "=== Task Solving History ===";
+            allResults += newResultEntry;
+            localStorage.setItem('taskResults', allResults);
+            
+            // Download NEW file
+            downloadFile('task_results.txt', allResults);
+
+            // Reset UI (back to data entry)
+            taskContainerMain.classList.add('hidden');
+            taskUserInfo.classList.remove('hidden');
+            
+            // Clear fields
+            taskStudentName.value = "";
+            taskStudentGroup.value = "";
+            taskEquation.innerHTML = "Click 'Start' to generate a task";
+            taskFeedback.textContent = "";
+            taskFeedback.className = "";
+        });
+
+
+    }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>

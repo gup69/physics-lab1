@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фотоэффект: Школьная Лаборатория</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #00e5ff;
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+            --blocked: #2c2c2c;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin-bottom: 5px; color: var(--accent); }
+        .subtitle { font-size: 0.9em; color: #777; margin-bottom: 20px; }
+
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        .control-group { margin-bottom: 15px; }
+        .control-header { 
+            font-weight: bold; 
+            color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; 
+            margin-bottom: 10px; 
+            margin-top: 20px;
+        }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        
+        select, input[type="text"] { 
+            width: 100%; padding: 10px; 
+            background: #000; border: 1px solid #444; 
+            color: white; border-radius: 4px; box-sizing: border-box;
+        }
+        
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+        
+        button {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: #000; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; transform: scale(1.01); }
+        button:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
+        
+        button.start-btn { background: var(--success); color: white; font-size: 1.1em; }
+        button.secondary { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        button.secondary:hover { background: rgba(0, 229, 255, 0.1); }
+
+        .lang-switch { margin-bottom: 20px; text-align: right; }
+
+        .visualizer { 
+            position: relative; height: 350px; 
+            display: flex; justify-content: center; align-items: center; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 1px solid #444;
+        }
+        
+        .meters { 
+            position: absolute; top: 10px; right: 10px; 
+            text-align: right; background: rgba(0,0,0,0.7); 
+            padding: 8px; border-radius: 5px; border: 1px solid #333;
+        }
+        .meter { font-family: monospace; font-size: 1.2em; margin-bottom: 5px; }
+        .meter span { font-weight: bold; }
+
+        .graph-wrapper { height: 300px; position: relative; }
+        #status-log { font-size: 0.8em; color: #777; margin-top: 5px; text-align: right; }
+
+        /* Модальное окно */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel);
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+        .modal-score {
+            font-size: 3em;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .modal-details {
+            text-align: left;
+            margin: 20px 0;
+            line-height: 1.6;
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .modal-details span { color: #aaa; }
+        .modal-details strong { color: var(--accent); float: right; }
+    </style>
+</head>
+<body>
+
+<h1 data-lang="mainTitle">Изучение фотоэффекта</h1>
+<div class="subtitle" data-lang="subTitle">Виртуальная лабораторная работа для учащихся</div>
+
+<div class="container">
+    <div class="panel">
+        
+        <div class="control-group" style="text-align: right;">
+            <select id="lang-select" style="width: auto;">
+                <option value="ru">Русский</option>
+                <option value="kz">Қазақша</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+
+        <div class="control-header" data-lang="headStudent">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" data-lang-placeholder="phName" placeholder="Иванов Иван">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" data-lang-placeholder="phGrade" placeholder="11 А">
+        </div>
+        <button id="start-lab-btn" class="start-btn" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headSettings">2. Настройки эксперимента</div>
+            <div class="control-group">
+                <label data-lang="lblMaterial">Материал катода:</label>
+                <select id="mat-select" disabled>
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНЫЙ ***</option>
+                    <option value="Na" data-lang="optNa">Натрий (Na)</option>
+                    <option value="Zn" data-lang="optZn">Цинк (Zn)</option>
+                    <option value="Cu" data-lang="optCu">Медь (Cu)</option>
+                    <option value="Pt" data-lang="optPt">Платина (Pt)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblLambda">Длина волны (λ):</span> <span class="val"><span id="lam-val">400</span> <span data-lang="unitNm">нм</span></span></label>
+                <input type="range" id="lam-slider" min="200" max="800" value="400" step="5" disabled>
+                </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblIntensity">Интенсивность:</span> <span class="val" id="int-val">50%</span></label>
+                <input type="range" id="int-slider" min="0" max="100" value="50" disabled>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblVoltage">Напряжение (U):</span> <span class="val"><span id="u-val">0.0</span> <span data-lang="unitV">В</span></span></label>
+                <input type="range" id="u-slider" min="-3.0" max="3.0" value="0.0" step="0.1" disabled>
+            </div>
+
+            <button id="measure-btn" disabled data-lang="btnMeasure">ИЗМЕРИТЬ ТОЧКУ</button>
+            <button class="secondary" id="clear-btn" disabled style="margin-top: 10px;" data-lang="btnClear">Очистить график</button>
+
+            <div class="control-header" data-lang="headTask">3. Задание</div>
+            <div class="control-group">
+                <label data-lang="lblCalc">Рассчитайте работу выхода (эВ):</label>
+                <input type="text" id="ans-input" placeholder="2.35" disabled>
+                <button id="check-btn" disabled style="background: var(--success); color: white; margin-top:5px;" data-lang="btnCheck">ПРОВЕРИТЬ</button>
+                <div id="attempts-display" style="margin-top: 5px; font-size: 0.9em; color: #aaa; text-align: center;"></div>
+                <div id="check-res" style="margin-top: 10px; font-weight: bold; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <div class="panel visualizer">
+            <canvas id="tube" width="600" height="350"></canvas>
+            <div id="visualizer-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:10;">
+                <h3 style="color:#aaa" data-lang="msgStartFirst">Заполните данные и нажмите НАЧАТЬ</h3>
+            </div>
+
+            <div class="meters">
+                <div class="meter" style="color: #ff4444;">I = <span id="m-curr">0.00</span> <span data-lang="unitUA">мкА</span></div>
+                <div class="meter" style="color: #ffbb33;">U = <span id="m-volt">0.0</span> <span data-lang="unitV">В</span></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 data-lang="lblGraphTitle">График ВАХ (Зависимость Тока от Напряжения)</h3>
+            <div class="graph-wrapper">
+                <canvas id="vah-chart"></canvas>
+            </div>
+            <div id="status-log" data-lang="logReady">График готов к записи точек...</div>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат</h2>
+        <div class="modal-details">
+            <div style="margin-bottom: 5px;"><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div style="margin-bottom: 5px;"><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+            <div style="margin-bottom: 5px;"><span data-lang="resAttempts">Попыток:</span> <strong id="res-attempts"></strong></div>
+            <hr style="border-color: #333">
+            <div style="margin-bottom: 5px;"><span data-lang="resTrueVal">Правильный ответ:</span> <strong id="res-true-val"></strong></div>
+        </div>
+        
+        <p data-lang="resScoreLabel">Итоговая оценка:</p>
+        <div class="modal-score" id="res-score-val">10 / 10</div>
+        
+        <button onclick="location.reload()" style="background: var(--accent); color:black;" data-lang="btnRestart">ЗАКРЫТЬ / НАЧАТЬ ЗАНОВО</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Данные и Словари ===
+    const MATERIALS = {
+        'Na': { phi: 2.36, color: '#e6e6fa' },
+        'Zn': { phi: 4.33, color: '#a0a0a0' },
+        'Cu': { phi: 4.70, color: '#b87333' },
+        'Pt': { phi: 5.65, color: '#e5e4e2' },
+        'unknown': { phi: (Math.random() * 3.5 + 1.5).toFixed(2), color: '#333' }
+    };
+
+    const LANG = {
+        ru: {
+            mainTitle: "Изучение фотоэффекта",
+            subTitle: "Виртуальная лабораторная работа для учащихся",
+            headStudent: "1. Регистрация",
+            lblPupil: "ФИ Ученика:",
+            phName: "Иванов Иван",
+            lblGrade: "Класс:",
+            phGrade: "11 А",
+            btnStartLab: "НАЧАТЬ РАБОТУ",
+            headSettings: "2. Настройки эксперимента",
+            lblMaterial: "Материал катода:",
+            optUnknown: "*** НЕИЗВЕСТНЫЙ ***",
+            optNa: "Натрий (Na)", optZn: "Цинк (Zn)", optCu: "Медь (Cu)", optPt: "Платина (Pt)",
+            lblLambda: "Длина волны (λ):",
+            unitNm: "нм", unitEV: "эВ", unitV: "В", unitUA: "мкА",
+            // Энергия фотона удалена из интерфейса, чтобы ученик считал сам
+            lblIntensity: "Интенсивность:",
+            lblVoltage: "Напряжение (U):",
+            btnMeasure: "ИЗМЕРИТЬ ТОЧКУ",
+            btnClear: "Очистить график",
+            headTask: "3. Задание",
+            lblCalc: "Рассчитайте работу выхода (эВ):",
+            btnCheck: "ПРОВЕРИТЬ",
+            lblGraphTitle: "График ВАХ (Зависимость Тока от Напряжения)",
+            logReady: "График готов к записи точек...",
+            logAdded: "Добавлена точка: U={u} В, I={i} мкА",
+            logCleared: "График очищен.",
+            chartX: "Напряжение (В)",
+            chartY: "Фототок (мкА)",
+            alertEmpty: "Введите число!",
+            resCorrect: "Верно!",
+            resWrong: "Неверно. Попыток осталось: {n}",
+            alertName: "Пожалуйста, введите ФИ ученика и Класс!",
+            msgStartFirst: "Заполните данные и нажмите НАЧАТЬ",
+            txtAttempts: "Попытки: {used} / 3",
+            resTitle: "Результат выполнения",
+            resPupil: "Ученик:",
+            resGrade: "Класс:",
+            resAttempts: "Использовано попыток:",
+            resScoreLabel: "Оценка:",
+            resTrueVal: "Правильное значение:",
+            btnRestart: "ЗАКРЫТЬ / ЗАВЕРШИТЬ"
+        },
+        kz: {
+            mainTitle: "Фотоэффектіні зерттеу",
+            subTitle: "Оқушыларға арналған виртуалды зертханалық жұмыс",
+            headStudent: "1. Тіркелу",
+            lblPupil: "Оқушының Аты-жөні:",
+            phName: "Асанов Асан",
+            lblGrade: "Сынып:",
+            phGrade: "11 А",
+            btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headSettings: "2. Тәжірибе баптаулары",
+            lblMaterial: "Катод материалы:",
+            optUnknown: "*** БЕЛГІСІЗ ***",
+            optNa: "Натрий (Na)", optZn: "Мырыш (Zn)", optCu: "Мыс (Cu)", optPt: "Платина (Pt)",
+            lblLambda: "Толқын ұзындығы (λ):",
+            unitNm: "нм", unitEV: "эВ", unitV: "В", unitUA: "мкА",
+            lblIntensity: "Қарқындылық:",
+            lblVoltage: "Кернеу (U):",
+            btnMeasure: "НҮКТЕНІ ӨЛШЕУ",
+            btnClear: "Графикті тазалау",
+            headTask: "3. Тапсырма",
+            lblCalc: "Шығу жұмысын есептеңіз (эВ):",
+            btnCheck: "ТЕКСЕРУ",
+            lblGraphTitle: "ВАС Графигі (Токтың Кернеуге тәуелділігі)",
+            logReady: "График нүктелерді жазуға дайын...",
+            logAdded: "Нүкте қосылды: U={u} В, I={i} мкА",
+            logCleared: "График тазартылды.",
+            chartX: "Кернеу (В)",
+            chartY: "Фототок (мкА)",
+            alertEmpty: "Сан енгізіңіз!",
+            resCorrect: "Дұрыс!",
+            resWrong: "Қате. Қалған мүмкіндіктер: {n}",
+            alertName: "Оқушының атын және сыныбын енгізіңіз!",
+            msgStartFirst: "Мәліметтерді толтырып, БАСТАУ батырмасын басыңыз",
+            txtAttempts: "Мүмкіндіктер: {used} / 3",
+            resTitle: "Нәтиже",
+            resPupil: "Оқушы:",
+            resGrade: "Сынып:",
+            resAttempts: "Қолданылған мүмкіндіктер:",
+            resScoreLabel: "Баға:",
+            resTrueVal: "Дұрыс жауап:",
+            btnRestart: "ЖАБУ / АЯҚТАУ"
+        },
+        en: {
+            mainTitle: "Study of Photoelectric Effect",
+            subTitle: "Virtual Laboratory for Students",
+            headStudent: "1. Registration",
+            lblPupil: "Student Name:",
+            phName: "John Doe",
+            lblGrade: "Class/Grade:",
+            phGrade: "12 B",
+            btnStartLab: "START LAB",
+            headSettings: "2. Experiment Settings",
+            lblMaterial: "Cathode Material:",
+            optUnknown: "*** UNKNOWN ***",
+            optNa: "Sodium (Na)", optZn: "Zinc (Zn)", optCu: "Copper (Cu)", optPt: "Platinum (Pt)",
+            lblLambda: "Wavelength (λ):",
+            unitNm: "nm", unitEV: "eV", unitV: "V", unitUA: "µA",
+            lblIntensity: "Intensity:",
+            lblVoltage: "Voltage (U):",
+            btnMeasure: "MEASURE POINT",
+            btnClear: "Clear Graph",
+            headTask: "3. Assignment",
+            lblCalc: "Calculate Work Function (eV):",
+            btnCheck: "CHECK",
+            lblGraphTitle: "I-V Characteristic Graph",
+            logReady: "Graph ready...",
+            logAdded: "Point added: U={u} V, I={i} µA",
+            logCleared: "Graph cleared.",
+            chartX: "Voltage (V)",
+            chartY: "Photocurrent (µA)",
+            alertEmpty: "Please enter a number!",
+            resCorrect: "Correct!",
+            resWrong: "Incorrect. Attempts left: {n}",
+            alertName: "Please enter Name and Class!",
+            msgStartFirst: "Fill details and press START",
+            txtAttempts: "Attempts: {used} / 3",
+            resTitle: "Result",
+            resPupil: "Student:",
+            resGrade: "Class:",
+            resAttempts: "Attempts used:",
+            resScoreLabel: "Score:",
+            resTrueVal: "Correct value:",
+            btnRestart: "CLOSE / FINISH"
+        }
+    };
+
+    // Глобальные переменные
+    let currentLang = 'ru';
+    let chart = null;
+    let isRunning = false; 
+    let attemptsUsed = 0; // Счетчик использованных попыток
+
+    let state = {
+        mat: 'unknown',
+        lam: 400,
+        int: 50,
+        u: 0.0,
+        curr: 0.0,
+        electrons: []
+    };
+
+    // === 2. Функция переключения языка ===
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (t[key]) el.innerText = t[key];
+        });
+
+        document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-lang-placeholder');
+            if (t[key]) el.placeholder = t[key];
+        });
+
+        if (chart) {
+            chart.options.scales.x.title.text = t.chartX;
+            chart.options.scales.y.title.text = t.chartY;
+            chart.update();
+        }
+
+        const select = document.getElementById('mat-select');
+        const options = select.options;
+        for (let i = 0; i < options.length; i++) {
+            const key = 'opt' + (options[i].value === 'unknown' ? 'Unknown' : options[i].value);
+            if (t[key]) options[i].text = t[key];
+        }
+        
+        updateAttemptsDisplay();
+    }
+
+    function updateAttemptsDisplay() {
+        if(isRunning) {
+            document.getElementById('attempts-display').innerText = 
+                LANG[currentLang].txtAttempts.replace('{used}', attemptsUsed);
+        }
+    }
+
+    // === 3. Физика ===
+    function calcPhysics() {
+        if (!isRunning) return { E: 0, K: 0 };
+
+        const phi = parseFloat(MATERIALS[state.mat].phi);
+        const E_ph = 1239.8 / state.lam; 
+        let K_max = E_ph - phi; 
+        const U_stop_abs = K_max; 
+
+        let i = 0;
+        const maxI = (state.int / 100) * 10.0; 
+
+        if (K_max > 0) {
+            if (state.u <= -U_stop_abs) {
+                i = 0; 
+            } else if (state.u > 0) {
+                i = maxI; 
+            } else {
+                let ratio = (state.u - (-U_stop_abs)) / U_stop_abs;
+                if (ratio < 0) ratio = 0;
+                i = maxI * ratio * ratio;
+            }
+        } else {
+            i = 0;
+        }
+        
+        if (i > 0.05) i += (Math.random() - 0.5) * 0.05;
+        if (i < 0) i = 0;
+        
+        state.curr = i;
+        return { E: E_ph, K: K_max, saturationI: maxI, theoreticalI: i };
+    }
+
+    // === 4. Анимация ===
+    const cvs = document.getElementById('tube');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        
+        // Колба
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(300, 175, 200, 90, 0, 0, 6.28); ctx.stroke();
+
+        // Электроды
+        ctx.fillStyle = isRunning ? MATERIALS[state.mat].color : '#333'; 
+        ctx.fillRect(160, 125, 10, 100); 
+        ctx.fillStyle = '#888';
+        ctx.fillRect(430, 125, 10, 100); 
+
+        if (isRunning) {
+            // Свет
+            ctx.fillStyle = wavelengthColor(state.lam);
+            ctx.globalAlpha = state.int / 200;
+            ctx.beginPath(); ctx.moveTo(100, 80); ctx.lineTo(170, 130); ctx.lineTo(170, 220); ctx.lineTo(100, 270); ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            const phys = calcPhysics();
+            
+            // Рождение электрона
+            if (state.int > 0 && phys.K > 0) {
+                if (Math.random() < state.int/80) {
+                    
+                    let isWinner = false;
+                    if (phys.saturationI > 0) {
+                        const winProbability = phys.theoreticalI / phys.saturationI;
+                        if (Math.random() < winProbability) isWinner = true;
+                    }
+
+                    let speed = 0;
+                    const fieldForce = state.u * 0.15;
+
+                    if (isWinner) {
+                        if (state.u < 0) {
+                            speed = Math.abs(fieldForce) * 60 + 1.0 + Math.random(); 
+                        } else {
+                            speed = 2.0 + Math.random() * 2.0;
+                        }
+                    } else {
+                        speed = Math.abs(fieldForce) * 10 + Math.random(); 
+                    }
+
+                    state.electrons.push({ 
+                        x: 172, 
+                        y: 130 + Math.random()*90, 
+                        vx: speed, 
+                        active: true,
+                        winner: isWinner
+                    });
+                }
+            }
+
+            for (let e of state.electrons) {
+                if (!e.active) continue;
+                
+                e.vx += state.u * 0.15; 
+                
+                if (e.winner && e.vx < 0.5 && state.u < 0) {
+                    e.vx = 0.5; 
+                }
+
+                e.x += e.vx;
+
+                if (e.x > 430) e.active = false; 
+                if (e.vx < 0 && e.x < 170) e.active = false; 
+
+                ctx.fillStyle = '#0ff';
+                ctx.beginPath(); ctx.arc(e.x, e.y, 2, 0, 6.28); ctx.fill();
+            }
+            state.electrons = state.electrons.filter(e => e.active);
+        }
+
+        requestAnimationFrame(draw);
+    }
+
+    function wavelengthColor(l) {
+        if(l<400) return '#90f'; if(l<500) return '#00f'; if(l<600) return '#0f0'; return '#f00';
+    }
+
+    // === 5. Инициализация Графика ===
+    function initChart() {
+        if (typeof Chart === 'undefined') {
+            document.getElementById('status-log').innerText = "Ошибка: Нет интернета для загрузки графиков.";
+            return;
+        }
+        const ctxCh = document.getElementById('vah-chart').getContext('2d');
+        chart = new Chart(ctxCh, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'I(U)',
+                    data: [],
+                    borderColor: '#00e5ff',
+                    backgroundColor: 'rgba(0, 229, 255, 0.2)',
+                    showLine: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: {display:true, text: LANG.ru.chartX, color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'} },
+                    y: { title: {display:true, text: LANG.ru.chartY, color:'#aaa'}, grid:{color:'#333'}, ticks:{color:'#eee'}, min: 0 }
+                },
+                plugins: { legend: {display:false} }
+            }
+        });
+    }
+
+    function updateUI() {
+        if (!isRunning) return; 
+        const ph = calcPhysics();
+        document.getElementById('lam-val').innerText = state.lam;
+        // Энергия удалена из UI
+        // document.getElementById('phot-en').innerText = ph.E.toFixed(2);
+        document.getElementById('int-val').innerText = state.int + "%";
+        document.getElementById('u-val').innerText = state.u.toFixed(1);
+        
+        document.getElementById('m-curr').innerText = state.curr.toFixed(2);
+        document.getElementById('m-volt').innerText = state.u.toFixed(1);
+    }
+
+    // === 6. Логика модального окна результата ===
+    function showFinalResult(score, correct) {
+        const modal = document.getElementById('result-modal');
+        const t = LANG[currentLang];
+        const trueVal = parseFloat(MATERIALS[state.mat].phi) + " эВ";
+
+        document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+        document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+        document.getElementById('res-attempts').innerText = attemptsUsed;
+        
+        document.getElementById('res-score-val').innerText = score + " / 10 баллов";
+        document.getElementById('res-score-val').style.color = (score > 0) ? "var(--success)" : "var(--danger)";
+        
+        document.getElementById('res-true-val').innerText = correct ? "---" : trueVal;
+
+        modal.style.display = 'flex';
+    }
+
+    // === 7. Старт ===
+    window.onload = () => {
+        initChart();
+        draw();
+        
+        // Язык
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+
+        // Кнопка НАЧАТЬ РАБОТУ
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            const t = LANG[currentLang];
+
+            if(!name.trim() || !grade.trim()) {
+                alert(t.alertName);
+                return;
+            }
+
+            // Разблокировка
+            isRunning = true;
+            attemptsUsed = 0;
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('experiment-controls').querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none'; 
+            document.getElementById('visualizer-overlay').style.display = 'none'; 
+            
+            updateAttemptsDisplay();
+            updateUI(); 
+        };
+
+        // События интерфейса
+        document.getElementById('lam-slider').oninput = (e) => { state.lam = parseInt(e.target.value); updateUI(); };
+        document.getElementById('int-slider').oninput = (e) => { state.int = parseInt(e.target.value); updateUI(); };
+        document.getElementById('u-slider').oninput = (e) => { state.u = parseFloat(e.target.value); updateUI(); };
+        
+        document.getElementById('mat-select').onchange = (e) => {
+            state.mat = e.target.value;
+            if(chart) {
+                chart.data.datasets[0].data = [];
+                chart.update();
+                document.getElementById('status-log').innerText = LANG[currentLang].logCleared;
+            }
+            updateUI();
+        };
+
+        document.getElementById('measure-btn').onclick = () => {
+            if (!chart) return;
+            const point = { x: state.u, y: state.curr };
+            const existing = chart.data.datasets[0].data.findIndex(p => Math.abs(p.x - point.x) < 0.05);
+            if (existing >= 0) {
+                chart.data.datasets[0].data[existing] = point;
+            } else {
+                chart.data.datasets[0].data.push(point);
+            }
+            
+            chart.data.datasets[0].data.sort((a,b) => a.x - b.x);
+            chart.update();
+            const msg = LANG[currentLang].logAdded.replace('{u}', point.x).replace('{i}', point.y.toFixed(2));
+            document.getElementById('status-log').innerText = msg;
+        };
+
+        document.getElementById('clear-btn').onclick = () => {
+            if(chart) {
+                chart.data.datasets[0].data = [];
+                chart.update();
+                document.getElementById('status-log').innerText = LANG[currentLang].logCleared;
+            }
+        };
+
+        // --- ЛОГИКА ПРОВЕРКИ ---
+        document.getElementById('check-btn').onclick = () => {
+            const userVal = parseFloat(document.getElementById('ans-input').value.replace(',','.'));
+            const trueVal = parseFloat(MATERIALS[state.mat].phi);
+            const resDiv = document.getElementById('check-res');
+            const t = LANG[currentLang];
+            
+            if (isNaN(userVal)) { resDiv.innerHTML = `<span style='color:orange'>${t.alertEmpty}</span>`; return; }
+
+            attemptsUsed++;
+            updateAttemptsDisplay();
+
+            // Допуск 0.2 эВ
+            if (Math.abs(userVal - trueVal) < 0.2) {
+                // ПРАВИЛЬНО
+                let score = 0;
+                if (attemptsUsed === 1) score = 10;
+                else if (attemptsUsed === 2) score = 8;
+                else score = 7;
+
+                resDiv.innerHTML = `<span style='color:#00C851'>${t.resCorrect}</span>`;
+                
+                // Показать финал
+                setTimeout(() => { showFinalResult(score, true); }, 1000);
+                
+                // Блокируем кнопку
+                document.getElementById('check-btn').disabled = true;
+
+            } else {
+                // НЕПРАВИЛЬНО
+                let attemptsLeft = 3 - attemptsUsed;
+                
+                if (attemptsLeft > 0) {
+                    resDiv.innerHTML = `<span style='color:#ff4444'>${t.resWrong.replace('{n}', attemptsLeft)}</span>`;
+                } else {
+                    // Попытки кончились
+                    showFinalResult(0, false);
+                    document.getElementById('check-btn').disabled = true;
+                }
+            }
+        };
+    };
+</script>
+
+</body>
+</html>

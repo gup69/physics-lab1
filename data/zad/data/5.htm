@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v8.0 (Основы МКТ)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px; 
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; 
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch; 
+        }
+
+        .game-area {
+            flex: 2; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; 
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+        
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; } 
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1; 
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc; 
+            min-height: 100%; 
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column; 
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                        </div>
+                    <p id="mission-question">...</p>
+                </div>
+                
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    
+                    <p id="feedback-message"></p>
+                </div>
+            </div> 
+
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                    </ul>
+            </div> 
+        </div> 
+    </div> 
+<script>
+        // --- (ОБНОВЛЕННЫЙ) ОБЪЕКТ ПЕРЕВОДОВ (МКТ) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!",
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Количество вещества", scenario: "В баллоне содержится газ известной массы. Рассчитайте количество вещества.", data: { m: "Масса газа (m)", M: "Молярная масса (M)" }, question: "Задача: Введите количество вещества (&nu;) в молях." },
+                    { title: "Миссия 2: Число Авогадро", scenario: "В образце содержится &nu; моль вещества. Рассчитайте число молекул в образце.", data: { n: "Кол-во вещества (&nu;)" }, question: "Задача: Введите число молекул (N) (Ответ дайте в &times; 10<sup>23</sup>)." },
+                    { title: "Миссия 3: Уравнение Менделеева-Клапейрона (P)", scenario: "Газ занимает объем V при температуре T. Рассчитайте давление газа.", data: { n: "Кол-во вещества (&nu;)", V: "Объем (V)", T: "Температура (T)" }, question: "Задача: Введите давление (P) в Паскалях (Па)." },
+                    { title: "Миссия 4: Уравнение Менделеева-Клапейрона (V)", scenario: "Газ находится под давлением P при температуре T. Рассчитайте объем, занимаемый газом.", data: { n: "Кол-во вещества (&nu;)", P: "Давление (P)", T: "Температура (T)" }, question: "Задача: Введите объем (V) в м³." },
+                    { title: "Миссия 5: Давление и Концентрация (P = n₀kT)", scenario: "Известна концентрация молекул идеального газа при T. Рассчитайте его давление.", data: { n_conc: "Концентрация (n₀) (&times; 10<sup>25</sup> м⁻³)", T: "Температура (T)" }, question: "Задача: Введите давление (P) в кПа (килопаскалях)." },
+                    { title: "Миссия 6: Средняя Кинетическая Энергия", scenario: "Молекулы газа движутся при T. Рассчитайте среднюю кинетическую энергию одной молекулы.", data: { T: "Температура (T)" }, question: "Задача: Введите энергию (E) (Ответ дайте в &times; 10<sup>-21</sup> Дж)." },
+                    { title: "Миссия 7: Среднеквадратичная скорость", scenario: "Рассчитайте среднеквадратичную скорость молекул газа при T.", data: { T: "Температура (T)", M: "Молярная масса (M)" }, question: "Задача: Введите скорость в м/с." },
+                    { title: "Миссия 8: Внутренняя Энергия (Одноатомный)", scenario: "Баллон содержит &nu; моль одноатомного идеального газа (напр. Гелий) при T. Рассчитайте его внутреннюю энергию.", data: { n: "Кол-во вещества (&nu;)", T: "Температура (T)" }, question: "Задача: Введите внутреннюю энергию (U) в кДж (килоджоулях)." },
+                    { title: "Миссия 9: Внутренняя Энергия (Двухатомный)", scenario: "Баллон содержит &nu; моль двухатомного идеального газа (напр. Кислород) при T. Рассчитайте его внутреннюю энергию.", data: { n: "Кол-во вещества (&nu;)", T: "Температура (T)" }, question: "Задача: Введите внутреннюю энергию (U) в кДж (килоджоулях)." },
+                    { title: "Миссия 10: Основное уравнение МКТ", scenario: "Известна концентрация и средняя кинетическая энергия молекул газа. Рассчитайте давление.", data: { n_conc: "Концентрация (n₀) (&times; 10<sup>25</sup> м⁻³)", E_k: "Ср. Кин. Энергия (Ēk) (&times; 10<sup>-21</sup> Дж)" }, question: "Задача: Введите давление (P) в кПа (килопаскалях)." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ",
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!",
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Зат мөлшері", scenario: "Баллонда белгілі массадағы газ бар. Зат мөлшерін есептеңіз.", data: { m: "Газ массасы (m)", M: "Молярлық масса (M)" }, question: "Тапсырма: Зат мөлшерін (&nu;) мольмен енгізіңіз." },
+                    { title: "Миссия 2: Авогадро саны", scenario: "Үлгіде &nu; моль зат бар. Үлгідегі молекула санын есептеңіз.", data: { n: "Зат мөлшері (&nu;)" }, question: "Тапсырма: Молекула санын (N) енгізіңіз (Жауапты &times; 10<sup>23</sup> түрінде беріңіз)." },
+                    { title: "Миссия 3: Менделеев-Клапейрон теңдеуі (P)", scenario: "Газ T температурада V көлемін алады. Газдың қысымын есептеңіз.", data: { n: "Зат мөлшері (&nu;)", V: "Көлем (V)", T: "Температура (T)" }, question: "Тапсырма: Қысымды (P) Паскальмен (Па) енгізіңіз." },
+                    { title: "Миссия 4: Менделеев-Клапейрон теңдеуі (V)", scenario: "Газ T температурада P қысымында тұр. Газдың алатын көлемін есептеңіз.", data: { n: "Зат мөлшері (&nu;)", P: "Қысым (P)", T: "Температура (T)" }, question: "Тапсырма: Көлемді (V) м³ енгізіңіз." },
+                    { title: "Миссия 5: Қысым және Концентрация (P = n₀kT)", scenario: "T температурадағы идеал газ молекулаларының концентрациясы белгілі. Оның қысымын есептеңіз.", data: { n_conc: "Концентрация (n₀) (&times; 10<sup>25</sup> м⁻³)", T: "Температура (T)" }, question: "Тапсырма: Қысымды (P) кПа (килопаскаль) арқылы енгізіңіз." },
+                    { title: "Миссия 6: Орташа Кинетикалық Энергия", scenario: "Газ молекулалары T температурада қозғалады. *Бір* молекуланың орташа кинетикалық энергиясын есептеңіз.", data: { T: "Температура (T)" }, question: "Тапсырма: Энергияны (E) енгізіңіз (Жауапты &times; 10<sup>-21</sup> Дж түрінде беріңіз)." },
+                    { title: "Миссия 7: Орташа квадраттық жылдамдық", scenario: "T температурадағы газ молекулаларының орташа квадраттық жылдамдығын есептеңіз.", data: { T: "Температура (T)", M: "Молярлық масса (M)" }, question: "Тапсырма: Жылдамдықты м/с енгізіңіз." },
+                    { title: "Миссия 8: Ішкі Энергия (Бір атомды)", scenario: "Баллонда T температурада &nu; моль бір атомды идеал газ (мысалы, Гелий) бар. Оның ішкі энергиясын есептеңіз.", data: { n: "Зат мөлшері (&nu;)", T: "Температура (K)" }, question: "Тапсырма: Ішкі энергияны (U) кДж (килоджоуль) арқылы енгізіңіз." },
+                    { title: "Миссия 9: Ішкі Энергия (Екі атомды)", scenario: "Баллонда T температурада &nu; моль екі атомды идеал газ (мысалы, Оттегі) бар. Оның ішкі энергиясын есептеңіз.", data: { n: "Зат мөлшері (&nu;)", T: "Температура (K)" }, question: "Тапсырма: Ішкі энергияны (U) кДж (килоджоуль) арқылы енгізіңіз." },
+                    { title: "Миссия 10: МКТ негізгі теңдеуі", scenario: "Газ молекулаларының концентрациясы мен орташа кинетикалық энергиясы белгілі. Қысымды есептеңіз.", data: { n_conc: "Концентрация (n₀) (&times; 10<sup>25</sup> м⁻³)", E_k: "Орт. Кин. Энергия (Ēk) (&times; 10<sup>-21</sup> Дж)" }, question: "Тапсырма: Қысымды (P) кПа (килопаскаль) арқылы енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS",
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct answer",
+                    unlock: "CALCULATION CORRECT!",
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Amount of Substance", scenario: "A cylinder contains a gas of a known mass. Calculate the amount of substance.", data: { m: "Mass of gas (m)", M: "Molar Mass (M)" }, question: "Task: Enter the amount of substance (&nu;) in moles." },
+                    { title: "Mission 2: Avogadro's Number", scenario: "A sample contains &nu; moles of a substance. Calculate the number of molecules in the sample.", data: { n: "Amount of sub. (&nu;)" }, question: "Task: Enter the number of molecules (N) (Give answer in &times; 10<sup>23</sup>)." },
+                    { title: "Mission 3: Ideal Gas Law (P)", scenario: "A gas occupies volume V at temperature T. Calculate the pressure of the gas.", data: { n: "Amount of sub. (&nu;)", V: "Volume (V)", T: "Temperature (T)" }, question: "Task: Enter the pressure (P) in Pascals (Pa)." },
+                    { title: "Mission 4: Ideal Gas Law (V)", scenario: "A gas is under pressure P at temperature T. Calculate the volume occupied by the gas.", data: { n: "Amount of sub. (&nu;)", P: "Pressure (P)", T: "Temperature (T)" }, question: "Task: Enter the volume (V) in m³." },
+                    { title: "Mission 5: Pressure & Concentration (P = n₀kT)", scenario: "The concentration of ideal gas molecules at T is known. Calculate its pressure.", data: { n_conc: "Concentration (n₀) (&times; 10<sup>25</sup> m⁻³)", T: "Temperature (T)" }, question: "Task: Enter the pressure (P) in kPa (kilopascals)." },
+                    { title: "Mission 6: Average Kinetic Energy", scenario: "Gas molecules are at T. Calculate the average kinetic energy of *one* molecule.", data: { T: "Temperature (T)" }, question: "Task: Enter the energy (E) (Give answer in &times; 10<sup>-21</sup> J)." },
+                    { title: "Mission 7: RMS Speed", scenario: "Calculate the root-mean-square speed of gas molecules at T.", data: { T: "Temperature (T)", M: "Molar Mass (M)" }, question: "Task: Enter the speed in m/s." },
+                    { title: "Mission 8: Internal Energy (Monatomic)", scenario: "A tank contains &nu; moles of a monatomic ideal gas (e.g., Helium) at T. Calculate its internal energy.", data: { n: "Amount of sub. (&nu;)", T: "Temperature (T)" }, question: "Task: Enter the internal energy (U) in kJ (kilojoules)." },
+                    { title: "Mission 9: Internal Energy (Diatomic)", scenario: "A tank contains &nu; moles of a diatomic ideal gas (e.g., Oxygen) at T. Calculate its internal energy.", data: { n: "Amount of sub. (&nu;)", T: "Temperature (T)" }, question: "Task: Enter the internal energy (U) in kJ (kilojoules)." },
+                    { title: "Mission 10: Basic MKT Equation", scenario: "The concentration and average kinetic energy of gas molecules are known. Calculate the pressure.", data: { n_conc: "Concentration (n₀) (&times; 10<sup>25</sup> m⁻³)", E_k: "Avg. Kinetic Energy (Ēk) (&times; 10<sup>-21</sup> J)" }, question: "Task: Enter the pressure (P) in kPa (kilopascals)." }
+                ]
+            }
+        };
+
+
+        // --- Глобальные Константы и Состояние ---
+        const R_CONST = 8.314; // Универсальная газовая постоянная
+        const NA_CONST = 6.022e23; // Число Авогадро
+        const K_CONST = 1.38e-23; // Постоянная Больцмана
+        
+        const TOLERANCE = 0.02; // Погрешность
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru'; 
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        const missionTitle = document.getElementById('mission-title');
+        const missionScenario = document.getElementById('mission-scenario');
+        const missionData = document.getElementById('mission-data');
+        const missionQuestion = document.getElementById('mission-question');
+        const userAnswerInput = document.getElementById('user-answer');
+        const submitButton = document.getElementById('submit-button');
+        const newDataButton = document.getElementById('new-data-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const navButtons = document.querySelectorAll('.mission-nav button');
+        const progressList = document.getElementById('progress-list');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const progressTitle = document.getElementById('progress-title');
+        const inputLabel = document.getElementById('input-label');
+
+        // --- Утилиты ---
+
+        function getRandom(min, max, decimals = 0) {
+            const str = (Math.random() * (max - min) + min).toFixed(decimals);
+            return parseFloat(str);
+        }
+        
+        function toPrecision(num, sig) {
+            return parseFloat(num.toPrecision(sig));
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов ---
+
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+            const ui = translations[currentLang].ui;
+            submitButton.textContent = ui.submit;
+            newDataButton.textContent = ui.newData;
+            inputLabel.textContent = ui.inputLabel;
+            userAnswerInput.placeholder = ui.placeholder;
+            updateProgressWindow();
+            missionLoaders[currentMissionId]();
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = ''; 
+            const t = translations[currentLang].progress;
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                <span class="correct">${progress.correct} ✔</span> / 
+                                <span class="incorrect">${progress.incorrect} ❌</span>
+                             </span>`;
+                
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                btn.disabled = false;
+                btn.innerHTML = `${t.mission} ${i}`;
+                
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (ИЗМЕНЕНИЕ) Загрузчики Миссий (МКТ) ---
+
+        function loadMission1() {
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const m_g = getRandom(10, 500, 1); 
+            const M_g = getRandom(2, 44, 0);  
+            currentCorrectAnswer = m_g / M_g;
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m}: ${m_g} г</p><p>${t.data.M}: ${M_g} г/моль</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission2() {
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const n = getRandom(0.5, 5, 1); // моль
+            currentCorrectAnswer = n * 6.022;
+            
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n} моль</p><p>(N_A &approx; 6.022 &times; 10<sup>23</sup> моль⁻¹)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission3() {
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const n = getRandom(1, 10, 1);
+            const V = getRandom(0.1, 2, 2); // м³
+            const T = getRandom(273, 500, 0); // K
+            currentCorrectAnswer = (n * R_CONST * T) / V;
+            
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n} моль</p><p>${t.data.V}: ${V} м³</p><p>${t.data.T}: ${T} K</p><p>(R &approx; ${R_CONST} Дж/(моль·К))</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission4() {
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const n = getRandom(1, 10, 1);
+            const P = getRandom(100000, 500000, 0); // Па
+            const T = getRandom(273, 500, 0); // K
+            currentCorrectAnswer = (n * R_CONST * T) / P;
+            
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n} моль</p><p>${t.data.P}: ${P} Па</p><p>${t.data.T}: ${T} K</p><p>(R &approx; ${R_CONST} Дж/(моль·К))</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission5() {
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const n_conc_display = getRandom(1.0, 5.0, 1); // $\times 10^{25}$
+            const n_conc_calc = n_conc_display * 1e25; // м⁻³
+            const T = getRandom(300, 600, 0); // K
+            currentCorrectAnswer = (n_conc_calc * K_CONST * T) / 1000.0;
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            // (ИСПРАВЛЕНО)
+            missionData.innerHTML = `<p>${t.data.n_conc}: ${n_conc_display} &times; 10<sup>25</sup> м⁻³</p><p>${t.data.T}: ${T} K</p><p>(k &approx; 1.38 &times; 10<sup>-23</sup> Дж/К)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission6() {
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const T = getRandom(200, 1000, 0); // K
+            const E_full = 1.5 * K_CONST * T;
+            currentCorrectAnswer = E_full / 1e-21;
+            
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            // (ИСПРАВЛЕНО)
+            missionData.innerHTML = `<p>${t.data.T}: ${T} K</p><p>(k &approx; 1.38 &times; 10<sup>-23</sup> Дж/К)</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission7() {
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const T = getRandom(273, 600, 0); // K
+            const M_g = getRandom(2, 32, 0); // г/моль (H2, He, N2, O2)
+            const M_kg = M_g / 1000.0; // кг/моль
+            currentCorrectAnswer = Math.sqrt((3 * R_CONST * T) / M_kg);
+            
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.T}: ${T} K</p><p>${t.data.M}: ${M_g} г/моль</p><p>(R &approx; ${R_CONST} Дж/(моль·К))</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission8() {
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const n = getRandom(1, 5, 1); // моль
+            const T = getRandom(300, 1000, 0); // K
+            currentCorrectAnswer = (1.5 * n * R_CONST * T) / 1000.0;
+            
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n} моль</p><p>${t.data.T}: ${T} K</p><p>(R &approx; ${R_CONST} Дж/(моль·К))</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+        
+        function loadMission9() {
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            const n = getRandom(1, 5, 1); // моль
+            const T = getRandom(300, 1000, 0); // K
+            currentCorrectAnswer = (2.5 * n * R_CONST * T) / 1000.0;
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n}: ${n} моль</p><p>${t.data.T}: ${T} K</p><p>(R &approx; ${R_CONST} Дж/(моль·К))</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        function loadMission10() {
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const n_conc_display = getRandom(1.0, 5.0, 1); // $\times 10^{25}$
+            const n_conc_calc = n_conc_display * 1e25; // м⁻³
+            const E_k_display = getRandom(2.0, 9.0, 1); // $\times 10^{-21}$
+            const E_k_calc = E_k_display * 1e-21; // Дж
+            currentCorrectAnswer = ((2/3) * n_conc_calc * E_k_calc) / 1000.0;
+            
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.innerHTML = t.scenario;
+            missionData.innerHTML = `<p>${t.data.n_conc}: ${n_conc_display} &times; 10<sup>25</sup> м⁻³</p><p>${t.data.E_k}: ${E_k_display} &times; 10<sup>-21</sup> Дж</p>`;
+            missionQuestion.innerHTML = t.question;
+        }
+
+        // --- Обработчик Проверки ---
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback; 
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                // Правильный ответ
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                // Неправильный ответ
+                missionProgress[currentMissionId].incorrect++;
+                feedbackMessage.textContent = `${t.incorrect} (${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+        // --- Инициализация Игры ---
+
+        function initializeGame() {
+            // 1. Заполняем массив загрузчиков
+            missionLoaders.push(null, 
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10 
+            );
+
+            // 2. Создаем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true // Все миссии разблокированы
+                };
+            }
+
+            // 3. Слушатели на кнопки навигации
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    missionLoaders[id](); 
+                });
+            });
+
+            // 4. Слушатели на кнопки управления
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                missionLoaders[currentMissionId](); 
+            });
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // 5. Слушатели на кнопки языка
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // 6. Первичная отрисовка и запуск
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

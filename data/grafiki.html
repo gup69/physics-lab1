@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Физика ЕНТ: Pro-Тренажер (v5.1)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 600px; width: 100%; text-align: center; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        select { padding: 8px; border-radius: 5px; border: 1px solid #bdc3c7; font-size: 16px; background: #ecf0f1; cursor: pointer; font-weight: bold; }
+        h2 { margin: 0; color: #2c3e50; font-size: 1.4em; }
+        .score-board { display: flex; justify-content: space-between; padding: 10px; background: #ecf0f1; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
+        .axis-alert { color: #e67e22; font-weight: bold; margin-bottom: 5px; font-size: 1.1em; height: 25px; }
+        .canvas-container { position: relative; height: 320px; width: 100%; background: #fff; border: 1px solid #eee; border-radius: 8px; }
+        canvas { width: 100%; height: 100%; }
+        .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        button { padding: 12px; border: none; border-radius: 8px; background-color: #3498db; color: white; font-size: 14px; cursor: pointer; transition: all 0.2s; font-weight: bold; line-height: 1.3; }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        button:active { transform: scale(0.98); }
+        .feedback { margin-top: 15px; min-height: 24px; font-weight: bold; }
+        .correct { color: #27ae60; }
+        .wrong { color: #c0392b; }
+        .next-btn { background-color: #95a5a6; width: 100%; margin-top: 20px; font-size: 16px; padding: 15px; cursor: pointer; border: none; border-radius: 8px; color: white; font-weight: bold;}
+        .next-btn:hover { background-color: #7f8c8d; }
+        @media (max-width: 480px) { .buttons { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-row">
+        <h2>Физика ЕНТ</h2>
+        <select id="topicSelect" onchange="changeTopic()">
+            <option value="electro">Электричество (Pro)</option>
+            <option value="thermo">Термодинамика</option>
+            <option value="kinema">Кинематика</option>
+        </select>
+    </div>
+
+    <div class="score-board">
+        <span>Счет: <span id="scoreVal" style="color: #27ae60">0</span></span>
+        <span id="modeName">Электричество</span>
+    </div>
+
+    <div id="axisWarning" class="axis-alert">...</div>
+    
+    <div class="canvas-container">
+        <canvas id="processChart"></canvas>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <div id="btnContainer" class="buttons"></div>
+    
+    <button class="next-btn" onclick="generateQuestion()">Следующий вопрос</button>
+</div>
+
+<script>
+    let currentTopic = 'electro'; 
+    let currentAnswer = '';
+    let currentAxes = ''; 
+    let chartInstance = null;
+    let score = 0;
+    let answered = false;
+
+    const buttonsConfig = {
+        thermo: [
+            { id: 'isobar', text: 'Изобарный (P=const)' },
+            { id: 'isochor', text: 'Изохорный (V=const)' },
+            { id: 'isotherm', text: 'Изотермический (T=const)' }
+        ],
+        kinema: [
+            { id: 'rest', text: 'Покой' },
+            { id: 'uniform', text: 'Равномерное' },
+            { id: 'accel', text: 'Равноускоренное' }
+        ],
+        electro: [
+            { id: 'series', text: 'Последовательное' },
+            { id: 'parallel', text: 'Параллельное' },
+            { id: 'mixed', text: 'Смешанное' },
+            { id: 'short', text: 'Короткое замыкание (КЗ)' }
+        ]
+    };
+
+    function random(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function changeTopic() {
+        currentTopic = document.getElementById('topicSelect').value;
+        const names = {'thermo': 'Термодинамика', 'kinema': 'Кинематика', 'electro': 'Электрические цепи'};
+        document.getElementById('modeName').innerText = names[currentTopic];
+        updateButtons();
+        generateQuestion();
+    }
+
+    function updateButtons() {
+        const container = document.getElementById('btnContainer');
+        container.innerHTML = '';
+        if(currentTopic === 'electro') container.style.gridTemplateColumns = '1fr 1fr';
+        else container.style.gridTemplateColumns = '1fr 1fr 1fr';
+
+        let btns = buttonsConfig[currentTopic];
+        btns.forEach(btn => {
+            const button = document.createElement('button');
+            button.innerText = btn.text;
+            button.onclick = () => checkAnswer(btn.id);
+            container.appendChild(button);
+        });
+    }
+
+    function getCtx() {
+        const canvas = document.getElementById('processChart');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        return {ctx, w: canvas.width, h: canvas.height, cx: canvas.width/2, cy: canvas.height/2};
+    }
+
+    function drawRes(ctx, x, y, label, vertical=false) {
+        ctx.beginPath();
+        ctx.fillStyle = '#ecf0f1';
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        if (vertical) {
+            ctx.rect(x-15, y-30, 30, 60);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#000'; ctx.fillText(label, x+25, y);
+        } else {
+            ctx.rect(x-30, y-15, 60, 30);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#000'; ctx.fillText(label, x, y-25);
+        }
+    }
+    function line(ctx, x1, y1, x2, y2, color='#2c3e50') {
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+    }
+    function point(ctx, x, y) {
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, 2*Math.PI); ctx.fillStyle='#2c3e50'; ctx.fill();
+    }
+
+    function drawElectroQuestion(type) {
+        const {ctx, w, h, cx, cy} = getCtx();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 16px Arial';
+
+        // Увеличили количество вариантов до 3
+        const variant = random(1, 3); 
+
+        // Рисуем входные провода (общие для всех, кроме спец. случаев)
+        let leftNode = 80;
+        let rightNode = w - 80;
+
+        if (type === 'series') {
+            line(ctx, 20, cy, leftNode, cy);
+            line(ctx, rightNode, cy, w-20, cy);
+            
+            if (variant === 1) { 
+                // Линия
+                drawRes(ctx, cx-60, cy, "R1");
+                drawRes(ctx, cx+60, cy, "R2");
+                line(ctx, leftNode, cy, rightNode, cy); // Соединяем все линией (резисторы перекроют)
+            } else {
+                // Уголок
+                line(ctx, leftNode, cy-50, cx, cy-50);
+                drawRes(ctx, cx/2 + 40, cy-50, "R1");
+                line(ctx, cx, cy-50, cx, cy+50); 
+                line(ctx, cx, cy+50, rightNode, cy+50);
+                drawRes(ctx, cx, cy, "R2", true);
+                
+                // Перерисовываем входы для уголка
+                ctx.clearRect(0,0,w,h);
+                line(ctx, 20, cy-50, cx, cy-50);
+                drawRes(ctx, cx-60, cy-50, "R1");
+                line(ctx, cx, cy-50, cx, cy+50);
+                drawRes(ctx, cx, cy, "R2", true);
+                line(ctx, cx, cy+50, w-20, cy+50);
+            }
+        } 
+        else if (type === 'parallel') {
+            if (variant === 1) {
+                // Лесенка
+                line(ctx, 20, cy, leftNode, cy); line(ctx, rightNode, cy, w-20, cy);
+                line(ctx, leftNode, cy-60, leftNode, cy+60); line(ctx, rightNode, cy-60, rightNode, cy+60);
+                line(ctx, leftNode, cy-60, rightNode, cy-60); drawRes(ctx, cx, cy-60, "R1");
+                line(ctx, leftNode, cy+60, rightNode, cy+60); drawRes(ctx, cx, cy+60, "R2");
+                point(ctx, leftNode, cy); point(ctx, rightNode, cy);
+            } 
+            else if (variant === 2) {
+                // Квадрат (Вложенный)
+                line(ctx, 20, cy, leftNode, cy); line(ctx, rightNode, cy, w-20, cy);
+                // Внешний путь
+                line(ctx, leftNode, cy, leftNode, cy-70);
+                line(ctx, leftNode, cy-70, rightNode, cy-70);
+                line(ctx, rightNode, cy-70, rightNode, cy);
+                drawRes(ctx, cx, cy-70, "R1");
+                // Внутренний путь
+                line(ctx, leftNode, cy, rightNode, cy);
+                drawRes(ctx, cx, cy, "R2");
+                point(ctx, leftNode, cy); point(ctx, rightNode, cy);
+            }
+            else {
+                // === ТРЕУГОЛЬНИК (Variant 3) ===
+                // Визуально: База и "крыша". Точки ветвления внизу слева и внизу справа.
+                
+                let A = 100; // Левый узел
+                let B = w - 100; // Правый узел
+                let TopX = cx; 
+                let TopY = cy - 80;
+                let BaseY = cy + 40;
+
+                // Входы
+                line(ctx, 20, BaseY, A, BaseY);
+                line(ctx, B, BaseY, w-20, BaseY);
+
+                // Ветвь 1: По низу
+                line(ctx, A, BaseY, B, BaseY);
+                drawRes(ctx, cx, BaseY, "R1");
+
+                // Ветвь 2: Через верх (домиком)
+                line(ctx, A, BaseY, TopX, TopY);
+                line(ctx, TopX, TopY, B, BaseY);
+                drawRes(ctx, TopX, TopY, "R2"); // Резистор на вершине треугольника
+
+                // Узлы
+                point(ctx, A, BaseY);
+                point(ctx, B, BaseY);
+                
+                // Подпись
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '12px Arial';
+                ctx.fillText("Узлы A и B общие", cx, BaseY + 30);
+            }
+        }
+        else if (type === 'mixed') {
+             // Смешанное
+            line(ctx, 40, cy, 100, cy);
+            drawRes(ctx, 80, cy, "R1");
+            line(ctx, 140, cy, 180, cy);
+            point(ctx, 180, cy);
+            line(ctx, 180, cy-50, 180, cy+50);
+            line(ctx, 180, cy-50, w-40, cy-50); drawRes(ctx, cx+50, cy-50, "R2");
+            line(ctx, 180, cy+50, w-40, cy+50); drawRes(ctx, cx+50, cy+50, "R3");
+            line(ctx, w-40, cy-50, w-40, cy+50);
+            line(ctx, w-40, cy, w-20, cy);
+            point(ctx, w-40, cy);
+        }
+        else if (type === 'short') {
+            line(ctx, 50, cy, w-50, cy);
+            drawRes(ctx, cx, cy, "R");
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 3;
+            // Дуга сверху
+            ctx.moveTo(cx-50, cy);
+            ctx.quadraticCurveTo(cx, cy-80, cx+50, cy);
+            ctx.stroke();
+            
+            point(ctx, cx-50, cy); point(ctx, cx+50, cy);
+            ctx.fillStyle='#e74c3c'; ctx.fillText("R = 0", cx, cy-50);
+        }
+    }
+
+    function generateQuestion() {
+        answered = false;
+        document.getElementById('feedback').innerText = '';
+        if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+        if (currentTopic === 'electro') {
+            document.getElementById('axisWarning').innerText = "Найди тип соединения";
+            const circuits = ['series', 'parallel', 'mixed', 'short'];
+            currentAnswer = circuits[random(0, 3)];
+            drawElectroQuestion(currentAnswer);
+        } else {
+            generateGraphQuestion(); 
+        }
+    }
+
+    // Упрощенная генерация графиков для термо/кинематики
+    function generateGraphQuestion() {
+        const {ctx} = getCtx();
+        let dataPoints = [], xLabel = '', yLabel = '';
+        
+        if (currentTopic === 'thermo') {
+            const axes = ['pV', 'VT', 'pT'][random(0,2)];
+            currentAxes = axes;
+            const proc = ['isobar', 'isochor', 'isotherm'][random(0,2)];
+            currentAnswer = proc;
+            let x1 = random(2,4), y1=random(2,6);
+            if(axes==='pV') { xLabel='V'; yLabel='p'; 
+                if(proc==='isobar') dataPoints=[{x:x1,y:y1},{x:x1+5,y:y1}];
+                if(proc==='isochor') dataPoints=[{x:x1,y:y1},{x:x1,y:y1+5}];
+                if(proc==='isotherm') for(let v=x1;v<=x1+6;v+=0.5) dataPoints.push({x:v,y:(x1*y1)/v});
+            } else if(axes==='VT') { xLabel='T'; yLabel='V';
+                if(proc==='isobar') dataPoints=[{x:x1,y:y1},{x:x1+5,y:(y1/x1)*(x1+5)}]; 
+                if(proc==='isochor') dataPoints=[{x:x1,y:y1},{x:x1+5,y:y1}];
+                if(proc==='isotherm') dataPoints=[{x:x1,y:y1},{x:x1,y:y1+5}];
+            } else { xLabel='T'; yLabel='p';
+                if(proc==='isobar') dataPoints=[{x:x1,y:y1},{x:x1+5,y:y1}];
+                if(proc==='isochor') dataPoints=[{x:x1,y:y1},{x:x1+5,y:(y1/x1)*(x1+5)}];
+                if(proc==='isotherm') dataPoints=[{x:x1,y:y1},{x:x1,y:y1+5}];
+            }
+            document.getElementById('axisWarning').innerText = `${yLabel}(${xLabel})`;
+        } else {
+            const axes = ['xt', 'vt'][random(0,1)];
+            const mot = ['rest', 'uniform', 'accel'][random(0,2)];
+            currentAnswer = mot;
+            let x0=2, v0=2;
+            if(axes==='xt') { xLabel='t'; yLabel='x';
+                if(mot==='rest') dataPoints=[{x:0,y:x0},{x:10,y:x0}];
+                if(mot==='uniform') dataPoints=[{x:0,y:x0},{x:10,y:x0+20}];
+                if(mot==='accel') for(let t=0;t<=10;t+=0.5) dataPoints.push({x:t,y:x0+0.1*t*t});
+            } else { xLabel='t'; yLabel='v';
+                if(mot==='rest') dataPoints=[{x:0,y:0},{x:10,y:0}];
+                if(mot==='uniform') dataPoints=[{x:0,y:v0},{x:10,y:v0}];
+                if(mot==='accel') dataPoints=[{x:0,y:v0},{x:10,y:v0+10}];
+            }
+            document.getElementById('axisWarning').innerText = `${yLabel}(${xLabel})`;
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { datasets: [{ data: dataPoints, borderColor: '#3498db', borderWidth: 3, pointRadius: 0, fill: false, tension: 0.3 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: {type:'linear', title:{display:true, text:xLabel}}, y: {title:{display:true, text:yLabel}} }, plugins: {legend: false} }
+        });
+    }
+
+    function checkAnswer(ans) {
+        if(answered) return; answered=true;
+        const fb = document.getElementById('feedback');
+        if(ans === currentAnswer) {
+            score++; document.getElementById('scoreVal').innerText = score;
+            fb.innerText = "Верно!"; fb.className = "feedback correct";
+        } else {
+            fb.innerText = "Ошибка! Посмотри внимательнее на узлы."; fb.className = "feedback wrong";
+        }
+    }
+
+    changeTopic();
+</script>
+</body>
+</html>

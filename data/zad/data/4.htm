@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчер "Точный Расчет" v7.0 (Законы Сохранения)</title>
+    <style>
+        /* --- Стили CSS (Без изменений) --- */
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px; 
+            background-color: #2a2a4e;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .lang-selector {
+            background-color: #1f1f3d;
+            padding: 10px 25px;
+            text-align: right;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .lang-btn.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+        .lang-btn:hover:not(.active) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+
+        .mission-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            background-color: #1f1f3d;
+            padding: 10px;
+            border-bottom: 2px solid #00ffcc;
+        }
+
+        .mission-nav button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-basis: 18%; 
+            min-width: 120px;
+        }
+
+        .mission-nav button.active {
+            color: #1a1a2e;
+            background-color: #00ffcc;
+            border-color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .mission-nav button:hover:not(.active):not(:disabled) {
+            color: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .mission-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch; 
+        }
+
+        .game-area {
+            flex: 2; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-monitor {
+            padding: 25px;
+            border-bottom: 1px dashed #444;
+        }
+
+        #mission-title {
+            color: #00ffcc;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        #mission-data {
+            background-color: #1f1f3d;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00ffcc;
+            margin: 20px 0;
+        }
+
+        #mission-data p { margin: 8px 0; }
+        #mission-question {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+
+        .input-console {
+            padding: 25px;
+        }
+
+        .input-console label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        #user-answer {
+            width: 100%;
+            background-color: #1f1f3d;
+            border: 1px solid #888;
+            color: #e0e0e0;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1.2em;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; 
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        #user-answer:focus { border-color: #00ffcc; }
+
+        .console-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #submit-button, #new-data-button {
+            flex: 1;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button {
+            background-color: #00ffcc;
+            border: none;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        #submit-button:hover { background-color: #00e6b8; }
+        
+        #new-data-button {
+            background: none;
+            border: 1px solid #888;
+            color: #888;
+        }
+        #new-data-button:hover {
+            border-color: #e0e0e0;
+            color: #e0e0e0;
+        }
+
+        #feedback-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            height: 20px;
+            font-weight: bold;
+        }
+
+        .feedback-correct { color: #00ffcc; }
+        .feedback-unlock { color: #ffd700; } 
+        .feedback-incorrect { color: #ff4d4d; }
+
+        .progress-tracker {
+            flex: 1; 
+            background-color: #1f1f3d;
+            padding: 20px 25px;
+            border-left: 2px solid #00ffcc; 
+            min-height: 100%; 
+        }
+        .progress-tracker h3 {
+            color: #00ffcc;
+            margin-top: 0;
+            text-align: center;
+        }
+        #progress-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column; 
+            gap: 10px;
+        }
+        #progress-list li {
+            font-size: 0.95em;
+            background-color: #2a2a4e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #progress-list li.locked {
+            color: #666;
+            background-color: #222;
+        }
+        .progress-stats {
+            color: #fff;
+            font-weight: bold;
+        }
+        .correct { color: #00ffcc; }
+        .incorrect { color: #ff4d4d; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div class="lang-selector">
+            <button id="lang-ru" class="lang-btn active">RU</button>
+            <button id="lang-kz" class="lang-btn">KZ</button>
+            <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+
+        <div class="mission-nav">
+            <button id="btn-m1" class="active">Миссия 1</button>
+            <button id="btn-m2">Миссия 2</button>
+            <button id="btn-m3">Миссия 3</button>
+            <button id="btn-m4">Миссия 4</button>
+            <button id="btn-m5">Миссия 5</button>
+            <button id="btn-m6">Миссия 6</button>
+            <button id="btn-m7">Миссия 7</button>
+            <button id="btn-m8">Миссия 8</button>
+            <button id="btn-m9">Миссия 9</button>
+            <button id="btn-m10">Миссия 10</button>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="game-area">
+                <div class="mission-monitor">
+                    <h2 id="mission-title">ЗАГРУЗКА...</h2>
+                    <p id="mission-scenario">...</p>
+                    <div id="mission-data">
+                        </div>
+                    <p id="mission-question">...</p>
+                </div>
+                
+                <div class="input-console">
+                    <label for="user-answer" id="input-label">ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:</label>
+                    <input type="number" id="user-answer" placeholder="Введите ответ (точность до 2 знаков)...">
+                    
+                    <div class="console-buttons">
+                        <button id="new-data-button">Новые данные</button>
+                        <button id="submit-button">Отправить расчет</button>
+                    </div>
+                    
+                    <p id="feedback-message"></p>
+                </div>
+            </div> 
+
+            <div class="progress-tracker">
+                <h3 id="progress-title">ПРОГРЕСС МИССИЙ</h3>
+                <ul id="progress-list">
+                    </ul>
+            </div> 
+        </div> 
+    </div> 
+
+    <script>
+        // --- (НОВОЕ) ОБЪЕКТ ПЕРЕВОДОВ (ЗАКОНЫ СОХРАНЕНИЯ) ---
+        const translations = {
+            'ru': {
+                ui: {
+                    submit: "Отправить расчет",
+                    newData: "Новые данные",
+                    inputLabel: "ВВОД РАСЧЕТНОГО ЗНАЧЕНИЯ:",
+                    placeholder: "Введите ответ (точность до 2 знаков)..."
+                },
+                progress: {
+                    title: "ПРОГРЕСС МИССИЙ", // (ИЗМЕНЕНО)
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "РАСЧЕТ ВЕРЕН. МИССИЯ ВЫПОЛНЕНА.",
+                    incorrect: "РАСЧЕТ НЕВЕРЕН.",
+                    correctAnswer: "Верный ответ",
+                    unlock: "РАСЧЕТ ВЕРЕН!", // (Упрощено)
+                    unlocked: "",
+                    enterNumber: "ОШИБКА: Введите число."
+                },
+                missions: [
+                    null, // Индекс 0 не используется
+                    { title: "Миссия 1: Неупругое столкновение", scenario: "Два объекта движутся, сталкиваются и слипаются. Рассчитайте их общую конечную скорость.", data: { m1: "Масса 1", v1: "Скорость 1", m2: "Масса 2", v2: "Скорость 2" }, question: "Задача: Введите конечную скорость (V) в м/с." },
+                    { title: "Миссия 2: Взрыв (Распад)", scenario: "Покоящийся объект распадается на два осколка. Рассчитайте скорость второго осколка (v2).", data: { M_total: "Общая масса", m1: "Масса 1", v1: "Скорость 1 (влево)" }, question: "Задача: Введите скорость второго осколка (v2) в м/с." },
+                    { title: "Миссия 3: Кинетическая Энергия", scenario: "Объект движется с известной скоростью. Рассчитайте его кинетическую энергию.", data: { m: "Масса", v: "Скорость" }, question: "Задача: Введите кинетическую энергию (Eк) в Джоулях." },
+                    { title: "Миссия 4: Потенциальная Энергия", scenario: "Тело поднято на высоту над землей. Рассчитайте его потенциальную энергию.", data: { m: "Масса", h: "Высота" }, question: "Задача: Введите потенциальную энергию (Eр) в Джоулях." },
+                    { title: "Миссия 5: Закон Сохранения Энергии (Падение)", scenario: "Объект падает с высоты h из состояния покоя. Рассчитайте его скорость прямо перед ударом о землю (трением пренебречь).", data: { h: "Высота" }, question: "Задача: Введите конечную скорость (v) в м/с." },
+                    { title: "Миссия 6: Теорема о Кинетической Энергии", scenario: "К телу приложена постоянная сила, которая перемещает его на расстояние d. Тело начало из покоя. Рассчитайте его конечную скорость.", data: { F: "Сила", d: "Расстояние", m: "Масса" }, question: "Задача: Введите конечную скорость (v) в м/с." },
+                    { title: "Миссия 7: Отдача орудия", scenario: "Пушка стреляет снарядом в горизонтальном направлении. Рассчитайте скорость отката пушки (система вначале покоилась).", data: { m_gun: "Масса пушки", m_shell: "Масса снаряда", v_shell: "Скорость снаряда" }, question: "Задача: Введите скорость отката в м/с." },
+                    { title: "Миссия 8: Потеря Энергии (Неупругий Удар)", scenario: "Два объекта столкнулись неупруго (слиплись). Рассчитайте, сколько кинетической энергии было потеряно в результате удара.", data: { m1: "Масса 1", v1: "Скорость 1", m2: "Масса 2", v2: "Скорость 2" }, question: "Задача: Введите потерянную энергию в Джоулях." },
+                    { title: "Миссия 9: Упругий Удар (Обмен скоростями)", scenario: "Шарик 1 налетает на покоящийся шарик 2 той же массы. Происходит упругий удар. Рассчитайте скорость шарика 2 после удара.", data: { v1_initial: "Нач. скорость 1" }, question: "Задача: Введите конечную скорость шарика 2 в м/с." },
+                    { title: "Миссия 10: Потенциальная энергия пружины", scenario: "Пружину сжали на x метров. Рассчитайте потенциальную энергию, запасенную в пружине.", data: { k: "Жесткость", x: "Сжатие" }, question: "Задача: Введите потенциальную энергию в Джоулях." }
+                ]
+            },
+            'kz': {
+                ui: {
+                    submit: "Есепті жіберу",
+                    newData: "Жаңа деректер",
+                    inputLabel: "ЕСЕПТЕЛГЕН МӘНДІ ЕНГІЗУ:",
+                    placeholder: "Жауапты енгізіңіз (2 белгіге дейін)..."
+                },
+                progress: {
+                    title: "МИССИЯ ПРОГРЕСІ", // (ИЗМЕНЕНО)
+                    mission: "Миссия"
+                },
+                feedback: {
+                    correct: "ЕСЕП ДҰРЫС. МИССИЯ ОРЫНДАЛДЫ.",
+                    incorrect: "ЕСЕП ҚАТЕ.",
+                    correctAnswer: "Дұрыс жауап",
+                    unlock: "ЕСЕП ДҰРЫС!", // (Упрощено)
+                    unlocked: "",
+                    enterNumber: "ҚАТЕ: Санды енгізіңіз."
+                },
+                missions: [
+                    null,
+                    { title: "Миссия 1: Серпімсіз соқтығыс", scenario: "Екі нысан қозғалып, соқтығысып, жабысып қалады. Олардың ортақ соңғы жылдамдығын есептеңіз.", data: { m1: "Масса 1", v1: "Жылдамдық 1", m2: "Масса 2", v2: "Жылдамдық 2" }, question: "Тапсырма: Соңғы жылдамдықты (V) м/с енгізіңіз." },
+                    { title: "Миссия 2: Жарылыс (Ыдырау)", scenario: "Тыныштықтағы нысан екі жарықшаққа ыдырайды. Екінші жарықшақтың жылдамдығын (v2) есептеңіз.", data: { M_total: "Жалпы масса", m1: "Масса 1", v1: "Жылдамдық 1 (солға)" }, question: "Тапсырма: Екінші жарықшақтың жылдамдығын (v2) м/с енгізіңіз." },
+                    { title: "Миссия 3: Кинетикалық Энергия", scenario: "Нысан белгілі жылдамдықпен қозғалады. Оның кинетикалық энергиясын есептеңіз.", data: { m: "Масса", v: "Жылдамдық" }, question: "Тапсырма: Кинетикалық энергияны (Eк) Джоульмен енгізіңіз." },
+                    { title: "Миссия 4: Потенциалдық Энергия", scenario: "Дене жер бетінен h биіктікке көтерілген. Оның потенциалдық энергиясын есептеңіз.", data: { m: "Масса", h: "Биіктік" }, question: "Тапсырма: Потенциалдық энергияны (Eр) Джоульмен енгізіңіз." },
+                    { title: "Миссия 5: Энергияның Сақталу Заңы (Құлау)", scenario: "$h$ биіктіктен тыныштық күйден құлаған нысанның жерге соғылар алдындағы жылдамдығын есептеңіз (ауа кедергісін елемеңіз).", data: { h: "Биіктік" }, question: "Тапсырма: Соңғы жылдамдықты (v) м/с енгізіңіз." },
+                    { title: "Миссия 6: Кинетикалық Энергия Теоремасы", scenario: "Денеге тұрақты күш әсер етіп, оны d қашықтыққа жылжытады. Дене тыныштықтан басталды. Оның соңғы жылдамдығын есептеңіз.", data: { F: "Күш", d: "Қашықтық", m: "Масса" }, question: "Тапсырма: Соңғы жылдамдықты (v) м/с енгізіңіз." },
+                    { title: "Миссия 7: Зеңбіректің тебілуі", scenario: "Зеңбірек көлденең бағытта снаряд атты. Зеңбіректің тебілу жылдамдығын есептеңіз (бастапқыда жүйе тыныштықта болды).", data: { m_gun: "Зеңбірек массасы", m_shell: "Снаряд массасы", v_shell: "Снаряд жылдамдығы" }, question: "Тапсырма: Тебілу жылдамдығын м/с енгізіңіз." },
+                    { title: "Миссия 8: Энергия Жоғалуы (Серпімсіз соққы)", scenario: "Екі нысан серпімсіз соқтығысты (жабысып қалды). Соққы нәтижесінде жоғалған кинетикалық энергияны есептеңіз.", data: { m1: "Масса 1", v1: "Жылдамдық 1", m2: "Масса 2", v2: "Жылдамдық 2" }, question: "Тапсырма: Жоғалған энергияны Джоульмен енгізіңіз." },
+                    { title: "Миссия 9: Серпімді соққы (Жылдамдық алмасу)", scenario: "1-ші шарик тыныштықтағы 2-ші шарикпен (массалары бірдей) серпімді соқтығысады. 2-ші шариктің соққыдан кейінгі жылдамдығын есептеңіз.", data: { v1_initial: "Бастапқы v1" }, question: "Тапсырма: 2-ші шариктің соңғы жылдамдығын м/с енгізіңіз." },
+                    { title: "Миссия 10: Серіппенің потенц. энергиясы", scenario: "Серіппені x метрге сықты. Серіппеде жинақталған потенциалдық энергияны есептеңіз.", data: { k: "Қатаңдық", x: "Сығылу" }, question: "Тапсырма: Потенциалдық энергияны Джоульмен енгізіңіз." }
+                ]
+            },
+            'en': {
+                ui: {
+                    submit: "Submit Calculation",
+                    newData: "New Data",
+                    inputLabel: "ENTER CALCULATED VALUE:",
+                    placeholder: "Enter answer (up to 2 decimals)..."
+                },
+                progress: {
+                    title: "MISSION PROGRESS", // (ИЗМЕНЕНО)
+                    mission: "Mission"
+                },
+                feedback: {
+                    correct: "CALCULATION CORRECT. MISSION COMPLETE.",
+                    incorrect: "CALCULATION INCORRECT.",
+                    correctAnswer: "Correct answer",
+                    unlock: "CALCULATION CORRECT!", // (Упрощено)
+                    unlocked: "",
+                    enterNumber: "ERROR: Please enter a number."
+                },
+                missions: [
+                    null,
+                    { title: "Mission 1: Inelastic Collision", scenario: "Two objects move, collide, and stick together. Calculate their common final velocity.", data: { m1: "Mass 1", v1: "Velocity 1", m2: "Mass 2", v2: "Velocity 2" }, question: "Task: Enter the final velocity (V) in m/s." },
+                    { title: "Mission 2: Explosion (Decay)", scenario: "A stationary object explodes into two fragments. Calculate the velocity of the second fragment (v2).", data: { M_total: "Total Mass", m1: "Mass 1", v1: "Velocity 1 (left)" }, question: "Task: Enter the second fragment's velocity (v2) in m/s." },
+                    { title: "Mission 3: Kinetic Energy", scenario: "An object moves with a known velocity. Calculate its kinetic energy.", data: { m: "Mass", v: "Velocity" }, question: "Task: Enter the kinetic energy (Eк) in Joules." },
+                    { title: "Mission 4: Potential Energy", scenario: "A body is lifted to a height above the ground. Calculate its potential energy.", data: { m: "Mass", h: "Height" }, question: "Task: Enter the potential energy (Eр) in Joules." },
+                    { title: "Mission 5: Conservation of Energy (Falling)", scenario: "An object falls from rest from a height h. Calculate its speed just before hitting the ground (neglect friction).", data: { h: "Height" }, question: "Task: Enter the final velocity (v) in m/s." },
+                    { title: "Mission 6: Work-Energy Theorem", scenario: "A constant force F acts on a body, moving it a distance d. The body started from rest. Calculate its final velocity.", data: { F: "Force", d: "Distance", m: "Mass" }, question: "Task: Enter the final velocity (v) in m/s." },
+                    { title: "Mission 7: Cannon Recoil", scenario: "A cannon fires a shell horizontally. Calculate the recoil velocity of the cannon (system was initially at rest).", data: { m_gun: "Cannon Mass", m_shell: "Shell Mass", v_shell: "Shell Velocity" }, question: "Task: Enter the recoil velocity in m/s." },
+                    { title: "Mission 8: Energy Loss (Inelastic Hit)", scenario: "Two objects collided inelastically (stuck together). Calculate how much kinetic energy was *lost* in the collision.", data: { m1: "Mass 1", v1: "Velocity 1", m2: "Mass 2", v2: "Velocity 2" }, question: "Task: Enter the lost energy in Joules." },
+                    { title: "Mission 9: Elastic Collision (Velocity Swap)", scenario: "Ball 1 hits a stationary Ball 2 of the same mass. The collision is elastic. Calculate the velocity of Ball 2 after the collision.", data: { v1_initial: "Initial v1" }, question: "Task: Enter the final velocity of Ball 2 in m/s." },
+                    { title: "Mission 10: Spring Potential Energy", scenario: "A spring is compressed by x meters. Calculate the potential energy stored in the spring.", data: { k: "Stiffness (k)", x: "Compression" }, question: "Task: Enter the potential energy in Joules." }
+                ]
+            }
+        };
+
+
+        // --- Глобальные Константы и Состояние ---
+        const WINS_TO_UNLOCK = 5; // (Больше не используется для блокировки, но нужно для обратной связи)
+        const G = 10;
+        const TOLERANCE = 0.02;
+        const TOTAL_MISSIONS = 10;
+
+        let currentMissionId = 1;
+        let currentCorrectAnswer = 0;
+        let currentLang = 'ru'; 
+        let missionProgress = {};
+        const missionLoaders = []; 
+
+        // --- DOM Элементы ---
+        const missionTitle = document.getElementById('mission-title');
+        const missionScenario = document.getElementById('mission-scenario');
+        const missionData = document.getElementById('mission-data');
+        const missionQuestion = document.getElementById('mission-question');
+        const userAnswerInput = document.getElementById('user-answer');
+        const submitButton = document.getElementById('submit-button');
+        const newDataButton = document.getElementById('new-data-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const navButtons = document.querySelectorAll('.mission-nav button');
+        const progressList = document.getElementById('progress-list');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const progressTitle = document.getElementById('progress-title');
+        const inputLabel = document.getElementById('input-label');
+
+        // --- Утилиты ---
+
+        function getRandom(min, max, decimals = 0) {
+            const str = (Math.random() * (max - min) + min).toFixed(decimals);
+            return parseFloat(str);
+        }
+
+        function resetConsole(message = '', messageClass = '') {
+            userAnswerInput.value = '';
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = messageClass;
+        }
+
+        function updateActiveButton(activeId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === activeId);
+            });
+        }
+
+        // --- Логика Переводов ---
+
+        function setLanguage(lang) {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            langButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.id === `lang-${lang}`);
+            });
+            const ui = translations[currentLang].ui;
+            submitButton.textContent = ui.submit;
+            newDataButton.textContent = ui.newData;
+            inputLabel.textContent = ui.inputLabel;
+            userAnswerInput.placeholder = ui.placeholder;
+            updateProgressWindow();
+            missionLoaders[currentMissionId]();
+        }
+
+        function updateProgressWindow() {
+            progressList.innerHTML = ''; 
+            const t = translations[currentLang].progress;
+            progressTitle.innerHTML = t.title;
+
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                const progress = missionProgress[i];
+                const btn = document.getElementById(`btn-m${i}`);
+                const li = document.createElement('li');
+
+                const stats = `<span class="progress-stats">
+                                <span class="correct">${progress.correct} ✔</span> / 
+                                <span class="incorrect">${progress.incorrect} ❌</span>
+                             </span>`;
+                
+                // (ИЗМЕНЕНО) Убрана логика блокировки из HTML
+                li.innerHTML = `<span>${t.mission} ${i}</span> ${stats}`;
+                btn.disabled = false;
+                btn.innerHTML = `${t.mission} ${i}`;
+                
+                progressList.appendChild(li);
+            }
+            updateActiveButton(`btn-m${currentMissionId}`);
+        }
+
+        // --- (ИЗМЕНЕНИЕ) Загрузчики Миссий (Законы Сохранения) ---
+
+        function loadMission1() {
+            resetConsole();
+            currentMissionId = 1;
+            updateActiveButton('btn-m1');
+            const m1 = getRandom(1, 5, 0);
+            const v1 = getRandom(10, 20, 0);
+            const m2 = getRandom(1, 5, 0);
+            const v2 = getRandom(-10, -5, 0); // Движется навстречу
+            currentCorrectAnswer = (m1 * v1 + m2 * v2) / (m1 + m2);
+
+            const t = translations[currentLang].missions[1];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m1} (m1): ${m1} кг</p><p>${t.data.v1} (v1): ${v1} м/с</p><p>${t.data.m2} (m2): ${m2} кг</p><p>${t.data.v2} (v2): ${v2} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission2() {
+            resetConsole();
+            currentMissionId = 2;
+            updateActiveButton('btn-m2');
+            const M_total = getRandom(10, 20, 0);
+            const m1 = getRandom(2, M_total - 2, 0);
+            const v1 = getRandom(-20, -10, 0); // v1 (влево)
+            const m2 = M_total - m1;
+            // 0 = m1*v1 + m2*v2  => v2 = -m1*v1 / m2
+            currentCorrectAnswer = (-m1 * v1) / m2;
+            
+            const t = translations[currentLang].missions[2];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.M_total} (M): ${M_total} кг</p><p>${t.data.m1} (m1): ${m1} кг</p><p>${t.data.v1} (v1): ${v1} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission3() {
+            resetConsole();
+            currentMissionId = 3;
+            updateActiveButton('btn-m3');
+            const m = getRandom(2, 20, 0);
+            const v = getRandom(5, 50, 0);
+            currentCorrectAnswer = 0.5 * m * v * v;
+            
+            const t = translations[currentLang].missions[3];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m} (m): ${m} кг</p><p>${t.data.v} (v): ${v} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission4() {
+            resetConsole();
+            currentMissionId = 4;
+            updateActiveButton('btn-m4');
+            const m = getRandom(1, 100, 0);
+            const h = getRandom(2, 50, 0);
+            currentCorrectAnswer = m * G * h;
+            
+            const t = translations[currentLang].missions[4];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m} (m): ${m} кг</p><p>${t.data.h} (h): ${h} м</p><p>(g = ${G} м/с²)</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission5() {
+            resetConsole();
+            currentMissionId = 5;
+            updateActiveButton('btn-m5');
+            const h = getRandom(5, 100, 0);
+            // mgh = 1/2 * mv^2  => v = sqrt(2gh)
+            currentCorrectAnswer = Math.sqrt(2 * G * h);
+
+            const t = translations[currentLang].missions[5];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.h} (h): ${h} м</p><p>(g = ${G} м/с²)</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission6() {
+            resetConsole();
+            currentMissionId = 6;
+            updateActiveButton('btn-m6');
+            const F = getRandom(20, 100, 0);
+            const d = getRandom(5, 50, 0);
+            const m = getRandom(2, 10, 0);
+            // F*d = 1/2 * mv^2  => v = sqrt(2*F*d / m)
+            currentCorrectAnswer = Math.sqrt((2 * F * d) / m);
+            
+            const t = translations[currentLang].missions[6];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.F} (F): ${F} Н</p><p>${t.data.d} (d): ${d} м</p><p>${t.data.m} (m): ${m} кг</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission7() {
+            resetConsole();
+            currentMissionId = 7;
+            updateActiveButton('btn-m7');
+            const m_gun = getRandom(500, 2000, 0);
+            const m_shell = getRandom(5, 20, 0);
+            const v_shell = getRandom(300, 800, 0);
+            // 0 = m_gun*v_gun + m_shell*v_shell => v_gun = -m_shell*v_shell / m_gun
+            currentCorrectAnswer = (m_shell * v_shell) / m_gun; // Ответ будет положительным, т.к. v_gun отрицательна
+            
+            const t = translations[currentLang].missions[7];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m_gun} (m_gun): ${m_gun} кг</p><p>${t.data.m_shell} (m_shell): ${m_shell} кг</p><p>${t.data.v_shell} (v_shell): ${v_shell} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission8() {
+            resetConsole();
+            currentMissionId = 8;
+            updateActiveButton('btn-m8');
+            const m1 = getRandom(1, 5, 0);
+            const v1 = getRandom(10, 20, 0);
+            const m2 = getRandom(1, 5, 0);
+            const v2 = getRandom(-10, -5, 0); // Движется навстречу
+
+            const KE_i = (0.5 * m1 * v1 * v1) + (0.5 * m2 * v2 * v2);
+            const V_f = (m1 * v1 + m2 * v2) / (m1 + m2);
+            const KE_f = 0.5 * (m1 + m2) * V_f * V_f;
+
+            currentCorrectAnswer = KE_i - KE_f;
+            
+            const t = translations[currentLang].missions[8];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.m1} (m1): ${m1} кг</p><p>${t.data.v1} (v1): ${v1} м/с</p><p>${t.data.m2} (m2): ${m2} кг</p><p>${t.data.v2} (v2): ${v2} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+        
+        function loadMission9() {
+            resetConsole();
+            currentMissionId = 9;
+            updateActiveButton('btn-m9');
+            
+            const v1_initial = getRandom(10, 30, 0);
+            // При упругом столкновении 1D тел одинаковой массы они обмениваются скоростями.
+            // v1_final = v2_initial (= 0)
+            // v2_final = v1_initial
+            currentCorrectAnswer = v1_initial;
+
+            const t = translations[currentLang].missions[9];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.v1_initial} (v1_i): ${v1_initial} м/с</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        function loadMission10() {
+            resetConsole();
+            currentMissionId = 10;
+            updateActiveButton('btn-m10');
+            const k = getRandom(100, 1000, 0); 
+            const x = getRandom(0.1, 0.5, 2);
+            // PE = 0.5 * k * x^2
+            currentCorrectAnswer = 0.5 * k * x * x;
+            
+            const t = translations[currentLang].missions[10];
+            missionTitle.textContent = t.title;
+            missionScenario.textContent = t.scenario;
+            missionData.innerHTML = `<p>${t.data.k} (k): ${k} Н/м</p><p>${t.data.x} (x): ${x} м</p>`;
+            missionQuestion.textContent = t.question;
+        }
+
+        // --- Обработчик Проверки ---
+
+        function checkAnswer() {
+            const userAnswer = parseFloat(userAnswerInput.value);
+            const t = translations[currentLang].feedback; 
+
+            if (isNaN(userAnswer)) {
+                feedbackMessage.textContent = t.enterNumber;
+                feedbackMessage.className = 'feedback-incorrect';
+                return;
+            }
+
+            const tolerance = Math.max(0.05, Math.abs(currentCorrectAnswer * TOLERANCE));
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < tolerance ) {
+                // Правильный ответ
+                missionProgress[currentMissionId].correct++;
+                feedbackMessage.textContent = t.correct;
+                feedbackMessage.className = 'feedback-correct';
+            } else {
+                // Неправильный ответ
+                missionProgress[currentMissionId].incorrect++;
+                feedbackMessage.textContent = `${t.incorrect} (${t.correctAnswer}: ${currentCorrectAnswer.toFixed(2)})`;
+                feedbackMessage.className = 'feedback-incorrect';
+            }
+
+            updateProgressWindow();
+        }
+
+        // --- Инициализация Игры ---
+
+        function initializeGame() {
+            // 1. Заполняем массив загрузчиков
+            missionLoaders.push(null, 
+                loadMission1, loadMission2, loadMission3, loadMission4, loadMission5,
+                loadMission6, loadMission7, loadMission8, loadMission9, loadMission10 
+            );
+
+            // 2. Создаем объект прогресса
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
+                missionProgress[i] = {
+                    correct: 0,
+                    incorrect: 0,
+                    unlocked: true // (ИЗМЕНЕНО) Все миссии разблокированы
+                };
+            }
+
+            // 3. Слушатели на кнопки навигации
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.id.replace('btn-m', ''));
+                    missionLoaders[id](); 
+                });
+            });
+
+            // 4. Слушатели на кнопки управления
+            submitButton.addEventListener('click', checkAnswer);
+            newDataButton.addEventListener('click', () => {
+                missionLoaders[currentMissionId](); 
+            });
+            userAnswerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // 5. Слушатели на кнопки языка
+            document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+            document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+
+            // 6. Первичная отрисовка и запуск
+            setLanguage(currentLang); 
+        }
+
+        // --- Запуск игры ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>

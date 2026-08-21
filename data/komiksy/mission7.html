@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный Клуб: Полевой Сбой</title>
+    
+    <style>
+        /* Все стили (CSS) остаются точно такими же, как в прошлых версиях. */
+        body { background-color: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { position: relative; width: 1280px; height: 720px; background-color: #000; background-size: cover; background-position: center; border-radius: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
+        #stats-display { position: absolute; top: 20px; left: 20px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 8px; font-size: 22px; z-index: 30; }
+        #stats-display span { margin-right: 20px; }
+        #character-sprite { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); height: 95%; max-width: 800px; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; opacity: 0; z-index: 10; }
+        #dialogue-box { position: absolute; bottom: 20px; left: 5%; width: 90%; min-height: 200px; background-color: rgba(10, 20, 40, 0.9); border: 2px solid #6c91d9; border-radius: 15px; padding: 20px; box-sizing: border-box; z-index: 21; }
+        #dialogue-text.task-text { font-size: 26px; color: #ffc107; text-align: center; }
+        #character-name { font-size: 28px; font-weight: bold; color: #ffc107; margin-bottom: 15px; }
+        #dialogue-text { font-size: 24px; line-height: 1.4; margin: 0; }
+        .term { color: cyan; text-decoration: underline; cursor: pointer; }
+        #choices-container { position: absolute; bottom: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 22; }
+        .choice-button { width: 70%; padding: 18px; font-size: 20px; font-weight: bold; background-color: rgba(40, 80, 150, 0.9); color: #fff; border: 2px solid #a8c1ff; border-radius: 30px; cursor: pointer; text-align: center; transition: background-color 0.2s, transform 0.2s; }
+        .choice-button:hover { background-color: rgba(60, 110, 200, 1); transform: scale(1.02); }
+        #glossary-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 40; color: white; font-size: 1.2em; }
+        .glossary-box { display: flex; position: relative; width: 80%; max-width: 900px; padding: 30px; box-sizing: border-box; border: 2px solid cyan; background-color: rgba(10, 20, 30, 0.95); border-radius: 10px; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        .close-button { position: absolute; top: 10px; right: 20px; color: #ff4500; font-size: 3em; line-height: 1; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-button:hover { color: #ff7733; }
+        #glossary-title { font-size: 2em; color: #ffc107; margin-bottom: 20px; padding-right: 40px; }
+        #glossary-text { font-size: 1.4em; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats-display">
+            <span title="Теория">🧠 T: <span id="stat-theory">0</span></span>
+            <span title="Практика">🛠️ П: <span id="stat-practice">0</span></span>
+        </div>
+        <img id="character-sprite" src="" alt="Персонаж">
+        <div id="glossary-container">
+            <div class="glossary-box">
+                <span class="close-button">&times;</span>
+                <h2 id="glossary-title"></h2>
+                <p id="glossary-text"></p>
+            </div>
+        </div>
+        <div id="dialogue-box">
+            <div id="character-name"></div><p id="dialogue-text"></p>
+        </div>
+        <div id="choices-container"></div>
+    </div>
+
+    <audio id="audio-click" src="audio/click.wav"></audio>
+    <audio id="audio-correct" src="audio/correct.wav"></audio>
+    <audio id="audio-wrong" src="audio/wrong.wav"></audio>
+    <audio id="audio-ambient" src="audio/ambient_lab.mp3" loop></audio>
+    <audio id="audio-music" src="audio/background_music.mp3" loop></audio>
+
+    <script>
+        const storyData = {
+            // --- АКТ 1: НАПРЯЖЕННОСТЬ ПОЛЯ ---
+            chapter7_scene1: {
+                background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/elena_worried.png', character: 'Елена',
+                text: 'Катастрофа! В сборочном цехе возникло блуждающее <span class="term" data-term="e_field">электрическое поле</span>! Оно отклоняет левитирующие микрочипы и может их повредить!',
+                choices: [{ text: 'Нужно измерить его параметры!', nextSceneId: 'chapter7_scene2' }]
+            },
+            chapter7_scene2: {
+                 background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/alina_neutral.png', character: 'Доктор Белова',
+                 text: 'Мы внесли в поле пробный заряд. На него действует сила. Теперь мы можем рассчитать <span class="term" data-term="field_strength">напряженность</span> поля.',
+                 choices: [{ text: 'Приступаю к расчетам.', nextSceneId: 'chapter7_act1_quiz' }]
+            },
+            chapter7_act1_quiz: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: null, character: 'ЗАДАЧА: НАПРЯЖЕННОСТЬ', isTask: true,
+                text: 'Какова <span class="term" data-term="field_strength">напряженность</span> поля (E), если на заряд q = __Q__ нКл действует сила F = __F__ мкН?<br>Используйте формулу E = F / q.',
+                choices: 'CHOICES_CH7_ACT1'
+            },
+            chapter7_act1_fail: {
+                background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/alina_worried.png', character: 'ОШИБКА',
+                text: 'Ошибка в расчетах! Не забудьте перевести все единицы в СИ: нанокулоны (нКл) в Кулоны (×10⁻⁹), а микроньютоны (мкН) в Ньютоны (×10⁻⁶).',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter7_act1_quiz'}]
+            },
+            chapter7_act1_success: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: 'assets/sprites/alina_happy.png', character: 'Доктор Белова',
+                text: 'Точно! Напряженность составляет __E__ кН/Кл. Это очень сильное поле. Теперь нужно понять его конфигурацию.',
+                choices: [{ text: 'Переходим к следующему этапу.', nextSceneId: 'chapter7_act2_scene1'}]
+            },
+
+            // --- АКТ 2: РАБОТА ПОЛЯ ---
+            chapter7_act2_scene1: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: 'assets/sprites/max_neutral.png', character: 'Инженер Орлов',
+                text: 'Чтобы вернуть чипы на конвейер, нам нужно переместить их из точки 1 в точку 2. Поле будет совершать <span class="term" data-term="work">работу</span>, и нам нужно её скомпенсировать.',
+                choices: [{ text: 'Что для этого нужно знать?', nextSceneId: 'chapter7_act2_quiz'}]
+            },
+            chapter7_act2_quiz: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: null, character: 'ЗАДАЧА: РАБОТА ПОЛЯ', isTask: true,
+                text: 'Рассчитайте <span class="term" data-term="work">работу</span> (A), которую совершит поле при перемещении чипа с зарядом q = __Q_CHIP__ нКл, если <span class="term" data-term="potential">разность потенциалов</span> (Δφ) между точками составляет __D_PHI__ В.',
+                choices: 'CHOICES_CH7_ACT2'
+            },
+            chapter7_act2_fail: {
+                background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/max_worried.png', character: 'Инженер Орлов',
+                text: 'Неверно! Формула проста: A = q * Δφ. Снова проверь приставки: "нано" — это 10⁻⁹.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter7_act2_quiz'}]
+            },
+            chapter7_act2_success: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: 'assets/sprites/max_happy.png', character: 'Инженер Орлов',
+                text: 'Именно! Работа поля составит __A__ нДж. Запускаю манипуляторы с соответствующей компенсацией... Чипы возвращены на линию!',
+                choices: [{ text: 'Отлично! Теперь нужно убрать поле.', nextSceneId: 'chapter7_act3_scene1'}]
+            },
+
+            // --- АКТ 3: ЭЛЕКТРОЕМКОСТЬ ---
+            chapter7_act3_scene1: {
+                background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/alex_neutral.png', character: 'Алекс',
+                text: 'Источник поля — статический заряд, скопившийся на корпусе камеры. Его нужно "собрать", разрядив на <span class="term" data-term="capacitor">конденсатор</span>.',
+                choices: [{ text: 'Какой конденсатор нам нужен?', nextSceneId: 'chapter7_act3_quiz'}]
+            },
+            chapter7_act3_quiz: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: null, character: 'ЗАДАЧА: ЭЛЕКТРОЕМКОСТЬ', isTask: true,
+                text: 'Рассчитайте <span class="term" data-term="capacitance">электроёмкость</span> (C) конденсатора, который сможет накопить заряд q = __Q_TOTAL__ мкКл при напряжении U = __U_CAP__ В.<br>C = q / U',
+                choices: 'CHOICES_CH7_ACT3'
+            },
+            chapter7_act3_fail: {
+                background: 'assets/backgrounds/electronics_lab_alarm.jpg', sprite: 'assets/sprites/alex_smirk.png', character: 'Алекс',
+                text: 'Серьёзно? Просто подели заряд на напряжение. И не забудь, что "микро" — это 10⁻⁶.',
+                choices: [{ text: 'Вернуться к задаче', nextSceneId: 'chapter7_act3_quiz'}]
+            },
+            chapter7_act3_success: {
+                background: 'assets/backgrounds/electronics_lab.jpg', sprite: 'assets/sprites/elena_happy.png', character: 'Елена',
+                text: 'Так и есть, нам нужен конденсатор ёмкостью __C__ мкФ. Подключаю... Есть разряд! Поле нейтрализовано!',
+                choices: [{ text: 'Миссия выполнена!', nextSceneId: 'ending_ch7'}]
+            },
+            ending_ch7: {
+                background: 'assets/backgrounds/control_room.jpg', sprite: 'assets/sprites/2.png', character: 'ИТОГ',
+                text: 'Поздравляем! Вы справились с "Полевым Сбоем" и освоили основы электростатики. Все миссии пройдены!',
+                choices: [
+                    { text: 'К списку миссий', href: 'missions.html', onComplete: 'mission7' }
+                ]
+            }
+        };
+
+        const glossary = {
+            e_field: { title: "Электрическое поле", text: "Особый вид материи, существующий вокруг электрических зарядов. Оно действует на другие заряды с некоторой силой." },
+            field_strength: { title: "Напряженность (E)", text: "Силовая характеристика электрического поля. Равна отношению силы, действующей на пробный заряд, к величине этого заряда (E = F/q). Измеряется в Ньютонах на Кулон (Н/Кл) или Вольтах на метр (В/м)." },
+            work: { title: "Работа электрического поля (A)", text: "Работа, которую совершают силы поля при перемещении заряда. Не зависит от траектории, а только от начальной и конечной точек. Измеряется в Джоулях (Дж)." },
+            potential: { title: "Потенциал (φ) и разность потенциалов (Δφ)", text: "Энергетическая характеристика поля. Разность потенциалов между двумя точками (также известная как напряжение) показывает, какую работу совершит поле при перемещении единичного заряда между этими точками. Измеряется в Вольтах (В)." },
+            capacitor: { title: "Конденсатор", text: "Устройство, предназначенное для накопления электрического заряда и энергии. Простейший конденсатор состоит из двух проводников (обкладок), разделенных диэлектриком." },
+            capacitance: { title: "Электроёмкость (C)", text: "Основная характеристика конденсатора, показывающая его способность накапливать заряд. Равна отношению заряда одной из обкладок к разности потенциалов между ними (C = q/U). Измеряется в Фарадах (Ф)." }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const spriteElement = document.getElementById('character-sprite');
+            const nameElement = document.getElementById('character-name');
+            const textElement = document.getElementById('dialogue-text');
+            const choicesContainer = document.getElementById('choices-container');
+            const statTheory = document.getElementById('stat-theory');
+            const statPractice = document.getElementById('stat-practice');
+            const glossaryContainer = document.getElementById('glossary-container');
+            const glossaryCloseButton = document.querySelector('.close-button');
+            const audioClick = document.getElementById('audio-click');
+            const audioCorrect = document.getElementById('audio-correct');
+            const audioWrong = document.getElementById('audio-wrong');
+            const audioAmbient = document.getElementById('audio-ambient');
+            const audioMusic = document.getElementById('audio-music');
+            let gameState = {};
+
+            function playSound(sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {});
+            }
+
+            function formatNumber(value) {
+                if (typeof value !== 'number') return value;
+                if (Math.abs(value) > 1e5 || (Math.abs(value) < 1e-5 && value !== 0)) {
+                    const parts = value.toExponential(1).split('e');
+                    return `${parts[0]} &times; 10<sup>${parts[1]}</sup>`;
+                } 
+                if (!Number.isInteger(value)) {
+                    if (Math.abs(value) < 1) return value.toPrecision(2);
+                    return value.toFixed(2);
+                }
+                return value;
+            }
+
+            function generateProblemData() {
+                const p = {};
+                // Акт 1
+                p.Q = 2 + Math.floor(Math.random() * 4); // 2-5 нКл
+                p.F = 10 + Math.floor(Math.random() * 6); // 10-15 мкН
+                const E_correct = (p.F * 1e-6) / (p.Q * 1e-9);
+                p.E = Math.round(E_correct / 1000); // в кН/Кл
+                p.CHOICES_CH7_ACT1 = [
+                    { text: `${p.E} кН/Кл`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter7_act1_success' },
+                    { text: `${Math.round(p.E * 1000)} кН/Кл`, isCorrect: false, nextSceneId: 'chapter7_act1_fail' }, // Ошибка с приставками
+                    { text: `${Math.round(p.E * 0.1)} кН/Кл`, isCorrect: false, nextSceneId: 'chapter7_act1_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                // Акт 2
+                p.Q_CHIP = 5 + Math.floor(Math.random() * 6); // 5-10 нКл
+                p.D_PHI = 50 + Math.floor(Math.random() * 51); // 50-100 В
+                const A_correct = (p.Q_CHIP * 1e-9) * p.D_PHI;
+                p.A = Math.round(A_correct * 1e9); // в нДж
+                p.CHOICES_CH7_ACT2 = [
+                    { text: `${p.A} нДж`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter7_act2_success' },
+                    { text: `${Math.round(p.A * 1000)} нДж`, isCorrect: false, nextSceneId: 'chapter7_act2_fail' },
+                    { text: `${Math.round(p.A * 0.001)} нДж`, isCorrect: false, nextSceneId: 'chapter7_act2_fail' }
+                ].sort(() => Math.random() - 0.5);
+                
+                // Акт 3
+                p.Q_TOTAL = 20 + Math.floor(Math.random() * 31); // 20-50 мкКл
+                p.U_CAP = 10 + Math.floor(Math.random() * 6);    // 10-15 В
+                const C_correct = (p.Q_TOTAL * 1e-6) / p.U_CAP;
+                p.C = Math.round(C_correct * 1e6); // в мкФ
+                p.CHOICES_CH7_ACT3 = [
+                    { text: `${p.C} мкФ`, isCorrect: true, stat: 'theory', nextSceneId: 'chapter7_act3_success' },
+                    { text: `${Math.round(p.C * 10)} мкФ`, isCorrect: false, nextSceneId: 'chapter7_act3_fail' },
+                    { text: `${Math.round(p.C * 0.1)} мкФ`, isCorrect: false, nextSceneId: 'chapter7_act3_fail' }
+                ].sort(() => Math.random() - 0.5);
+
+                return p;
+            }
+
+            function initGame() {
+                gameState = {
+                    currentSceneId: 'chapter7_scene1',
+                    stats: { theory: 0, practice: 0 },
+                    problemData: generateProblemData(),
+                    viewedModels: {},
+                    audioStarted: false
+                };
+                renderScene();
+            }
+
+            function renderScene() {
+                const currentScene = storyData[gameState.currentSceneId];
+                gameContainer.style.backgroundImage = `url(${currentScene.background})`;
+                spriteElement.style.opacity = currentScene.sprite ? '1' : '0';
+                if (currentScene.sprite) spriteElement.src = currentScene.sprite;
+                nameElement.textContent = currentScene.character || '';
+                
+                let renderedText = currentScene.text;
+                for (const key in gameState.problemData) {
+                    if (typeof gameState.problemData[key] !== 'object') {
+                        renderedText = renderedText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                    }
+                }
+                textElement.innerHTML = renderedText;
+                textElement.classList.toggle('task-text', !!currentScene.isTask);
+
+                choicesContainer.innerHTML = '';
+                const choicesSource = (typeof currentScene.choices === 'string')
+                    ? gameState.problemData[currentScene.choices]
+                    : currentScene.choices;
+
+                choicesSource.forEach(choice => {
+                    let choiceText = choice.text;
+                    for (const key in gameState.problemData) {
+                        if (typeof gameState.problemData[key] !== 'object') {
+                             choiceText = choiceText.replace(new RegExp(`__${key}__`, 'g'), formatNumber(gameState.problemData[key]));
+                        }
+                    }
+                    const button = document.createElement('button');
+                    button.innerHTML = choiceText;
+                    button.className = 'choice-button';
+                    button.onclick = () => {
+                        playSound(audioClick);
+                        handleChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+                
+                updateStatsDisplay();
+                
+                document.querySelectorAll('.term').forEach(term => {
+                    term.onclick = (e) => {
+                        e.stopPropagation();
+                        const termKey = e.target.dataset.term;
+                        showGlossary(termKey);
+                    };
+                });
+            }
+            
+            function handleChoice(choice) {
+                if (!gameState.audioStarted) {
+                    audioAmbient.volume = 0.3;
+                    audioMusic.volume = 0.5;
+                    audioAmbient.play().catch(e => {});
+                    audioMusic.play().catch(e => {});
+                    gameState.audioStarted = true;
+                }
+
+                if (choice.href) {
+                    if (choice.onComplete) {
+                        localStorage.setItem(`${choice.onComplete}_status`, 'completed');
+                    }
+                    window.location.href = choice.href;
+                    return;
+                }
+                
+                if (choice.hasOwnProperty('isCorrect')) {
+                    playSound(choice.isCorrect ? audioCorrect : audioWrong);
+                }
+                
+                if (choice.isCorrect && choice.stat) {
+                    gameState.stats[choice.stat]++;
+                } else if (choice.stat && !choice.hasOwnProperty('isCorrect')) {
+                    gameState.stats[choice.stat]++;
+                }
+                
+                gameState.currentSceneId = choice.nextSceneId;
+                renderScene();
+            }
+            
+            function updateStatsDisplay() {
+                statTheory.textContent = gameState.stats.theory;
+                statPractice.textContent = gameState.stats.practice;
+            }
+
+            function showGlossary(termKey) {
+                const termData = glossary[termKey];
+                if (!termData) return;
+                
+                document.getElementById('glossary-title').textContent = termData.title;
+                document.getElementById('glossary-text').textContent = termData.text;
+                glossaryContainer.style.display = 'flex';
+            }
+
+            glossaryContainer.onclick = (e) => {
+                if (e.target === glossaryContainer) {
+                    glossaryContainer.style.display = 'none';
+                }
+            };
+            glossaryCloseButton.onclick = () => {
+                glossaryContainer.style.display = 'none';
+            };
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>

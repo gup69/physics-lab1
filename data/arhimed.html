@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архимедова сила (Финал)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #03a9f4;
+            --text: #e0e0e0;
+            --border: #333;
+            --success: #00C851;
+            --danger: #ff4444;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        /* Controls */
+        .control-header { 
+            font-weight: bold; color: #fff; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; 
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9em; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        input[type="text"], select { 
+            width: 100%; padding: 8px; background: #000; 
+            border: 1px solid #444; color: white; border-radius: 4px; 
+        }
+        .val { float: right; color: var(--accent); font-weight: bold; font-family: monospace; }
+
+        button.action-btn {
+            width: 100%; padding: 12px; margin-top: 5px;
+            background: var(--accent); border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; color: white; text-transform: uppercase;
+        }
+        button.action-btn:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+
+        /* Visualizer */
+        .visualizer {
+            position: relative; height: 500px; 
+            background: #000; border-radius: 10px; overflow: hidden; 
+            border: 2px solid #444;
+            display: flex; justify-content: center;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Dynamometer Readout */
+        .sensor-display {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); padding: 15px;
+            border: 2px solid var(--accent); border-radius: 8px;
+            text-align: center; font-family: monospace;
+        }
+        .sensor-val { font-size: 2em; color: var(--accent); font-weight: bold; }
+        .sensor-unit { color: #aaa; font-size: 0.9em; }
+
+        /* Table */
+        .lab-table-container {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+        table.lab-table {
+            width: 100%; border-collapse: collapse; color: #fff; font-size: 0.9em;
+        }
+        table.lab-table th, table.lab-table td {
+            border: 1px solid #444; padding: 8px; text-align: center;
+        }
+        table.lab-table th { background: #2c2c2c; color: var(--accent); }
+        table.lab-table input { width: 100px; background: #111; border: 1px solid #555; text-align: center; color: white; }
+        .row-btn {
+            padding: 5px 10px; font-size: 0.8em; background: #2196F3;
+            border: none; border-radius: 3px; color: white; cursor: pointer;
+        }
+        .row-btn:disabled { background: #555; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--panel); padding: 30px;
+            border: 2px solid var(--accent); border-radius: 10px;
+            width: 90%; max-width: 600px; text-align: center; color: white;
+        }
+        .modal-score { font-size: 3em; margin: 10px 0; font-weight: bold; }
+        .result-row-correct { color: var(--success); }
+        .result-row-wrong { color: var(--danger); }
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+    </style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; width:100%; max-width:1300px; align-items:center;">
+    <h1 style="color:var(--accent)" data-lang="mainTitle">Архимедова сила</h1>
+    <select id="lang-select" style="width: auto;">
+        <option value="ru">Русский</option>
+        <option value="kz">Қазақша</option>
+        <option value="en">English</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="control-header" data-lang="headReg">1. Регистрация</div>
+        <div class="control-group">
+            <label data-lang="lblPupil">ФИ Ученика:</label>
+            <input type="text" id="student-name" placeholder="...">
+        </div>
+        <div class="control-group">
+            <label data-lang="lblGrade">Класс:</label>
+            <input type="text" id="student-grade" placeholder="...">
+        </div>
+        <button class="action-btn" id="start-lab-btn" style="background:var(--success);" data-lang="btnStartLab">НАЧАТЬ РАБОТУ</button>
+
+        <div id="experiment-controls" class="locked">
+            <div class="control-header" data-lang="headParams">2. Установка</div>
+            
+            <div class="control-group">
+                <label data-lang="lblLiquid">Жидкость:</label>
+                <select id="liquid-select">
+                    <option value="unknown" data-lang="optUnknown">*** НЕИЗВЕСТНАЯ ***</option>
+                    <option value="water" data-lang="optWater">Вода (1000 кг/м³)</option>
+                    <option value="oil" data-lang="optOil">Масло (800 кг/м³)</option>
+                    <option value="saltwater" data-lang="optSalt">Соленая вода (1030 кг/м³)</option>
+                    <option value="glycerin" data-lang="optGlyc">Глицерин (1260 кг/м³)</option>
+                </select>
+                <div style="font-size:0.8em; color:orange; margin-top:5px;" data-lang="hintTask">Для задания выберите "НЕИЗВЕСТНАЯ"</div>
+            </div>
+
+            <div class="control-group">
+                <label><span data-lang="lblVol">Объем тела (V):</span> <span class="val"><span id="val-v">50</span> см³</span></label>
+                <input type="range" id="slider-v" min="10" max="200" step="10" value="50">
+            </div>
+            
+            <div class="control-group">
+                <label data-lang="lblPosition">Положение стакана:</label>
+                <input type="range" id="slider-h" min="0" max="100" step="1" value="0">
+                <div style="font-size:0.8em; color:#888; text-align:right;" id="status-immersion">В воздухе</div>
+            </div>
+
+            <button class="action-btn" id="reset-btn" style="background:#555; margin-top:10px;" data-lang="btnReset">СБРОС (НОВАЯ ЖИДКОСТЬ)</button>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column;">
+        <div class="panel">
+            <div class="visualizer">
+                <canvas id="sim-canvas" width="800" height="500"></canvas>
+                <div class="sensor-display">
+                    <div class="sensor-val" id="force-display">0.00</div>
+                    <div class="sensor-unit">H</div>
+                    <div style="font-size:0.6em; color:#888; margin-top:5px;" data-lang="lblDynamometer">Динамометр (Вес P)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lab-table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 data-lang="lblTableTitle" style="margin:0; color:var(--accent);">Таблица результатов (4 опыта)</h3>
+                <button id="finish-btn" style="background:var(--success); border:none; padding:10px 20px; color:white; font-weight:bold; border-radius:5px; cursor:pointer;" disabled data-lang="btnFinish">ОЦЕНИТЬ РАБОТУ</button>
+            </div>
+
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th data-lang="colTrial">№</th>
+                        <th>V (см³)</th>
+                        <th>P возд (Н)</th>
+                        <th>P жидк (Н)</th>
+                        <th data-lang="colAction">Действие</th>
+                        <th data-lang="colCalc">Плотность ρ (кг/м³)</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-body">
+                    </tbody>
+            </table>
+            <p style="color:#aaa; font-size:0.9em; margin-top:10px;" data-lang="tableHint">1. Взвесьте в воздухе. 2. Опустите в жидкость. 3. Нажмите "Записать". 4. Вычислите плотность жидкости.</p>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 data-lang="resTitle">Результат Лабораторной Работы</h2>
+        <div style="text-align:left; margin-bottom:10px;">
+            <div><span data-lang="resPupil">Ученик:</span> <strong id="res-name"></strong></div>
+            <div><span data-lang="resGrade">Класс:</span> <strong id="res-grade"></strong></div>
+        </div>
+        
+        <div class="modal-score" id="res-score-val">0</div>
+        <div id="res-details" style="text-align:left; background:#111; padding:10px; border-radius:5px; margin-bottom:10px;"></div>
+        
+        <div style="color:orange; font-size:0.9em; margin-bottom:10px;"><span data-lang="resTrueRho">Истинная плотность жидкости:</span> <strong id="res-true-val"></strong> кг/м³</div>
+
+        <button class="action-btn" onclick="location.reload()" data-lang="btnRestart">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<script>
+    // === 1. Языки ===
+    const LANG = {
+        ru: {
+            mainTitle: "Архимедова сила",
+            headReg: "1. Регистрация", lblPupil: "ФИ Ученика:", lblGrade: "Класс:", btnStartLab: "НАЧАТЬ РАБОТУ",
+            headParams: "2. Установка", lblLiquid: "Жидкость:", optUnknown: "*** НЕИЗВЕСТНАЯ ***", optWater: "Вода (1000)", optOil: "Масло (800)", optSalt: "Соленая вода (1030)", optGlyc: "Глицерин (1260)", hintTask: "Для задания выберите 'НЕИЗВЕСТНАЯ'",
+            lblVol: "Объем тела (V):", lblPosition: "Положение стакана:", btnReset: "СБРОС (НОВАЯ ЖИДКОСТЬ)",
+            statAir: "В воздухе", statLiq: "В жидкости (погружено)", statPartial: "Погружение...",
+            lblDynamometer: "Динамометр (Вес P)",
+            alertName: "Введите имя и класс!", alertEmpty: "Заполните все 4 строки!",
+            lblTableTitle: "Таблица результатов (4 опыта)", btnFinish: "ОЦЕНИТЬ РАБОТУ",
+            colTrial: "№", colAction: "Действие", colCalc: "Плотность ρ (кг/м³)",
+            btnRecord: "Записать", tableHint: "1. Взвесьте в воздухе (Pвозд). 2. Опустите стакан полностью (Pжидк). 3. Записать. 4. Вычислите Fарх = Pвозд - Pжидк. 5. Найдите ρ = Fарх / (g·V). (V перевести в м³!)",
+            resTitle: "Результат", resPupil: "Ученик:", resGrade: "Класс:", resScoreLabel: "Оценка:", btnRestart: "ЗАВЕРШИТЬ",
+            resRow: "Опыт {n}: Ответ {ans}. Верно: {true}. {status}", resTrueRho: "Истинная плотность:"
+        },
+        kz: {
+            mainTitle: "Архимед күші",
+            headReg: "1. Тіркелу", lblPupil: "Оқушы аты-жөні:", lblGrade: "Сынып:", btnStartLab: "ЖҰМЫСТЫ БАСТАУ",
+            headParams: "2. Қондырғы", lblLiquid: "Сұйықтық:", optUnknown: "*** БЕЛГІСІЗ ***", optWater: "Су (1000)", optOil: "Май (800)", optSalt: "Тұзды су (1030)", optGlyc: "Глицерин (1260)", hintTask: "Тапсырма үшін 'БЕЛГІСІЗ' таңдаңыз",
+            lblVol: "Дене көлемі (V):", lblPosition: "Стақанның орны:", btnReset: "ЖАҢА СҰЙЫҚТЫҚ",
+            statAir: "Ауада", statLiq: "Сұйықтықта", statPartial: "Батыру...",
+            lblDynamometer: "Динамометр (Салмақ P)",
+            alertName: "Аты-жөні мен сыныпты енгізіңіз!", alertEmpty: "Барлық 4 жолды толтырыңыз!",
+            lblTableTitle: "Нәтижелер кестесі (4 тәжірибе)", btnFinish: "БАҒАЛАУ",
+            colTrial: "№", colAction: "Әрекет", colCalc: "Тығыздық ρ (кг/м³)",
+            btnRecord: "Жазу", tableHint: "1. Ауада өлшеңіз (Pауа). 2. Сұйықтыққа толық батырыңыз (Pсұй). 3. Жазу. 4. Fарх = Pауа - Pсұй. 5. ρ = Fарх / (g·V). (V м³ айналдыру!)",
+            resTitle: "Нәтиже", resPupil: "Оқушы:", resGrade: "Сынып:", resScoreLabel: "Баға:", btnRestart: "АЯҚТАУ",
+            resRow: "Тәжірибе {n}: Жауап {ans}. Дұрыс: {true}. {status}", resTrueRho: "Дұрыс тығыздық:"
+        },
+        en: {
+            mainTitle: "Archimedes Principle",
+            headReg: "1. Registration", lblPupil: "Name:", lblGrade: "Class:", btnStartLab: "START LAB",
+            headParams: "2. Setup", lblLiquid: "Liquid:", optUnknown: "*** UNKNOWN ***", optWater: "Water (1000)", optOil: "Oil (800)", optSalt: "Saltwater (1030)", optGlyc: "Glycerin (1260)", hintTask: "Select 'UNKNOWN' for task",
+            lblVol: "Body Volume (V):", lblPosition: "Beaker Position:", btnReset: "NEW LIQUID",
+            statAir: "In Air", statLiq: "Fully Submerged", statPartial: "Immersing...",
+            lblDynamometer: "Dynamometer (Weight P)",
+            alertName: "Enter Name and Class!", alertEmpty: "Fill all 4 rows!",
+            lblTableTitle: "Results Table (4 Trials)", btnFinish: "GRADE WORK",
+            colTrial: "#", colAction: "Action", colCalc: "Density ρ (kg/m³)",
+            btnRecord: "Record", tableHint: "1. Weigh in air (P_air). 2. Fully immerse (P_liq). 3. Record. 4. Calc F_arch = P_air - P_liq. 5. Calc ρ = F_arch / (g·V). (Convert V to m³!)",
+            resTitle: "Result", resPupil: "Student:", resGrade: "Class:", resScoreLabel: "Score:", btnRestart: "FINISH",
+            resRow: "Trial {n}: Your ans {ans}. Correct: {true}. {status}", resTrueRho: "True Density:"
+        }
+    };
+
+    let currentLang = 'ru';
+    let g = 9.8;
+    
+    const LIQUIDS = {
+        'water': { rho: 1000, color: 'rgba(33, 150, 243, 0.6)' },
+        'oil': { rho: 800, color: 'rgba(255, 235, 59, 0.6)' },
+        'saltwater': { rho: 1030, color: 'rgba(0, 188, 212, 0.6)' },
+        'glycerin': { rho: 1260, color: 'rgba(233, 30, 99, 0.4)' },
+        'unknown': { rho: 0, color: 'rgba(156, 39, 176, 0.5)' } // Random
+    };
+
+    const state = {
+        rhoLiq: 1000,
+        liqType: 'water',
+        V: 50, // cm3
+        rhoBody: 7800, // Steel (fixed)
+        h: 0, // 0..100 "Slider Percent"
+        P: 0, // Current Weight
+        
+        // Visual geometry data
+        overlapPercent: 0 
+    };
+
+    // Table Data
+    const trials = [
+        { id: 1, V: 0, P1: 0, P2: 0, trueRho: 0, userAns: null, filled: false },
+        { id: 2, V: 0, P1: 0, P2: 0, trueRho: 0, userAns: null, filled: false },
+        { id: 3, V: 0, P1: 0, P2: 0, trueRho: 0, userAns: null, filled: false },
+        { id: 4, V: 0, P1: 0, P2: 0, trueRho: 0, userAns: null, filled: false }
+    ];
+
+    // === Logic ===
+
+    function updateLanguage(lang) {
+        currentLang = lang;
+        const t = LANG[lang];
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if(t[key]) el.innerText = t[key];
+        });
+        
+        const sel = document.getElementById('liquid-select');
+        for(let i=0; i<sel.options.length; i++) {
+            const val = sel.options[i].value;
+            const key = (val==='unknown')?'optUnknown':(val==='water'?'optWater':(val==='oil'?'optOil':(val==='saltwater'?'optSalt':'optGlyc')));
+            if(t[key]) sel.options[i].text = t[key];
+        }
+
+        document.querySelectorAll('.row-btn').forEach(btn => btn.innerText = t.btnRecord);
+        updateStatus();
+    }
+
+    function updateStatus() {
+        const t = LANG[currentLang];
+        const el = document.getElementById('status-immersion');
+        
+        if (state.overlapPercent <= 0.01) el.innerText = t.statAir;
+        else if (state.overlapPercent >= 0.99) el.innerText = t.statLiq;
+        else el.innerText = t.statPartial;
+    }
+
+    function setRandomLiquid() {
+        state.unknownRho = Math.floor(Math.random() * (1300 - 700) + 700); // 700..1300
+        console.log("Teacher Info: Unknown Rho = " + state.unknownRho);
+    }
+
+    function updatePhysics() {
+        const V_m3 = state.V * 1e-6;
+        const mass = state.rhoBody * V_m3;
+        const P_air_val = mass * g;
+        
+        let currentRhoLiq = (state.liqType === 'unknown') ? state.unknownRho : LIQUIDS[state.liqType].rho;
+        
+        // state.overlapPercent рассчитывается в функции отрисовки
+        const F_arch = currentRhoLiq * g * V_m3 * state.overlapPercent;
+        
+        state.P = P_air_val - F_arch;
+        if (state.P < 0) state.P = 0; 
+
+        document.getElementById('force-display').innerText = state.P.toFixed(2);
+        updateStatus();
+    }
+
+    // --- Visualization ---
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
+
+    function draw() {
+        ctx.clearRect(0,0, cvs.width, cvs.height);
+        const cx = cvs.width / 2;
+        
+        // --- Geometrical Constants ---
+        const bodyW = 60;
+        // Исправленная формула высоты тела для визуализации:
+        // Max V = 200. Чтобы тело не вылезало за стакан (h=250), ограничим max высоту.
+        // Пусть max H = 160 px.
+        // 40 (min) + (200 * 0.6) = 160.
+        const bodyH = 40 + state.V * 0.6; 
+        
+        const bodyTopY_fixed = 180; 
+        const bodyBottomY_fixed = bodyTopY_fixed + bodyH;
+
+        // Beaker
+        const beakerW = 180;
+        const beakerH = 250;
+        const liquidFillH = 230; 
+
+        // Beaker Movement Logic (Corrected)
+        // Goal: At slider=100, liquid surface must be ABOVE body top.
+        // Liquid Surface Y = BeakerBottom - liquidFillH.
+        // We want Liquid Surface Y <= bodyTopY_fixed (at 100%).
+        
+        // Start pos (0%): Beaker Rim is below Body Bottom.
+        const beakerRimY_start = bodyBottomY_fixed + 20; 
+        const beakerBottomY_start = beakerRimY_start + beakerH;
+        
+        // End pos (100%): Liquid Surface is above Body Top.
+        // Let's say 10px above.
+        const liquidSurfaceY_end = bodyTopY_fixed - 10;
+        const beakerBottomY_end = liquidSurfaceY_end + liquidFillH;
+        
+        // Current Beaker Bottom Y based on slider h (0..100)
+        const currentBeakerBottomY = beakerBottomY_start - (state.h / 100) * (beakerBottomY_start - beakerBottomY_end);
+        const currentBeakerRimY = currentBeakerBottomY - beakerH;
+        const currentLiquidSurfaceY = currentBeakerBottomY - liquidFillH;
+
+        // --- Drawing ---
+
+        // 1. Stand & Spring
+        ctx.fillStyle = '#444'; ctx.fillRect(cx - 100, 20, 200, 20);
+        ctx.fillStyle = '#222'; ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2;
+        ctx.fillRect(cx - 25, 40, 50, 100); ctx.strokeRect(cx - 25, 40, 50, 100);
+        const maxP = 2.0; 
+        let indY = 50 + (state.P / maxP) * 80;
+        if(indY>130) indY=130;
+        ctx.fillStyle = 'red'; ctx.fillRect(cx - 20, indY, 40, 3);
+
+        // Hook & String
+        ctx.strokeStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(cx, 140); ctx.lineTo(cx, bodyTopY_fixed); ctx.stroke();
+
+        // 2. Body (Cylinder)
+        ctx.fillStyle = '#78909c'; 
+        ctx.fillRect(cx - bodyW/2, bodyTopY_fixed, bodyW, bodyH);
+        ctx.strokeRect(cx - bodyW/2, bodyTopY_fixed, bodyW, bodyH);
+        ctx.fillStyle = 'black'; ctx.textAlign = 'center';
+        ctx.fillText(state.V + " cm³", cx, bodyTopY_fixed + bodyH/2 + 5);
+
+        // 3. Beaker & Liquid (Moving)
+        const liqColor = (state.liqType === 'unknown') ? LIQUIDS['unknown'].color : LIQUIDS[state.liqType].color;
+        
+        // Calculate Intersection
+        const overlapTop = Math.max(bodyTopY_fixed, currentLiquidSurfaceY);
+        const overlapBottom = Math.min(bodyBottomY_fixed, currentBeakerBottomY); 
+        
+        let submergedH = 0;
+        if (overlapBottom > overlapTop) {
+            submergedH = overlapBottom - overlapTop;
+        }
+        
+        state.overlapPercent = submergedH / bodyH;
+        if (state.overlapPercent < 0) state.overlapPercent = 0;
+        if (state.overlapPercent > 0.99) state.overlapPercent = 1.0;
+
+        // Draw Liquid
+        ctx.fillStyle = liqColor;
+        ctx.fillRect(cx - beakerW/2 + 2, currentLiquidSurfaceY, beakerW - 4, liquidFillH);
+        
+        // Beaker Outline
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
+        ctx.strokeRect(cx - beakerW/2, currentBeakerRimY, beakerW, beakerH);
+        
+        updatePhysics();
+    }
+    
+    function animate() {
+        draw();
+        requestAnimationFrame(animate);
+    }
+
+    // --- Table Logic ---
+    function initTable() {
+        const tbody = document.getElementById('tasks-body');
+        tbody.innerHTML = '';
+        trials.forEach(trial => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trial.id}</td>
+                <td id="v-${trial.id}">-</td>
+                <td id="p1-${trial.id}">-</td>
+                <td id="p2-${trial.id}">-</td>
+                <td><button class="row-btn" onclick="recordTrial(${trial.id})">Записать</button></td>
+                <td><input type="text" id="ans-${trial.id}" placeholder="..." disabled></td>
+            `;
+            tbody.appendChild(row);
+        });
+        updateLanguage(currentLang);
+    }
+
+    window.recordTrial = function(id) {
+        const t = trials[id-1];
+        const V_m3 = state.V * 1e-6;
+        const mass = state.rhoBody * V_m3;
+        const P_air = mass * g;
+        
+        let currentRhoLiq = (state.liqType === 'unknown') ? state.unknownRho : LIQUIDS[state.liqType].rho;
+        const F_arch_full = currentRhoLiq * g * V_m3;
+        const P_liq = P_air - F_arch_full;
+
+        t.V = state.V;
+        t.trueRho = currentRhoLiq;
+        t.filled = true;
+
+        document.getElementById(`v-${id}`).innerText = state.V;
+        document.getElementById(`p1-${id}`).innerText = P_air.toFixed(2);
+        document.getElementById(`p2-${id}`).innerText = P_liq.toFixed(2);
+        
+        const inp = document.getElementById(`ans-${id}`);
+        inp.disabled = false;
+        inp.focus();
+        
+        event.target.disabled = true;
+        event.target.style.background = "#555";
+
+        checkAllFilled();
+    }
+
+    function checkAllFilled() {
+        const allFilled = trials.every(t => t.filled);
+        document.getElementById('finish-btn').disabled = !allFilled;
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        setRandomLiquid();
+        initTable();
+        updateLanguage('ru');
+        animate();
+
+        document.getElementById('lang-select').onchange = (e) => updateLanguage(e.target.value);
+        document.getElementById('slider-v').oninput = (e) => { state.V = parseInt(e.target.value); };
+        document.getElementById('slider-h').oninput = (e) => { state.h = parseInt(e.target.value); };
+        
+        document.getElementById('liquid-select').onchange = (e) => { state.liqType = e.target.value; };
+
+        document.getElementById('reset-btn').onclick = () => {
+            setRandomLiquid();
+            state.liqType = 'unknown';
+            document.getElementById('liquid-select').value = 'unknown';
+            alert("Жидкость заменена!");
+        };
+
+        document.getElementById('start-lab-btn').onclick = () => {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            if(!name.trim() || !grade.trim()) { alert(LANG[currentLang].alertName); return; }
+
+            document.getElementById('experiment-controls').classList.remove('locked');
+            document.getElementById('student-name').disabled = true;
+            document.getElementById('student-grade').disabled = true;
+            document.getElementById('start-lab-btn').style.display = 'none';
+            
+            state.liqType = 'unknown';
+            document.getElementById('liquid-select').value = 'unknown';
+        };
+
+        // Grading
+        document.getElementById('finish-btn').onclick = () => {
+            let correctCount = 0;
+            let detailsHTML = "";
+            const t = LANG[currentLang];
+
+            trials.forEach(trial => {
+                const userAns = parseFloat(document.getElementById(`ans-${trial.id}`).value.replace(',','.'));
+                const trueAns = trial.trueRho;
+                
+                let isRight = false;
+                // Tolerance 5%
+                if (!isNaN(userAns) && Math.abs(userAns - trueAns) / trueAns < 0.05) {
+                    correctCount++;
+                    isRight = true;
+                }
+
+                const statusText = isRight ? "OK" : "FAIL";
+                let rowText = t.resRow
+                    .replace('{n}', trial.id)
+                    .replace('{ans}', userAns)
+                    .replace('{true}', trueAns.toFixed(0))
+                    .replace('{status}', statusText);
+
+                detailsHTML += `<div class="${isRight?'result-row-correct':'result-row-wrong'}">${rowText}</div>`;
+            });
+
+            let finalScore = 0;
+            if (correctCount === 4) finalScore = 10;
+            else if (correctCount === 3) finalScore = 8;
+            else if (correctCount === 2) finalScore = 5;
+            else if (correctCount === 1) finalScore = 3;
+
+            document.getElementById('res-name').innerText = document.getElementById('student-name').value;
+            document.getElementById('res-grade').innerText = document.getElementById('student-grade').value;
+            document.getElementById('res-score-val').innerText = finalScore + " / 10";
+            document.getElementById('res-details').innerHTML = detailsHTML;
+            
+            document.getElementById('res-true-val').innerText = state.unknownRho;
+
+            document.getElementById('result-modal').style.display = 'flex';
+        };
+    };
+</script>
+
+</body>
+</html>

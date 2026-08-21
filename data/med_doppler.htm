@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>УЗИ-Диагностика (Эффект Доплера) | ORBITSHIELD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0F172A; color: #F8FAFC; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { width: 100%; max-width: 1050px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title h1 { color: #38BDF8; font-size: 1.8rem; }
+    .title p { color: #94A3B8; font-size: 0.9rem; }
+    
+    .lang-switcher { display: flex; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 12px; }
+    .lang-btn { background: none; border: none; color: #94A3B8; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .lang-btn.active { background: #38BDF8; color: #0F172A; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1050px; }
+    
+    .panel { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+    .panel h2 { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+
+    /* ВИЗУАЛИЗАЦИЯ УЗИ (VIEWPORT) */
+    .viewport { position: relative; width: 100%; height: 300px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #475569; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+    
+    /* Кровеносный сосуд */
+    .vessel { position: absolute; width: 100%; height: 60px; background: rgba(225, 29, 72, 0.2); border-top: 2px solid #E11D48; border-bottom: 2px solid #E11D48; top: 180px; overflow: hidden;}
+    
+    /* Эритроциты */
+    .blood-cell { position: absolute; width: 10px; height: 10px; background: #FDA4AF; border-radius: 50%; top: 25px; box-shadow: 0 0 5px #E11D48;}
+    
+    /* УЗИ Датчик и луч */
+    #probe-container { position: absolute; top: 30px; left: 50%; transform-origin: bottom center; z-index: 5; display: flex; flex-direction: column; align-items: center;}
+    .probe { width: 40px; height: 80px; background: #94A3B8; border-radius: 8px 8px 0 0; border: 2px solid #CBD5E1; }
+    .beam { width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-bottom: 70px solid rgba(56, 189, 248, 0.4); margin-top: 5px;}
+    
+    /* Отрисовка угла */
+    .angle-arc { position: absolute; top: 150px; left: 50%; width: 100px; height: 100px; border: 2px dashed #10B981; border-radius: 50%; clip-path: polygon(50% 50%, 100% 0, 100% 100%); opacity: 0.5; pointer-events: none; }
+    .horizontal-line { position: absolute; top: 180px; left: 0; width: 100%; height: 1px; border-top: 1px dashed #10B981; }
+
+    /* Спектрограмма (Экран аппарата) */
+    .spectrogram { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #38BDF8; padding: 10px; border-radius: 8px; font-family: monospace; }
+    .spectro-value { color: #38BDF8; font-size: 1.4rem; font-weight: bold; }
+    .spectro-label { color: #94A3B8; font-size: 0.75rem; }
+
+    /* Инструменты измерения */
+    .tools { margin-top: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;}
+    .tool-row { display: flex; align-items: center; justify-content: space-between; }
+    .tool-row label { font-size: 0.95rem; color: #CBD5E1; font-family: monospace; font-weight: bold;}
+    input[type=range] { width: 60%; accent-color: #10B981; cursor: pointer; }
+
+    /* Панель данных и расчетов */
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 0.95rem; color: #CBD5E1; }
+    .data-row strong { color: #F8FAFC; }
+    
+    /* Сетка инпутов */
+    .calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+    .calc-grid input { width: 100%; background: #000; border: 1px solid #38BDF8; color: #10B981; padding: 10px; font-family: monospace; font-size: 1rem; border-radius: 8px; text-align: center; outline: none; }
+    .calc-grid input::placeholder { color: #475569; font-size: 0.85rem; }
+    
+    .btn-submit { width: 100%; background: #38BDF8; color: #0F172A; border: none; padding: 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background: #0284C7; color: white; }
+
+    /* ИИ Консоль */
+    .ai-console { background: #000; padding: 15px; border-radius: 8px; height: 160px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; border: 1px solid #334155; overflow-y: auto; }
+    .ai-msg { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 6px; color: #94A3B8;}
+    .ai-msg.error { color: #EF4444; }
+    .ai-msg.success { color: #10B981; }
+    .ai-msg span { display: none; } 
+
+    /* Формулы */
+    .formulas { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 0.85rem; color: #94A3B8; }
+    .formulas b { color: #38BDF8; font-size: 0.95rem;}
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1 data-ru="УЗИ-Диагностика: Эффект Доплера" data-kk="УДЗ-Диагностика: Доплер эффектісі" data-en="Ultrasound Diagnostics: Doppler Effect">УЗИ-Диагностика: Эффект Доплера</h1>
+      <p data-ru="Определение скорости кровотока акустическим методом" data-kk="Акустикалық әдіспен қан айналымы жылдамдығын анықтау" data-en="Determination of blood flow velocity using acoustic method">Определение скорости кровотока акустическим методом</p>
+    </div>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ru">РУС</button>
+      <button class="lang-btn" data-lang="kk">ҚАЗ</button>
+      <button class="lang-btn" data-lang="en">ENG</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    
+    <!-- ТЕЛЕСКОП И ИЗМЕРЕНИЯ -->
+    <div class="panel">
+      <h2 data-ru="Сканирование (Акустический сенсор)" data-kk="Сканерлеу (Акустикалық сенсор)" data-en="Scanning (Acoustic Sensor)">Сканирование (Акустический сенсор)</h2>
+      
+      <!-- Визуализация -->
+      <div class="viewport">
+          <div class="horizontal-line"></div>
+          
+          <div class="vessel" id="vessel">
+              <!-- Эритроциты генерируются через JS -->
+          </div>
+
+          <div id="probe-container">
+              <div class="probe"></div>
+              <div class="beam"></div>
+          </div>
+
+          <!-- Экран аппарата -->
+          <div class="spectrogram">
+              <div class="spectro-label" data-ru="Сдвиг частоты (Δν)" data-kk="Жиілік ығысуы (Δν)" data-en="Frequency shift (Δν)">Сдвиг частоты (Δν)</div>
+              <div class="spectro-value"><span id="out-df">0</span> Hz</div>
+          </div>
+      </div>
+
+      <!-- Инструменты -->
+      <div class="tools">
+          <div class="tool-row">
+              <label>
+                  <span data-ru="Угол датчика (α)" data-kk="Датчик бұрышы (α)" data-en="Probe Angle (α)">Угол датчика (α)</span>: 
+                  <span id="lbl-angle" style="color: #10B981;">60°</span>
+              </label>
+              <input type="range" id="slide-angle" min="30" max="60" step="1" value="60">
+          </div>
+          <p style="color: #94A3B8; font-size: 0.8rem; margin-top: 10px;" 
+             data-ru="* Измените угол α, чтобы избежать погрешностей (cos 90° = 0). Оптимальный угол в медицине: 30° - 60°." 
+             data-kk="* Қателіктерді болдырмау үшін α бұрышын өзгертіңіз (cos 90° = 0). Медицинадағы оңтайлы бұрыш: 30° - 60°." 
+             data-en="* Change angle α to avoid errors (cos 90° = 0). Optimal medical angle: 30° - 60°.">* Измените угол α, чтобы избежать погрешностей (cos 90° = 0). Оптимальный угол в медицине: 30° - 60°.</p>
+      </div>
+    </div>
+
+    <!-- ВВОД ДАННЫХ И ИИ -->
+    <div class="panel">
+      <h2 data-ru="Физико-математический анализ" data-kk="Физика-математикалық талдау" data-en="Physical and Mathematical Analysis">Физико-математический анализ</h2>
+      
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+          <div class="data-row">
+            <span data-ru="Скорость звука в крови (c):" data-kk="Қандағы дыбыс жылдамдығы (c):" data-en="Speed of sound in blood (c):">Скорость звука в крови (c):</span>
+            <strong>1540 м/с</strong>
+          </div>
+          <div class="data-row">
+            <span data-ru="Базовая частота (ν₀):" data-kk="Базалық жиілік (ν₀):" data-en="Base frequency (ν₀):">Базовая частота (ν₀):</span>
+            <strong>5 000 000 Гц <span style="font-size:0.75rem; color:#64748B">(5 МГц)</span></strong>
+          </div>
+      </div>
+
+      <div class="formulas">
+          <div data-ru="Формула отраженного сигнала:" data-kk="Шағылысқан сигнал формуласы:" data-en="Reflected signal formula:">Формула отраженного сигнала:</div>
+          <div style="margin-top:5px"><b>v = (Δν * c) / (2 * ν₀ * cos α)</b></div>
+      </div>
+
+      <div class="calc-grid">
+        <input type="number" id="in-v" placeholder="Вычисленная скорость крови v (м/с)" data-ru="Вычисленная скорость крови v (м/с)" data-kk="Есептелген қан жылдамдығы v (м/с)" data-en="Calculated blood velocity v (m/s)" step="0.01">
+      </div>
+
+      <button class="btn-submit" onclick="analyzeBloodFlow()" data-ru="ПОЛУЧИТЬ ЗАКЛЮЧЕНИЕ ИИ" data-kk="ЖИ ҚОРЫТЫНДЫСЫН АЛУ" data-en="GET AI DIAGNOSIS">ПОЛУЧИТЬ ЗАКЛЮЧЕНИЕ ИИ</button>
+
+      <div class="ai-console" id="ai-output">
+        <div class="ai-msg">
+            <span class="log-ru" data-lang-text="ru">[AI]: ORBITSHIELD MED готов. Считайте сдвиг частот с экрана.</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ORBITSHIELD MED дайын. Экраннан жиілік ығысуын оқыңыз.</span>
+            <span class="log-en" data-lang-text="en">[AI]: ORBITSHIELD MED ready. Read frequency shift from screen.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ФИЗИЧЕСКАЯ МОДЕЛЬ (Константы)
+    const c = 1540; // Скорость звука в теле человека (м/с)
+    const f0 = 5000000; // Базовая частота 5 МГц (Гц)
+    
+    // Генерация случайной скорости кровотока от 0.3 до 1.4 м/с
+    // Норма: 0.3 - 0.9 м/с. Выше 0.9 - стеноз (сужение).
+    const actual_v = (Math.random() * 1.1 + 0.3);
+    
+    // ДОМ Элементы
+    const slideAngle = document.getElementById('slide-angle');
+    const lblAngle = document.getElementById('lbl-angle');
+    const probeContainer = document.getElementById('probe-container');
+    const outDf = document.getElementById('out-df');
+    const vessel = document.getElementById('vessel');
+
+    // Функция обновления показаний
+    function updatePhysics() {
+        let angleDeg = parseInt(slideAngle.value);
+        lblAngle.innerText = `${angleDeg}°`;
+        
+        let tilt = 90 - angleDeg; 
+        probeContainer.style.transform = `rotate(${tilt}deg)`;
+
+        // Расчет сдвига частот Δν = (2 * ν₀ * v * cos(a)) / c
+        let angleRad = angleDeg * Math.PI / 180;
+        let deltaF = (2 * f0 * actual_v * Math.cos(angleRad)) / c;
+        
+        outDf.innerText = Math.round(deltaF);
+    }
+
+    // Анимация эритроцитов
+    function initBloodFlow() {
+        let particleCount = 15;
+        let animDuration = 2 / actual_v; 
+
+        for(let i=0; i<particleCount; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'blood-cell';
+            cell.style.top = `${Math.random() * 40 + 5}px`;
+            cell.style.left = `-20px`;
+            
+            cell.style.animation = `flowAnim ${animDuration}s linear infinite`;
+            cell.style.animationDelay = `${Math.random() * animDuration}s`;
+            
+            vessel.appendChild(cell);
+        }
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+          @keyframes flowAnim {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(1200px); }
+          }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Слушатели событий
+    slideAngle.addEventListener('input', updatePhysics);
+
+    // Инициализация
+    updatePhysics();
+    initBloodFlow();
+
+    // ЛОГИКА АНАЛИЗА ИИ
+    function analyzeBloodFlow() {
+        const studentV = parseFloat(document.getElementById('in-v').value);
+        
+        if (isNaN(studentV)) {
+            printAI("ОШИБКА: Введите вычисленную скорость.", "ҚАТЕ: Есептелген жылдамдықты енгізіңіз.", "ERROR: Enter calculated velocity.", "error");
+            return;
+        }
+
+        // Погрешность 3% (из-за округления Δν на экране)
+        const margin = actual_v * 0.03;
+
+        if (Math.abs(studentV - actual_v) <= margin) {
+            // Верно
+            let diagRU = studentV > 0.9 ? "ПАТОЛОГИЯ (СТЕНОЗ). Скорость превышает норму." : "НОРМА. Кровоток стабильный.";
+            let diagKK = studentV > 0.9 ? "ПАТОЛОГИЯ (СТЕНОЗ). Жылдамдық нормадан жоғары." : "НОРМА. Қан айналымы тұрақты.";
+            let diagEN = studentV > 0.9 ? "PATHOLOGY (STENOSIS). Velocity exceeds normal." : "NORMAL. Blood flow stable.";
+            let colorClass = studentV > 0.9 ? "error" : "success"; 
+
+            printAI(`СИНХРОНИЗАЦИЯ УСПЕШНА.<br>Скорость подтверждена: ${studentV.toFixed(2)} м/с.<br>--------------------<br>МЕДИЦИНСКОЕ ЗАКЛЮЧЕНИЕ:<br><b>${diagRU}</b>`,
+                    `СИНХРОНИЗАЦИЯ СӘТТІ.<br>Жылдамдық расталды: ${studentV.toFixed(2)} м/с.<br>--------------------<br>МЕДИЦИНАЛЫҚ ҚОРЫТЫНДЫ:<br><b>${diagKK}</b>`,
+                    `SYNC SUCCESSFUL.<br>Velocity confirmed: ${studentV.toFixed(2)} m/s.<br>--------------------<br>MEDICAL DIAGNOSIS:<br><b>${diagEN}</b>`,
+                    colorClass);
+        } else {
+            printAI(`ОШИБКА РАСЧЕТА.<br>Значение ${studentV} м/с не совпадает с телеметрией.<br>Проверьте формулу и перевод угла в радианы/градусы. Внимание: в калькуляторе используйте градусы (DEG).`,
+                    `ЕСЕПТЕУ ҚАТЕСІ.<br>Мән ${studentV} м/с телеметриямен сәйкес келмейді.<br>Формуланы және бұрышты радиан/градусқа аударуды тексеріңіз. Калькуляторда градусты (DEG) қолданыңыз.`,
+                    `CALCULATION ERROR.<br>Value ${studentV} m/s does not match telemetry.<br>Check the formula and angle conversion. Note: use degrees (DEG) in your calculator.`,
+                    "error");
+        }
+    }
+
+    // ВЫВОД И ПЕРЕВОД
+    function printAI(ru, kk, en, type) {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${type}`;
+        div.innerHTML = `
+            <span class="log-ru" data-lang-text="ru">[AI]: ${ru}</span>
+            <span class="log-kk" data-lang-text="kk">[AI]: ${kk}</span>
+            <span class="log-en" data-lang-text="en">[AI]: ${en}</span>
+        `;
+        document.getElementById('ai-output').prepend(div);
+        applyLogLanguage();
+    }
+
+    function applyLogLanguage() {
+        const lang = document.querySelector('.lang-btn.active').getAttribute('data-lang');
+        document.querySelectorAll('.ai-msg span').forEach(span => {
+            span.style.display = span.getAttribute('data-lang-text') === lang ? 'inline' : 'none';
+        });
+    }
+
+    applyLogLanguage();
+
+    const langBtns = document.querySelectorAll('.lang-btn');
+    langBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        langBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const lang = btn.getAttribute('data-lang');
+        document.querySelectorAll(`[data-${lang}]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+             if (el.placeholder) el.placeholder = el.getAttribute(`data-${lang}`);
+             else el.innerHTML = el.getAttribute(`data-${lang}`);
+          } else {
+             el.innerHTML = el.getAttribute(`data-${lang}`);
+          }
+        });
+        applyLogLanguage();
+      });
+    });
+  </script>
+</body>
+</html>
