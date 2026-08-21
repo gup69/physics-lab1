@@ -905,8 +905,10 @@
       });
     });
 
-   // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (ОБНОВЛЕННЫЙ)
-    fetch('https://api.counterapi.dev/v1/gup69/physicslab/up')
+    // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ
+    const nocache = Math.random();
+      
+    fetch('https://api.counterapi.dev/v1/gup69/physicslab/up?' + nocache, { cache: 'no-store' })
       .then(response => response.json())
       .then(data => { 
           if (data.count) {
