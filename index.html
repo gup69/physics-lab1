@@ -905,20 +905,20 @@
       });
     });
 
-   // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (ФИНАЛЬНЫЙ)
-    fetch('https://api.counterapi.dev/v1/gup69/portal_visits/up', { cache: 'no-store' })
-      .then(response => response.json())
-      .then(data => { 
-          const count = data.count || data.value;
-          if (count) {
-              document.getElementById('visits-count').innerText = count;
-          } else {
-              document.getElementById('visits-count').innerText = "1";
-          }
-      })
-      .catch(error => { 
-          document.getElementById('visits-count').innerText = "—"; 
-      });
+   // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (Версия API v2)
+      fetch('https://api.counterapi.dev/v2/gup69/portal_visits/up', { cache: 'reload' })
+        .then(response => response.json())
+        .then(data => { 
+            const count = data.count || data.value;
+            if (count) {
+                document.getElementById('visits-count').innerText = count;
+            } else {
+                document.getElementById('visits-count').innerText = "1";
+            }
+        })
+        .catch(error => { 
+            document.getElementById('visits-count').innerText = "—"; 
+        });
   </script>
 
 </body>
