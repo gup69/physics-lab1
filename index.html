@@ -905,21 +905,23 @@
       });
     });
 
-    // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ
-    const nocache = Math.random();
-      
-    fetch('https://api.counterapi.dev/v1/gup69/physicslab/up?' + nocache, { cache: 'no-store' })
-      .then(response => response.json())
-      .then(data => { 
-          if (data.count) {
-              document.getElementById('visits-count').innerText = data.count;
-          } else {
-              document.getElementById('visits-count').innerText = "1";
-          }
-      })
-      .catch(error => { 
-          document.getElementById('visits-count').innerText = "—"; 
-      });
+  // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ (ФИНАЛЬНЫЙ)
+      // Мы убрали случайные цифры из ссылки, чтобы сервер не создавал новые счетчики,
+      // и задали новое имя (portal_visits), чтобы начать чистый отсчет.
+      fetch('https://api.counterapi.dev/v1/gup69/portal_visits/up', { cache: 'no-store' })
+        .then(response => response.json())
+        .then(data => { 
+            // Проверяем оба варианта ответа (count или value)
+            const count = data.count || data.value;
+            if (count) {
+                document.getElementById('visits-count').innerText = count;
+            } else {
+                document.getElementById('visits-count').innerText = "1";
+            }
+        })
+        .catch(error => { 
+            document.getElementById('visits-count').innerText = "—"; 
+        });
   </script>
 
 </body>
