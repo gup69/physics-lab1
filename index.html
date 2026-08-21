@@ -261,11 +261,19 @@
       </div>
 
       <div class="profile-side">
+        <!-- НАЧАЛО НОВОГО СЧЕТЧИКА ПОСЕЩЕНИЙ (СВЕРХУ) -->
+        <div style="font-size: 0.95rem; color: #475569; font-weight: 600; margin-bottom: 5px; text-align: right; width: 100%;">
+          <span data-ru="👁 Просмотров:" data-kk="👁 Қаралым:" data-en="👁 Views:">👁 Просмотров:</span>
+          <span id="visits-count" style="color: #4F46E5; font-weight: 800; font-size: 1.1rem; margin-left: 5px;">...</span>
+        </div>
+        <!-- КОНЕЦ СЧЕТЧИКА -->
+
         <div class="lang-switcher">
           <button class="lang-btn active" data-lang="ru">РУС</button>
           <button class="lang-btn" data-lang="kk">ҚАЗ</button>
           <button class="lang-btn" data-lang="en">ENG</button>
         </div>
+        
         <div class="profile-info">
           <p><b data-ru="Специализированная гимназия №8 им. М.Х. Дулати" data-kk="М.Х. Дулати атындағы №8 мамандандырылған гимназия" data-en="Specialized Gymnasium No. 8 named after M.Kh. Dulati">Специализированная гимназия №8 им. М.Х. Дулати</b></p>
           <p data-ru="г. Шымкент, Казахстан" data-kk="Шымкент қ., Қазақстан" data-en="Shymkent, Kazakhstan">г. Шымкент, Казахстан</p>
@@ -804,25 +812,6 @@
       </div>
     </div>
 
-    <!-- НАЧАЛО СЧЕТЧИКА ПОСЕЩЕНИЙ -->
-    <div style="text-align: center; margin-top: 40px; padding-bottom: 20px; color: #64748B; font-weight: 500; font-size: 1.1rem; width: 100%;">
-      <span data-ru="Просмотров портала:" data-kk="Порталды қарау саны:" data-en="Portal views:">Просмотров портала:</span>
-      <span id="visits-count" style="color: #4F46E5; font-weight: 800; font-size: 1.2rem; margin-left: 8px;">...</span>
-    </div>
-
-    <script>
-      // Скрипт обращается к бесплатному текстовому API, который не блокируется антивирусами
-      fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index')
-        .then(response => response.json())
-        .then(data => { 
-            document.getElementById('visits-count').innerText = data.count; 
-        })
-        .catch(error => { 
-            document.getElementById('visits-count').innerText = "—"; 
-        });
-    </script>
-    <!-- КОНЕЦ СЧЕТЧИКА ПОСЕЩЕНИЙ -->
-
   </div> <!-- Конец .container -->
 
   <script>
@@ -915,6 +904,16 @@
         applyFilters();
       });
     });
+
+    // 4. СКРИПТ СЧЕТЧИКА ПОСЕЩЕНИЙ
+    fetch('https://api.counterapi.dev/v1/gup69-physics-lab/index')
+      .then(response => response.json())
+      .then(data => { 
+          document.getElementById('visits-count').innerText = data.count; 
+      })
+      .catch(error => { 
+          document.getElementById('visits-count').innerText = "—"; 
+      });
   </script>
 
 </body>
