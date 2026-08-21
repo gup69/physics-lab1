@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Марсианской Базы v12.4 (Обновленная Инструкция)</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #333; color: #fff; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; background-color: #2a0a0a;  background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1541873676-a18131494184?w=500'); background-size: cover; background-attachment: fixed; }
+        .hidden { display: none !important; }
+        .fullscreen-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; padding: 20px; box-sizing: border-box; }
+        #start-button, #victory-restart-btn { padding: 20px 40px; font-size: 24px; font-weight: bold; color: #111; background-color: #ff8c00; border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s; margin-top: 20px; }
+        #start-button:hover, #victory-restart-btn:hover { transform: scale(1.05); }
+        .fullscreen-modal p { font-size: 18px; color: #ccc; margin-top: 20px; }
+        .language-switcher { margin-bottom: 20px; background-color: rgba(0, 0, 0, 0.6); padding: 5px; border-radius: 10px; border: 1px solid #555; display: flex; gap: 5px; }
+        .lang-btn { padding: 8px 15px; border: 1px solid #777; background-color: transparent; color: #ccc; cursor: pointer; border-radius: 7px; transition: background-color 0.3s, color 0.3s; }
+        .lang-btn:hover { background-color: #555; }
+        .lang-btn.active { background-color: #ff8c00; color: #111; font-weight: bold; border-color: #ffaf4d; }
+        h1 { color: #ff8c00; border-bottom: 2px solid #ff8c00; padding-bottom: 10px; text-align: center; }
+        .simulator-container { display: flex; flex-wrap: wrap; gap: 30px; width: 90%; max-width: 1200px; background-color: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 15px; border: 1px solid #555; }
+        .control-panel, .visual-panel { flex: 1; min-width: 320px; padding: 20px; border-radius: 10px; background-color: rgba(30, 30, 30, 0.8); }
+        h2 { color: #ffaf4d; text-align: center; margin-top: 0; }
+        button { padding: 15px; font-size: 16px; font-weight: bold; color: #fff; background-color: #5a8a9e; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
+        button:hover { background-color: #7ab8d2; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #555 !important; cursor: not-allowed !important; opacity: 0.5; }
+        #research-btn { background-color: #8e5a9e; }
+        #task-btn { background-color: #9e745a; }
+        #expedition-btn { background-color: #5a9e6e; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center; }
+        .status-item { background-color: #2e2e2e; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .icon { font-size: 40px; transition: transform 0.5s; }
+        .status-bar { width: 100%; height: 10px; background-color: #555; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .bar { height: 100%; width: 100%; border-radius: 10px; background-color: #4caf50; transition: width 0.5s, background-color 0.5s; }
+        .upgrades-section { border-top: 2px solid #555; margin-top: 20px; padding-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .upgrade-btn { background-color: #444; text-align: left; padding: 10px; opacity: 0.6; width: 100%; box-sizing: border-box; }
+        .upgrade-btn.can-afford { background-color: #3b8d5a; cursor: pointer; opacity: 1; box-shadow: 0 0 10px #7dffb3; }
+        .upgrade-btn.purchased { background-color: #555; cursor: not-allowed; opacity: 0.4; }
+        .upgrade-btn .upgrade-cost { float: right; color: #ffc278; font-size: 14px; }
+        .upgrade-btn .upgrade-text { font-weight: bold; }
+        .upgrade-btn .upgrade-desc { font-size: 13px; color: #ddd; margin-top: 5px; }
+        #instructions-btn { background-color: #6c757d; }
+        .top-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        .top-buttons button { flex-grow: 1; }
+        #pause-btn { background-color: #9d5a9e; }
+        #pause-btn.paused-btn { background-color: #ff8c00; }
+        #task-modal, #instructions-modal, #expedition-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 101; display: flex; justify-content: center; align-items: center; }
+        .modal-window { background-color: #2e2e2e; padding: 30px; border-radius: 15px; border: 2px solid #ffaf4d; text-align: center; width: 90%; max-width: 550px; }
+        .modal-window.error { animation: shake 0.5s; }
+        #task-question { font-size: 24px; font-weight: bold; margin-bottom: 20px; min-height: 50px;}
+        #task-answer { width: 80%; padding: 10px; font-size: 20px; text-align: center; border-radius: 5px; border: 2px solid #555; background-color: #111; color: #fff; }
+        #check-answer-btn, #close-instructions-btn, #close-expedition-btn { margin-top: 20px; width: 90%; background-color: #3b8d5a; }
+        .instructions-window ul { text-align: left; padding-left: 20px; list-style-type: '➡️ '; }
+        .instructions-window li { margin-bottom: 10px; line-height: 1.4; }
+        .instructions-window strong { color: #ffc278; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .missions-panel { margin-top: 20px; padding: 15px; background-color: rgba(0,0,0,0.5); border: 1px solid #777; border-radius: 8px; }
+        #missions-list { list-style: none; padding: 0; }
+        #missions-list li { margin-bottom: 8px; transition: color 0.5s; }
+        #missions-list .phase-title { font-weight: bold; color: #ffaf4d; font-size: 18px; margin-top: 15px; }
+        #missions-list .completed { color: #7dffb3; text-decoration: line-through; }
+        #missions-list .locked { color: #777; }
+        .action-buttons { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; margin-bottom: 15px; }
+        .action-buttons button { width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="fullscreen-modal">
+        <h1 id="start-title">Симулятор Марсианской Базы</h1>
+        <button id="start-button">🚀 Начать миссию</button>
+        <p id="start-desc">Нажмите, чтобы запустить системы и активировать звук.</p>
+    </div>
+    <div id="victory-modal" class="fullscreen-modal hidden">
+        <h1 id="victory-title">Миссия Выполнена!</h1>
+        <p id="victory-desc">База готова к прибытию колонистов. Вы победили!</p>
+        <button id="victory-restart-btn">Начать заново</button>
+    </div>
+    <div id="task-modal" class="hidden">
+        <div class="modal-window">
+            <h2 id="task-title">Научная Задача</h2>
+            <div id="task-question"></div>
+            <input type="number" id="task-answer" placeholder="Ответ">
+            <button id="check-answer-btn">Проверить</button>
+        </div>
+    </div>
+    <div id="instructions-modal" class="hidden">
+        <div class="modal-window instructions-window">
+            <h2 id="instructions-title"></h2>
+            <ul>
+                <li id="instruction-objective"></li>
+                <li id="instruction-resources"></li>
+                <li id="instruction-recovery"></li>
+                <li id="instruction-development"></li>
+                <li id="instruction-upgrades"></li>
+                <li id="instruction-expedition"></li>
+                <li id="instruction-events"></li>
+            </ul>
+            <button id="close-instructions-btn"></button>
+        </div>
+    </div>
+    <div id="expedition-modal" class="hidden">
+        <div class="modal-window">
+            <div id="expedition-result-icon" class="icon"></div>
+            <h2 id="expedition-result-title"></h2>
+            <p id="expedition-result-desc"></p>
+            <button id="close-expedition-btn"></button>
+        </div>
+    </div>
+    <div class="language-switcher">
+        <button id="lang-ru" class="lang-btn active">RU</button>
+        <button id="lang-kz" class="lang-btn">KZ</button>
+        <button id="lang-en" class="lang-btn">EN</button>
+    </div>
+    <h1 id="main-title">🚀 Симулятор Марсианской Базы v12.4</h1>
+    <div class="simulator-container">
+        <div class="control-panel">
+            <h2 id="control-panel-title">Панель управления</h2>
+            <div class="top-buttons">
+                 <button id="pause-btn">⏸️ Пауза</button>
+                 <button id="instructions-btn">📖 Инструкция</button>
+            </div>
+            <p id="control-panel-desc">Ваша задача: развивать базу и управлять ресурсами.</p>
+            <div class="action-buttons">
+                <button id="solar-panel-btn">⚡️ Включить солнечные панели</button>
+                <button id="water-pump-btn">💧 Запустить водяной насос</button>
+                <button id="oxygen-generator-btn">💨 Активировать генератор O₂</button>
+                <button id="research-btn">🔬 Провести исследование</button>
+                <button id="task-btn">∑ Решить Задачу</button>
+                <button id="expedition-btn">🚀 Отправить Экспедицию</button>
+            </div>
+            <div id="upgrades-container" class="upgrades-section">
+                <h2 id="upgrades-title">Улучшения</h2>
+                <button id="upgrade-battery" class="upgrade-btn">
+                    <div><span class="upgrade-cost">25🔬/10⚙️</span><span id="upgrade-battery-name" class="upgrade-text">Улучшенные батареи</span></div>
+                    <div id="upgrade-battery-desc" class="upgrade-desc">Снижает пассивный расход энергии</div>
+                </button>
+                <button id="upgrade-pump" class="upgrade-btn">
+                    <div><span class="upgrade-cost">30🔬/20⚙️</span><span id="upgrade-pump-name" class="upgrade-text">Эффективный насос</span></div>
+                    <div id="upgrade-pump-desc" class="upgrade-desc">Водяной насос тратит меньше энергии</div>
+                </button>
+                <button id="upgrade-solar" class="upgrade-btn">
+                    <div><span class="upgrade-cost">50🔬/30⚙️</span><span id="upgrade-solar-name" class="upgrade-text">Усиленные панели</span></div>
+                    <div id="upgrade-solar-desc" class="upgrade-desc">Панели вырабатывают больше энергии</div>
+                </button>
+                <button id="upgrade-hydroponics" class="upgrade-btn">
+                    <div><span class="upgrade-cost">40🔬/40⚙️</span><span id="upgrade-hydroponics-name" class="upgrade-text">Гидропоника</span></div>
+                    <div id="upgrade-hydroponics-desc" class="upgrade-desc">Теплица становится более эффективной</div>
+                </button>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <h2 id="visual-panel-title">Состояние базы</h2>
+            <div class="status-grid">
+                <div class="status-item"><div class="icon">🔋</div><p><span id="energy-label">Энергия</span>: <span id="energy-level">100</span>%</p><div class="status-bar"><div id="energy-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">💧</div><p><span id="water-label">Вода</span>: <span id="water-level">100</span>%</p><div class="status-bar"><div id="water-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">💨</div><p><span id="oxygen-label">Кислород</span>: <span id="oxygen-level">100</span>%</p><div class="status-bar"><div id="oxygen-bar" class="bar"></div></div></div>
+                <div class="status-item"><div class="icon">🔬</div><p><span id="science-label">Наука</span>: <span id="science-level">0</span></p></div>
+                <div class="status-item"><div class="icon">⚙️</div><p><span id="engineering-label">Инж. Данные</span>: <span id="engineering-level">0</span></p></div>
+                <div class="status-item"><div id="plant-icon" class="icon">🌱</div><p id="plant-label">Состояние теплицы</p><p class="small-text" id="plant-status">Все в порядке</p></div>
+            </div>
+            <div class="missions-panel">
+                <h2 id="missions-title">Цели Миссии</h2>
+                <ul id="missions-list"></ul>
+            </div>
+            <div class="log-window"><h4 id="log-title">Журнал событий:</h4><p id="log-message">Системы запущены. Добро пожаловать!</p></div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const sounds = { click: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/click.mp3'), alert: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/alert.mp3'), positive: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/positive.mp3'), negative: new Audio('https://cdn.jsdelivr.net/gh/Goryanov/sounds-for-games@main/sounds/negative.mp3') };
+    
+    const translations = {
+        ru: { mainTitle: "🚀 Симулятор Марсианской Базы v12.4", controlPanelTitle: "Панель управления", controlPanelDesc: "Ваша задача: развивать базу и управлять ресурсами.", solarBtn: "⚡️ Включить солнечные панели", waterBtn: "💧 Запустить водяной насос", oxygenBtn: "💨 Активировать генератор O₂", researchBtn: "🔬 Провести исследование", taskBtn: "∑ Решить Задачу", expeditionBtn: "🚀 Отправить Экспедицию", visualPanelTitle: "Состояние базы", energyLabel: "Энергия", waterLabel: "Вода", oxygenLabel: "Кислород", scienceLabel: "Наука", engineeringLabel: "Инж. Данные", plantLabel: "Состояние теплицы", plantStatusOK: "Все в порядке", plantStatusBad: "Недостаточно ресурсов!", logTitle: "Журнал событий:", logInitial: "Системы запущены. Добро пожаловать!", logSolarSuccess: "Солнечные панели активированы.", logSolarMax: "Уровень энергии максимальный.", logWaterSuccess: "Водяной насос запущен.", logWaterMax: "Резервуары с водой полны.", logWaterNoEnergy: "Недостаточно энергии для насоса!", logOxygenSuccess: "Генератор O₂ работает.", logOxygenMax: "Атмосфера насыщена.", logOxygenNoEnergy: "Мало энергии для генератора O₂!", logResearchSuccess: "Исследование завершено. Наука +5.", logResearchNoEnergy: "Не хватает ресурсов для исследования!", logTaskCorrect: "Задача решена! Инж. данные +10.", logTaskIncorrect: "Ошибка в расчетах! Попробуйте еще раз.", logMissionFailed: "Все системы отключены. Миссия провалена.", upgradesTitle: "Улучшения", upgradeBatteryName: "Улучшенные батареи", upgradeBatteryDesc: "Снижает пассивный расход энергии", upgradePumpName: "Эффективный насос", upgradePumpDesc: "Водяной насос тратит меньше энергии", upgradeSolarName: "Усиленные панели", upgradeSolarDesc: "Панели вырабатывают больше энергии", upgradeHydroponicsName: "Гидропоника", upgradeHydroponicsDesc: "Теплица становится более эффективной", eventNormalTitle: "СИСТЕМЫ В НОРМЕ", eventNormalDesc: "Все системы функционируют в штатном режиме.", eventDustStormTitle: "⚠️ ПЫЛЬНАЯ БУРЯ", eventDustStormDesc: "Производство энергии снижено.", eventClearDayTitle: "☀️ ЯСНЫЙ ДЕНЬ", eventClearDayDesc: "Производство энергии увеличено.", eventWaterLeakTitle: "💧 УТЕЧКА ВОДЫ", eventWaterLeakDesc: "Расход воды удвоен.", eventIceFoundTitle: "🧊 НАЙДЕН ЛЕД", eventIceFoundDesc: "Запасы воды пополнены.", startTitle: "Симулятор Марсианской Базы", startButton: "🚀 Начать миссию", startDesc: "Нажмите, чтобы запустить системы и активировать звук.", pauseBtn: "⏸️ Пауза", resumeBtn: "▶️ Продолжить", taskTitle: "Научная Задача", checkBtn: "Проверить", taskSpeedQuestion: "Корабль пролетел {d} км за {t} ч. Какова его скорость (км/ч)?", taskDensityQuestion: "Образец массой {m} г имеет объем {v} см³. Какова его плотность (г/см³)? (округлите до десятых)", taskAtomsQuestion: "Сколько всего атомов в молекуле {formula}?", taskAreaQuestion: "Солнечная панель имеет размеры {l} м на {w} м. Какова её площадь (м²)?", taskPercentageQuestion: "Резервуар с водой объемом {total} л заполнен на {perc}%. Сколько литров воды в резервуаре?", taskGravityQuestion: "Объект на Земле весит {earthWeight} Ньютонов. Сколько он будет весить на Марсе, где гравитация составляет 38% от земной (ответ округлите до десятых)?", missionsTitle: "Цели Миссии", missionPhase1: "Фаза 1: Стабилизация", missionSurvive5Min: "Продержаться 5 минут", missionCollect50Science: "Накопить 50 Науки", missionBuy1Upgrade: "Купить 1-е улучшение", missionPhase2: "Фаза 2: Расширение", missionCollect150Science: "Накопить 150 Науки и 100 Инж. Данных", missionBuy3Upgrades: "Купить 3 улучшения", missionSurviveStorm: "Пережить Пыльную бурю", missionPhase3: "Фаза 3: Подготовка", missionBuyAllUpgrades: "Купить все улучшения", missionMaintain80: "Держать ресурсы >80% в течение 1 мин", victoryTitle: "Миссия Выполнена!", victoryDesc: "База готова к прибытию колонистов. Вы победили!", victoryRestartBtn: "Начать заново", expeditionInProgress: "Возврат через: {s}с", logExpeditionSuccess1: "Экспедиция успешна! Собраны образцы пород.", logExpeditionSuccess2: "Обнаружена богатая жила льда!", logExpeditionFail1: "Марсоход застрял! Потеряна энергия.", logExpeditionFail2: "Короткое замыкание! Экспедиция провалена.", expeditionResultTitle: "Отчет Экспедиции", closeExpeditionBtn: "Принято", expeditionTitleSuccess: "Успех!", expeditionTitleFail: "Неудача!", instructionsBtn: "📖 Инструкция", closeInstructionsBtn: "Закрыть", instructionsTitle: "Как играть:", instructionObjective: "<strong>Цель:</strong> Выполнить все цели миссии, чтобы подготовить базу к прибытию колонистов.", instructionResources: "<strong>Ресурсы:</strong> 🔋Энергия, 💧Вода и 💨Кислород постоянно расходуются. Не дайте им упасть до нуля!", instructionRecovery: "<strong>Восстановление:</strong> Используйте кнопки управления, чтобы пополнять ресурсы. Большинство действий требует энергии.", instructionDevelopment: "<strong>Развитие:</strong> Проводите 🔬Исследования и решайте ∑Задачи, чтобы получать очки Науки и Инженерные данные. В задачах, где ответ может быть дробным, округляйте его до десятых (один знак после запятой).", instructionUpgrades: "<strong>Улучшения:</strong> Тратьте очки на покупку улучшений, <strong>нажимая на соответствующие кнопки</strong>. Они делают вашу базу эффективнее.", instructionExpedition: "<strong>Экспедиции:</strong> Отправляйте 🚀марсоход за ресурсами. Экспедиции требуют энергии, занимают время и могут завершиться как успехом, так и неудачей.", instructionEvents: "<strong>События:</strong> Будьте готовы к случайным событиям, таким как пыльные бури, которые влияют на базу." },
+        en: { mainTitle: "🚀 Mars Base Simulator v12.4", controlPanelTitle: "Control Panel", controlPanelDesc: "Your mission: develop the base and manage resources.", solarBtn: "⚡️ Activate Solar Panels", waterBtn: "💧 Start Water Pump", oxygenBtn: "💨 Activate O₂ Generator", researchBtn: "🔬 Conduct Research", taskBtn: "∑ Solve Task", expeditionBtn: "🚀 Send Expedition", visualPanelTitle: "Base Status", energyLabel: "Energy", waterLabel: "Water", oxygenLabel: "Oxygen", scienceLabel: "Science", engineeringLabel: "Eng. Data", plantLabel: "Greenhouse Status", plantStatusOK: "All systems nominal", plantStatusBad: "Insufficient resources!", logTitle: "Event Log:", logInitial: "Systems online. Welcome!", logSolarSuccess: "Solar panels activated.", logSolarMax: "Energy level is at maximum.", logWaterSuccess: "Water pump started.", logWaterMax: "Water tanks are full.", logWaterNoEnergy: "Not enough energy for the pump!", logOxygenSuccess: "O₂ generator is running.", logOxygenMax: "Atmosphere is saturated.", logOxygenNoEnergy: "Not enough energy for O₂ generator!", logResearchSuccess: "Research complete. +5 Science.", logResearchNoEnergy: "Not enough resources for research!", logTaskCorrect: "Task solved! +10 Eng. Data.", logTaskIncorrect: "Calculation error! Try again.", logMissionFailed: "All systems offline. Mission failed.", upgradesTitle: "Upgrades", upgradeBatteryName: "Improved Batteries", upgradeBatteryDesc: "Reduces passive energy consumption", upgradePumpName: "Efficient Pump", upgradePumpDesc: "Water pump uses less energy", upgradeSolarName: "Reinforced Panels", upgradeSolarDesc: "Panels generate more energy", upgradeHydroponicsName: "Hydroponics", upgradeHydroponicsDesc: "The greenhouse becomes more efficient", eventNormalTitle: "SYSTEMS NOMINAL", eventNormalDesc: "All systems are functioning normally.", eventDustStormTitle: "⚠️ DUST STORM", eventDustStormDesc: "Energy production is reduced.", eventClearDayTitle: "☀️ CLEAR DAY", eventClearDayDesc: "Energy production is increased.", eventWaterLeakTitle: "💧 WATER LEAK", eventWaterLeakDesc: "Water consumption is doubled.", eventIceFoundTitle: "🧊 ICE DEPOSIT FOUND", eventIceFoundDesc: "Water reserves have been replenished.", startTitle: "Mars Base Simulator", startButton: "🚀 Start Mission", startDesc: "Click to initialize systems and enable audio.", pauseBtn: "⏸️ Pause", resumeBtn: "▶️ Resume", taskTitle: "Scientific Task", checkBtn: "Check", taskSpeedQuestion: "A ship traveled {d} km in {t} h. What is its speed (km/h)?", taskDensityQuestion: "A sample weighing {m} g has a volume of {v} cm³. What is its density (g/cm³)? (round to one decimal place)", taskAtomsQuestion: "How many atoms are in a {formula} molecule?", taskAreaQuestion: "A solar panel measures {l} m by {w} m. What is its area (m²)?", taskPercentageQuestion: "A water tank with a capacity of {total} L is {perc}% full. How many liters of water are in the tank?", taskGravityQuestion: "An object weighs {earthWeight} Newtons on Earth. How much will it weigh on Mars, where gravity is 38% of Earth's (round to one decimal place)?", missionsTitle: "Mission Objectives", missionPhase1: "Phase 1: Stabilization", missionSurvive5Min: "Survive for 5 minutes", missionCollect50Science: "Collect 50 Science", missionBuy1Upgrade: "Buy 1st upgrade", missionPhase2: "Phase 2: Expansion", missionCollect150Science: "Collect 150 Science & 100 Eng. Data", missionBuy3Upgrades: "Buy 3 upgrades", missionSurviveStorm: "Survive a Dust Storm", missionPhase3: "Phase 3: Preparation", missionBuyAllUpgrades: "Buy all upgrades", missionMaintain80: "Keep resources >80% for 1 min", victoryTitle: "Mission Accomplished!", victoryDesc: "The base is ready for colonists. You have won!", victoryRestartBtn: "Start Over", expeditionInProgress: "Return in: {s}s", logExpeditionSuccess1: "Expedition successful! Rock samples collected.", logExpeditionSuccess2: "A rich ice vein has been discovered!", logExpeditionFail1: "Rover is stuck! Energy lost.", logExpeditionFail2: "Short circuit! Expedition failed.", expeditionResultTitle: "Expedition Report", closeExpeditionBtn: "Acknowledged", expeditionTitleSuccess: "Success!", expeditionTitleFail: "Failure!", instructionsBtn: "📖 Instructions", closeInstructionsBtn: "Close", instructionsTitle: "How to Play:", instructionObjective: "<strong>Objective:</strong> Complete all mission objectives to prepare the base for colonists.", instructionResources: "<strong>Resources:</strong> 🔋Energy, 💧Water, and 💨Oxygen are constantly being consumed. Don't let them reach zero!", instructionRecovery: "<strong>Recovery:</strong> Use the control buttons to replenish resources. Most actions require energy.", instructionDevelopment: "<strong>Development:</strong> Conduct 🔬Research and solve ∑Tasks to gain Science points and Engineering Data. In tasks where the answer may be a decimal, round it to the nearest tenth (one digit after the decimal point).", instructionUpgrades: "<strong>Upgrades:</strong> Spend points to buy upgrades <strong>by clicking the corresponding buttons</strong>. They make your base more efficient.", instructionExpedition: "<strong>Expeditions:</strong> Send the 🚀rover for resources. Expeditions cost energy, take time, and can either succeed or fail.", instructionEvents: "<strong>Events:</strong> Be prepared for random events like dust storms, which will affect your base." },
+        kz: { mainTitle: "🚀 Марс Базасының Симуляторы v12.4", controlPanelTitle: "Басқару панелі", controlPanelDesc: "Сіздің міндетіңіз: базаны дамытып, ресурстарды басқару.", solarBtn: "⚡️ Күн панельдерін қосу", waterBtn: "💧 Су сорғысын іске қосу", oxygenBtn: "💨 O₂ генераторын іске қосу", researchBtn: "🔬 Зерттеу жүргізу", taskBtn: "∑ Есепті шешу", expeditionBtn: "🚀 Экспедиция жіберу", visualPanelTitle: "Базаның жағдайы", energyLabel: "Энергия", waterLabel: "Су", oxygenLabel: "Оттегі", scienceLabel: "Ғылым", engineeringLabel: "Инж. деректер", plantLabel: "Жылыжай жағдайы", plantStatusOK: "Барлығы қалыпты", plantStatusBad: "Ресурстар жеткіліксіз!", logTitle: "Оқиғалар журналы:", logInitial: "Жүйелер іске қосылды. Қош келдіңіз!", logSolarSuccess: "Күн панельдері іске қосылды.", logSolarMax: "Энергия деңгейі максимум.", logWaterSuccess: "Су сорғысы іске қосылды.", logWaterMax: "Су ыдыстары толды.", logWaterNoEnergy: "Сорғы үшін энергия жеткіліксіз!", logOxygenSuccess: "O₂ генераторы жұмыс істеп тұр.", logOxygenMax: "Атмосфера қаныққан.", logOxygenNoEnergy: "O₂ генераторы үшін энергия аз!", logResearchSuccess: "Зерттеу аяқталды. Ғылым +5.", logResearchNoEnergy: "Зерттеу үшін ресурстар жеткіліксіз!", logTaskCorrect: "Есеп шешілді! Инж. деректер +10.", logTaskIncorrect: "Есептеуде қате! Қайталап көріңіз.", logMissionFailed: "Барлық жүйелер сөндірілді. Миссия сәтсіз аяқталды.", upgradesTitle: "Жақсартулар", upgradeBatteryName: "Жақсартылған батареялар", upgradeBatteryDesc: "Пассивті энергия шығынын азайтады", upgradePumpName: "Тиімді сорғы", upgradePumpDesc: "Су сорғысы аз энергия жұмсайды", upgradeSolarName: "Күшейтілген панельдер", upgradeSolarDesc: "Панельдер көбірек энергия өндіреді", upgradeHydroponicsName: "Гидропоника", upgradeHydroponicsDesc: "Жылыжай тиімдірек болады", eventNormalTitle: "ЖҮЙЕЛЕР ҚАЛЫПТЫ", eventNormalDesc: "Барлық жүйелер штаттық режимде жұмыс істеп тұр.", eventDustStormTitle: "⚠️ ШАҢДЫ ДАУЫЛ", eventDustStormDesc: "Энергия өндірісі төмендеді.", eventClearDayTitle: "☀️ АШЫҚ КҮН", eventClearDayDesc: "Энергия өндірісі артты.", eventWaterLeakTitle: "💧 СУ АҒУЫ", eventWaterLeakDesc: "Су шығыны екі еселенді.", eventIceFoundTitle: "🧊 МҰЗ ТАБЫЛДЫ", eventIceFoundDesc: "Су қорлары толтырылды.", startTitle: "Марс Базасының Симуляторы", startButton: "🚀 Миссияны бастау", startDesc: "Жүйелерді іске қосу және дыбысты қосу үшін басыңыз.", pauseBtn: "⏸️ Кідіріс", resumeBtn: "▶️ Жалғастыру", taskTitle: "Ғылыми есеп", checkBtn: "Тексеру", taskSpeedQuestion: "Кеме {t} сағатта {d} км ұшты. Оның жылдамдығы қандай (км/сағ)?", taskDensityQuestion: "Салмағы {m} г үлгінің көлемі {v} см³. Оның тығыздығы қандай (г/см³)? (ондық үлеске дейін дөңгелектеңіз)", taskAtomsQuestion: "{formula} молекуласында барлығы қанша атом бар?", taskAreaQuestion: "Күн панелінің өлшемдері {l} м x {w} м. Оның ауданы қандай (м²)?", taskPercentageQuestion: "Сыйымдылығы {total} л су резервуары {perc}% толтырылған. Резервуарда қанша литр су бар?", taskGravityQuestion: "Жердегі салмағы {earthWeight} Ньютон болатын нысанның Марстағы салмағы қанша болады? Марстағы гравитация Жердегінің 38% құрайды (ондық үлеске дейін дөңгелектеңіз).", missionsTitle: "Миссия мақсаттары", missionPhase1: "1-кезең: Тұрақтандыру", missionSurvive5Min: "5 минут бойы шыдау", missionCollect50Science: "50 Ғылым жинау", missionBuy1Upgrade: "1-ші жақсартуды сатып алу", missionPhase2: "2-кезең: Кеңейту", missionCollect150Science: "150 Ғылым және 100 Инж. деректер жинау", missionBuy3Upgrades: "3 жақсарту сатып алу", missionSurviveStorm: "Шаңды дауылдан аман қалу", missionPhase3: "3-кезең: Дайындық", missionBuyAllUpgrades: "Барлық жақсартуларды сатып алу", missionMaintain80: "Ресурстарды 1 мин бойы >80% ұстау", victoryTitle: "Миссия орындалды!", victoryDesc: "База колонистердің келуіне дайын. Сіз жеңдіңіз!", victoryRestartBtn: "Қайтадан бастау", expeditionInProgress: "Қайтуға: {s}с", logExpeditionSuccess1: "Экспедиция сәтті! Тау жыныстарының үлгілері жиналды.", logExpeditionSuccess2: "Бай мұз қабаты табылды!", logExpeditionFail1: "Марсоход кептеліп қалды! Энергия жоғалды.", logExpeditionFail2: "Қысқа тұйықталу! Экспедиция сәтсіз аяқталды.", expeditionResultTitle: "Экспедиция есебі", closeExpeditionBtn: "Қабылданды", expeditionTitleSuccess: "Сәтті!", expeditionTitleFail: "Сәтсіз!", instructionsBtn: "📖 Нұсқаулық", closeInstructionsBtn: "Жабу", instructionsTitle: "Қалай ойнау керек:", instructionObjective: "<strong>Мақсат:</strong> Базаны колонистердің келуіне дайындау үшін барлық миссия мақсаттарын орындаңыз.", instructionResources: "<strong>Ресурстар:</strong> 🔋Энергия, 💧Су және 💨Оттегі үнемі жұмсалады. Олардың нөлге дейін төмендеуіне жол бермеңіз!", instructionRecovery: "<strong>Қалпына келтіру:</strong> Ресурстарды толтыру үшін басқару түймелерін пайдаланыңыз. Көптеген әрекеттер энергияны қажет етеді.", instructionDevelopment: "<strong>Даму:</strong> Ғылым ұпайларын және Инженерлік деректерді алу үшін 🔬Зерттеулер жүргізіп, ∑Есептерді шешіңіз. Жауабы бөлшек сан болуы мүмкін есептерде оны ондық үлеске дейін (үтірден кейін бір сан) дөңгелектеңіз.", instructionUpgrades: "<strong>Жақсартулар:</strong> Ұпайларды <strong>тиісті түймелерді басу арқылы</strong> жақсартуларды сатып алуға жұмсаңыз. Олар сіздің базаңызды тиімдірек етеді.", instructionExpedition: "<strong>Экспедициялар:</strong> Ресурстарды жинау үшін 🚀марсоходты жіберіңіз. Экспедициялар энергияны қажет етеді, уақыт алады және сәтті немесе сәтсіз аяқталуы мүмкін.", instructionEvents: "<strong>Оқиғалар:</strong> Базаға әсер ететін шаңды дауылдар сияқты кездейсоқ оқиғаларға дайын болыңыз." }
+    };
+
+    const allElements = { mainTitle: document.getElementById('main-title'), pauseBtn: document.getElementById('pause-btn'), controlPanelTitle: document.getElementById('control-panel-title'), controlPanelDesc: document.getElementById('control-panel-desc'), solarBtn: document.getElementById('solar-panel-btn'), waterBtn: document.getElementById('water-pump-btn'), oxygenBtn: document.getElementById('oxygen-generator-btn'), researchBtn: document.getElementById('research-btn'), taskBtn: document.getElementById('task-btn'), expeditionBtn: document.getElementById('expedition-btn'), visualPanelTitle: document.getElementById('visual-panel-title'), energyLabel: document.getElementById('energy-label'), waterLabel: document.getElementById('water-label'), oxygenLabel: document.getElementById('oxygen-label'), scienceLabel: document.getElementById('science-label'), engineeringLabel: document.getElementById('engineering-label'), plantLabel: document.getElementById('plant-label'), plantStatus: document.getElementById('plant-status'), logTitle: document.getElementById('log-title'), logMessage: document.getElementById('log-message'), energyLevelSpan: document.getElementById('energy-level'), waterLevelSpan: document.getElementById('water-level'), oxygenLevelSpan: document.getElementById('oxygen-level'), scienceLevelSpan: document.getElementById('science-level'), engineeringLevelSpan: document.getElementById('engineering-level'), energyBar: document.getElementById('energy-bar'), waterBar: document.getElementById('water-bar'), oxygenBar: document.getElementById('oxygen-bar'), plantIcon: document.getElementById('plant-icon'), upgradesTitle: document.getElementById('upgrades-title'), taskModal: document.getElementById('task-modal'), taskTitle: document.getElementById('task-title'), taskQuestion: document.getElementById('task-question'), taskAnswer: document.getElementById('task-answer'), checkAnswerBtn: document.getElementById('check-answer-btn'), missionsTitle: document.getElementById('missions-title'), missionsList: document.getElementById('missions-list'), victoryModal: document.getElementById('victory-modal'), victoryTitle: document.getElementById('victory-title'), victoryDesc: document.getElementById('victory-desc'), victoryRestartBtn: document.getElementById('victory-restart-btn'), startButton: document.getElementById('start-button'), startTitle: document.getElementById('start-title'), startDesc: document.getElementById('start-desc'), instructionsBtn: document.getElementById('instructions-btn'), instructionsModal: document.getElementById('instructions-modal'), closeInstructionsBtn: document.getElementById('close-instructions-btn'), instructionsTitle: document.getElementById('instructions-title'), instructionObjective: document.getElementById('instruction-objective'), instructionResources: document.getElementById('instruction-resources'), instructionRecovery: document.getElementById('instruction-recovery'), instructionDevelopment: document.getElementById('instruction-development'), instructionUpgrades: document.getElementById('instruction-upgrades'), instructionExpedition: document.getElementById('instruction-expedition'), instructionEvents: document.getElementById('instruction-events'), upgradeBatteryName: document.getElementById('upgrade-battery-name'), upgradeBatteryDesc: document.getElementById('upgrade-battery-desc'), upgradePumpName: document.getElementById('upgrade-pump-name'), upgradePumpDesc: document.getElementById('upgrade-pump-desc'), upgradeSolarName: document.getElementById('upgrade-solar-name'), upgradeSolarDesc: document.getElementById('upgrade-solar-desc'), upgradeHydroponicsName: document.getElementById('upgrade-hydroponics-name'), upgradeHydroponicsDesc: document.getElementById('upgrade-hydroponics-desc'), langRu: document.getElementById('lang-ru'), langKz: document.getElementById('lang-kz'), langEn: document.getElementById('lang-en'), expeditionModal: document.getElementById('expedition-modal'), expeditionResultIcon: document.getElementById('expedition-result-icon'), expeditionResultTitle: document.getElementById('expedition-result-title'), expeditionResultDesc: document.getElementById('expedition-result-desc'), closeExpeditionBtn: document.getElementById('close-expedition-btn') };
+    let gameState = {};
+    let mainGameInterval = null, secondaryGameInterval = null, eventInterval = null;
+
+    const upgrades = [ { id: 'battery', costScience: 25, costEngineering: 10, purchased: false, applyEffect: () => { gameState.modifiers.energyConsumption *= 0.75; } }, { id: 'pump', costScience: 30, costEngineering: 20, purchased: false, applyEffect: () => { gameState.modifiers.pumpEnergyCost = 7; } }, { id: 'solar', costScience: 50, costEngineering: 30, purchased: false, applyEffect: () => { gameState.modifiers.solarEnergyGain = 15; } }, { id: 'hydroponics', costScience: 40, costEngineering: 40, purchased: false, applyEffect: () => { gameState.modifiers.waterConsumption *= 0.8; gameState.modifiers.oxygenConsumption *= 0.8;} } ];
+    const missions = [ { titleKey: "missionPhase1", objectives: [ { id: 'survive_5_min', check: (state) => state.totalTimeSurvived >= 300000 }, { id: 'collect_50_science', check: (state) => state.science >= 50 }, { id: 'buy_1_upgrade', check: (state) => state.firstUpgradePurchased } ] }, { titleKey: "missionPhase2", objectives: [ { id: 'collect_150_science', check: (state) => state.science >= 150 && state.engineeringData >= 100 }, { id: 'buy_3_upgrades', check: () => upgrades.filter(u => u.purchased).length >= 3 }, { id: 'survive_storm', check: (state) => state.survivedStorm } ] }, { titleKey: "missionPhase3", objectives: [ { id: 'buy_all_upgrades', check: () => upgrades.every(u => u.purchased) }, { id: 'maintain_80', check: (state) => state.highResourceTime >= 60000 } ] } ];
+    const events = [ { id: 'dustStorm', duration: 20000, effect: () => { gameState.modifiers.energyProduction = 0.5; gameState.survivedStorm = true; }, removeEffect: () => { gameState.modifiers.energyProduction = 1; } }, { id: 'clearDay', duration: 15000, effect: () => { gameState.modifiers.energyProduction = 1.5; }, removeEffect: () => { gameState.modifiers.energyProduction = 1; } }, { id: 'waterLeak', duration: 15000, effect: () => { gameState.modifiers.waterConsumption *= 2; }, removeEffect: () => { gameState.modifiers.waterConsumption /= 2; } }, { id: 'iceFound', duration: 1000, effect: () => { gameState.water = Math.min(100, gameState.water + 30); }, removeEffect: () => {} } ];
+    const expeditionOutcomes = [ { chance: 0.15, logKey: 'logExpeditionSuccess2', effect: () => { gameState.water = Math.min(100, gameState.water + 50); gameState.science += 20; }, icon: '🧊', isSuccess: true }, { chance: 0.50, logKey: 'logExpeditionSuccess1', effect: () => { gameState.science += 30; gameState.engineeringData += 30; }, icon: '⚙️', isSuccess: true }, { chance: 0.25, logKey: 'logExpeditionFail1', effect: () => { gameState.energy = Math.max(0, gameState.energy - 20); }, icon: '⚠️', isSuccess: false }, { chance: 0.10, logKey: 'logExpeditionFail2', effect: () => {}, icon: '💥', isSuccess: false } ];
+    
+    function initializeState() { gameState = { energy: 100, water: 100, oxygen: 100, science: 0, engineeringData: 0, modifiers: { energyProduction: 1, waterConsumption: 1, oxygenConsumption: 1, energyConsumption: 1, pumpEnergyCost: 10, solarEnergyGain: 10 }, isPaused: false, gameWon: false, gameHasStarted: false, isAlarmPlaying: false, currentTaskAnswer: 0, activeEvent: null, currentMissionPhase: 0, survivedStorm: false, totalTimeSurvived: 0, isExpeditionActive: false, expeditionEndTime: 0, highResourceTime: 0, lastTickTime: Date.now(), firstUpgradePurchased: false, currentLanguage: 'ru' }; upgrades.forEach(u => u.purchased = false); missions.forEach(phase => phase.objectives.forEach(obj => { obj.isComplete = false; })); }
+    function changeLanguage(lang) { if (!translations[lang]) return; gameState.currentLanguage = lang; const langData = translations[lang]; document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`lang-${lang}`).classList.add('active'); Object.keys(allElements).forEach(key => { if (langData[key] !== undefined && allElements[key]) { allElements[key].innerHTML = langData[key]; } }); renderMissions(); updatePlantStatus(); }
+    function updatePlantStatus() { const lang = translations[gameState.currentLanguage]; if (gameState.water < 30 || gameState.energy < 20) { allElements.plantStatus.textContent = lang.plantStatusBad; allElements.plantIcon.textContent = '🥀'; } else { allElements.plantStatus.textContent = lang.plantStatusOK; allElements.plantIcon.textContent = '🌱'; } }
+    function gameLoop() { if (!gameState.gameHasStarted || gameState.isPaused) return; const now = Date.now(); const deltaTime = now - gameState.lastTickTime; gameState.lastTickTime = now; const deltaSeconds = deltaTime / 1000; gameState.energy -= (0.2 * deltaSeconds * gameState.modifiers.energyConsumption); gameState.water -= (0.25 * deltaSeconds * gameState.modifiers.waterConsumption); gameState.oxygen -= (0.3 * deltaSeconds * gameState.modifiers.oxygenConsumption); gameState.energy = Math.max(0, gameState.energy); gameState.water = Math.max(0, gameState.water); gameState.oxygen = Math.max(0, gameState.oxygen); gameState.totalTimeSurvived += deltaTime; updateExpeditionStatus(deltaTime); if (gameState.energy === 0 && gameState.water === 0 && gameState.oxygen === 0) { updateLog("logMissionFailed"); setPauseState(true); } if (gameState.energy > 80 && gameState.water > 80 && gameState.oxygen > 80) { gameState.highResourceTime += deltaTime; } else { gameState.highResourceTime = 0; } updateDisplay(); }
+    function checkMissions() { if (gameState.gameWon) return; let missionCompletedNow = false; missions.forEach(phase => { phase.objectives.forEach(obj => { if (!obj.isComplete && obj.check && obj.check(gameState)) { obj.isComplete = true; missionCompletedNow = true; } }); }); if (missionCompletedNow) { sounds.positive.play().catch(e => {}); } const currentPhase = missions[gameState.currentMissionPhase]; if (currentPhase && currentPhase.objectives.every(obj => obj.isComplete)) { if (gameState.currentMissionPhase < missions.length - 1) { gameState.currentMissionPhase++; sounds.positive.play().catch(e => {}); } else if (!gameState.gameWon) { gameState.gameWon = true; allElements.victoryModal.classList.remove('hidden'); setPauseState(true); } } renderMissions(); }
+    function updateDisplay() { allElements.energyLevelSpan.textContent = Math.round(gameState.energy); allElements.waterLevelSpan.textContent = Math.round(gameState.water); allElements.oxygenLevelSpan.textContent = Math.round(gameState.oxygen); allElements.scienceLevelSpan.textContent = gameState.science; allElements.engineeringLevelSpan.textContent = gameState.engineeringData; allElements.energyBar.style.width = gameState.energy + '%'; allElements.waterBar.style.width = gameState.water + '%'; allElements.oxygenBar.style.width = gameState.oxygen + '%'; updateBarColor(allElements.energyBar, gameState.energy); updateBarColor(allElements.waterBar, gameState.water); updateBarColor(allElements.oxygenBar, gameState.oxygen); checkAlarms(); renderUpgrades(); updatePlantStatus(); }
+    function updateBarColor(barElement, value) { if (value < 25) { barElement.style.backgroundColor = '#d9534f'; } else if (value < 50) { barElement.style.backgroundColor = '#f0ad4e'; } else { barElement.style.backgroundColor = '#4caf50'; } }
+    function renderMissions() { const lang = translations[gameState.currentLanguage]; allElements.missionsList.innerHTML = ''; missions.forEach((phase, phaseIndex) => { const phaseItem = document.createElement('li'); phaseItem.textContent = lang[phase.titleKey]; phaseItem.className = 'phase-title'; if (phaseIndex > gameState.currentMissionPhase) phaseItem.classList.add('locked'); allElements.missionsList.appendChild(phaseItem); phase.objectives.forEach(obj => { const objItem = document.createElement('li'); const prefix = obj.isComplete ? '✅ ' : '⬜ '; const camelCaseId = obj.id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(''); const missionKey = `mission${camelCaseId}`; objItem.textContent = prefix + (lang[missionKey] || obj.id); if (obj.isComplete) objItem.classList.add('completed'); if (phaseIndex > gameState.currentMissionPhase) objItem.classList.add('locked'); allElements.missionsList.appendChild(objItem); }); }); }
+    function renderUpgrades() { upgrades.forEach(upg => { const btn = document.getElementById(`upgrade-${upg.id}`); btn.classList.remove('can-afford', 'purchased'); if (upg.purchased) { btn.classList.add('purchased'); btn.querySelector('.upgrade-cost').textContent = "✅"; } else if (gameState.science >= upg.costScience && gameState.engineeringData >= upg.costEngineering) { btn.classList.add('can-afford'); } }); }
+    function setPauseState(shouldBePaused) { if (gameState.gameWon && !shouldBePaused) return; gameState.isPaused = shouldBePaused; allElements.pauseBtn.textContent = gameState.isPaused ? translations[gameState.currentLanguage].resumeBtn : translations[gameState.currentLanguage].pauseBtn; allElements.pauseBtn.classList.toggle('paused-btn', gameState.isPaused); if (gameState.isAlarmPlaying) { if (gameState.isPaused) sounds.alert.pause(); else sounds.alert.play().catch(e=>{}); } if(!gameState.isPaused) { gameState.lastTickTime = Date.now(); } }
+    function checkAlarms() { const isCritical = gameState.energy < 25 || gameState.water < 25 || gameState.oxygen < 25; if (isCritical && !gameState.isAlarmPlaying) { sounds.alert.loop = true; sounds.alert.play().catch(e=>{}); gameState.isAlarmPlaying = true; } else if (!isCritical && gameState.isAlarmPlaying) { sounds.alert.pause(); sounds.alert.currentTime = 0; gameState.isAlarmPlaying = false; } }
+    function updateLog(key, replacements = {}) { let message = translations[gameState.currentLanguage][key] || key; for (const placeholder in replacements) { message = message.replace(`{${placeholder}}`, replacements[placeholder]); } allElements.logMessage.textContent = message; }
+    function showExpeditionResult(outcome) { const lang = translations[gameState.currentLanguage]; allElements.expeditionResultIcon.textContent = outcome.icon; allElements.expeditionResultTitle.textContent = lang.expeditionResultTitle; allElements.expeditionResultDesc.textContent = outcome.isSuccess ? `${lang.expeditionTitleSuccess} ${lang[outcome.logKey]}` : `${lang.expeditionTitleFail} ${lang[outcome.logKey]}`; allElements.closeExpeditionBtn.textContent = lang.closeExpeditionBtn; allElements.expeditionModal.classList.remove('hidden'); setPauseState(true); }
+    function updateExpeditionStatus(deltaTime) { if (!gameState.isExpeditionActive) return; gameState.expeditionEndTime -= deltaTime; const timeLeft = Math.ceil(gameState.expeditionEndTime / 1000); const lang = translations[gameState.currentLanguage]; if (timeLeft > 0) { allElements.expeditionBtn.textContent = lang.expeditionInProgress.replace('{s}', timeLeft); } else { gameState.isExpeditionActive = false; allElements.expeditionBtn.disabled = false; allElements.expeditionBtn.textContent = lang.expeditionBtn; let rand = Math.random(), cumulativeChance = 0; for (const outcome of expeditionOutcomes) { cumulativeChance += outcome.chance; if (rand < cumulativeChance) { outcome.effect(); showExpeditionResult(outcome); break; } } } }
+    function triggerRandomEvent() { if(gameState.activeEvent || gameState.isPaused || !gameState.gameHasStarted) return; const randomEvent = events[Math.floor(Math.random() * events.length)]; gameState.activeEvent = randomEvent; gameState.activeEvent.effect(); checkMissions(); updateLog(`event${gameState.activeEvent.id.charAt(0).toUpperCase() + gameState.activeEvent.id.slice(1)}Title`); setTimeout(() => { if(gameState.activeEvent === randomEvent) { gameState.activeEvent.removeEffect(); gameState.activeEvent = null; updateLog('eventNormalTitle'); } }, randomEvent.duration); }
+    
+    function generateTask() { const lang = translations[gameState.currentLanguage]; const taskType = Math.floor(Math.random() * 6); if (taskType === 0) { const d = Math.floor(Math.random() * 500) + 100; const t = Math.floor(Math.random() * 10) + 2; gameState.currentTaskAnswer = Math.round(d / t); allElements.taskQuestion.textContent = lang.taskSpeedQuestion.replace('{d}', d).replace('{t}', t); } else if (taskType === 1) { const m = Math.floor(Math.random() * 200) + 50; const v = Math.floor(Math.random() * 20) + 5; gameState.currentTaskAnswer = Math.round((m / v) * 10) / 10; allElements.taskQuestion.textContent = lang.taskDensityQuestion.replace('{m}', m).replace('{v}', v); } else if (taskType === 2) { const molecules = [{ formula: 'H₂O', atoms: 3 }, { formula: 'CO₂', atoms: 3 }, { formula: 'CH₄', atoms: 5 }, { formula: 'O₃', atoms: 3 }]; const molecule = molecules[Math.floor(Math.random() * molecules.length)]; gameState.currentTaskAnswer = molecule.atoms; allElements.taskQuestion.textContent = lang.taskAtomsQuestion.replace('{formula}', molecule.formula); } else if (taskType === 3) { const l = Math.floor(Math.random() * 10) + 2; const w = Math.floor(Math.random() * 10) + 3; gameState.currentTaskAnswer = l * w; allElements.taskQuestion.textContent = lang.taskAreaQuestion.replace('{l}', l).replace('{w}', w); } else if (taskType === 4) { const total = (Math.floor(Math.random() * 10) + 5) * 1000; const perc = (Math.floor(Math.random() * 8) + 1) * 10; gameState.currentTaskAnswer = total * (perc / 100); allElements.taskQuestion.textContent = lang.taskPercentageQuestion.replace('{total}', total).replace('{perc}', perc); } else { const earthWeight = (Math.floor(Math.random() * 10) + 5) * 10; gameState.currentTaskAnswer = Math.round((earthWeight * 0.38) * 10) / 10; allElements.taskQuestion.textContent = lang.taskGravityQuestion.replace('{earthWeight}', earthWeight); } }
+
+    function startSimulation() { try { if (gameState.gameHasStarted) return; initializeState(); gameState.gameHasStarted = true; changeLanguage('ru'); document.getElementById('start-screen').classList.add('hidden'); if(mainGameInterval) clearInterval(mainGameInterval); if(secondaryGameInterval) clearInterval(secondaryGameInterval); if(eventInterval) clearInterval(eventInterval); mainGameInterval = setInterval(gameLoop, 50); secondaryGameInterval = setInterval(checkMissions, 1000); eventInterval = setInterval(triggerRandomEvent, 25000); } catch (error) { console.error("CRITICAL ERROR on simulation start:", error); alert("A critical error occurred. Please open developer console (F12) and report the error."); } }
+
+    function attachEventListeners() {
+        allElements.startButton.onclick = startSimulation;
+        allElements.victoryRestartBtn.onclick = () => location.reload();
+        allElements.pauseBtn.onclick = () => setPauseState(!gameState.isPaused);
+        allElements.solarBtn.onclick = () => { if(gameState.isPaused) return; gameState.energy = Math.min(100, gameState.energy + gameState.modifiers.solarEnergyGain * gameState.modifiers.energyProduction); };
+        allElements.waterBtn.onclick = () => { if(gameState.isPaused) return; if(gameState.energy >= gameState.modifiers.pumpEnergyCost) { gameState.energy -= gameState.modifiers.pumpEnergyCost; gameState.water = Math.min(100, gameState.water + 10); } else { updateLog('logWaterNoEnergy'); }};
+        allElements.oxygenBtn.onclick = () => { if(gameState.isPaused) return; if(gameState.energy >= 15) { gameState.energy -= 15; gameState.oxygen = Math.min(100, gameState.oxygen + 10); } else { updateLog('logOxygenNoEnergy'); }};
+        allElements.researchBtn.onclick = () => { if(gameState.isPaused) return; if (gameState.energy >= 20 && gameState.water >= 10) { gameState.energy -= 20; gameState.water -= 10; gameState.science += 5; updateLog('logResearchSuccess'); checkMissions(); } else { updateLog('logResearchNoEnergy'); } };
+        allElements.taskBtn.onclick = () => { if(gameState.isPaused) return; generateTask(); allElements.taskModal.classList.remove('hidden'); };
+        
+        allElements.checkAnswerBtn.onclick = () => { if (parseFloat(allElements.taskAnswer.value) === gameState.currentTaskAnswer) { gameState.engineeringData += 10; updateLog('logTaskCorrect'); sounds.positive.play().catch(e=>{}); allElements.taskModal.classList.add('hidden'); allElements.taskAnswer.value = ''; checkMissions(); } else { updateLog('logTaskIncorrect'); sounds.negative.play().catch(e=>{}); const taskWindow = allElements.taskModal.querySelector('.modal-window'); taskWindow.classList.add('error'); allElements.taskAnswer.value = ''; setTimeout(() => { taskWindow.classList.remove('error'); }, 500); } };
+        allElements.expeditionBtn.onclick = () => { if(gameState.isPaused || gameState.isExpeditionActive) return; if(gameState.energy >= 25) { gameState.energy -= 25; gameState.isExpeditionActive = true; gameState.expeditionEndTime = 30000; allElements.expeditionBtn.disabled = true; }};
+        
+        const upgradesContainer = document.getElementById('upgrades-container');
+        if (upgradesContainer) {
+            upgradesContainer.addEventListener('click', (event) => {
+                const button = event.target.closest('.upgrade-btn');
+                if (!button) return;
+                const upgradeId = button.id.replace('upgrade-', '');
+                const upg = upgrades.find(u => u.id === upgradeId);
+                if (!upg || gameState.isPaused || upg.purchased) return;
+                if (gameState.science >= upg.costScience && gameState.engineeringData >= upg.costEngineering) {
+                    gameState.science -= upg.costScience;
+                    gameState.engineeringData -= upg.costEngineering;
+                    upg.purchased = true;
+                    upg.applyEffect();
+                    sounds.positive.play().catch(e=>{});
+                    if (!gameState.firstUpgradePurchased) {
+                        gameState.firstUpgradePurchased = true;
+                    }
+                    checkMissions();
+                    renderUpgrades();
+                }
+            });
+        }
+
+        allElements.instructionsBtn.onclick = () => {
+            setPauseState(true);
+            const lang = translations[gameState.currentLanguage];
+            allElements.instructionsTitle.innerHTML = lang.instructionsTitle;
+            allElements.instructionObjective.innerHTML = lang.instructionObjective;
+            allElements.instructionResources.innerHTML = lang.instructionResources;
+            allElements.instructionRecovery.innerHTML = lang.instructionRecovery;
+            allElements.instructionDevelopment.innerHTML = lang.instructionDevelopment;
+            allElements.instructionUpgrades.innerHTML = lang.instructionUpgrades;
+            allElements.instructionExpedition.innerHTML = lang.instructionExpedition;
+            allElements.instructionEvents.innerHTML = lang.instructionEvents;
+            allElements.closeInstructionsBtn.innerHTML = lang.closeInstructionsBtn;
+            allElements.instructionsModal.classList.remove('hidden');
+        };
+        
+        allElements.closeInstructionsBtn.onclick = () => { allElements.instructionsModal.classList.add('hidden'); if (!gameState.gameWon) { setPauseState(false); } };
+        allElements.closeExpeditionBtn.onclick = () => { allElements.expeditionModal.classList.add('hidden'); if (!gameState.gameWon) { setPauseState(false); } };
+        
+        allElements.langRu.onclick = () => changeLanguage('ru');
+        allElements.langKz.onclick = () => changeLanguage('kz');
+        allElements.langEn.onclick = () => changeLanguage('en');
+    }
+
+    // --- ТОЧКА ВХОДА ---
+    initializeState();
+    attachEventListeners();
+    changeLanguage('ru');
+});
+</script>
+
+</body>
+</html>
